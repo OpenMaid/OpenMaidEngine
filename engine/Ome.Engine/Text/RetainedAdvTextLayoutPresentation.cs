@@ -213,6 +213,63 @@ public sealed class RetainedAdvTextLayoutPresentation
         return PublishedGlyphCount;
     }
 
+    // What op 0x20a last bound past the glyphs: the pending record's publication, while the layout still has the glyph
+    // count it had then (a glyph drawn since fills that record).
+    private (int GlyphCount, GlyphPublication Publication)? _pendingBound;
+
+    /// <summary>
+    /// Op 0x20a (adv_text_publish_layout; 4.24J @0x450c80, 4.33G @0x4503b0, 4.38D @0x453990): <see cref="Republish"/>
+    /// with <paramref name="layout"/>, and the record at the reveal index too, since native binds records 0 to that
+    /// index inclusive (docs/engine-re.md, "The glyph publisher grows a cell"). While a run reveals, that record is the
+    /// next glyph. Once every glyph is shown it is the pending record, the cell the next glyph is drawn into: left and
+    /// top <paramref name="cursor"/>, right and bottom 0, so it draws nothing, but a save keeps it. With no glyph
+    /// published nothing is bound, as native's publisher does nothing at reveal index 0.
+    /// </summary>
+    public int PublishLayout(GfxState gfx, GlyphPublication? layout, (int X, int Y) cursor)
+    {
+        int published = Republish(gfx, layout);
+        if (published == 0) return 0;
+        bool grows = layout != null
+                     && (published >= _glyphs.Count || _glyphs[published].Record.PublicationChainFlag == 0);
+        if (published < _glyphs.Count)
+        {
+            if (grows) Grow(published, layout!.Value, everyRecord: true);
+            Bind(gfx, published);
+            return published;
+        }
+        GlyphPublication applied = grows ? layout!.Value : default;
+        BindPending(gfx, Binding.FirstObjectHandle + published, Binding.SourceSurfaceSlot, Pending(cursor, applied));
+        _pendingBound = (_glyphs.Count, applied);
+        return published;
+    }
+
+    /// <summary>The pending record a source-language run would have had op 0x20a bind (localization spec §8), at the
+    /// source layout's <paramref name="sourceCursor"/>: null unless op 0x20a bound the drawn one and no glyph was drawn
+    /// since.</summary>
+    public AdvRetainedGlyphPlacement? PendingSource((int X, int Y) sourceCursor)
+        => _pendingBound is { } bound && bound.GlyphCount == _glyphs.Count
+            ? Pending(sourceCursor, bound.Publication)
+            : null;
+
+    private AdvRetainedGlyphPlacement Pending((int X, int Y) cursor, GlyphPublication publication)
+    {
+        AdvRetainedGlyphPlacement last = _glyphs[^1];
+        return new AdvRetainedGlyphPlacement(new AdvRetainedGlyphRecord(0, cursor.X, cursor.Y, 0, 0),
+                                             last.LayoutOriginX, last.LayoutOriginY)
+        {
+            CellGrowth = publication.CellGrowth, ObjectShiftX = publication.ShiftX, ObjectShiftY = publication.ShiftY,
+        };
+    }
+
+    /// <summary>Bind a pending record as native does: its rectangle runs back from the cursor to 0, so it is empty.
+    /// </summary>
+    public static void BindPending(GfxState gfx, long handle, int surfaceSlot, AdvRetainedGlyphPlacement pending)
+    {
+        AdvRetainedGlyphRecord cell = pending.Record;
+        gfx.BindDraw(handle, surfaceSlot, cell.Left, cell.Top, cell.Width, checked(cell.Height + pending.CellGrowth),
+                     pending.ObjectPosition.X, pending.ObjectPosition.Y);
+    }
+
     /// <summary>
     /// Recreate every currently revealed binding as op 0x82's redraw does on 4.33G and 4.38D
     /// (text_redraw_retained_group, @0x4553c0 and @0x460cd0): it binds each record again, doing to each that is not ruby
@@ -258,6 +315,7 @@ public sealed class RetainedAdvTextLayoutPresentation
     {
         ArgumentNullException.ThrowIfNull(gfx);
         gfx.EraseRange(Binding.FirstObjectHandle, Binding.ObjectCapacity);
+        _pendingBound = null;
     }
 
     private void Bind(GfxState gfx, int index)

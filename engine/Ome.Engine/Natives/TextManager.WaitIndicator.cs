@@ -96,14 +96,15 @@ public sealed partial class TextManager
         foreach (ITextListener listener in _listeners) listener.LayoutPublished(layoutSlot);
     }
 
-    /// <summary>Op 0x1fb: a layout's retained glyphs and wait indicator are bound again.</summary>
+    /// <summary>Op 0x20a: a layout's retained glyphs, the record at its reveal index and its wait indicator are bound
+    /// again.</summary>
     public void PublishAdvTextLayout(
         GfxState gfx, AdvTextLayoutPresentationBinding binding)
     {
         if (_scene.RetainedTextLayouts.TryGetValue(
                 binding.LayoutSlot, out RetainedAdvTextLayoutPresentation? presentation)
             && presentation.Binding == binding)
-            presentation.Republish(gfx, LayoutPublication);
+            presentation.PublishLayout(gfx, LayoutPublication, PendingCursor(binding.LayoutSlot, presentation));
         if (_scene.RetainedWaitIndicators.TryGetValue(
                 binding.LayoutSlot,
                 out RetainedAdvWaitIndicatorPresentation? indicator))
@@ -113,6 +114,12 @@ public sealed partial class TextManager
                 WaitIndicatorShouldBeVisible(binding.LayoutSlot));
         PublishAdvTextLayout(binding.LayoutSlot);
     }
+
+    // Where a layout's pending record is: the drawn cursor, or after the last glyph when no run has set one.
+    private (int X, int Y) PendingCursor(int layoutSlot, RetainedAdvTextLayoutPresentation presentation)
+        => _scene.LayoutCursors.TryGetValue(layoutSlot, out var cursor) ? cursor
+            : presentation.Glyphs.Count > 0 ? (presentation.Glyphs[^1].Record.Right, presentation.Glyphs[^1].Record.Top)
+            : (0, 0);
 
     private bool WaitIndicatorShouldBeVisible(int layoutSlot)
         => InputWaiting

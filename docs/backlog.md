@@ -152,14 +152,6 @@ it; git history keeps the record.
 
   Done when each is checked frame by frame against native with `drive.py` (the port at a low `speed`; native
   cannot be slowed, so a reveal of a few frames may only be comparable at its ends).
-- **Kamidori: History leaves two objects more in a native save.** `kamidori-history-after-load.steps` saves slot
-  No.003 after opening and closing History on SC0000's first name-plate page. Native's `SAVE03.DAT` has two
-  objects the port's lacks, `0xd6f0` and `0xe67b`, one past the last glyph of each text layout (2026-11-19). The
-  cause is read: op `0x20a`'s `adv_text_publish_layout` binds the records up to the reveal index inclusive, so
-  it binds the layout's pending record too, whose rectangle is the next cursor with no right or bottom edge
-  (`engine-re.md`, "The glyph publisher grows a cell"). The 27 rectangles that were two rows short agree since
-  that section's fix. The scenario's History pictures match native. Done when the port binds the pending record
-  as native does and the two saves agree.
 - **Sweep for ops that are still stubbed.** An op counts as implemented once the handler table binds its name
   (`VirtualMachine.Implements`), and both games' catalog reports list no unsupported op
   (`build/games/<game>/catalog-opcode-coverage.json`). So a handler that only stores its operand, or models one

@@ -99,7 +99,8 @@ public readonly record struct AdvRetainedTextRunResult(
 /// writes these in place of the drawn glyphs, so it holds what the source-language run would have.
 /// </summary>
 public sealed record AdvTextSourceObjects(
-    long FirstHandle, long Capacity, int SurfaceSlot, IReadOnlyList<AdvRetainedGlyphPlacement> Glyphs);
+    long FirstHandle, long Capacity, int SurfaceSlot, IReadOnlyList<AdvRetainedGlyphPlacement> Glyphs,
+    AdvRetainedGlyphPlacement? Pending = null);
 
 /// <summary>A source layout pass (localization spec §8): the rows and ruby native AGE would record for a run's
 /// source text, and where its cursor would end. Nothing is drawn.</summary>

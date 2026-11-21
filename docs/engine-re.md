@@ -745,12 +745,27 @@ cells, and a save of presented text gives its source glyphs the growth of the ru
 - Kamidori's save from SC0000's first name-plate page equals native's but for the time stamp and the play
   seconds. It had not been compared before: the port's cells were a row short there too.
 - Kamidori's History scenario (`kamidori-history-after-load.steps`) now agrees in the 27 rectangles that were 2
-  rows short. Native still has two objects the port lacks, one past each layout's last glyph: the layout
-  publisher's inclusive bound (`backlog.md`, "Kamidori: History leaves different objects in a save").
+  rows short, and since 2026-11-21 in everything but the time stamp and the play seconds (the pending record,
+  below).
+
+**The layout publisher's pending record (modelled 2026-11-21).** Every build's layout publisher (4.24J
+`@0x450c80`, 4.33G `@0x4503b0`, 4.38D `@0x453990`) binds records 0 to the reveal index inclusive, clamped to the
+last record, and does nothing at all when that index is 0. The timed publisher stops one short of the last record,
+because the builders always keep a pending record at the end: `adv_text_append_horizontal_glyph_records` fills it
+with each glyph (right = left + width, bottom = top + size, plus the offset in an effect mode) and pushes the next
+at that glyph's right edge and top, with right and bottom 0. Its left and top are the layout's cursor, which ops
+`0x7a`, `0x6f` and `0x71` move. So op `0x20a` binds one record more than is shown: during a reveal the next glyph,
+and once every glyph is shown the pending record, whose rectangle runs back from the cursor to 0 and draws
+nothing. The publisher's growth applies to it as to the others. Kamidori's History scenario left two such objects
+in native's save, `0xd6f0` at (592, 28, 0, 2) and `0xe67b` at (70, 1, 0, 2). 4.24J reads the reveal index from the
+text manager (`+0x570`), and 4.33G and 4.38D from each layout (`+0x84`); the port keeps one for each layout, which
+agrees while a single layout reveals. The port: `RetainedAdvTextLayoutPresentation.PublishLayout`, at the drawn
+cursor (`TextManager`'s `LayoutCursors`). A save of translated text binds the pending record past the source
+glyphs, at the source layout's cursor (localization spec §8).
 
 Not modelled: the chained record's move at publication (the port raises ruby in its layout,
-`RubyRule.RaiseByEffectInMode3`), the aspect-off branch, and the layout publisher's extra record. The object's move
-in mode 3 with `UseAntiFont` 0 is modelled (below).
+`RubyRule.RaiseByEffectInMode3`), and the aspect-off branch. The object's move in mode 3 with `UseAntiFont` 0 is
+modelled (below).
 
 **AntiFont off in 4.33G and 4.38D (read 2026-11-20).** `+0x548` has two writers in each build,
 `text_set_use_anti_font` (`0x413de0`, `0x414d80`): the startup settings reader, which applies `message:UseAntiFont`

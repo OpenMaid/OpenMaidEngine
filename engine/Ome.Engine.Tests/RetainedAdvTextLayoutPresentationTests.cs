@@ -301,6 +301,56 @@ public class RetainedAdvTextLayoutPresentationTests
     private static (double X, double Y)[] Places(GfxState gfx)
         => gfx.SnapshotVisibleObjects().Select(item => (item.DstX, item.DstY)).ToArray();
 
+    [Fact]
+    public void TheLayoutPublisherAlsoBindsTheRecordAtTheRevealIndex()
+    {
+        var presentation = Presentation(capacity: 8);
+        var gfx = new GfxState();
+        gfx.CreateSurface(21);
+        var growth = new GlyphPublication(2);
+
+        Assert.Equal(0, presentation.PublishLayout(gfx, growth, (13, 2)));   // reveal index 0: nothing
+        Assert.Empty(gfx.SnapshotVisibleObjects());
+
+        presentation.PublishThrough(gfx, 1);
+        presentation.PublishLayout(gfx, growth, (13, 2));                   // mid-reveal: the next glyph too
+        Assert.Equal((5, 2, 4, 8), gfx.TryGet(101)!.SrcRect);
+        Assert.Null(gfx.TryGet(102));
+
+        presentation.PublishThrough(gfx, 3);
+        Assert.Equal(3, presentation.PublishLayout(gfx, growth, (13, 2)));
+        // Every glyph shown: the pending record at the cursor, right and bottom 0 and the growth under it.
+        GfxState.GfxObject pending = gfx.TryGet(103)!;
+        Assert.Equal((13, 2, -13, 0), pending.SrcRect);
+        Assert.Equal((43, 42), (pending.V24.X, pending.V24.Y));
+        Assert.True(pending.Visible);
+        Assert.DoesNotContain(gfx.SnapshotVisibleObjects(), item => item.Handle == 103 && item.W > 0 && item.H > 0);
+        Assert.Equal((20, 4), presentation.PendingSource((20, 4))!.Value.Record is var record
+            ? (record.Left, record.Top) : default);
+
+        presentation.Append([new AdvRetainedGlyphRecord(0, 13, 2, 17, 8)], 30, 40);   // a glyph fills it
+        Assert.Null(presentation.PendingSource((20, 4)));
+    }
+
+    [Fact]
+    public void ATranslatedSaveBindsThePendingRecordPastTheSourceGlyphs()
+    {
+        var gfx = new GfxState();
+        gfx.CreateSurface(21);
+        gfx.BindDraw(100, 21, 1, 2, 4, 6, 31, 42);
+        gfx.BindDraw(101, 21, 5, 2, 4, 6, 35, 42);
+        gfx.BindDraw(102, 21, 9, 2, -9, -2, 39, 42);                         // the drawn layout's pending record
+        var source = new AdvRetainedGlyphPlacement(new AdvRetainedGlyphRecord(0, 1, 2, 7, 8), 30, 40);
+        var pending = new AdvRetainedGlyphPlacement(new AdvRetainedGlyphRecord(0, 7, 2, 0, 0), 30, 40) { CellGrowth = 2 };
+
+        GfxPersistenceSnapshot saved = gfx.CapturePersistenceSnapshot(
+            [new AdvTextSourceObjects(100, 8, 21, [source], pending)]);
+
+        Assert.Equal([100L, 101L], saved.Objects.Select(item => item.Handle));
+        Assert.Equal((7, 2, -7, 0), saved.Objects[1].Object.SrcRect);
+        Assert.Equal((37, 42), (saved.Objects[1].Object.V24.X, saved.Objects[1].Object.V24.Y));
+    }
+
     private static RetainedAdvTextLayoutPresentation Presentation(int capacity)
     {
         var presentation = new RetainedAdvTextLayoutPresentation(

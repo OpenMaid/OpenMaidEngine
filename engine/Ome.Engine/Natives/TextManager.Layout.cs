@@ -62,9 +62,15 @@ public sealed partial class TextManager
         {
             return _scene.RetainedTextLayouts.Values
                 .Where(presentation => presentation.SourceDiffers)
-                .Select(presentation => new AdvTextSourceObjects(
-                    presentation.Binding.FirstObjectHandle, presentation.Binding.ObjectCapacity,
-                    presentation.Binding.SourceSurfaceSlot, presentation.PublishedSourceGlyphs()))
+                .Select(presentation =>
+                {
+                    IReadOnlyList<AdvRetainedGlyphPlacement> glyphs = presentation.PublishedSourceGlyphs();
+                    AdvTextLayoutSnapshot layout = History.GetLayoutSnapshot(presentation.Binding.LayoutSlot);
+                    return new AdvTextSourceObjects(
+                        presentation.Binding.FirstObjectHandle, presentation.Binding.ObjectCapacity,
+                        presentation.Binding.SourceSurfaceSlot, glyphs,
+                        glyphs.Count > 0 ? presentation.PendingSource((layout.CursorX, layout.CursorY)) : null);
+                })
                 .ToArray();
         }
     }

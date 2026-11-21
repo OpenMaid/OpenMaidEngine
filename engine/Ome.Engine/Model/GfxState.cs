@@ -121,6 +121,20 @@ public sealed partial class GfxState
                 bound.PostBindStaticColorBlend = false;
                 objects[handle] = bound;
             }
+            if (layout.Pending is { } pending)
+            {
+                // Op 0x20a's pending record, past the last source glyph: empty, as it is bound.
+                long handle = layout.FirstHandle + layout.Glyphs.Count;
+                GfxObject bound = drawn.GetValueOrDefault(handle) ?? new GfxObject();
+                AdvRetainedGlyphRecord cell = pending.Record;
+                bound.SourceSlot = layout.SurfaceSlot;
+                bound.SrcRect = (cell.Left, cell.Top, cell.Width, checked(cell.Height + pending.CellGrowth));
+                bound.SrcCollapsed = false;
+                bound.V24 = (pending.ObjectPosition.X, pending.ObjectPosition.Y, 0);
+                bound.Visible = true;
+                bound.PostBindStaticColorBlend = false;
+                objects[handle] = bound;
+            }
         }
         return snapshot with
         {
