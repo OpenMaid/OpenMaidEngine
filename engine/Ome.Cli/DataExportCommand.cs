@@ -209,6 +209,11 @@ internal static class DataExportCommand
             $"{pair.Key.Kind}.{pair.Key.Field} -> table {pair.Key.Table}: {pair.Value}"));
         Section("unresolved pictures", report.UnresolvedPictures.Count, report.UnresolvedPictures.Select(picture =>
             $"{picture.Kind} {picture.Id} {picture.Picture}: 0x{picture.PackedId:x}"));
+        int explicitFiles = result.Kinds.SelectMany(kind => kind.Entities).SelectMany(entity => entity.Pictures)
+            .Where(picture => picture.Picture.Explicit).Select(picture => picture.Picture.Name).Distinct().Count();
+        if (explicitFiles > 0) Console.WriteLine($"  explicit pictures: {explicitFiles} files, blurred on the site");
+        Section("explicit_pictures entries that match no picture", report.UnmatchedExplicitPictures.Count,
+                report.UnmatchedExplicitPictures);
         Section("description halts", report.DescriptionHalts.Count, report.DescriptionHalts.Select(halt =>
             $"{halt.Kind} {halt.Id} {halt.Description}: {halt.Halt}"));
         Section("missing description scripts", report.MissingScripts.Count, report.MissingScripts.Select(missing =>

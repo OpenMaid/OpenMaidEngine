@@ -17,6 +17,10 @@ excluded_builders = ["CGINIT", "SPINIT", "EVINIT"]
 # The information screens whose shown text is data (spec §5.7, §14 answer 6): item and skill descriptions, the
 # glossary, character profiles, chapter objectives.
 text_scripts = ["ITMES", "SKMES", "VIMES", "CIMES", "FAMES"]
+# The pictures the site shows blurred until a click (the user, 2026-11-21): nudity, by catalog name. Found by looking
+# at every picture the declarations publish: the eleven clothing-damaged battle pictures (`CB…AAB`) and three of the
+# base battle art. Suggestive but covered art (CB551AAA, CB311AAA, CB016AAA) is not on the list.
+explicit_pictures = ["CB*AAB", "CB052AAA", "CB504AAA", "CB505AAA"]
 
 [[kind]]
 id = "item"
@@ -60,8 +64,8 @@ filters = ["race", "sex", "boss_class"]
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
 # from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
 # with the name (47 units); sprite the map's four-frame walking sheet; battle_1 the battle art (AAA); battle_2 and
-# battle_3 are AAA too, except for 28 units whose AAB variant is the clothing-damaged art; battle_face a close-up face
-# (AB).
+# battle_3 are AAA too, except for 28 units whose AAB variant is the clothing-damaged art, which is explicit (see
+# [export] explicit_pictures); battle_face a close-up face (AB).
 [kind.pictures]
 face = "graphic.face_CA_AA"
 sprite = "graphic.map_sprite_compact_CP_AA"

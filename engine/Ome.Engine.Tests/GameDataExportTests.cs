@@ -64,7 +64,8 @@ public class GameDataExportTests
     private const string Declarations = """
         {"profile": "testgame", "source_sha256": "0123abcd",
          "export": {"boot": {"script": "BOOT", "read_at": "testgame.boot.ready"},
-                    "builders": ["BOOT", "*INIT"], "excluded_builders": ["CGINIT"], "text_scripts": ["ITMES"]},
+                    "builders": ["BOOT", "*INIT"], "excluded_builders": ["CGINIT"], "text_scripts": ["ITMES"],
+                    "explicit_pictures": ["ICON07*", "NOPE*"]},
          "kinds": [
           {"id": "item", "aliases": [], "table": "item", "exists": "name", "skip": {}, "title": "name",
            "text": ["short_description"], "fields": ["category", "price", "price.sell", "granted_skill"],
@@ -215,6 +216,9 @@ public class GameDataExportTests
 
         var (name, picture) = Assert.Single(Entity(result, "item", 1).Pictures);
         Assert.Equal(("icon", "ICON077"), (name, picture.Name));
+        // explicit_pictures marks it, and an entry that matches no picture is reported.
+        Assert.True(picture.Explicit);
+        Assert.Equal(["NOPE*"], result.Report.UnmatchedExplicitPictures);
         Assert.Empty(Entity(result, "item", 3).Pictures);
         Assert.Equal([("item", 3, "icon", 78L)], result.Report.UnresolvedPictures);
     }
@@ -355,6 +359,7 @@ public class GameDataExportTests
             Assert.Equal("ja", Scalar("SELECT DISTINCT lang FROM text"));
             Assert.Equal("skill", Scalar("SELECT to_kind FROM ref WHERE from_id = 1"));
             Assert.Equal("pictures/abcdef012345/ICON077.png", Scalar("SELECT file FROM picture WHERE id = 1"));
+            Assert.Equal("1", Scalar("SELECT explicit FROM picture WHERE id = 1"));
             Assert.Equal("ITINIT.BIN", Scalar("SELECT writer FROM cell WHERE id = 1 AND field = 'handler_script_id'"));
             // The field table: a column's row, a picture field, a reference, a description.
             Assert.Equal("1", Scalar("SELECT column_index FROM field WHERE kind = 'item' AND name = 'price.sell'"));

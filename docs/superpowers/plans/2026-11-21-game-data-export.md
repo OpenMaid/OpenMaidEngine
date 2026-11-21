@@ -105,8 +105,14 @@ made by reading the code or the disassembly.
 - **The unit pictures, looked at** (spec §5.4): `face` is the party list's face plate with the name (`CA…AA`, 47
   units); `sprite` the map's four-frame walking sheet (`CP…AA`); `battle_1` the battle art (`CB…AAA`); `battle_2` and
   `battle_3` the same art, except for 28 units whose `CB…AAB` is the clothing-damaged variant, which is explicit; the
-  last column (`CB…AB`) is a close-up face, so its picture is renamed `battle_face`. Whether the site shows the `AAB`
-  variants is the user's decision (§5).
+  last column (`CB…AB`) is a close-up face, so its picture is renamed `battle_face`. The user kept the `AAB` variants,
+  to be shown blurred until a click (§5, "Explicit pictures").
+- **Explicit pictures** (2026-11-21, the user's request after the first run): `[export] explicit_pictures` in the
+  declarations names them by catalog name (a `*` pattern allowed, an append's `$n$` prefix ignored); the export marks
+  each `picture` row `explicit`, the mark joins the content hash, and an entry that matches no picture is reported.
+  Every picture Kamidori publishes was looked at on contact sheets: 14 files are explicit (the eleven `CB…AAB` and
+  `CB052AAA`, `CB504AAA`, `CB505AAA`), on 29 units; suggestive but covered art (`CB551AAA`, `CB311AAA`,
+  `CB016AAA`) is not marked, and no icon, face, sprite or furniture picture is. The site blurs them (site §8.11).
 
 ## 4. Later milestones
 
@@ -147,6 +153,7 @@ Found by milestone 1 for a later one: `manifest.json` keeps the command line as 
     kept yet (the base text only); the pieces of another script are dropped and counted.
   - **The export's own table names are reserved** as kind ids, beside `tooltips`, in the lint and the exporter.
   - **The fourth battle column's picture is `battle_face`** (§3): it is a close-up face, not battle art.
-  - **Open for the user:** `battle_2` and `battle_3` show, for 28 units, the explicit clothing-damaged art (`AAB`).
-    The declarations keep them as the user chose the battle sprites; whether the site shows those 28 is theirs to
-    decide.
+  - **Explicit pictures** (§3), which the spec does not have: `[export] explicit_pictures` in the declarations, an
+    `explicit` column in the `picture` table (spec §7.2), and the mark in the content hash (spec §7.3). The user's
+    words: "I think it's fine to keep them (Again, adult game witha site warning anyway) but something like that may
+    be nice to separate out truly explicit stuff".

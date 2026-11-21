@@ -109,6 +109,7 @@ public static class ExportWriter
             "CREATE TABLE relation (kind TEXT NOT NULL, id INTEGER NOT NULL, relation TEXT NOT NULL, script TEXT NOT NULL, "
             + "offset INTEGER NOT NULL, count INTEGER)",
             "CREATE TABLE picture (kind TEXT NOT NULL, id INTEGER NOT NULL, name TEXT NOT NULL, file TEXT NOT NULL, "
+            + "explicit INTEGER NOT NULL, "
             + "width INTEGER NOT NULL, height INTEGER NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (kind, id, name))",
             "CREATE TABLE cell (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "bank TEXT NOT NULL, address INTEGER NOT NULL, raw TEXT, writer TEXT, PRIMARY KEY (kind, id, field, idx))",
@@ -179,7 +180,8 @@ public static class ExportWriter
         using var values = new Inserter(connection, id, columns);
         using var texts = new Inserter(connection, "text", "kind", "id", "field", "idx", "lang", "value");
         using var refs = new Inserter(connection, "ref", "from_kind", "from_id", "field", "idx", "to_kind", "to_id");
-        using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "width", "height", "hash");
+        using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "explicit", "width", "height",
+                                          "hash");
         using var cells = new Inserter(connection, "cell", "kind", "id", "field", "idx", "bank", "address", "raw", "writer");
         foreach (ExportEntity entity in kind.Entities)
         {
@@ -193,8 +195,8 @@ public static class ExportWriter
             foreach (ExportRef reference in entity.Refs)
                 refs.Row(id, entity.Id, reference.Field, reference.Index, reference.ToKind, reference.ToId);
             foreach ((string name, ExportPicture picture) in entity.Pictures)
-                pictures.Row(id, entity.Id, name, $"pictures/{revision}/{picture.Name}.png", picture.Width, picture.Height,
-                             picture.Hash);
+                pictures.Row(id, entity.Id, name, $"pictures/{revision}/{picture.Name}.png", picture.Explicit ? 1 : 0,
+                             picture.Width, picture.Height, picture.Hash);
             foreach (ExportModderCell cell in entity.Cells)
                 cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
         }
@@ -234,8 +236,8 @@ public static class ExportWriter
             insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null);
     }
 
-    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references and pictures'
-    /// hashes, in the export's order.</summary>
+    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references, and its pictures'
+    /// hashes and explicit marks, in the export's order.</summary>
     public static string ContentHash(ExportEntity entity)
     {
         var buffer = new MemoryStream();
@@ -281,6 +283,7 @@ public static class ExportWriter
                 json.WriteStartArray();
                 json.WriteStringValue(name);
                 json.WriteStringValue(picture.Hash);
+                json.WriteBooleanValue(picture.Explicit);
                 json.WriteEndArray();
             }
             json.WriteEndArray();

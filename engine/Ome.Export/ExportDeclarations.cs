@@ -17,6 +17,10 @@ public sealed record ExportDeclarations(
     IReadOnlyList<string> TextScripts,
     IReadOnlyList<KindDeclaration> Kinds)
 {
+    /// <summary>The pictures the site shows blurred until a click, by catalog name without the <c>$n$</c> prefix and the
+    /// extension, a <c>*</c> matching any run of characters (<c>[export] explicit_pictures</c>).</summary>
+    public IReadOnlyList<string> ExplicitPictures { get; init; } = [];
+
     public static ExportDeclarations Load(string path) => Parse(File.ReadAllText(path), path);
 
     public static ExportDeclarations Parse(string json, string source = "entities.json")
@@ -38,7 +42,10 @@ public sealed record ExportDeclarations(
             Strings(export, "builders"),
             Strings(export, "excluded_builders"),
             Strings(export, "text_scripts"),
-            root.GetProperty("kinds").EnumerateArray().Select(KindDeclaration.Parse).ToList());
+            root.GetProperty("kinds").EnumerateArray().Select(KindDeclaration.Parse).ToList())
+        {
+            ExplicitPictures = Strings(export, "explicit_pictures"),
+        };
     }
 
     internal static IReadOnlyList<string> Strings(JsonElement parent, string name)

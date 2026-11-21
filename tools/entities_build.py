@@ -42,7 +42,7 @@ RESERVED_KINDS = {"tooltips"}
 EXPORT_TABLES = {"build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use"}
 KEY = "key"
 
-EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts"}
+EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
              "description"}
 DESCRIPTION_KEYS = {"name", "script", "seed"}
@@ -159,6 +159,19 @@ def check_scripts(value, where: str, errors: list[str], patterns: bool) -> list[
     return value
 
 
+def check_picture_patterns(value, where: str, errors: list[str]) -> None:
+    """Pictures named by their catalog names (or patterns of them), as [export] explicit_pictures names them."""
+    if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+        errors.append(f"{where} must be a list of picture names")
+        return
+    for name in value:
+        if not SCRIPT_PATTERN.fullmatch(name):
+            errors.append(f"{where}: {name!r} must be a picture's catalog name in upper case, without its `$n$` prefix "
+                          "or its extension, a `*` matching any run of characters")
+    for name in sorted({name for name in value if value.count(name) > 1}):
+        errors.append(f"{where}: {name} is named twice")
+
+
 def check_seed(game: Game, seed, where: str, errors: list[str]) -> None:
     if seed is None:
         return
@@ -217,6 +230,7 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
         if name in excluded:
             errors.append(f"{source}: [export] text script {name} is also an excluded builder")
     text_scripts = set(export.get("text_scripts") or [])
+    check_picture_patterns(export.get("explicit_pictures", []), f"{source}: [export] explicit_pictures", errors)
 
     kinds = data.get("kind", [])
     if not isinstance(kinds, list):
@@ -400,7 +414,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str) -> str
         "profile": profile_id,
         "export": {"boot": export["boot"], "builders": export["builders"],
                    "excluded_builders": export.get("excluded_builders", []),
-                   "text_scripts": export.get("text_scripts", [])},
+                   "text_scripts": export.get("text_scripts", []),
+                   "explicit_pictures": export.get("explicit_pictures", [])},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
                    "skip": k.get("skip", {}), "title": k["title"], "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),

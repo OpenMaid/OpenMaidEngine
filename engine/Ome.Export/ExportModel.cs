@@ -12,6 +12,9 @@ public sealed record ExportPicture(string Name, byte[] Png, int Width, int Heigh
 {
     /// <summary>The SHA-256 of the PNG bytes, in lower-case hex.</summary>
     public string Hash { get; } = Convert.ToHexStringLower(SHA256.HashData(Png));
+
+    /// <summary>Whether the declarations name it explicit, for the site to blur until a click.</summary>
+    public bool Explicit { get; init; }
 }
 
 /// <summary>Where the export's pictures come from: the game's catalog, through the engine's resource map, or a test's.
@@ -97,6 +100,8 @@ public sealed class ExportReport
     /// <summary>Fields whose references name a table no kind publishes, and how many such values.</summary>
     public SortedDictionary<(string Kind, string Field, string Table), int> UnpublishedRefs { get; } = new();
     public List<(string Kind, int Id, string Picture, long PackedId)> UnresolvedPictures { get; } = [];
+    /// <summary>Entries of <c>explicit_pictures</c> that match no exported picture: a name to correct or drop.</summary>
+    public List<string> UnmatchedExplicitPictures { get; } = [];
     public int DescriptionRuns { get; internal set; }
     /// <summary>Pieces another script than the description's showed, dropped (spec §5.7).</summary>
     public int DroppedPieces { get; internal set; }

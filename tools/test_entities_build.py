@@ -103,6 +103,7 @@ boot = { script = "INIT2", read_at = "demo.boot.data_ready" }
 builders = ["INIT2", "*INIT"]
 excluded_builders = ["CGINIT"]
 text_scripts = ["HEROMES"]
+explicit_pictures = ["HR*B", "HR001A"]
 
 [[kind]]
 id = "hero"
@@ -184,6 +185,7 @@ def test_good_declarations():
     check(data.get("loaders", [{}])[0].get("builders") == ["FOEINIT"], "a loader keeps its own builders")
     check(data.get("script_relations", [{}])[0].get("count") is None, "a relation without a count has count null")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
+    check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
     code, _, written_again = run(GOOD, write=True)
     same = {k: v for k, v in json.loads(written_again or "{}").items() if k != "generated_from"}
     check(same == {k: v for k, v in data.items() if k != "generated_from"},
@@ -203,10 +205,13 @@ boot = { script = "init2", read_at = "demo.nowhere" }
 builders = ["init*"]
 excluded_builders = ["CG*"]
 text_scripts = ["CG*", "HEROMES"]
+explicit_pictures = ["hr*b", "HR1.PNG", "HR2", "HR2"]
 extra = 1
 ''')
     for needle in ("boot script: 'init2' must be a script name", "reads at 'demo.nowhere', which is no patch point",
-                   "builders: 'init*' must be", "excluded_builders: 'CG*' must be", "unknown key 'extra'"):
+                   "builders: 'init*' must be", "excluded_builders: 'CG*' must be", "unknown key 'extra'",
+                   "explicit_pictures: 'hr*b' must be a picture's catalog name",
+                   "explicit_pictures: 'HR1.PNG' must be", "explicit_pictures: HR2 is named twice"):
         check(needle in output, f"the lint flags {needle!r}")
     output = errors_of('[export]\nboot = { script = "INIT2", read_at = "demo.boot.data_ready" }\nbuilders = []\n'
                        'excluded_builders = ["HEROMES"]\ntext_scripts = ["HEROMES"]\n')

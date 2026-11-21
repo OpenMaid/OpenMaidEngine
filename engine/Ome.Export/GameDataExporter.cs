@@ -25,6 +25,7 @@ public static class GameDataExporter
         ExportDeclarations declarations = inputs.Declarations;
         var rule = new BuilderRule(declarations.Builders, declarations.ExcludedBuilders);
         var report = new ExportReport();
+        var explicitPictures = new ExplicitPictures(declarations.ExplicitPictures);
         GameSession boot = Boot(inputs, report);
 
         var kinds = new List<ExportKind>();
@@ -32,9 +33,10 @@ public static class GameDataExporter
         {
             if (FixedTables.Contains(kind.Id))
                 throw new ExportFailure($"kind {kind.Id} has the name of one of the export's own tables");
-            kinds.Add(ReadKind(inputs, boot, kind, rule, report));
+            kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, report));
         }
         LinkReferences(kinds, report);
+        report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
         return new ExportResult(declarations, kinds, report, inputs.BuildInfo);
     }
 
@@ -64,7 +66,7 @@ public static class GameDataExporter
     // ------------------------------------------------------------------------------------------------- one kind
 
     private static ExportKind ReadKind(ExportInputs inputs, GameSession boot, KindDeclaration kind, BuilderRule rule,
-                                       ExportReport report)
+                                       ExplicitPictures explicitPictures, ExportReport report)
     {
         RegistryView registry = inputs.Registry;
         TableLayout table = registry.Table(kind.Table);
@@ -133,7 +135,8 @@ public static class GameDataExporter
             {
                 var (cell, refused) = At(field, 0);
                 if (refused || cell.Number == 0 || inputs.Pictures == null) continue;
-                if (inputs.Pictures.Resolve(cell.Number) is { } picture) entity.Pictures.Add((name, picture));
+                if (inputs.Pictures.Resolve(cell.Number) is { } picture)
+                    entity.Pictures.Add((name, explicitPictures.Mark(picture)));
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
             foreach (DescriptionDeclaration description in kind.Descriptions)
@@ -242,6 +245,28 @@ public static class GameDataExporter
             var lines = _lines.Select(line => line.ToString()).ToList();
             while (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
             return string.Join('\n', lines);
+        }
+    }
+
+    /// <summary>The declarations' explicit pictures: a picture is marked when its catalog name, without an append's
+    /// <c>$n$</c> prefix, matches one of them; the ones that match nothing are reported.</summary>
+    private sealed class ExplicitPictures(IReadOnlyList<string> patterns)
+    {
+        private readonly HashSet<string> _matched = new(StringComparer.Ordinal);
+
+        public IEnumerable<string> Unmatched => patterns.Where(pattern => !_matched.Contains(pattern));
+
+        public ExportPicture Mark(ExportPicture picture)
+        {
+            string name = ScriptNames.Base(picture.Name);
+            bool isExplicit = false;
+            foreach (string pattern in patterns)
+                if (ScriptNames.Matches(pattern, name))
+                {
+                    _matched.Add(pattern);
+                    isExplicit = true;
+                }
+            return isExplicit == picture.Explicit ? picture : picture with { Explicit = isExplicit };
         }
     }
 
