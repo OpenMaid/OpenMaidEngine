@@ -3009,7 +3009,7 @@ pass on the port. Idle in FIELD, the port uses 9.2% of one core and native 4.7%.
 
 **Related — `present-frame` (op `0x20c`):** dispatch `param_1[0x26e9f] = gfx_op_0x20c_present_frame` →
 `gfx_render_frame`@`0x4820b0` (buffer flip). The port treats `0x20c` as an explicit retained-state publication
-boundary in the interactive host while keeping it `noop_headless=true`; the Kelebek label `u00416200` was
+boundary in the interactive host, so it is not `noop_headless`; the Kelebek label `u00416200` was
 VA-drift. This supersedes the earlier host-implicit/no-op presentation model.
 
 ### Frame cadence — the interpreter tick, and why our port "speeds through" (2026-07-08)
@@ -6969,8 +6969,9 @@ only when that operand is negative, which is the black or white endpoint:
 | `0x27`/`0x28` | strip reveal: not written | `finalize(surface, 0)`, also when the division count is ≤ 0: written only for a negative surface |
 
 The port follows these tables in `VirtualMachine.Presentation.cs` (`MarkLegacyTransitionScratchWritten`,
-`MarkScratchIfFinalizeFills`). Ops `0x23`, `0x2a`, `0x2e` and `0x36` appear in neither corpus, so the port
-still traces and skips them. Test: `SurfaceRecordTableTests.LegacyTransitionsMarkScratch0x20OnlyWhereNativeFillsIt`.
+`MarkScratchIfFinalizeFills`). Ops `0x23`, `0x2a` and `0x2e` appear in no corpus and have no handler, so a run
+stops at one with a compatibility failure (a probe run traces it and goes on); op `0x36` is handled ("The mosaic
+transition"). Test: `SurfaceRecordTableTests.LegacyTransitionsMarkScratch0x20OnlyWhereNativeFillsIt`.
 Live check: the port loaded slot 008, entered 木漏れ日の深緑地 (SC0500 and the SC2000 tutorial) and saved. The save
 records `0x20` with created 0, as native's slot 009 does; before the fix the port recorded 1.
 

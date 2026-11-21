@@ -162,14 +162,10 @@ it; git history keeps the record.
     (`VirtualMachine.ControlFlow.cs`);
   - op `0xd8`'s timer and op `0x1d9` have no handler; neither game's scripts use them.
 
-  The registry's markers are stale too:
-  - `noop_headless = true` is still set on ops `0x1bf`, `0x1d5`, `0x1f4` and `0x1f5`, which the port models;
-  - 255 catalog-only ops say "the port currently traces and skips it", though an op without a handler halts unless
-    `--probe` is given (`VirtualMachine.StepInstruction`).
-
-  Done when the sweep has compared each bound handler with its native handler and listed each one that does less.
-  Each listed gap is then fixed or gets its own item here, and the registry's `noop_headless` flags and stub summaries
-  say what the port does.
+  The registry's markers say what the port does since 2026-11-21: `noop_headless` is set only on ops the port's
+  handler leaves without an effect (`0xd9`, `0x1a7`, `0x1a8`, `0x224`), and a catalog-only op's summary says a run
+  stops at it unless `--probe` is given. Done when the sweep has compared each bound handler with its native handler
+  and listed each one that does less. Each listed gap is then fixed or gets its own item here.
 - **A voice replayed from History may loop natively.** Op `0x1bd` replays a History voice with playback variant 1,
   which `voice_play_indexed_asset@0x488330` writes into channel 12's sound-buffer state. That is the field
   `sound_buffer_start@0x484270` writes an op `0xb5`/`0xba` start mode to, and `sound_stream_fill_quarter@0x483b70`

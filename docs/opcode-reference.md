@@ -764,7 +764,7 @@ Port status (2026-07-29): implemented with native SYS4REG.INI route persistence 
 - **semantic status:** investigated
 - **summary:** () - advance the one-shot stage of voice_bgm_duck_control_flags (clear the mask when bit 0x10000 is set) and, unless bit 0 suppresses voice ducking, arm voice_bgm_duck_release_armed so the outer tick restores ducked BGM once the voice ends.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depends on:** 0x1cf
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1bf`; scope=Himegari SYS4422. Ghidra /v2: op_0x1bf_arm_voice_duck_release@0x416c70 clears ctx+0x6dbf0 when bit 0x10000 is set and stores 1 at ctx+0x6dbec unless bit 0 is set, exactly mirroring engine_main_tick_with_exception_policy's post-delayed-voice code (0x411aae). The tick consumes ctx+0x6dbec when the ducked voice ends (run-state 0x4000 -> 0x200 fade); voice_bgm_duck_begin clears it and op 0xbf skips re-applying the duck volume while it is set. Corpus: follows the ADV line template's speaker subroutine call inside a statement block (8,752 Himegari / 18,043 Kamidori sites). The historical name call-end was a structural guess.
 
@@ -799,7 +799,7 @@ Op 0x1be with the channel fixed at 12. Without a sound manager it writes 0. 創�
 - **semantic status:** investigated
 - **summary:** () - play the next voice silently: op 0xc4 then starts it on channel 12 at volume 0 (preserving voice-completion timing for Auto), and the following voice or op 0x1bc clears the request.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depends on:** 0xc4
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1d5`; scope=Himegari SYS4422. Ghidra /v2: op_0x1d5_mute_next_voice@0x416cb0 sets voice_mute_next_flags (ctx+0x1493c, voice facade +0x434) to 1. op_0xc4_handler promotes bit 0 to 0x10001 and clears an already-promoted value; voice_play_indexed_asset@0x4883a0 tests bit 0, sets channel-12 volume 0 and marks the playback muted. voice_tick_delayed_playback, op 0x1bd and op 0x1bc clear it. Corpus: emitted only in the ADV template's speaker<0 / character-voice-suppressed (G[0x2e49]) branches immediately before play-voice. The historical name cond-block was a structural guess.
 
@@ -1952,7 +1952,7 @@ SYS4433 maps selector 0..4 to native pattern modes 8..12. The worker implements 
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** investigated
-- **summary:** (surface_slot)(duration_ms)(parameter)(style) — start a blocking legacy screen transition in mode 5 + style; style must be 0-2, otherwise a script error. Under DRAWMODE=1 the begin creates scratch surface 0x20 and fills it black. With fast-forward set at dispatch it finalizes on the surface instead. Neither Himegari nor Kamidori calls it, so the port traces and skips it.
+- **summary:** (surface_slot)(duration_ms)(parameter)(style) — start a blocking legacy screen transition in mode 5 + style; style must be 0-2, otherwise a script error. Under DRAWMODE=1 the begin creates scratch surface 0x20 and fills it black. With fast-forward set at dispatch it finalizes on the surface instead. No game the port supports calls it, and the port has no handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=investigation, confidence=med
 - **evidence:** method=native-re; confidence=med; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x2a`; scope=Himegari SYS4422. Ghidra SYS4433 (Kamidori): dispatch slot 0x2a (ctx+0x9f7ac) resolves to op_0x2a_legacy_transition_modes_5_to_7@0x41b260. For style 0-2 it calls screen_transition_begin@0x43a6d0 (surface, -1, 5 + style, parameter, 0), sets run-state bit 8 and arms the sleep timer with operand 2, or with run-state 0x8000000 calls screen_transition_finalize@0x43a320(surface, 0). No call in either corpus.
 
@@ -1960,7 +1960,7 @@ SYS4433 maps selector 0..4 to native pattern modes 8..12. The worker implements 
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** investigated
-- **summary:** (mask_asset)(source_surface)(target_surface)(duration_ms)(parameter) — start a blocking legacy screen transition in mode 8 with an indexed asset as its mask. Under DRAWMODE=1 the begin does nothing for mode 8. With fast-forward set it finalizes on the target. Neither Himegari nor Kamidori calls it, so the port traces and skips it.
+- **summary:** (mask_asset)(source_surface)(target_surface)(duration_ms)(parameter) — start a blocking legacy screen transition in mode 8 with an indexed asset as its mask. Under DRAWMODE=1 the begin does nothing for mode 8. With fast-forward set it finalizes on the target. No game the port supports calls it, and the port has no handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=investigation, confidence=med
 - **evidence:** method=native-re; confidence=med; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x2e`; scope=Himegari SYS4422. Ghidra SYS4433 (Kamidori): dispatch slot 0x2e (ctx+0x9f7bc) resolves to op_0x2e_legacy_transition_asset_mask@0x41b8c0. It opens operand 1 through asset_open_indexed_entry_SYS4433 and calls screen_transition_begin@0x43a6d0(source, target, 8, asset data, operand 5); when the begin succeeds it sets run-state bit 8 and arms the sleep timer with operand 4, or with run-state 0x8000000 calls screen_transition_finalize@0x43a320(target, 0). The begin builds the mask object only in draw mode 0. No call in either corpus.
 
@@ -3170,7 +3170,7 @@ ctx+0x13dc is the Skip a text wait acts on and ctx+0x550fc the toggle the menu s
 - **summary:** (x)(y)(w)(h)(on_enter_pc)(on_leave_pc)(on_activate_pc) - append an inclusive cursor rectangle and three callback PCs to the current script frame's native input registry. This opcode only registers; the ADV input service dispatches callbacks later.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read (callback target) · `6` read (callback target) · `7` read (callback target)
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depended on by:** 0x97
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x90`; scope=Himegari SYS4422. Ghidra /v2: op_0x90_handler@0x41fc80 fetches x/y/w/h, forms x+w/y+h, fetches operands 5/6/7, and calls input_hotspot_register_rect_callbacks@0x403d70 on the current frame registry. The worker appends rect + callbacks to arrays and returns without changing PC. input_hotspot_poll_hover_callback@0x4040b0 returns operand 5 on entry and operand 6 on exit; at the ADV text wait, adv_input_service_poll@0x411230 pushes the waiting op's offset (delta -3) and takes operand 7 through input_hotspot_current_click_callback@0x404f70, which keeps the registry and its hovered record (native Frida trace 2026-11-04, SC0000 read-skip click: count 8 and hovered 3 unchanged, no reset or re-registration). Only the modal waits of ops 0x91/0x92/0x95 take the click through input_hotspot_take_click_callback@0x404330, which resets the registry. All 301 ADV scripts contain the identical five control-strip records plus three keyed records.
 
@@ -3224,7 +3224,7 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **semantic status:** investigated
 - **summary:** Reset the current frame's hotspot registry/input wait and clear native run-state bit 0x00800000. Used before opening History, Menu, or HIDEWIN flows.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x93`; scope=Himegari SYS4422. Ghidra /v2: op_0x93_cancel_hotspot_wait@0x416670 clears run-state bit 0x00800000, calls input_hotspot_reset@0x404130, and clears the active flag at ctx+0xc6e4 (or sets the pending flag at +0xc6e0 when already inactive). input_hotspot_reset empties the table (record count +0x408 = 0) and clears the hit, the hovered record, the pending enter and cursor tracking, so an op 0x94 arm with no new registration arms nothing. Port: HotspotRegistry.Reset matches since 2026-11-05; it had kept the records as a template that direct-scene runs re-armed.
 
 ### 0x94 `arm-hotspot-wait` (u00415090, argc 0)
@@ -3233,7 +3233,7 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **semantic status:** investigated
 - **summary:** Arm native hotspot input processing after the script has registered its rectangles.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x94`; scope=Himegari SYS4422. Ghidra /v2: op_0x94_arm_hotspot_wait@0x4166d0 sets ctx+0xc6e4=1 and calls input_hotspot_arm_cursor_tracking@0x404230 with 10000. SC0000 executes it immediately after the five control-strip and three keyed registrations.
 
 ### 0x95 `wait-choice-table` (u0041C0C0, argc 2)
@@ -3259,7 +3259,7 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **summary:** (x)(y)(w)(h)(logical_action) - find the already-registered rectangle with identical bounds and bind a logical input action to its activation callback.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depends on:** 0x90
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x97`; scope=Himegari SYS4422. Ghidra /v2: op_0x97_bind_hotspot_key@0x41ff30 builds the same inclusive rect as op 0x90 and calls input_hotspot_bind_key_bit@0x403f50. That worker searches registered rects for exact equality and stores operand 5 in the record's logical-action field. adv_input_service_poll@0x411230 passes the configured live action mask to input_hotspot_poll_bound_action_callback@0x403fb0, which returns the first matching record's activation PC. All 136 SC-family scripts bind action 7 to the callback that calls MENU.BIN; SYSTEM4 maps both right mouse and X to action 7.
 
@@ -3722,7 +3722,7 @@ The horizontal twin of op 0x10d. The window procedure adds a WM_MOUSEHWHEEL delt
 - **semantic status:** investigated
 - **summary:** () - open an atomic statement block. The outermost open sets statement_block_active and restarts the presentation-timer baseline; a nested open only increments statement_block_depth. While a block is open the outer tick defers delayed SFX/voice/movie service and forced redraw, and queued script launches wait for the outermost op 0x1f5.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depends on:** 0x1f5
 - **depended on by:** 0x1f5
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1f4`; scope=Himegari SYS4422. Ghidra-free static RE of /v2 (tools/operand_access.py image walk): handler 0x417390 sets ctx+0x5f2fc and moves frame_timer_current (ctx+0x51b64) to its predecessor slot before storing timeGetTime, or increments ctx+0x5f300 when already active. engine_main_tick_with_exception_policy@0x411840 skips sfx service 0x4827e0, voice_tick_delayed_playback@0x4884d0, movie_start_pending_after_sync_delay@0x4633b0 over ctx+0x52bd4[0..999], and the forced-redraw check at ctx+0x51b6c while ctx+0x5f2fc is set unless run_state_flags bit 0x400 is set (sites 0x411a42, 0x411b05, 0x411cb3). script_launch_queue_dispatch_next@0x40f6e0 returns immediately while it is set. Corpus: balanced in all 481 Himegari base scripts, nesting at most two, and no jmp/jcc/switch/coroutine/timer edge crosses a block boundary (0 of ~160k); blocks wrap ADV line-template expansions. Headless no-op is safe only because no corpus path queues a launch inside a block.
@@ -3735,7 +3735,7 @@ Port status (2026-11-12): the engine tick (Ome.Engine.Natives.EngineTick, engine
 - **semantic status:** investigated
 - **summary:** () - close a statement block opened by op 0x1f4. A nested close decrements statement_block_depth; the outermost close clears statement_block_active and, unless script_launch_dispatch_active is set, dispatches the next queued script launch.
 - **control (port handler):** waits never; leaves falls
-- **grounding:** source=investigation, confidence=high, noop_headless=True
+- **grounding:** source=investigation, confidence=high
 - **depends on:** 0x1f4
 - **depended on by:** 0x1f4
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1f5`; scope=Himegari SYS4422. Static RE of /v2: handler 0x4173e0 decrements ctx+0x5f300 when positive; otherwise, when ctx+0x5f2fc is set, it clears it and, if ctx+0x6f8b8 is zero, tail-jumps to script_launch_queue_dispatch_next@0x40f6e0. See op 0x1f4 for the deferred tick services and corpus structure.
@@ -3756,7 +3756,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x4`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3764,7 +3764,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x7`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3772,7 +3772,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xa`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3780,7 +3780,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3788,7 +3788,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xc`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3796,7 +3796,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3804,7 +3804,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xe`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3812,7 +3812,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xf`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3820,7 +3820,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x10`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3828,7 +3828,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x11`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3836,7 +3836,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x12`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3844,7 +3844,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3852,7 +3852,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3860,7 +3860,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x15`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3868,7 +3868,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x16`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3876,7 +3876,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x17`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3884,7 +3884,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3892,7 +3892,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3900,7 +3900,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x20`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3908,7 +3908,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3916,7 +3916,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3924,7 +3924,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3932,7 +3932,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3940,7 +3940,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x30`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3948,7 +3948,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x31`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3956,7 +3956,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x33`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3964,7 +3964,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x34`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3972,7 +3972,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3980,7 +3980,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x37`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -3988,7 +3988,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x38`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4122,7 +4122,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x65`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4130,7 +4130,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x66`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4138,7 +4138,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x67`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4146,7 +4146,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x68`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4154,7 +4154,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x69`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4162,7 +4162,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x6a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4170,7 +4170,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x6b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4178,7 +4178,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x6d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4186,7 +4186,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x74`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4194,7 +4194,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x7d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4202,7 +4202,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x7e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4210,7 +4210,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x81`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4218,7 +4218,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x84`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4226,7 +4226,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x89`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4234,7 +4234,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x8a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4251,7 +4251,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x8d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4259,7 +4259,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x8e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4276,7 +4276,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xaa`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4284,7 +4284,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xab`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4292,7 +4292,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xac`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4300,7 +4300,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xaf`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4308,7 +4308,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xb0`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4316,7 +4316,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xb1`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4324,7 +4324,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xb2`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4332,7 +4332,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xb3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4340,7 +4340,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xbb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4348,7 +4348,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xbc`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4356,7 +4356,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xbd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4364,7 +4364,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xbe`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4372,7 +4372,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xc3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4380,7 +4380,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xc9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4388,7 +4388,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xca`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4396,7 +4396,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xcb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4404,7 +4404,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xce`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4412,7 +4412,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xcf`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4420,7 +4420,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd1`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4428,7 +4428,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd2`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4436,7 +4436,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd6`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4444,7 +4444,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd7`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4452,7 +4452,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xd8`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4460,7 +4460,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xda`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4468,7 +4468,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xfc`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4476,7 +4476,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xfd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4484,7 +4484,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x12d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4492,7 +4492,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4500,7 +4500,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4508,7 +4508,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4516,7 +4516,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4533,7 +4533,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x145`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4541,7 +4541,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x146`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4549,7 +4549,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4557,7 +4557,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4565,7 +4565,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4573,7 +4573,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4581,7 +4581,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x190`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4598,7 +4598,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c0`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4606,7 +4606,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c2`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4614,7 +4614,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4622,7 +4622,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c5`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4630,7 +4630,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c6`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4638,7 +4638,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1c9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4646,7 +4646,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1d6`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4654,7 +4654,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1d7`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4662,7 +4662,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1d8`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4670,7 +4670,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x1d9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4678,7 +4678,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x200`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4686,7 +4686,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x201`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4694,7 +4694,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x206`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4702,7 +4702,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x209`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4710,7 +4710,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x210`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4718,7 +4718,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x211`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4726,7 +4726,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x221`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4734,7 +4734,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x226`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4742,7 +4742,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x22b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4750,7 +4750,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x237`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4758,7 +4758,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x23e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4766,7 +4766,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x240`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4774,7 +4774,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x244`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4782,7 +4782,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x245`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4790,7 +4790,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x24a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4798,7 +4798,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x257`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4806,7 +4806,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x25b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4814,7 +4814,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x25c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4822,7 +4822,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x25d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4830,7 +4830,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x25e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4838,7 +4838,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x25f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4846,7 +4846,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x260`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4854,7 +4854,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x261`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4862,7 +4862,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x262`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4870,7 +4870,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x263`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4878,7 +4878,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x264`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4886,7 +4886,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2be`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4894,7 +4894,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c1`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4902,7 +4902,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c2`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4910,7 +4910,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4918,7 +4918,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c4`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4926,7 +4926,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2c9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4934,7 +4934,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2cc`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4942,7 +4942,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2cd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4950,7 +4950,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2ce`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4958,7 +4958,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2d9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4966,7 +4966,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2ee`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4974,7 +4974,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2ef`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4982,7 +4982,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f0`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4990,7 +4990,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f1`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -4998,7 +4998,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f2`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5006,7 +5006,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5014,7 +5014,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f4`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5022,7 +5022,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f5`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5030,7 +5030,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f6`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5038,7 +5038,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f7`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5046,7 +5046,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f8`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5054,7 +5054,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5062,7 +5062,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fa`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5070,7 +5070,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5078,7 +5078,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fc`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5086,7 +5086,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5094,7 +5094,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fe`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5102,7 +5102,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2ff`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5110,7 +5110,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x300`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5118,7 +5118,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x301`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5126,7 +5126,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x302`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5134,7 +5134,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x303`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5142,7 +5142,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x304`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5150,7 +5150,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x305`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5158,7 +5158,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x306`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5166,7 +5166,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x307`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5174,7 +5174,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x308`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5182,7 +5182,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x30a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5190,7 +5190,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x30c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5198,7 +5198,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x330`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5206,7 +5206,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x332`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5214,7 +5214,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x334`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5222,7 +5222,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x335`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5230,7 +5230,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x337`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5238,7 +5238,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x33b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5246,7 +5246,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x33d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5254,7 +5254,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x33e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5262,7 +5262,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x33f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5270,7 +5270,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x340`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5278,7 +5278,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x341`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5286,7 +5286,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x342`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5294,7 +5294,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x344`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5302,7 +5302,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x345`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5310,7 +5310,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x349`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5318,7 +5318,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x34d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5326,7 +5326,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x34e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5334,7 +5334,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x352`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5342,7 +5342,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x353`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5350,7 +5350,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x354`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5358,7 +5358,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x358`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5366,7 +5366,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5374,7 +5374,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5382,7 +5382,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5390,7 +5390,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5398,7 +5398,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5406,7 +5406,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x360`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5414,7 +5414,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x361`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5422,7 +5422,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x363`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5430,7 +5430,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x364`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5438,7 +5438,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x384`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5446,7 +5446,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x386`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5454,7 +5454,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x387`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5462,7 +5462,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x388`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5470,7 +5470,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x389`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5478,7 +5478,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x38f`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5486,7 +5486,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x390`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5494,7 +5494,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x391`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5502,7 +5502,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x392`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5510,7 +5510,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x393`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5518,7 +5518,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x396`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5526,7 +5526,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x398`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5534,7 +5534,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x399`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
@@ -5542,7 +5542,7 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
 - **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub; the port currently traces and skips it.
+- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=med
 - **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x39b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 

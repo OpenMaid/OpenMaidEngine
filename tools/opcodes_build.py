@@ -90,7 +90,8 @@ def skeleton_toml(op: int, label: str, argc: int, argtypes_for_op: dict,
     conf = "med" if _is_named(label) else "low"
     abi_source = "kelebek+corpus-framing" if not catalog_only else "kelebek"
     summary = ("" if not catalog_only else
-               "Broader AGE-catalog compatibility stub; the port currently traces and skips it.")
+               "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a "
+               "compatibility failure, and only a probe run (--probe) traces it and goes on.")
     evidence = ("" if not catalog_only else
                 "Not present in a recorded game observation; ABI label/argc come from Kelebek's AGE table.")
     lines = ["[[opcode]]", f"op = 0x{op:x}", f'label = "{label}"', f"argc = {argc}"]

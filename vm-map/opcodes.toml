@@ -1933,7 +1933,7 @@ abi_source = "kelebek+decode-validated"
 name = "register-hotspot-callbacks"
 category = "input"
 summary = "(x)(y)(w)(h)(on_enter_pc)(on_leave_pc)(on_activate_pc) - append an inclusive cursor rectangle and three callback PCs to the current script frame's native input registry. This opcode only registers; the ADV input service dispatches callbacks later."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -2022,7 +2022,7 @@ abi_source = "kelebek+decode-validated"
 name = "cancel-hotspot-wait"
 category = "input"
 summary = "Reset the current frame's hotspot registry/input wait and clear native run-state bit 0x00800000. Used before opening History, Menu, or HIDEWIN flows."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -2040,7 +2040,7 @@ abi_source = "kelebek+decode-validated"
 name = "arm-hotspot-wait"
 category = "input"
 summary = "Arm native hotspot input processing after the script has registered its rectangles."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -2058,7 +2058,7 @@ abi_source = "kelebek+decode-validated"
 name = "bind-hotspot-key"
 category = "input"
 summary = "(x)(y)(w)(h)(logical_action) - find the already-registered rectangle with identical bounds and bind a logical input action to its activation callback."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -5074,7 +5074,7 @@ abi_source = "kelebek+decode-validated"
 name = "arm-voice-duck-release"
 category = "audio"
 summary = "() - advance the one-shot stage of voice_bgm_duck_control_flags (clear the mask when bit 0x10000 is set) and, unless bit 0 suppresses voice ducking, arm voice_bgm_duck_release_armed so the outer tick restores ducked BGM once the voice ends."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -5517,7 +5517,7 @@ abi_source = "kelebek+decode-validated"
 name = "mute-next-voice"
 category = "audio"
 summary = "() - play the next voice silently: op 0xc4 then starts it on channel 12 at volume 0 (preserving voice-completion timing for Auto), and the following voice or op 0x1bc clears the request."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -5536,7 +5536,7 @@ abi_source = "kelebek+decode-validated"
 name = "stmt-begin"
 category = "structural"
 summary = "() - open an atomic statement block. The outermost open sets statement_block_active and restarts the presentation-timer baseline; a nested open only increments statement_block_depth. While a block is open the outer tick defers delayed SFX/voice/movie service and forced redraw, and queued script launches wait for the outermost op 0x1f5."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -5555,7 +5555,7 @@ abi_source = "kelebek+decode-validated"
 name = "stmt-end"
 category = "structural"
 summary = "() - close a statement block opened by op 0x1f4. A nested close decrements statement_block_depth; the outermost close clears statement_block_active and, unless script_launch_dispatch_active is set, dispatches the next queued script launch."
-noop_headless = true
+noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
@@ -8352,7 +8352,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00417E30"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8368,7 +8368,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00417F90"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8384,7 +8384,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00424170"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8400,7 +8400,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418090"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8416,7 +8416,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004149E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8432,7 +8432,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004181A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8448,7 +8448,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418200"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8464,7 +8464,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418300"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8480,7 +8480,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414A00"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8496,7 +8496,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418330"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8512,7 +8512,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004183F0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8528,7 +8528,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418420"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8544,7 +8544,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414A20"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8560,7 +8560,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418490"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8576,7 +8576,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418520"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8592,7 +8592,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418560"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8608,7 +8608,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004185B0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8624,7 +8624,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418690"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8640,7 +8640,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004187C0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8860,7 +8860,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "legacy-transition-black-scratch"
 category = "draw"
-summary = "(surface_slot)(duration_ms)(parameter)(style) — start a blocking legacy screen transition in mode 5 + style; style must be 0-2, otherwise a script error. Under DRAWMODE=1 the begin creates scratch surface 0x20 and fills it black. With fast-forward set at dispatch it finalizes on the surface instead. Neither Himegari nor Kamidori calls it, so the port traces and skips it."
+summary = "(surface_slot)(duration_ms)(parameter)(style) — start a blocking legacy screen transition in mode 5 + style; style must be 0-2, otherwise a script error. Under DRAWMODE=1 the begin creates scratch surface 0x20 and fills it black. With fast-forward set at dispatch it finalizes on the surface instead. No game the port supports calls it, and the port has no handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "investigation"
 confidence = "med"
@@ -8876,7 +8876,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00418F30"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8892,7 +8892,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419010"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8908,7 +8908,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004190A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8924,7 +8924,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "legacy-transition-asset-mask"
 category = "draw"
-summary = "(mask_asset)(source_surface)(target_surface)(duration_ms)(parameter) — start a blocking legacy screen transition in mode 8 with an indexed asset as its mask. Under DRAWMODE=1 the begin does nothing for mode 8. With fast-forward set it finalizes on the target. Neither Himegari nor Kamidori calls it, so the port traces and skips it."
+summary = "(mask_asset)(source_surface)(target_surface)(duration_ms)(parameter) — start a blocking legacy screen transition in mode 8 with an indexed asset as its mask. Under DRAWMODE=1 the begin does nothing for mode 8. With fast-forward set it finalizes on the target. No game the port supports calls it, and the port has no handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "investigation"
 confidence = "med"
@@ -8940,7 +8940,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004195A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8956,7 +8956,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419670"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -8972,7 +8972,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419750"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9071,7 +9071,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419900"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9087,7 +9087,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004199C0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9103,7 +9103,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419AF0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9160,7 +9160,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419C90"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9176,7 +9176,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00419DA0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9208,7 +9208,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414AA0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9224,7 +9224,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414AE0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9240,7 +9240,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414B20"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9256,7 +9256,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414B60"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9272,7 +9272,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414BA0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9288,7 +9288,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414BE0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9304,7 +9304,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00414C20"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9320,7 +9320,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416960"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9336,7 +9336,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041AC00"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9352,7 +9352,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041AE00"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9368,7 +9368,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041AEA0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9384,7 +9384,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041AF30"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9493,7 +9493,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041AFE0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9509,7 +9509,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041B2E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9525,7 +9525,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041B330"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9541,7 +9541,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041BCE0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9557,7 +9557,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041BD60"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9641,7 +9641,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C270"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9657,7 +9657,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C330"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9673,7 +9673,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C3E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9712,7 +9712,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00415480"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9728,7 +9728,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C530"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9744,7 +9744,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C560"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9760,7 +9760,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C590"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9776,7 +9776,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004154B0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9792,7 +9792,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041D250"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9808,7 +9808,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041D280"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9824,7 +9824,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00415570"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9840,7 +9840,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004155E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9877,7 +9877,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041D390"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9893,7 +9893,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00415770"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9909,7 +9909,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004157A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9925,7 +9925,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00415800"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9941,7 +9941,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E0B0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9957,7 +9957,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416D40"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9973,7 +9973,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00415860"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -9989,7 +9989,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E110"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10005,7 +10005,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004267D0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10021,7 +10021,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E1A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10037,7 +10037,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E150"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10053,7 +10053,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004158B0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10091,7 +10091,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004159F0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10107,7 +10107,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E2D0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10328,7 +10328,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041E720"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10409,7 +10409,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041F440"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10425,7 +10425,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041F7E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10441,7 +10441,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041F840"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10457,7 +10457,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041F8D0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10473,7 +10473,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416040"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10489,7 +10489,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041FB40"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10585,7 +10585,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041FD10"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10601,7 +10601,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041FF50"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10617,7 +10617,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "set-agerc-export"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -10633,7 +10633,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "call-agerc-export"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -10649,7 +10649,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041C5E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10725,7 +10725,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DB70"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10741,7 +10741,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041B860"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10757,7 +10757,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041B8A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10800,7 +10800,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00425800"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10816,7 +10816,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DD80"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10832,7 +10832,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041B8E0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10881,7 +10881,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DA40"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10897,7 +10897,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DA80"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10913,7 +10913,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DAD0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10929,7 +10929,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0041DB20"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10972,7 +10972,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00420800"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -10988,7 +10988,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416190"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11004,7 +11004,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004161C0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11020,7 +11020,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00420C50"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11036,7 +11036,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00420FF0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11052,7 +11052,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00421060"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11101,7 +11101,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00421670"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11150,7 +11150,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004217D0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11223,7 +11223,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00421B30"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11347,7 +11347,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00422350"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11363,7 +11363,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004228C0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11379,7 +11379,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004229A0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11395,7 +11395,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416360"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11411,7 +11411,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00422DA0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11480,7 +11480,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u004163C0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11914,7 +11914,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "257"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -11957,7 +11957,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "25B"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -11973,7 +11973,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423122"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -11989,7 +11989,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423123"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12005,7 +12005,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423124"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12021,7 +12021,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423125"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12037,7 +12037,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423126"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12053,7 +12053,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423127"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12069,7 +12069,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "262"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12085,7 +12085,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "263"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12101,7 +12101,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "264"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12205,7 +12205,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423140"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12221,7 +12221,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00425BC0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12237,7 +12237,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00425CD0"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12253,7 +12253,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00423200"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12269,7 +12269,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u00416450"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12331,7 +12331,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2C9"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12347,7 +12347,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2CC"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12363,7 +12363,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2CD"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -12379,7 +12379,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042B616"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -12691,7 +12691,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042BA30"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13364,7 +13364,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042CEC2"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13380,7 +13380,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042CEC3"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13396,7 +13396,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042CEC4"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13412,7 +13412,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042CEC5"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13428,7 +13428,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0042CEC6"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -13444,7 +13444,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F3"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13460,7 +13460,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F4"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13476,7 +13476,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F5"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13492,7 +13492,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F6"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13508,7 +13508,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F7"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13524,7 +13524,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F8"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13540,7 +13540,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2F9"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13556,7 +13556,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FA"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13572,7 +13572,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FB"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13588,7 +13588,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FC"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13604,7 +13604,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FD"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13620,7 +13620,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FE"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13636,7 +13636,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "2FF"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13652,7 +13652,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "300"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13668,7 +13668,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "301"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13684,7 +13684,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "302"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13700,7 +13700,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "303"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13716,7 +13716,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "304"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13732,7 +13732,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "305"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13748,7 +13748,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "306"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13764,7 +13764,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "307"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13780,7 +13780,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "308"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13796,7 +13796,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "30A"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -13812,7 +13812,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "30C"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14499,7 +14499,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB12"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14515,7 +14515,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB14"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14531,7 +14531,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB16"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14547,7 +14547,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB17"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14563,7 +14563,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB19"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14579,7 +14579,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB1D"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14595,7 +14595,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB1E"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14611,7 +14611,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB1F"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14627,7 +14627,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "u0043AB20"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "low"
@@ -14643,7 +14643,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "340"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14659,7 +14659,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "341"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14675,7 +14675,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "342"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14691,7 +14691,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "344"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14707,7 +14707,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "345"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14723,7 +14723,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "349"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14739,7 +14739,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "34D"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14755,7 +14755,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "34E"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14771,7 +14771,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "352"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14787,7 +14787,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "353"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14803,7 +14803,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "354"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14819,7 +14819,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "358"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14835,7 +14835,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "35A"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14851,7 +14851,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "35B"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14867,7 +14867,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "35C"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14883,7 +14883,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "35D"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14899,7 +14899,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "35F"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14915,7 +14915,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "360"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14931,7 +14931,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "361"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14947,7 +14947,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "363"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14963,7 +14963,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "364"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14979,7 +14979,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "384"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -14995,7 +14995,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "386"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15011,7 +15011,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "387"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15027,7 +15027,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "388"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15043,7 +15043,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "389"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15059,7 +15059,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "38F"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15075,7 +15075,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "390"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15091,7 +15091,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "391"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15107,7 +15107,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "392"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15123,7 +15123,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "393"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15139,7 +15139,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "396"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15155,7 +15155,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "398"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15171,7 +15171,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "399"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
@@ -15187,7 +15187,7 @@ abi_source = "kelebek"
 [opcode.semantics]
 name = "39B"
 category = "unknown"
-summary = "Broader AGE-catalog compatibility stub; the port currently traces and skips it."
+summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
 source = "kelebek"
 confidence = "med"
