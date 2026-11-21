@@ -49,7 +49,7 @@ public class GameDataExportTests
             Array("item_short_descriptions", GlobalBank.String, ItemShorts, 4),
             Array("item_category", GlobalBank.Integer, ItemCategory, 4),
             new ArrayLayout("item_prices", GlobalBank.Integer, ItemPrices, [4, 2],
-                            new Dictionary<int, string> { [0] = "buy", [1] = "sell" }),
+                            new Dictionary<int, string> { [1] = "sell" }),   // column 0 unnamed
             Array("item_icon", GlobalBank.Integer, ItemIcon, 4),
             Array("item_handler", GlobalBank.Integer, ItemHandler, 4),
             Array("item_granted_skill", GlobalBank.Integer, ItemSkill, 4),
@@ -363,6 +363,9 @@ public class GameDataExportTests
             Assert.Equal("ITINIT.BIN", Scalar("SELECT writer FROM cell WHERE id = 1 AND field = 'handler_script_id'"));
             // The field table: a column's row, a picture field, a reference, a description.
             Assert.Equal("1", Scalar("SELECT column_index FROM field WHERE kind = 'item' AND name = 'price.sell'"));
+            // An array field lists its elements' names, null where one has none; a single cell lists none.
+            Assert.Equal("[null,\"sell\"]", Scalar("SELECT columns FROM field WHERE kind = 'item' AND name = 'price'"));
+            Assert.Equal("", Scalar("SELECT ifnull(columns, '') FROM field WHERE kind = 'item' AND name = 'price.sell'"));
             Assert.Equal("icon", Scalar("SELECT picture FROM field WHERE kind = 'item' AND name = 'icon'"));
             Assert.Equal("skill|skill", Scalar("SELECT ref_table || '|' || ref_kind FROM field WHERE name = 'granted_skill'"));
             Assert.Equal("description", Scalar("SELECT type FROM field WHERE name = 'description'"));

@@ -101,7 +101,7 @@ public static class ExportWriter
             "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, aliases TEXT NOT NULL, entities INTEGER NOT NULL)",
             "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
             + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
-            + "address INTEGER, width INTEGER, column_index INTEGER, PRIMARY KEY (kind, name))",
+            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, PRIMARY KEY (kind, name))",
             "CREATE TABLE text (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
             "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
@@ -202,6 +202,16 @@ public static class ExportWriter
         }
     }
 
+    /// <summary>A record array's element names, as a JSON array with null for an element the registry does not name
+    /// (<c>[null,"sell"]</c>); null when the field is one cell or names none.</summary>
+    private static string? ColumnNames(FieldLayout field)
+    {
+        if (!field.IsArray || field.Array.Columns.Count == 0) return null;
+        string?[] names = Enumerable.Range(0, field.Elements).Select(index => field.Array.Columns.GetValueOrDefault(index))
+            .ToArray();
+        return JsonSerializer.Serialize(names);
+    }
+
     private static string BankName(GlobalBank bank) => bank switch
     {
         GlobalBank.String => "string",
@@ -217,7 +227,8 @@ public static class ExportWriter
         var named = kind.TableFields.Concat(kind.Declared.Where(field => field.Column is not null))
             .DistinctBy(field => field.Name).ToList();
         using var insert = new Inserter(connection, "field", "kind", "name", "type", "published", "text", "filter",
-                                        "ref_table", "ref_kind", "picture", "bank", "address", "width", "column_index");
+                                        "ref_table", "ref_kind", "picture", "bank", "address", "width", "column_index",
+                                        "columns");
         foreach (FieldLayout field in named)
         {
             string? refTable = kind.Table.Refs.GetValueOrDefault(field.Field);
@@ -230,10 +241,11 @@ public static class ExportWriter
             insert.Row(declaration.Id, field.Name, field.TypeName, declaration.Fields.Contains(field.Name) ? 1 : 0, text ? 1 : 0,
                        declaration.Filters.Contains(field.Name) ? 1 : 0, refTable, refKind,
                        pictureNames.Length == 0 ? null : string.Join(",", pictureNames), BankName(field.Array.Bank),
-                       field.Array.Address, field.Array.Width, field.Column);
+                       field.Array.Address, field.Array.Width, field.Column, ColumnNames(field));
         }
         foreach (DescriptionDeclaration description in declaration.Descriptions)
-            insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null);
+            insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null,
+                       null);
     }
 
     /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references, and its pictures'

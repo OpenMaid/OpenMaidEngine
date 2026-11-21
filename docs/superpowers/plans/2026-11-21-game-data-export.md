@@ -157,3 +157,8 @@ Found by milestone 1 for a later one: `manifest.json` keeps the command line as 
     `explicit` column in the `picture` table (spec §7.2), and the mark in the content hash (spec §7.3). The user's
     words: "I think it's fine to keep them (Again, adult game witha site warning anyway) but something like that may
     be nice to separate out truly explicit stuff".
+  - **The `field` table has a `columns` column** (spec §7.2 does not): for an array field, a JSON array of its
+    elements' names from the registry's `columns`, with null for an unnamed element (`unit.stats` is `["accuracy", …,
+    "capacity"]`). The site's milestone 2 needs it to label a record's arrays and to write a modder's name for one
+    element (`unit[1].stats.max_hp`). Values with a meaning per number (a race, a category) have no names in the
+    registry, so the export still gives them as numbers.
