@@ -726,24 +726,15 @@ test's results: `localization-import-test.md`. The future work spec §17 lists s
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-20. The item stays for the open points
   above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
-- **A project site with each game's data as a knowledge base** (the user's idea, 2026-11-19; not designed and not
-  scheduled: "something that would be neat later on as we get more games").
-  - **The idea:** a static website that becomes OME's home, in three sections. Info: the engine, the supported
-    games and revisions with each one's level of support, and where to buy the games and download OME. Modding: the
-    general guides for each system, with each game's modding facts and samples. Game data: a knowledge base for
-    each game.
-  - **Why:** the games' English and Japanese wikis are filled mostly from what people see in play. Our tools read
-    the data itself, so each game's data can be extracted in a form a static site builds its pages from. The engine
-    draws the games' sprites and maps, so an entry can carry its sprites as the wikis do, and the maps can be
-    rendered out.
-  - **What there is to start from:** the table extractors (`tools/extract_init.py`, Kamidori's `init_kamidori*.py`
-    and the runtime oracle `init_image.py`), the registries and their references (`vm-map/globals[-<game>].toml`),
-    the base mods' record maps, `kamidori-data-tables.md`, and for the other two sections `docs/modding/` and its
-    generated games page.
-  - **Not there:** a step for each game that writes its data out for a site generator, sprites and maps rendered
-    to files, and the site.
-  - Done when the user asks for a design and it is accepted (it then gets a spec and a row in the documents map),
-    or the idea is dropped.
+- **A project site with each game's data as a knowledge base** (the user's idea, 2026-11-19: "something that would
+  be neat later on as we get more games").
+  - **Designs in review (2026-11-21):** the game data export design
+    (`docs/superpowers/specs/2026-11-21-game-data-export-design.md`: the entity declarations, the exporter, the
+    export format and the reference bundle), and the site's design in its own repository, `ome-site` beside this
+    one (`docs/specs/2026-11-21-site-design.md`). The user answered both designs' questions on 2026-11-21; each
+    keeps the answers in its §14, and its §3.1 the decisions before them. An independent agent review the same day
+    revised the export design, and the user accepted its one new point (information-screen text is data).
+  - Done when the user accepts the designs; this item then goes, and the work follows their milestones.
 - **Deferred by the user:** the `LICENSE` copyright holder is blank; `main` trails `develop` (the GitHub default);
   artifacts published before their notices existed are not backfilled, but taken down or updated if anyone asks:
   the `v0.4.0` packages lack the Godot, .NET and MinGW-w64 notices, and the `deps-ffmpeg-ome-8.1.3-mpeg1-r1` Windows
