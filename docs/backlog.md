@@ -726,15 +726,6 @@ test's results: `localization-import-test.md`. The future work spec §17 lists s
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-20. The item stays for the open points
   above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
-- **A project site with each game's data as a knowledge base** (the user's idea, 2026-11-19: "something that would
-  be neat later on as we get more games").
-  - **Designs in review (2026-11-21):** the game data export design
-    (`docs/superpowers/specs/2026-11-21-game-data-export-design.md`: the entity declarations, the exporter, the
-    export format and the reference bundle), and the site's design in its own repository, `ome-site` beside this
-    one (`docs/specs/2026-11-21-site-design.md`). The user answered both designs' questions on 2026-11-21; each
-    keeps the answers in its §14, and its §3.1 the decisions before them. An independent agent review the same day
-    revised the export design, and the user accepted its one new point (information-screen text is data).
-  - Done when the user accepts the designs; this item then goes, and the work follows their milestones.
 - **Deferred by the user:** the `LICENSE` copyright holder is blank; `main` trails `develop` (the GitHub default);
   artifacts published before their notices existed are not backfilled, but taken down or updated if anyone asks:
   the `v0.4.0` packages lack the Godot, .NET and MinGW-w64 notices, and the `deps-ffmpeg-ome-8.1.3-mpeg1-r1` Windows

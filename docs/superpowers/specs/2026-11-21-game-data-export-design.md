@@ -1,9 +1,10 @@
 # Game data export design
 
 **Date:** 2026-11-21
-**Status:** draft. The user decided its questions on 2026-11-21 (§14), and an independent agent review of the same
-day checked it against the code; this revision takes in its findings. Not yet accepted as a whole. Nothing is
-built.
+**Status:** accepted by the user on 2026-11-21 ("Go ahead and approve it and get started"), after they decided its
+questions (§14) and an independent agent review of the same day checked it against the code. Its plan,
+`docs/superpowers/plans/2026-11-21-game-data-export.md`, keeps what changed since, the departures from this text
+included.
 **How it was decided:** the backlog item "A project site with each game's data as a knowledge base" (2026-11-19),
 the user's outline (`Site Ideas.md` at the workspace root), and the user's answers of 2026-11-21 (§3.1). The site
 that reads what this design produces has its own design, in its own repository: `ome-site`, beside this one, at
