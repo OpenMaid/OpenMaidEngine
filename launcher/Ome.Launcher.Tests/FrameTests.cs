@@ -25,14 +25,20 @@ public sealed class FrameTests : IDisposable
                 _home.Profile("himegari", "himegari", himegari, "Himegari"));
     }
 
-    private MainViewModel Model(string language = "en", ArtOptions? art = null)
-        => new(_home.Session(language: language), art ?? new ArtOptions(Handler: new NoRequests()));
+    /// <summary>The window's model on the test home, once the checks it starts are done: they read the profile's files
+    /// on a worker, so a test that went on at once would race them (a lock taken, the home deleted).</summary>
+    private async Task<MainViewModel> Open(string language = "en", ArtOptions? art = null)
+    {
+        var model = new MainViewModel(_home.Session(language: language), art ?? new ArtOptions(Handler: new NoRequests()));
+        await model.Checking;
+        return model;
+    }
 
     [Fact]
     public void TheListGroupsProfilesUnderTheirGamesBannerAndChecksEach() => Headless.Run(async () =>
     {
         Three();
-        using MainViewModel model = Model();
+        using MainViewModel model = await Open();
         await model.StartAsync();
 
         Assert.Equal(["himegari", "kamidori"], model.Groups.Select(group => group.Game));
@@ -52,13 +58,13 @@ public sealed class FrameTests : IDisposable
     public void ASelectionIsKeptAsTheLastProfileAndTheWindowOpensAtIt() => Headless.Run(async () =>
     {
         Three();
-        using (MainViewModel model = Model())
+        using (MainViewModel model = await Open())
         {
             await model.SelectAsync(model.Rows.Single(row => row.Id == "kamidori-ja"));
             Assert.Equal("kamidori-ja", LauncherSettingsStore.Load(_home.Home).Settings.LastProfile);
             Assert.Equal(ProfileState.Ready, model.Selected!.State);
         }
-        using MainViewModel again = Model();
+        using MainViewModel again = await Open();
         Assert.Equal("kamidori-ja", again.Selected!.Id);
     });
 
@@ -67,7 +73,7 @@ public sealed class FrameTests : IDisposable
     {
         var (_, _, himegari) = Three();
         File.Delete(Path.Combine(himegari.Loaded!.Document.Install.Root, Installs.CatalogFile));
-        using MainViewModel model = Model();
+        using MainViewModel model = await Open();
         await model.StartAsync();
 
         ProfilePageViewModel page = model.Page!;
@@ -95,7 +101,7 @@ public sealed class FrameTests : IDisposable
         using (engine)
         {
             _home.Session().Save(LauncherSettingsStore.Load(_home.Home).Settings with { LastProfile = english.Id });
-            using MainViewModel model = Model();
+            using MainViewModel model = await Open();
             await model.StartAsync();
 
             ProfilePageViewModel page = model.Page!;
@@ -114,12 +120,12 @@ public sealed class FrameTests : IDisposable
     {
         var (english, _, _) = Three();
         _home.Session().Save(LauncherSettingsStore.Load(_home.Home).Settings with { LastProfile = english.Id });
-        using (MainViewModel model = Model())
+        using (MainViewModel model = await Open())
             Assert.Equal("Never played", model.Page!.LastPlayed);
 
         Assert.True(RunLock.TryAcquire(english.Root, markStart: true, out RunLock? engine, out _));
         engine!.Dispose();
-        using MainViewModel after = Model("ja");
+        using MainViewModel after = await Open("ja");
         Assert.StartsWith("最終プレイ ", after.Page!.LastPlayed);
     });
 
@@ -128,7 +134,7 @@ public sealed class FrameTests : IDisposable
     {
         Three();
         var never = new NoRequests();
-        using (MainViewModel model = Model(art: new ArtOptions(Handler: never)))
+        using (MainViewModel model = await Open(art: new ArtOptions(Handler: never)))
         {
             Assert.True(model.AskArt);
             Assert.Contains("www.eukleia.co.jp", model.ArtQuestion);
@@ -137,12 +143,12 @@ public sealed class FrameTests : IDisposable
         }
         Assert.Equal(0, never.Requests);
         Assert.Equal(ArtConsent.Never, LauncherSettingsStore.Load(_home.Home).Settings.Art);
-        using (MainViewModel model = Model())
+        using (MainViewModel model = await Open())
             Assert.False(model.AskArt);
 
         _home.Session().Save(LauncherSettingsStore.Load(_home.Home).Settings with { Art = ArtConsent.Ask });
         var missing = new NoRequests(HttpStatusCode.NotFound);
-        using (MainViewModel model = Model(art: new ArtOptions(Handler: missing)))
+        using (MainViewModel model = await Open(art: new ArtOptions(Handler: missing)))
         {
             await model.AnswerArtAsync(ArtConsent.Always);
             Assert.All(model.Groups, group => Assert.True(group.Banner!.IsCard));
@@ -154,7 +160,7 @@ public sealed class FrameTests : IDisposable
     [Fact]
     public void WithNoProfileTheWizardOpensOverTheFirstRunCard() => Headless.Run(async () =>
     {
-        using MainViewModel model = Model();
+        using MainViewModel model = await Open();
         Assert.True(model.HasNoProfiles);
         Assert.False(model.HasPage);
         Assert.Empty(model.Groups);

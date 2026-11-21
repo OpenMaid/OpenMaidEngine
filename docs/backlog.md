@@ -730,21 +730,6 @@ test's results: `localization-import-test.md`. The future work spec §17 lists s
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-20. The item stays for the open points
   above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
-- **A launcher window test failed once in its teardown.** In one core validation run on `feature/data-patches`
-  (2026-11-19, at `6c5972c4`), `WindowTests.TheFirstRunCardAndTheArtQuestionDraw` passed its checks and then failed
-  in `TestHome.Dispose` (`launcher/Ome.Launcher.Tests/TestHome.cs`): `Directory.Delete` could not remove the test
-  home's `SYS4INI.BIN`, "being used by another process". The run before it (`fc694f9c`) and the run after
-  (`f1327fb2`) passed all 86 launcher tests, and the branch changes nothing in `launcher/`. The cause is not known:
-  either something of the launcher still held the synthetic install's catalog open when the window closed (a check
-  of the profile that had not finished), or another process on the machine had the new file open. Done when the
-  cause is found and fixed: the launcher closes what it reads before the window closes, or the test waits for the
-  work it started. A retry until it passes is not a fix.
-
-  A second case, the same day on `feature/arterial`, in a core validation run that changed nothing in `launcher/`:
-  `FrameTests.AProfileTheLauncherMadeIsNeverPlayedUntilTheEngineStartsIt` failed at its `RunLock.TryAcquire` of the
-  profile root, right after the test's first `MainViewModel` was disposed. The class then passed three times run
-  alone, and the whole suite had passed twice earlier that day with the same launcher code. It fits the first
-  reading: work the view model started still held something of the profile when the test went on.
 - **A project site with each game's data as a knowledge base** (the user's idea, 2026-11-19; not designed and not
   scheduled: "something that would be neat later on as we get more games").
   - **The idea:** a static website that becomes OME's home, in three sections. Info: the engine, the supported

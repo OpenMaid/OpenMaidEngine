@@ -486,9 +486,11 @@ public sealed class WindowTests : IDisposable
         });
 
         Three();
-        Headless.Run(() =>
+        Headless.Run(async () =>
         {
             var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new Refuse()));
+            // The window starts it as it opens: its checks read the installs, done before the home is deleted.
+            await model.StartAsync();
             Assert.True(model.AskArt);
             var window = new MainWindow { DataContext = model };
             Headless.Render(window, ThemeVariant.Light, "6.2-art-question-light");
