@@ -6,7 +6,8 @@ the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
 **Status:** written when milestone 0 was built. §3 is expanded before milestone 1 starts.
-**Branch:** `feature/data-export`, off `develop` at `59fa0011`; its first commit (`9809055c`) is the spec.
+**Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
+batch was merged); its first commit (`0848b00a`) is the spec.
 
 Paths are relative to `age-reimpl/`.
 
