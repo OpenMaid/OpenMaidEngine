@@ -245,6 +245,32 @@ def test_tables_lint():
         entries, _ = G.load_toml(toml)
         check(G.lint_tables(G.load_tables(toml), entries) == [], f"{toml.name} tables lint clean")
 
+def test_table_refs():
+    base = {"category": "data-table", "source": "inference", "confidence": "med"}
+    entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "hero_weapons", "type": "int[4][2]"},
+               ("G", 0x20): {**base, "_addr": 0x20, "name": "hero_icons", "type": "int[4]"},
+               ("GS", 0x10): {**base, "_addr": 0x10, "name": "hero_names", "type": "string[4]"},
+               ("G", 0x30): {**base, "_addr": 0x30, "name": "weapon_prices", "type": "int[3]"}}
+    weapon = {"name": "weapon", "records": 3, "built_by": "boot", "fields": {"price": "weapon_prices"}}
+    good = [{"name": "hero", "records": 4, "built_by": "boot",
+             "fields": {"weapon": "hero_weapons", "icon": "hero_icons", "name": "hero_names"},
+             "refs": {"weapon": "weapon", "icon": "picture"}}, weapon]
+    check(G.lint_tables(good, entries) == [], "references to a table and to pictures lint clean")
+    table = G.table_json(good[0])
+    check(table.get("refs") == {"icon": "picture", "weapon": "weapon"}, f"the JSON carries the references ({table})")
+    check("refs" not in G.table_json(weapon), "a table without references has no refs key")
+    bad = [{"name": "hero", "records": 4, "built_by": "boot",
+            "fields": {"weapon": "hero_weapons", "icon": "hero_icons", "name": "hero_names"},
+            "field_aliases": {"arms": "weapon"},
+            "refs": {"arms": "weapon", "missing": "weapon", "icon": "monster", "name": "weapon"}},
+           {"name": "loose", "records": 4, "built_by": "boot", "fields": {"icon": "hero_icons"}, "refs": ["icon"]},
+           weapon]
+    errors = G.lint_tables(bad, entries)
+    for needle in ("refs names 'arms', which is not a field", "refs names 'missing', which is not a field",
+                   "the target 'monster', which is neither a table", "whose global hero_names is not an integer",
+                   "'loose': refs must be a table"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r}")
+
 def test_scopes_lint():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}
     entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "foe_units", "type": "int[4]"},
@@ -818,6 +844,7 @@ if __name__ == "__main__":
     test_lint_catches_bad_vocab()
     test_lint_warns_on_overlapping_arrays()
     test_tables_lint()
+    test_table_refs()
     test_scopes_lint()
     test_adv_layer_surface_slot_evidence()
     test_selected_movement_route_grid_evidence()

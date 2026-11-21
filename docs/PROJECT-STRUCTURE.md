@@ -118,6 +118,7 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │   ├── base_mod_build.py                   generator: global and patch-point registries -> mods/<game>-base/layout/ (rename rule against exports.txt)
     │   │                                       and the record map mods/<game>-base/lua/generated/tables.lua, and the
     │   │                                       kind's shape mods/<game>-base/shapes/tables.schema.json
+    │   ├── entities_build.py                   linter/generator: vm-map/entities-<game>.toml -> build/games/<game>/entities.json (game data export)
     │   ├── story_flags.py                      static story-flag miner (branch-condition) -> build/games/<game>/story-flags-candidates.json; --bootstrap
     │   ├── scjump_decode.py                    decode SCJUMP progression logic -> build/games/<game>/scjump-decisions.* ; --verify (VM cross-check)
     │   ├── test_globals.py, test_opcodes.py    unit tests for the globals / opcode tooling
@@ -161,6 +162,8 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │   ├── globals-arterial.toml               ★ CANONICAL Arterial global registry (same schema)
     │   ├── patch-points-<game>.toml         ★ CANONICAL named patch points (stable fragment site names, one site per
     │   │                                        script revision; mod loader spec §5); patch_points_build.py generates the rest
+    │   ├── entities-<game>.toml             ★ CANONICAL entity declarations: what the project site publishes of a game's
+    │   │                                        data (game data export spec §5); entities_build.py checks and builds them
     │   └── opcode-leads.json, small-script-listings.md
     │
     ├── oms/<game>/*.oms                   hand-written Open Maid Script source modules (preludes): `module
@@ -813,6 +816,9 @@ spec §6.2–§6.5. With a profile file's `[mods]` table the packages come from 
 - **Named patch points are edited ONLY in `vm-map/patch-points-<game>.toml`.** Run
   `tools/patch_points_build.py [--game ID] --build` to validate them against the installed base and regenerate
   `build/games/<game>/patch-points.json` (read by `Ome.Cli oms-patch`) and `docs/patch-point-reference[-<game>].md`.
+- **What the project site publishes of a game is declared ONLY in `vm-map/entities-<game>.toml`**, and a table's
+  references in its registry's `[table.refs]`. Run `tools/entities_build.py --game ID --build` to check them and
+  write `build/games/<game>/entities.json`, which the game data exporter reads.
 - **Encoding:** all generated text is UTF-8 (source strings are cp932/Shift-JIS, decoded on
   extraction). Run Python as `py -3.11 -X utf8`.
 - **The game install is a runnable unit** — do not relocate `AGE.EXE`/`*.ALF`/DLLs relative to each

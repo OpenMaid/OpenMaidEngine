@@ -62,6 +62,7 @@ CORE_TESTS = (
     "test_opcode_flow.py",
     "test_patch_points.py",
     "test_base_mod_build.py",
+    "test_entities_build.py",
     "test_launcher_icon_build.py",
     "test_paths.py",
     "test_revision_diff.py",
@@ -155,8 +156,9 @@ def selected_phases(level: str) -> set[str]:
 
 def registry_gates() -> list[Gate]:
     """Content-free gates over every profile's registries, whichever profile is selected: each global registry is
-    linted and its build/games/<game>/globals.json written, and each patch-point registry is checked and its generated
-    reference compared with what --build writes. The engine and launcher tests link with the repository's OMS
+    linted and its build/games/<game>/globals.json written, each patch-point registry is checked and its generated
+    reference compared with what --build writes, and each game's entity declarations are linted and their
+    build/games/<game>/entities.json written (game data export spec §5). The engine and launcher tests link with the repository's OMS
     modules, which load that JSON, and a checkout has none until it is built (launcher plan §9.7). (A global
     reference merges the workspace auto map, so its staleness gate is in the workspace phase, and --build-json leaves
     it alone.)"""
@@ -178,6 +180,12 @@ def registry_gates() -> list[Gate]:
                 f"patch-points-reference-{profile_id}",
                 f"Patch-point registry and generated reference ({profile_id})",
                 _python_tool("patch_points_build.py", "--game", profile_id, "--check-reference"),
+            ))
+        if (paths.VM_MAP / f"entities-{profile_id}.toml").is_file():
+            gates.append(Gate(
+                f"entities-{profile_id}",
+                f"Entity declarations for the game data export ({profile_id})",
+                _python_tool("entities_build.py", "--game", profile_id, "--build"),
             ))
     return gates
 

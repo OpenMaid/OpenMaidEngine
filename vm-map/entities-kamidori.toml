@@ -1,0 +1,88 @@
+# Kamidori's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals-kamidori.toml (its tables, their
+# [table.refs], its globals), vm-map/patch-points-kamidori.toml and the profile's saved prefix, and writes
+# build/games/kamidori/entities.json for the exporter.
+#
+# Scripts are named without the `$n$` prefix of an update or append and without `.BIN`. Fields are named as the record
+# map names them, a column by its name after a dot. A field left out of a kind is still in the modder data.
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after every layer (spec §14, answer 2).
+boot = { script = "INIT2", read_at = "kamidori.boot.data_ready" }
+# The scripts whose stored values may be published: INIT2 itself (it stores table literals), the *INIT and *INIT2
+# table scripts and their `$n$` updates, and AUTORUN, which the appends run.
+builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery, the H-scene replays and the event-CG substitution.
+excluded_builders = ["CGINIT", "SPINIT", "EVINIT"]
+# The information screens whose shown text is data (spec §5.7, §14 answer 6): item and skill descriptions, the
+# glossary, character profiles, chapter objectives.
+text_scripts = ["ITMES", "SKMES", "VIMES", "CIMES", "FAMES"]
+
+[[kind]]
+id = "item"
+table = "item"
+exists = "name"
+title = "name"
+text = ["short_description"]
+fields = [
+    "category", "rank", "sort_key", "price", "attack_element", "min_range", "max_range", "stat_modifiers",
+    "critical_rate_bonus", "affinity_level_deltas", "condition_level_deltas", "equipped_condition_levels",
+    "granted_skill_id", "resource_recovery_amounts", "cursed_flag", "sex_restriction_mask", "character_whitelist",
+    "costume_battle_variant", "growth_enabled", "garden_product_item_id", "garden_production_period",
+    "furniture_area", "furniture_exclusive_group", "furniture_width", "furniture_height",
+    "furniture_sales_count_bonus", "furniture_purchase_desire_bonus", "furniture_visit_rate_bonus",
+    "furniture_high_price_bonus", "furniture_equipment_bonus", "furniture_information_bonus",
+    "furniture_mutation_bonus", "furniture_knowledge_bonus", "furniture_staff_count_bonus", "furniture_garden_bonus",
+]
+filters = ["category", "rank", "attack_element"]
+pictures = { icon = "icon_asset_id", furniture = "furniture_sprite_asset_id" }
+
+[[kind.description]]
+name = "description"
+script = { field = "handler_script_id" }        # ITMES or a `$n$ITMES`, as SHOP calls it
+seed = { current_item_id = "key" }
+
+[[kind]]
+id = "unit"
+table = "unit"
+exists = "full_name"
+title = "full_name"
+text = ["display_name", "initial_class_title", "bestiary_description"]
+fields = [
+    "race", "sex", "boss_class", "sort_key", "bestiary_listed", "starting_level", "level_cap", "stats",
+    "stat_growth", "initial_stat_caps", "element_resistance", "equippable_category_mask", "initial_weapon_level",
+    "default_attack_item_id", "initial_equipment", "default_costume_item_id", "skill", "party_cost",
+    "initial_affinity_tenths", "experience_reward", "bestiary_knowledge_gain", "drop_item", "drop_chance",
+    "habitat_area",
+]
+filters = ["race", "sex", "boss_class"]
+
+# The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
+# from file prefixes; milestone 1 checks each column's pictures by eye.
+[kind.pictures]
+face = "graphic.face_CA_AA"
+sprite = "graphic.map_sprite_compact_CP_AA"
+battle_1 = "graphic.battle_sprite_1_CB_AAA"
+battle_2 = "graphic.battle_sprite_2_CB_AAA_or_AAB"
+battle_3 = "graphic.battle_sprite_3_CB_AAA_or_AAB"
+battle_4 = "graphic.battle_sprite_CB_AB"
+
+[[kind]]
+id = "skill"
+table = "skill"
+exists = "name"
+title = "name"
+text = ["short_description"]
+fields = [
+    "category", "sort_key", "catalog_visible", "equip_cost", "upgrade_family_id", "bundled_skill_ids",
+    "min_range_encoded", "max_range_encoded", "required_weapon_category_mask", "area_target_mode", "area_shape_id",
+    "area_cooldown_turns", "attack_element_encoded", "condition_levels", "combat_stat_deltas", "critical_rate_bonus",
+    "resource_deltas", "proc_chance_percent",
+]
+filters = ["category"]
+pictures = { icon = "icon_asset_id" }
+
+[[kind.description]]
+name = "description"
+script = { field = "handler_script_id" }        # SKMES or a `$n$SKMES`, as INFO6 calls it
+seed = { current_skill_id = "key" }

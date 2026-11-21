@@ -6392,6 +6392,8 @@ confidence = "high"
 # global by name; its leading dimension must be the record count. Generated into globals.json `tables`.
 # `built_by` says which part of the game writes the table: `boot` for INIT2's layers, `stage` for a stage's
 # loaders. The base mod's Lua maps a label to its event, and its record map copies it (data patches spec §6.3).
+# `[table.refs]` names the fields whose every element is the id of another table's record, or a packed resource
+# id (`picture`), 0 for none; the game data export writes each as a reference (export spec §5.3).
 
 [[table]]
 name = "unit"
@@ -6444,6 +6446,16 @@ drop_required_flag = "unit_drop_required_flag_ids"
 drop_excluding_flag = "unit_drop_excluding_flag_ids"
 large_battle_sprite = "unit_large_battle_sprite"
 habitat_area = "unit_habitat_area_ids"
+
+[table.refs]
+default_attack_item_id = "item"
+default_costume_item_id = "item"
+drop_item = "item"
+initial_equipment = "item"
+skill = "skill"
+voice_family_unit_id = "unit"
+graphic = "picture"
+history_face_asset_id = "picture"
 
 [[table]]
 name = "item"
@@ -6506,6 +6518,14 @@ growth_enabled = "item_growth_enabled"
 growth_mastery_reward_items = "item_growth_mastery_reward_items"
 growth_mastery_story_flag = "item_growth_mastery_story_flags"
 
+[table.refs]
+granted_skill_id = "skill"
+garden_product_item_id = "item"
+growth_mastery_reward_items = "item"
+icon_asset_id = "picture"
+costume_graphic_asset_ids = "picture"
+furniture_sprite_asset_id = "picture"
+
 [[table]]
 name = "skill"
 records = 1000
@@ -6541,6 +6561,12 @@ area_effect_texture_asset_id = "skill_area_effect_texture_asset_id"
 area_effect_sound_asset_id = "skill_area_effect_sound_asset_id"
 area_effect_blend_mode = "skill_area_effect_blend_mode"
 
+[table.refs]
+bundled_skill_ids = "skill"
+upgrade_family_id = "skill"
+icon_asset_id = "picture"
+area_effect_texture_asset_id = "picture"
+
 [[table]]
 name = "stage_enemy"
 records = 30
@@ -6563,6 +6589,9 @@ movement_routine_set_ids = "stage_enemy_movement_routine_set_ids"
 battle_routine_set_ids = "stage_enemy_battle_routine_set_ids"
 required_story_flags = "stage_enemy_required_story_flags"
 forbidden_story_flags = "stage_enemy_forbidden_story_flags"
+
+[table.refs]
+unit_id = "unit"
 
 [[scope]]
 name = "stage"

@@ -15,6 +15,9 @@ names it had before a rename, which a base mod still exports (tools/base_mod_bui
 a table's `aliases` and its `[table.field_aliases]` (old name = current field), which a data file may still write
 (data patches plan §9.1). A `[[scope]]` entry keys tables by a scope of the game, such as a stage (data patches spec
 §6.2): its ids' range and, in `[scope.tables]`, each table's short name under it; the JSON lists them as `scopes`.
+A table's `[table.refs]` says which of its integer fields hold the ids of another table's records, or packed resource
+ids (`picture`), every element of the field, 0 for none (game data export spec §5.3); the JSON's `tables` and the
+reference doc carry them.
 See docs/superpowers/specs/2026-07-07-globals-registry-and-story-flags-design.md."""
 from __future__ import annotations
 import os, re, sys, json, math, argparse, collections, tomllib
@@ -212,7 +215,7 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
     """Errors: a table or field name that is not a lowercase identifier, a repeated table, a table named like
     a global, a `built_by` label that is missing or not a lowercase identifier (which part of the game writes the
     table, data patches spec §6.3), a field whose global is missing or is not a fully sized 1-D or 2-D array of
-    `records` entries or rows, and the old names' errors (`lint_table_aliases`)."""
+    `records` entries or rows, the old names' errors (`lint_table_aliases`) and the references' (`lint_table_refs`)."""
     errors: list[str] = []
     by_name: dict[str, dict] = {}
     for e in entries.values():
@@ -253,7 +256,41 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
             if dims is None or len(dims) not in (1, 2) or dims[0] != records:
                 errors.append(f"{tag}: field {field} needs a fully sized [{records}] or [{records}][n] array; "
                               f"{global_name} is {e.get('type')!r}")
-    return errors + lint_table_aliases(tables, by_name)
+    return errors + lint_table_aliases(tables, by_name) + lint_table_refs(tables, by_name)
+
+
+REF_PICTURE = "picture"
+
+
+def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
+    """The references (game data export spec §5.3). Errors: `refs` that is not a table of field = target, a field that
+    is not a field of the table (an old name included: a reference names the current one), a target that is neither
+    a table of the registry nor `picture`, and a field whose global is not an integer array, since an id is an
+    integer."""
+    errors: list[str] = []
+    names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
+    for t in tables:
+        name, refs = t.get("name"), t.get("refs")
+        if refs is None or not isinstance(name, str):
+            continue
+        tag = f"table {name!r}"
+        if not isinstance(refs, dict) or not all(isinstance(v, str) for v in refs.values()):
+            errors.append(f"{tag}: refs must be a table of field = the table its values name, or {REF_PICTURE}")
+            continue
+        fields = t.get("fields") if isinstance(t.get("fields"), dict) else {}
+        for field, target in refs.items():
+            if field not in fields:
+                errors.append(f"{tag}: refs names {field!r}, which is not a field of the table")
+                continue
+            if target != REF_PICTURE and target not in names:
+                errors.append(f"{tag}: refs gives {field} the target {target!r}, which is neither a table of the "
+                              f"registry nor {REF_PICTURE}")
+            e = globals_by_name.get(fields[field])
+            type_ = str(e.get("type") or "") if e is not None else ""
+            if e is not None and (bank_of(type_) != "G" or type_.startswith("float")):
+                errors.append(f"{tag}: refs names {field}, whose global {fields[field]} is not an integer array; an "
+                              f"id is an integer")
+    return errors
 
 
 def lint_table_aliases(tables: list[dict], globals_by_name: dict) -> list[str]:
@@ -434,6 +471,8 @@ def table_json(t: dict) -> dict:
         out["aliases"] = sorted(t["aliases"])
     if t.get("field_aliases"):
         out["field_aliases"] = dict(sorted(t["field_aliases"].items()))
+    if t.get("refs"):
+        out["refs"] = dict(sorted(t["refs"].items()))
     return out
 
 
@@ -454,7 +493,9 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 L += ["Formerly " + ", ".join(f"`{alias}`" for alias in sorted(t["aliases"])) + ".", ""]
             if t.get("usage"):
                 L += [t["usage"], ""]
-            L += ["| field | global | address | type |", "|---|---|---|---|"]
+            refs = t.get("refs") or {}
+            L += (["| field | global | address | type | refers to |", "|---|---|---|---|---|"] if refs
+                  else ["| field | global | address | type |", "|---|---|---|---|"])
             old_fields: dict[str, list[str]] = collections.defaultdict(list)
             for old, current in sorted((t.get("field_aliases") or {}).items()):
                 old_fields[current].append(old)
@@ -462,7 +503,11 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 e = by_name[global_name]
                 address = e["address"] if e["bank"] == "G" else f"{e['bank']} {e['address']}"
                 shown = field + (f" (formerly {', '.join(old_fields[field])})" if old_fields.get(field) else "")
-                L.append(f"| {shown} | {global_name} | `{address}` | `{e['type']}` |")
+                row = f"| {shown} | {global_name} | `{address}` | `{e['type']}` |"
+                if refs:
+                    target = refs.get(field)
+                    row += " pictures |" if target == REF_PICTURE else f" `{target}` |" if target else " |"
+                L.append(row)
             L.append("")
         for s in scopes:
             L += [f"### Scope {s['name']}", "",
