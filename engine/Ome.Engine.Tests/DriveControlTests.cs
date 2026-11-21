@@ -51,6 +51,10 @@ public class DriveControlTests
         public string? Answered;
         public void RequestClose() => CloseRequests++;
         public JsonArray Dialogs() => new() { new JsonObject { ["title"] = "exit" } };
+        public JsonObject Pictures() => new()
+        {
+            ["pictures"] = new JsonArray { new JsonObject { ["name"] = "BG001.AGF", ["movie"] = false } },
+        };
         public JsonObject Answer(string button) { Answered = button; return new JsonObject { ["answered"] = button }; }
         public bool? Minimized;
         public JsonObject Window(bool minimize) { Minimized = minimize; return new JsonObject { ["minimized"] = minimize }; }
@@ -381,6 +385,18 @@ public class DriveControlTests
             (string?)Run(new DriveDispatcher(without), without, """{"id":4,"op":"option","name":"se","value":0}""")["error"]);
         Assert.Contains("'options' is not supported",
             (string?)Run(new DriveDispatcher(without), without, """{"id":5,"op":"options"}""")["error"]);
+    }
+
+    [Fact]
+    public void PicturesReturnsTheBackendsListAndNeedsTheCapability()
+    {
+        var backend = new FakeBackend { Capabilities = new[] { "pictures" } };
+        var listed = Run(new DriveDispatcher(backend), backend, """{"id":1,"op":"pictures"}""");
+        Assert.Equal("BG001.AGF", (string?)listed["result"]!["pictures"]![0]!["name"]);
+
+        var without = new FakeBackend { Capabilities = new[] { "options" } };
+        Assert.Contains("'pictures' is not supported",
+            (string?)Run(new DriveDispatcher(without), without, """{"id":2,"op":"pictures"}""")["error"]);
     }
 
     [Fact]

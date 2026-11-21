@@ -48,6 +48,11 @@ the same selectors.
 
 The catalog format and the workflow are in [languages.md](languages.md).
 
+`picture (NAME… | --all) [--output-dir DIR]` writes the game's pictures as PNG, decoded as the port draws them: a
+name is the file name the port's F5 list shows (an append's with its `$n$` prefix), and `--all` writes every one.
+A movie under a picture's name is refused. The pictures a translation replaces: [translating.md](translating.md),
+step 8.
+
 ## OMS tools
 
 | Command | What it does |
@@ -172,6 +177,9 @@ last `rand-seed`, per call site and per mod; `rand-seed off` ends it.
 `language TAG` switches the port's language as the settings panel's OME section does, and fails for a language no
 installed package defines (other than `ja` and `en`). Native AGE has no language, so a scenario that uses it runs on
 the port only; `tools/drive/scenarios/port/` holds those.
+
+`pictures` lists the picture files on screen as the port's F5 does ([translating.md](translating.md), step 8). It is
+a port step too.
 
 ## Outside the repository
 

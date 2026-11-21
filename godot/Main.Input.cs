@@ -70,6 +70,12 @@ public partial class Main
             GetViewport().SetInputAsHandled();
             return;
         }
+        if (e is InputEventKey picturesKey && picturesKey.Keycode == Key.F5)
+        {
+            if (picturesKey.Pressed && !picturesKey.Echo) ShowPicturesOnScreen();
+            GetViewport().SetInputAsHandled();
+            return;
+        }
         if (e is InputEventKey diagnosticKey && diagnosticKey.Keycode == Key.F6)
         {
             if (diagnosticKey.Pressed && !diagnosticKey.Echo) CaptureStallDiagnostic(copyToClipboard: true);
@@ -145,6 +151,22 @@ public partial class Main
         }
         if (e is InputEventJoypadMotion joyMotion)
             _waits.JoystickAxis((int)joyMotion.Axis, joyMotion.AxisValue);
+    }
+
+    // F5: the picture files on screen, for a translator to name the one a language asset replaces
+    // (docs/modding/translating.md, step 8). Shown under the locator until the next page, copied with it, and logged.
+    private void ShowPicturesOnScreen()
+    {
+        bool answered = _waits.TryInvoke(() => _graphics.PicturesOnScreen(), DiagnosticAnswerTimeoutMs,
+                                         out IReadOnlyList<PictureOnScreen> pictures);
+        string list = answered ? PictureOnScreen.Describe(pictures) : "pictures: the engine thread did not answer";
+        string line = $"{_locator.CurrentDisplay} · {list}";
+        DisplayServer.ClipboardSet(line);
+        GD.Print($"[pictures] {line}");
+        _locatorHudVisible = true;
+        _locatorHud.Visible = true;
+        _locatorHud.Text = _locator.CurrentDisplay + " · copied\n"
+                           + (answered ? PictureOnScreen.Describe(pictures, perLine: 6) : list);
     }
 
     private void ToggleDebugSceneLauncher()

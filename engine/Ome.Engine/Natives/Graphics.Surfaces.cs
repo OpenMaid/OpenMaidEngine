@@ -218,6 +218,7 @@ public sealed partial class Graphics
         if (copied)
         {
             _surfaceImages[copy.DestinationSurface] = KeepOpaque(copy.DestinationSurface, updated);
+            NoteCopySources(copy.SourceSurface, copy.DestinationSurface);
             RequestPresentation();
         }
         _timeline?.Event("surface-copy", new()
@@ -246,6 +247,7 @@ public sealed partial class Graphics
             // A fresh buffer rather than an in-place clear, as every other surface write: the GPU texture cache
             // sees a changed dynamic surface by its pixel array's identity, and the front end may be drawing a frame
             // that holds the published one.
+            _surfaceCopySources.Remove(surfaceSlot);
             if (_surfaceImages.TryGetValue(surfaceSlot, out var image))
                 _surfaceImages[surfaceSlot] = KeepOpaque(
                     surfaceSlot, new RgbaImage(image.Width, image.Height, new byte[image.Pixels.Length]));
@@ -273,6 +275,7 @@ public sealed partial class Graphics
     private void CreateSurfacePixels(int slot, int width, int height)
     {
         _surfaceResources.Remove(slot);
+        _surfaceCopySources.Remove(slot);
         _alphaRenderTargets.Remove(slot);
         _opaqueRenderTargets.Remove(slot);
         int safeWidth = System.Math.Max(0, width);
@@ -288,6 +291,7 @@ public sealed partial class Graphics
     private void LoadSurfacePixels(long resourceId, int slot, long colorKey)
     {
         _surfaceImages.Remove(slot);
+        _surfaceCopySources.Remove(slot);
         _alphaRenderTargets.Remove(slot);
         _opaqueRenderTargets.Remove(slot);
         _surfaceColorKeys[slot] = colorKey;
@@ -306,6 +310,7 @@ public sealed partial class Graphics
         // Native deletes the slot's movie object first, finished or not.
         foreach (ISurfaceListener listener in _listeners) listener.SurfaceReleasing(slot);
         _surfaceImages.Remove(slot);
+        _surfaceCopySources.Remove(slot);
         _surfaceColorKeys.Remove(slot);
         _surfaceResources.Remove(slot);
         _slotDims.Remove(slot);
@@ -322,6 +327,7 @@ public sealed partial class Graphics
         for (int slot = firstSlot; slot < end; slot++)
         {
             _surfaceImages.Remove(slot);
+            _surfaceCopySources.Remove(slot);
             _surfaceColorKeys.Remove(slot);
             _slotDims.Remove(slot);
             _alphaRenderTargets.Remove(slot);
@@ -352,6 +358,7 @@ public sealed partial class Graphics
             new RgbaImage(image.Width, image.Height, (byte[])image.Pixels.Clone());
         _surfaceColorKeys.Remove(slot);
         _surfaceResources.Remove(slot);
+        _surfaceCopySources.Remove(slot);
         foreach (ISurfaceListener listener in _listeners) listener.SurfaceReplaced(slot);
         _slotDims[slot] = (image.Width, image.Height);
         return true;

@@ -327,7 +327,8 @@ left. A fixed-width face is drawn as it is. `fit` and `overflow` narrow the cell
 
 Text drawn into a picture (a title logo, a menu button, a map label) is not text the port can translate. Give the
 picture a language version instead: put the file in `assets/<tag>/` under the name the game asks for, and it replaces
-that asset while the language, or one that falls back to it, is selected.
+that asset while the language, or one that falls back to it, is selected. The port's F5 names the pictures on screen,
+and `Ome.Cli picture` writes one out as PNG ([translating.md](translating.md), step 8).
 
 ```text
 <mod>/assets/en/SO001.png      an image: PNG stands for SO001.AGF

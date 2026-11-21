@@ -194,6 +194,20 @@ Text drawn into a picture, such as a title logo, a menu button or a map label, i
 Give the picture a language version: draw the translated picture and save it as `my.lang/assets/en/NAME.png`, where
 `NAME` is the game's file name without `.AGF`. It replaces the original while the language is selected.
 
+To find the file, go to the screen in the port and press **F5**. The port lists the pictures on screen, back to front,
+under the page locator and copies the line, for example `… · pictures: SO013A.AGF, EV049AA.AGF, SO001.AGF`. It names
+the file behind each picture shown, also one the game drew text on or copied into a picture of its own, and marks a
+movie `(movie)`. The names are the game's, also for a picture your package already replaces.
+
+Then write the original out as a PNG to draw on, decoded as the port decodes it (`--all` writes every picture):
+
+```text
+Ome.Cli picture SO001.AGF --output-dir my-pictures <game options>
+```
+
+Many pictures are sheets: one file holds every button of a menu, or several menus, and the game draws each piece
+from its place in the sheet. Keep the sheet's size, and draw each translated piece where the original was.
+
 ```text
 Ome.Cli omp explain NAME.AGF --mod my.lang <game options>
 ```
@@ -202,10 +216,7 @@ Ome.Cli omp explain NAME.AGF --mod my.lang <game options>
 `en: language asset from my.<game>-en (PNG), while en or a language that falls back to it is selected`
 (languages.md, "Images and other assets").
 
-No command yet names the pictures on screen or exports one as PNG (`../backlog.md`). Until one does, the port's
-developer option `--gfx-log FILE` logs the file of each picture as the port draws it, such as `SO001.AGF`
-(`../tools-reference.md`). Pass it to the driver's `start` (step 11) as `--port-arg=--gfx-log --port-arg=FILE`,
-with an absolute path.
+In a driven test (step 11), the `pictures` step returns the same list.
 
 ## 9. Fonts and the engine's menus
 

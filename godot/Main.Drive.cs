@@ -141,7 +141,7 @@ public partial class Main
     {
         private static readonly string[] PortCapabilities =
             { "speed", "waiting", "dialogs", "answer", "window", "menu", "rand", "options", "language",
-              "reference-diff", "lua" };
+              "pictures", "reference-diff", "lua" };
 
         public string Target => "port";
         public string Profile { get; } = main._selectedProfile.Profile.Id;
@@ -251,6 +251,18 @@ public partial class Main
 
         public System.Text.Json.Nodes.JsonObject ReferenceDiff(string? path, int tolerance)
             => main.DriveReferenceDiff(path, tolerance);
+
+        /// <summary>What F5 lists, read on the engine thread.</summary>
+        public System.Text.Json.Nodes.JsonObject Pictures() => main._waits.Invoke(() =>
+        {
+            var pictures = new System.Text.Json.Nodes.JsonArray();
+            foreach (PictureOnScreen picture in main._graphics.PicturesOnScreen())
+                pictures.Add((System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject
+                {
+                    ["name"] = picture.Name, ["movie"] = picture.Movie,
+                });
+            return new System.Text.Json.Nodes.JsonObject { ["pictures"] = pictures };
+        });
 
         public System.Text.Json.Nodes.JsonArray Dialogs()
         {

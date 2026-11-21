@@ -44,6 +44,9 @@ public interface IDriveBackend
     /// <summary>Choose <paramref name="tag"/> (normalized) in the options panel's language list and commit it as 決定
     /// does; returns {language, previous, languages} (capability "language", the port's).</summary>
     JsonObject Language(string tag) => throw new DriveProtocolException("'language' has no implementation here");
+    /// <summary>The picture files on screen, back to front, each once: {pictures: [{name, movie}]} (capability
+    /// "pictures", the port's).</summary>
+    JsonObject Pictures() => throw new DriveProtocolException("'pictures' has no implementation here");
     /// <summary>With <paramref name="path"/> null, start drawing every frame with the reference renderer as well
     /// (returns {armed}); otherwise compare the screen with the reference's drawing of the same frame, write
     /// <paramref name="path"/>-gpu.png, -reference.png and -diff.png, and return the comparison: {renderer, pixels,
@@ -271,6 +274,9 @@ public sealed class DriveDispatcher
                     throw new DriveProtocolException($"'{tag}' is not a language tag such as ja, en or pt-br");
                 return Immediate(request, reply, () => _backend.Language(tag));
             }
+            case "pictures":
+                RequireCapability("pictures");
+                return Immediate(request, reply, () => _backend.Pictures());
             case "reference-diff":
             {
                 RequireCapability("reference-diff");

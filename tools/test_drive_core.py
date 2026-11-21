@@ -662,6 +662,29 @@ def test_option_step():
           "option results describe the option and the listed values")
 
 
+def test_pictures_step():
+    check(core.step_capabilities(core.parse_step("pictures")) == {"pictures"}, "pictures needs its capability")
+    check("pictures" not in core.SHARED_CAPABILITIES and "pictures" not in native.CAPABILITIES,
+          "native AGE has no picture list")
+    check(raises(core.parse_step, "pictures all", contains="takes 0..0"), "pictures takes no argument")
+
+    def answer(request):
+        if request.get("op") != "pictures":
+            return {"ok": True, "result": {"frames": [{"script": "SC0000", "offset": 4}]}}
+        return {"ok": True, "result": {"pictures": [{"name": "BG001.AGF", "movie": False},
+                                                    {"name": "OP.AGF", "movie": True}]}}
+    server = FakeServer(answer)
+    with tempfile.TemporaryDirectory() as directory:
+        with core.Client(server.port, "secret") as client:
+            executor = core.Executor(client, core.Profile(points={}), Path(directory))
+            results = []
+            ok = executor.run(core.parse_steps(["pictures"]), results.append)
+    check(ok and "pictures=BG001.AGF,OP.AGF (movie)" in core.describe(results[0]),
+          "the list is described by name, a movie marked")
+    check("pictures=none" in core.describe({"ok": True, "step": "pictures", "pictures": []}),
+          "an empty list reads none")
+
+
 def test_reference_diff_step():
     check(core.step_capabilities(core.parse_step("reference-diff on")) == {"reference-diff"},
           "reference-diff needs the reference-diff capability")
@@ -891,6 +914,7 @@ def main():
     test_menu_step()
     test_option_step()
     test_language_step()
+    test_pictures_step()
     test_reference_diff_step()
     test_lua_step()
     test_settings_trailer()

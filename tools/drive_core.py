@@ -670,6 +670,8 @@ STEPS = {
     "language": _spec(1, 1, "", "language TAG                  choose the port's language in its options panel (OME "
                       "section) and commit it as 決定 does: menus, game text and language assets switch at once, and "
                       "OME.INI keeps it (port)", "language"),
+    "pictures": _spec(0, 0, "", "pictures                      list the picture files on screen, back to front, each "
+                      "once, as F5 does: the names a language asset replaces (port)", "pictures"),
     "reference-diff": _spec(1, 1, "tolerance max-over",
                             "reference-diff on|NAME [tolerance=N] [max-over=M]  on: the reference renderer draws every "
                             "frame too; NAME: compare the screen with its drawing of the same frame (run settled), "
@@ -1166,6 +1168,8 @@ class Executor:
             return self.client.call("options")
         elif step.name == "language":
             return self.client.call("language", tag=language_tag(step.args[0]))
+        elif step.name == "pictures":
+            return self.client.call("pictures")
         elif step.name == "reference-diff":
             if step.args[0] == "on":
                 return self.client.call("reference-diff", arm=True)
@@ -1240,6 +1244,9 @@ def describe(result: dict[str, Any]) -> str:
         details.append("options=" + " ".join(f"{entry['name']}={entry['value']}" for entry in result["options"]))
     if "languages" in result:
         details.append("languages=" + ",".join(result["languages"]))
+    if "pictures" in result:
+        details.append("pictures=" + (",".join(entry["name"] + (" (movie)" if entry.get("movie") else "")
+                                                for entry in result["pictures"]) or "none"))
     lines = [f"{mark} {result.get('step', '')}  " + "  ".join(details)]
     lines += ["  " + describe_event(event) for event in result.get("events", [])]
     return "\n".join(lines)

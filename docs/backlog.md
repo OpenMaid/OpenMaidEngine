@@ -487,14 +487,6 @@ its eleven gates, and `align`, `fit` and the overflow report (§7.2, §7.3), whi
 Modders' guides: `modding/translating.md` (the walkthrough) and `modding/languages.md` (the reference); the import
 test's results: `localization-import-test.md`. The future work spec §17 lists stays in the spec.
 
-- **Translators cannot find or export the pictures to translate.** A language asset replaces a picture by its file
-  name (`modding/languages.md`, "Images and other assets"), but no modder command names the pictures on screen or
-  writes an original as PNG to edit. Today only developer tools come close: the port's `--gfx-log FILE` logs each
-  drawn object's resolved file, `omp text import-scripts --package` writes PNGs only for pictures an in-place
-  translation replaced, and `tools/convert_agf.py` converts extracted AGFs to BMP for Himegari's archives only.
-  Done when the port or `Ome.Cli` names the pictures on the current screen, and `Ome.Cli` exports a named asset as
-  PNG with the port's decoder, both documented in `modding/translating.md` step 8.
-
 - **English in Kamidori's stat boxes and item tables is not compared with native.** With `--language en`, names and
   text spilled out of Kamidori's RPG stat boxes, and a name out of its plate in the opening ADV scene (the user's
   report, 2026-11-14). Presented text was then laid out by a second model; it now takes native's cells (localization
