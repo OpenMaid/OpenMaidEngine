@@ -48,4 +48,32 @@ public sealed record VmOptions(int EmitCap = 2, long MaxSteps = 2_000_000, int C
     /// <summary>Probe mode (<c>--probe</c>): an unsupported opcode is reported and skipped instead of halting the
     /// run.</summary>
     public bool ProbeMode { get; init; }
+
+    /// <summary>Whether the run records its writes (game data export spec §6.2): each global cell's writer
+    /// (<see cref="Ome.Engine.Natives.ScriptMemory.Writers"/>) and each global string cell's origin
+    /// (<see cref="Ome.Engine.Natives.TextManager.StringStores"/>). A <see cref="GameSession"/> carries both records
+    /// from one recording run to the next.</summary>
+    public bool RecordsWrites { get; init; }
+
+    /// <summary>A site the run stops at, before its instruction runs, the first time any frame reaches it (game data
+    /// export spec §6.2); null for none. The run ends as a stop request ends it, with
+    /// <see cref="RunStop.HaltReason"/>.</summary>
+    public RunStop? StopAt { get; init; }
+}
+
+/// <summary>A site a run stops at (<see cref="VmOptions.StopAt"/>): a script, named as text catalogs and patch points
+/// name it (upper case, no <c>.BIN</c>, its <c>$n$</c> prefix kept), and an instruction's offset in it.</summary>
+public sealed record RunStop
+{
+    public RunStop(string script, int offset)
+    {
+        Script = Ome.Engine.Localization.TextCatalog.NormalizeScriptName(script);
+        Offset = offset;
+    }
+
+    public string Script { get; }
+    public int Offset { get; }
+
+    /// <summary>The halt reason of a run that stopped here.</summary>
+    public string HaltReason => $"stop:{Script}@0x{Offset:x}";
 }

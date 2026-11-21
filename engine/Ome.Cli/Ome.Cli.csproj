@@ -8,6 +8,7 @@
     <ProjectReference Include="..\Ome.Script\Ome.Script.csproj" />
     <ProjectReference Include="..\Ome.Mods\Ome.Mods.csproj" />
     <ProjectReference Include="..\Ome.Scripting.Lua\Ome.Scripting.Lua.csproj" />
+    <ProjectReference Include="..\Ome.Export\Ome.Export.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

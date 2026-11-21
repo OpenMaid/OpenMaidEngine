@@ -37,6 +37,9 @@ SCRIPT = re.compile(r"[A-Z0-9_]+")
 SCRIPT_PATTERN = re.compile(r"[A-Z0-9_*]*[A-Z0-9_][A-Z0-9_*]*")
 # The site's second path segment under a game is a kind's id, except these (site design §4).
 RESERVED_KINDS = {"tooltips"}
+# A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
+# them too (GameDataExporter.FixedTables).
+EXPORT_TABLES = {"build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use"}
 KEY = "key"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts"}
@@ -241,6 +244,9 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         return
     if kid in RESERVED_KINDS:
         errors.append(f"{where}: {kid} is a path of the site's database (site design §4), so no kind may take it")
+    if kid in EXPORT_TABLES:
+        errors.append(f"{where}: {kid} is a table of the export's database (game data export spec §7.2), so no kind "
+                      "may take it")
     for name in [kid, *(kind.get("aliases") or [])]:
         if not isinstance(name, str) or not IDENTIFIER.fullmatch(name):
             errors.append(f"{where}: alias {name!r} must be a lowercase identifier")

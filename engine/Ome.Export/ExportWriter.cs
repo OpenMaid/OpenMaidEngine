@@ -1,0 +1,322 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using Microsoft.Data.Sqlite;
+using Ome.Engine.Natives;
+
+namespace Ome.Export;
+
+/// <summary>What a manifest records beside the database (game data export spec §7.1): what changes from run to run
+/// and machine to machine, so the database does not.</summary>
+public sealed record ExportManifest(DateTimeOffset ExportTime, string CommandLine, string? GameVersion,
+                                    string OmeVersion, string OmeCommit);
+
+/// <summary>The files an export wrote, relative to its output folder, with their SHA-256.</summary>
+public sealed record ExportFiles(string Database, IReadOnlyList<(string File, string Sha256)> Files);
+
+/// <summary>
+/// Writes an export (spec §7): <c>&lt;revision&gt;.sqlite</c>, <c>pictures/&lt;revision&gt;/&lt;catalog name&gt;.png</c>
+/// and <c>manifest.json</c>. The database is written in key order with a fixed page size and vacuumed, so the same
+/// export gives the same bytes (§7.3).
+/// </summary>
+public static class ExportWriter
+{
+    /// <summary>The database's format, in <c>build_info</c> and its <c>user_version</c>.</summary>
+    public const int FormatVersion = 1;
+
+    /// <summary>The source text's language (localization spec §4: <c>LanguageTag.Source</c>).</summary>
+    public const string SourceLanguage = "ja";
+
+    public static ExportFiles Write(ExportResult result, string outputDirectory, string revision, ExportManifest manifest)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        string databaseName = revision + ".sqlite";
+        string database = Path.Combine(outputDirectory, databaseName);
+        var files = new List<(string File, string Sha256)>();
+
+        // Each distinct picture once (§6.5); a picture folder from an earlier export of this revision goes first.
+        string pictureFolder = Path.Combine(outputDirectory, "pictures", revision);
+        if (Directory.Exists(pictureFolder)) Directory.Delete(pictureFolder, recursive: true);
+        var pictures = new SortedDictionary<string, ExportPicture>(StringComparer.Ordinal);
+        foreach (ExportKind kind in result.Kinds)
+            foreach (ExportEntity entity in kind.Entities)
+                foreach ((_, ExportPicture picture) in entity.Pictures)
+                    pictures.TryAdd(picture.Name, picture);
+        if (pictures.Count > 0) Directory.CreateDirectory(pictureFolder);
+        foreach (ExportPicture picture in pictures.Values)
+            File.WriteAllBytes(Path.Combine(pictureFolder, picture.Name + ".png"), picture.Png);
+
+        string temporary = database + ".tmp";
+        File.Delete(temporary);
+        WriteDatabase(result, temporary, revision);
+        File.Move(temporary, database, overwrite: true);
+
+        files.Add((databaseName, Sha256Of(File.ReadAllBytes(database))));
+        foreach (ExportPicture picture in pictures.Values)
+            files.Add(($"pictures/{revision}/{picture.Name}.png", picture.Hash));
+        WriteManifest(Path.Combine(outputDirectory, "manifest.json"), result, revision, manifest, files);
+        return new ExportFiles(databaseName, files);
+    }
+
+    private static string Sha256Of(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+
+    // ------------------------------------------------------------------------------------------------- the database
+
+    private static void WriteDatabase(ExportResult result, string path, string revision)
+    {
+        string connectionString = new SqliteConnectionStringBuilder { DataSource = path, Pooling = false }.ToString();
+        using (var connection = new SqliteConnection(connectionString))
+        {
+            connection.Open();
+            Execute(connection, "PRAGMA page_size = 4096");
+            Execute(connection, "PRAGMA journal_mode = OFF");
+            Execute(connection, $"PRAGMA user_version = {FormatVersion}");
+            using (SqliteTransaction transaction = connection.BeginTransaction())
+            {
+                CreateTables(connection, result);
+                WriteBuildInfo(connection, result, revision);
+                foreach (ExportKind kind in result.Kinds) WriteKind(connection, kind, revision, result.Kinds);
+                transaction.Commit();
+            }
+            Execute(connection, "VACUUM");
+        }
+    }
+
+    private static void Execute(SqliteConnection connection, string sql)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
+    }
+
+    private static string Quote(string identifier) => "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
+    private static void CreateTables(SqliteConnection connection, ExportResult result)
+    {
+        string[] fixedTables =
+        [
+            "CREATE TABLE build_info (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+            "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, aliases TEXT NOT NULL, entities INTEGER NOT NULL)",
+            "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
+            + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
+            + "address INTEGER, width INTEGER, column_index INTEGER, PRIMARY KEY (kind, name))",
+            "CREATE TABLE text (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
+            + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
+            "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
+            + "to_kind TEXT NOT NULL, to_id INTEGER NOT NULL, PRIMARY KEY (from_kind, from_id, field, idx))",
+            "CREATE TABLE relation (kind TEXT NOT NULL, id INTEGER NOT NULL, relation TEXT NOT NULL, script TEXT NOT NULL, "
+            + "offset INTEGER NOT NULL, count INTEGER)",
+            "CREATE TABLE picture (kind TEXT NOT NULL, id INTEGER NOT NULL, name TEXT NOT NULL, file TEXT NOT NULL, "
+            + "width INTEGER NOT NULL, height INTEGER NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (kind, id, name))",
+            "CREATE TABLE cell (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
+            + "bank TEXT NOT NULL, address INTEGER NOT NULL, raw TEXT, writer TEXT, PRIMARY KEY (kind, id, field, idx))",
+            "CREATE TABLE snippet (kind TEXT NOT NULL, id INTEGER NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, id))",
+            "CREATE TABLE script_use (kind TEXT NOT NULL, script TEXT NOT NULL, reads INTEGER NOT NULL, writes INTEGER NOT NULL, "
+            + "PRIMARY KEY (kind, script))",
+        ];
+        foreach (string sql in fixedTables) Execute(connection, sql);
+        foreach (ExportKind kind in result.Kinds)
+        {
+            var columns = new List<string> { "id INTEGER PRIMARY KEY" };
+            columns.AddRange(kind.Published.Select(field => Quote(field.Name) + (field.IsArray ? " TEXT" : " INTEGER")));
+            columns.Add("content_hash TEXT NOT NULL");
+            Execute(connection, $"CREATE TABLE {Quote(kind.Declaration.Id)} ({string.Join(", ", columns)})");
+        }
+    }
+
+    /// <summary>Inserts rows through one prepared command.</summary>
+    private sealed class Inserter : IDisposable
+    {
+        private readonly SqliteCommand _command;
+        private readonly SqliteParameter[] _parameters;
+
+        public Inserter(SqliteConnection connection, string table, params string[] columns)
+        {
+            _command = connection.CreateCommand();
+            _command.CommandText = $"INSERT INTO {Quote(table)} ({string.Join(", ", columns.Select(Quote))}) VALUES "
+                                   + $"({string.Join(", ", columns.Select((_, k) => "$p" + k.ToString(CultureInfo.InvariantCulture)))})";
+            _parameters = columns.Select((_, k) => _command.Parameters.Add(new SqliteParameter("$p" + k.ToString(CultureInfo.InvariantCulture), null)))
+                .ToArray();
+        }
+
+        public void Row(params object?[] values)
+        {
+            for (int k = 0; k < values.Length; k++) _parameters[k].Value = values[k] ?? DBNull.Value;
+            _command.ExecuteNonQuery();
+        }
+
+        public void Dispose() => _command.Dispose();
+    }
+
+    private static void WriteBuildInfo(SqliteConnection connection, ExportResult result, string revision)
+    {
+        var rows = new SortedDictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["format_version"] = FormatVersion.ToString(CultureInfo.InvariantCulture),
+            ["game"] = result.Declarations.Profile,
+            ["revision"] = revision,
+            ["declarations_sha256"] = result.Declarations.SourceSha256,
+            ["languages"] = SourceLanguage,
+            ["source_language"] = SourceLanguage,
+        };
+        foreach ((string key, string value) in result.BuildInfo) rows[key] = value;
+        using var insert = new Inserter(connection, "build_info", "key", "value");
+        foreach ((string key, string value) in rows) insert.Row(key, value);
+    }
+
+    private static void WriteKind(SqliteConnection connection, ExportKind kind, string revision,
+                                  IReadOnlyList<ExportKind> kinds)
+    {
+        KindDeclaration declaration = kind.Declaration;
+        string id = declaration.Id;
+        using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "aliases", "entities"))
+            insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count);
+        WriteFields(connection, kind, kinds);
+
+        string[] columns = ["id", .. kind.Published.Select(field => field.Name), "content_hash"];
+        using var values = new Inserter(connection, id, columns);
+        using var texts = new Inserter(connection, "text", "kind", "id", "field", "idx", "lang", "value");
+        using var refs = new Inserter(connection, "ref", "from_kind", "from_id", "field", "idx", "to_kind", "to_id");
+        using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "width", "height", "hash");
+        using var cells = new Inserter(connection, "cell", "kind", "id", "field", "idx", "bank", "address", "raw", "writer");
+        foreach (ExportEntity entity in kind.Entities)
+        {
+            var row = new List<object?> { entity.Id };
+            foreach ((FieldLayout field, (string _, long?[] elements)) in kind.Published.Zip(entity.Values))
+                row.Add(field.IsArray ? JsonSerializer.Serialize(elements) : elements[0]);
+            row.Add(ContentHash(entity));
+            values.Row([.. row]);
+            foreach (ExportText text in entity.Texts)
+                texts.Row(id, entity.Id, text.Field, text.Index, SourceLanguage, text.Value);
+            foreach (ExportRef reference in entity.Refs)
+                refs.Row(id, entity.Id, reference.Field, reference.Index, reference.ToKind, reference.ToId);
+            foreach ((string name, ExportPicture picture) in entity.Pictures)
+                pictures.Row(id, entity.Id, name, $"pictures/{revision}/{picture.Name}.png", picture.Width, picture.Height,
+                             picture.Hash);
+            foreach (ExportModderCell cell in entity.Cells)
+                cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
+        }
+    }
+
+    private static string BankName(GlobalBank bank) => bank switch
+    {
+        GlobalBank.String => "string",
+        GlobalBank.Float => "float",
+        _ => "int",
+    };
+
+    /// <summary>One row per named field of the kind's table, per column a declaration names, and per description, so
+    /// the site's templates know what each is (spec §7.2).</summary>
+    private static void WriteFields(SqliteConnection connection, ExportKind kind, IReadOnlyList<ExportKind> kinds)
+    {
+        KindDeclaration declaration = kind.Declaration;
+        var named = kind.TableFields.Concat(kind.Declared.Where(field => field.Column is not null))
+            .DistinctBy(field => field.Name).ToList();
+        using var insert = new Inserter(connection, "field", "kind", "name", "type", "published", "text", "filter",
+                                        "ref_table", "ref_kind", "picture", "bank", "address", "width", "column_index");
+        foreach (FieldLayout field in named)
+        {
+            string? refTable = kind.Table.Refs.GetValueOrDefault(field.Field);
+            string? refKind = refTable == null || refTable == "picture"
+                ? null
+                : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
+            string[] pictureNames = declaration.Pictures.Where(picture => picture.Field == field.Name)
+                .Select(picture => picture.Name).ToArray();
+            bool text = field.Name == declaration.Title || declaration.Text.Contains(field.Name);
+            insert.Row(declaration.Id, field.Name, field.TypeName, declaration.Fields.Contains(field.Name) ? 1 : 0, text ? 1 : 0,
+                       declaration.Filters.Contains(field.Name) ? 1 : 0, refTable, refKind,
+                       pictureNames.Length == 0 ? null : string.Join(",", pictureNames), BankName(field.Array.Bank),
+                       field.Array.Address, field.Array.Width, field.Column);
+        }
+        foreach (DescriptionDeclaration description in declaration.Descriptions)
+            insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null);
+    }
+
+    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references and pictures'
+    /// hashes, in the export's order.</summary>
+    public static string ContentHash(ExportEntity entity)
+    {
+        var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            json.WriteStartObject();
+            json.WriteNumber("id", entity.Id);
+            json.WriteStartArray("values");
+            foreach ((string field, long?[] elements) in entity.Values)
+            {
+                json.WriteStartArray();
+                json.WriteStringValue(field);
+                foreach (long? element in elements)
+                    if (element is { } number) json.WriteNumberValue(number);
+                    else json.WriteNullValue();
+                json.WriteEndArray();
+            }
+            json.WriteEndArray();
+            json.WriteStartArray("text");
+            foreach (ExportText text in entity.Texts)
+            {
+                json.WriteStartArray();
+                json.WriteStringValue(text.Field);
+                json.WriteNumberValue(text.Index);
+                json.WriteStringValue(text.Value);
+                json.WriteEndArray();
+            }
+            json.WriteEndArray();
+            json.WriteStartArray("refs");
+            foreach (ExportRef reference in entity.Refs)
+            {
+                json.WriteStartArray();
+                json.WriteStringValue(reference.Field);
+                json.WriteNumberValue(reference.Index);
+                json.WriteStringValue(reference.ToKind);
+                json.WriteNumberValue(reference.ToId);
+                json.WriteEndArray();
+            }
+            json.WriteEndArray();
+            json.WriteStartArray("pictures");
+            foreach ((string name, ExportPicture picture) in entity.Pictures)
+            {
+                json.WriteStartArray();
+                json.WriteStringValue(name);
+                json.WriteStringValue(picture.Hash);
+                json.WriteEndArray();
+            }
+            json.WriteEndArray();
+            json.WriteStartArray("relations");
+            json.WriteEndArray();
+            json.WriteEndObject();
+        }
+        return Sha256Of(buffer.ToArray());
+    }
+
+    // ------------------------------------------------------------------------------------------------- the manifest
+
+    private static void WriteManifest(string path, ExportResult result, string revision, ExportManifest manifest,
+                                      IReadOnlyList<(string File, string Sha256)> files)
+    {
+        var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer, new JsonWriterOptions
+               {
+                   Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+               }))
+        {
+            json.WriteStartObject();
+            json.WriteNumber("format_version", FormatVersion);
+            json.WriteString("game", result.Declarations.Profile);
+            json.WriteString("revision", revision);
+            json.WriteString("export_time", manifest.ExportTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
+            json.WriteString("command_line", manifest.CommandLine);
+            if (manifest.GameVersion is { } version) json.WriteString("game_version", version);
+            else json.WriteNull("game_version");
+            json.WriteString("ome_version", manifest.OmeVersion);
+            json.WriteString("ome_commit", manifest.OmeCommit);
+            json.WriteStartObject("files");
+            foreach ((string file, string sha256) in files) json.WriteString(file, sha256);
+            json.WriteEndObject();
+            json.WriteEndObject();
+        }
+        File.WriteAllText(path, Encoding.UTF8.GetString(buffer.ToArray()) + "\n", new UTF8Encoding(false));
+    }
+}

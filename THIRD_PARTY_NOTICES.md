@@ -198,3 +198,15 @@ package they bring is a build-time analyzer and ships nothing:
 > AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 > TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
+
+## Microsoft.Data.Sqlite and SQLitePCLRaw
+
+`engine/Ome.Export` writes the game data export's database (`docs/superpowers/specs/2026-11-21-game-data-export-design.md`
+§7) with the [Microsoft.Data.Sqlite](https://github.com/dotnet/efcore) 10.0.15 NuGet packages `Microsoft.Data.Sqlite`
+and `Microsoft.Data.Sqlite.Core` (© Microsoft Corporation, under the MIT License). They bring the
+[SQLitePCLRaw](https://github.com/ericsink/SQLitePCL.raw) 2.1.13 packages `SQLitePCLRaw.bundle_e_sqlite3`,
+`SQLitePCLRaw.core`, `SQLitePCLRaw.provider.e_sqlite3` and `SQLitePCLRaw.lib.e_sqlite3` (Copyright 2014-2024
+SourceGear, LLC, under the Apache License 2.0), whose `e_sqlite3` native library is a build of
+[SQLite](https://sqlite.org/copyright.html), which is in the public domain. They are referenced, not vendored, and
+only `Ome.Cli`'s `data-export` command uses them; no release package ships `Ome.Export` or these packages (a core test,
+`OnlyTheExportProjectNamesTheSqliteLibrary`, holds both).

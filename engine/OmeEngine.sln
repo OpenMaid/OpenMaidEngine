@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ome.Launcher.Core", "Ome.La
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ome.Launcher.StubEngine", "Ome.Launcher.StubEngine\Ome.Launcher.StubEngine.csproj", "{2F95B9F1-372D-45B5-9C9D-62E349294106}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ome.Export", "Ome.Export\Ome.Export.csproj", "{DED4AA8C-DDC7-4997-A3BB-8591B318F9CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,5 +86,9 @@ Global
 		{2F95B9F1-372D-45B5-9C9D-62E349294106}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F95B9F1-372D-45B5-9C9D-62E349294106}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F95B9F1-372D-45B5-9C9D-62E349294106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DED4AA8C-DDC7-4997-A3BB-8591B318F9CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DED4AA8C-DDC7-4997-A3BB-8591B318F9CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DED4AA8C-DDC7-4997-A3BB-8591B318F9CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DED4AA8C-DDC7-4997-A3BB-8591B318F9CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

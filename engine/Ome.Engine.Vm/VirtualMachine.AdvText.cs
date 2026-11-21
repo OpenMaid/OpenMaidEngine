@@ -403,6 +403,7 @@ public sealed partial class VirtualMachine
         // Inside a presented message only the source cursor moves: the sentence draws its own breaks (§6.2).
         bool insideMessage = InsidePresentedMessage(pc);
         _text.History.EndLine((int)Read(a[0]), _text.Style, moveDrawCursor: !insideMessage);
+        _text.LineEnded((int)Read(a[0]));
         if (insideMessage) return StepResult.Next;
         var layout = _text.History.GetDrawSnapshot((int)Read(a[0]));
         _text.SetAdvTextCursor(layout.Slot, layout.CursorX, layout.CursorY);

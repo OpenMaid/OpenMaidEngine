@@ -235,9 +235,14 @@ colour = "red"
 id = "heroes"
 aliases = ["tooltips"]
 table = "monster"
+
+[[kind]]
+id = "picture"
+table = "hero"
 ''')
     for needle in (
-            "tooltips is a path of the site's database", "unknown key 'colour'",
+            "tooltips is a path of the site's database", "picture is a table of the export's database",
+            "unknown key 'colour'",
             "exists bio is a row of cells", "title class must be a string field",
             "text class is not a string field", "'nope' is not a field of table hero",
             "fields name is a string field", "fields level is saved state",

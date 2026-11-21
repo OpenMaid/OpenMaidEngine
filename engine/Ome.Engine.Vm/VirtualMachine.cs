@@ -227,6 +227,12 @@ public sealed partial class VirtualMachine
             throw new ArgumentException("The scripting native works over the VM's script memory.", nameof(scripting));
         // The script memory draws op 0x60 from the graphics native's generator, which the leaf effect draws from too.
         _memory = memory ?? scripting?.Memory ?? new ScriptMemory(_o.NativeStringCodePage, _graphics.GameRandom);
+        // Game data export spec §6.2: a recording run names each global write's script and keeps each string's origin.
+        if (_o.RecordsWrites)
+        {
+            _text.RecordsStringStores = true;
+            _memory.RecordWriters(() => _cur?.Script.Name ?? "");
+        }
         // Without a scripting native the VM has no hooks, as one without an audio native is silent (spec §14.1).
         _scripting = scripting;
         scripting?.AttachInterpreter(this);
@@ -1643,6 +1649,13 @@ public sealed partial class VirtualMachine
         _cur.Pc = waitingPc;
     }
 
+    /// <summary>Whether instruction <paramref name="pc"/> of <paramref name="script"/> is the run's stop site
+    /// (<see cref="VmOptions.StopAt"/>). The offset is tested first, so the name is normalized only there.</summary>
+    private static bool IsStopSite(RunStop stop, Script script, int pc)
+        => script.Instructions[pc].Offset == stop.Offset
+           && string.Equals(Ome.Engine.Localization.TextCatalog.NormalizeScriptName(script.Name), stop.Script,
+                            StringComparison.Ordinal);
+
     /// <summary>How <see cref="RunInstructions"/> ended.</summary>
     private enum LoopEnd { Returned, HotspotReturned, DebugReturned, RootReload, Stopped, ExitRequested, Halted, RanOff }
 
@@ -1678,6 +1691,13 @@ public sealed partial class VirtualMachine
         {
             if (_stopAndReload.StopRequested) return LoopEnd.Stopped;
             if (_stopAndReload.ReloadRequested) return LoopEnd.RootReload;
+            if (_o.StopAt is { } stop && IsStopSite(stop, frame.Script, pc))
+            {
+                // Game data export spec §6.2: the run ends here as a stop request ends it, before the site's instruction.
+                HaltReason ??= stop.HaltReason;
+                _stopAndReload.RequestStop();
+                return LoopEnd.Stopped;
+            }
             if (Steps >= _o.MaxSteps)
             {
                 HaltReason ??= "STEP-LIMIT";

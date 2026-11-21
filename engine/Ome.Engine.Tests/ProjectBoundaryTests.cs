@@ -118,6 +118,36 @@ public class ProjectBoundaryTests
         Assert.Same(Natives, typeof(Ome.Engine.Modding.DataValue).Assembly);
     }
 
+    [Fact]
+    public void OnlyTheExportProjectNamesTheSqliteLibrary()
+    {
+        // Game data export spec §6.1: the export's database is Ome.Export's alone. The engine, the front ends and the
+        // launcher read no SQLite, and no shipped project references Ome.Export (the CLI is not shipped).
+        var projects = Directory.EnumerateFiles(Path.Combine(Paths.Repo, "engine"), "*.csproj", SearchOption.AllDirectories)
+            .Append(Path.Combine(Paths.Repo, "godot", "OME.csproj"))
+            .Concat(Directory.EnumerateFiles(Path.Combine(Paths.Repo, "launcher"), "*.csproj", SearchOption.AllDirectories))
+            .Where(path => !path.Replace('\\', '/').Split('/').Any(part => part is "obj" or "bin"))
+            .ToList();
+        var naming = new List<string>();
+        var referencing = new List<string>();
+        foreach (string path in projects)
+        {
+            XDocument project = XDocument.Load(path);
+            if (project.Descendants("PackageReference").Any(reference =>
+                    reference.Attribute("Include")?.Value is { } package
+                    && package.Contains("Sqlite", StringComparison.OrdinalIgnoreCase)))
+                naming.Add(Path.GetFileNameWithoutExtension(path));
+            if (project.Descendants("ProjectReference").Any(reference =>
+                    Path.GetFileNameWithoutExtension((reference.Attribute("Include")?.Value ?? "").Replace('\\', '/')) == "Ome.Export"))
+                referencing.Add(Path.GetFileNameWithoutExtension(path));
+        }
+        Assert.Equal(["Ome.Export"], naming);
+        Assert.Equal(["Ome.Cli", "Ome.Engine.Tests"], referencing.Order(StringComparer.Ordinal));
+        foreach (Assembly assembly in new[] { Handlers, Natives, Devices })
+            Assert.DoesNotContain(assembly.GetReferencedAssemblies(),
+                name => name.Name!.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) || name.Name == "Ome.Export");
+    }
+
     /// <summary>
     /// The natives' interfaces (spec §9, acceptance 1): every interface the Ome.Engine assembly exports, except the
     /// seams the natives call out through to what the front end and the platform supply, each with its reason.

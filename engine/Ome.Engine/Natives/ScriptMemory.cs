@@ -52,6 +52,8 @@ public sealed partial class ScriptMemory
         // missing: Arterial's VISEEK uses queue 0 without resetting it.
         public readonly Queue<int>[] Queues = CreateQueues();
         public readonly Stack<int>[] Stacks = CreateStacks();
+        // The writer record (ScriptMemory.Writers.cs), filled while it is on.
+        public readonly Dictionary<GlobalCell, string> Writers = new();
     }
 
     private Scene _scene = new();
@@ -107,7 +109,8 @@ public sealed partial class ScriptMemory
     /// <summary>The integer and string setters are every write a script, a native or Lua makes to a global, so they
     /// record a write to a watched cell (Lua scripting spec §7.3). A load's banks, a scene reset's and a tool's seeding
     /// write the banks directly, which is no write. Every setter keeps the cell's value for the running deliveries'
-    /// journal (data patches plan §12.6).</summary>
+    /// journal (data patches plan §12.6), and records its writer while the writer record is on
+    /// (ScriptMemory.Writers.cs).</summary>
     public void SetInteger(int address, long value)
     {
         value = IntegerCell(value);
@@ -116,6 +119,7 @@ public sealed partial class ScriptMemory
         if (_watched != null && _watched.Integer(address))
             _watched.Record(new CellWrite(CellKind.Integer, address, Integer(address), value, null, null));
         _scene.Integers[address] = value;
+        Wrote(GlobalBank.Integer, address);
     }
 
     /// <summary>A write no watch sees (Lua scripting spec §7.3): a tool's or a test's seeding, or the debugger's.
@@ -127,6 +131,7 @@ public sealed partial class ScriptMemory
         if (_journal != null)
             _journal.Keep(JournalBank.Float, address, _scene.Floats.TryGetValue(address, out long old), old, null);
         _scene.Floats[address] = value;
+        Wrote(GlobalBank.Float, address);
     }
 
     public void SetString(int address, string value)
@@ -136,6 +141,7 @@ public sealed partial class ScriptMemory
         if (_watched != null && _watched.String(address))
             _watched.Record(new CellWrite(CellKind.String, address, 0, 0, String(address), value));
         _scene.Strings[address] = value;
+        Wrote(GlobalBank.String, address);
     }
 
     /// <summary>The scripting native's watches (Lua scripting spec §7.3), or null for none.</summary>
@@ -185,6 +191,7 @@ public sealed partial class ScriptMemory
         if (_journal != null)
             _journal.Keep(JournalBank.Pointer, index, _scene.Pointers.TryGetValue(index, out int old), old, null);
         _scene.Pointers[index] = address;
+        Wrote(GlobalBank.Pointer, index);
     }
 
     public void SetStringPointer(int index, int address)
@@ -192,6 +199,7 @@ public sealed partial class ScriptMemory
         if (_journal != null)
             _journal.Keep(JournalBank.StringPointer, index, _scene.StringPointers.TryGetValue(index, out int old), old, null);
         _scene.StringPointers[index] = address;
+        Wrote(GlobalBank.StringPointer, index);
     }
 
     /// <summary>The integer address pointer cell <paramref name="index"/> names. A cell never set as a pointer reads
@@ -313,6 +321,8 @@ public sealed partial class ScriptMemory
         ReplaceBank(_scene.Strings, state.StringGlobals, value => value.Length != 0);
         ReplaceBank(_scene.Pointers, state.PointerGlobals, value => value != 0);
         _scene.StringPointers.Clear();
+        // No script wrote what a load brings back (ScriptMemory.Writers.cs).
+        _scene.Writers.Clear();
     }
 
     private static Queue<int>[] CreateQueues()

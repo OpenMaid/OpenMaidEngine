@@ -21,6 +21,11 @@ public interface ITextListener
     /// <summary>Ops 0x7a, 0x6f, 0x71 and end-text-line: a layout's pending record moved.</summary>
     void CursorMoved(int layoutSlot, int x, int y) { }
 
+    /// <summary>End-text-line: a layout's line ended, inside a presented message too, where no cursor the host draws
+    /// from moves. A reader of the shown text (the game data export's descriptions, its spec §5.7) breaks its lines
+    /// here.</summary>
+    void LineEnded(int layoutSlot) { }
+
     /// <summary>Ops 0x204 and 0x205: a string drawn into a surface; <paramref name="presented"/> when the presenter
     /// replaced it.</summary>
     void StringDrawn(int surfaceSlot, int x, int y, string text, AdvTextStyle style, PresentedText? presented) { }

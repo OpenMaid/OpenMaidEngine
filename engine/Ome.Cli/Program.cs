@@ -10,7 +10,8 @@ using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
 
 const string CommandList = "save-diff, save-info, run-lock, intake, omp, oms-compile, oms-append, oms-patch, oms-rebuild, oms-temps, "
-                          + "oms-roundtrip, oms-decompile, oms-residue, catalog-scan, run, audio, gfx, picture, init-image, play, sweep, trace";
+                          + "oms-roundtrip, oms-decompile, oms-residue, catalog-scan, run, audio, gfx, picture, init-image, data-export, play, "
+                          + "sweep, trace";
 if (args.Length == 0)
 {
     Console.Error.WriteLine("usage: Ome.Cli COMMAND [options] (docs/tools-reference.md); commands: " + CommandList);
@@ -80,6 +81,11 @@ var assetStore = new Sys4AssetStore(catalog, gameRoot, assetOptions.LooseRoots.T
 var provider = new Sys4ScriptProvider(
     table, catalog, assetStore);
 Script ScriptByName(string name) => provider.RequireByName(name);
+
+// data-export (game data export spec §6.1) reads the selected install through the engine and writes the export.
+if (command == "data-export")
+    return DataExportCommand.Run(args, selectedProfile.Profile.Id, gameRoot, catalog, assetStore, provider, table, engineBuild,
+                                 assetOptions.AllowBmpAsAgf);
 
 // Diagnostics flags (see the TraceSetup class below): --trace (text flow), --trace-steps (every op),
 // --trace-ops <csv> (only these mnemonics/hex, tagged with their script), --trace-histogram (op +

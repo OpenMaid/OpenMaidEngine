@@ -67,6 +67,9 @@ public class SceneReloadTests
             "_watched",
             // The running deliveries' journal (data patches plan §12.6): null between deliveries, and op 0x9 runs no Lua.
             "_journal",
+            // Whether the run records its writers (game data export spec §6.2), a run option; the record itself is the
+            // scene's, which the reset drops with the banks.
+            "_runningScript",
         ],
         [typeof(Audio)] =
         [

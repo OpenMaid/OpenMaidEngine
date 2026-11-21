@@ -62,7 +62,7 @@ public sealed partial class TextManager
     // ---- the string stores (§5.2) ----
 
     /// <summary>The instruction that stored a global string cell's text, and that text.</summary>
-    private readonly record struct StringStore(TextSite Origin, string Text);
+    public readonly record struct StringStore(TextSite Origin, string Text);
 
     private bool _recordsStringStores;
 
@@ -96,6 +96,16 @@ public sealed partial class TextManager
     {
         if (_recordsStringStores) _scene.StringStores[cell] = new StringStore(origin, text);
     }
+
+    /// <summary>The records of the global string cells (§5.2), each while it holds: the game data export reads every
+    /// published string's origin here, and a session carries them from one run to the next (game data export spec
+    /// §6.2). A record whose cell another write changed is dropped when read (<see cref="OriginOfCell"/>), so a reader
+    /// checks the text.</summary>
+    public IReadOnlyDictionary<int, StringStore> StringStores => _scene.StringStores;
+
+    /// <summary>A cell's record as a tool brings it back from an earlier run or a snapshot, whether or not this run
+    /// records.</summary>
+    public void SeedStringStore(int cell, StringStore store) => _scene.StringStores[cell] = store;
 
     // ---- History's groups (ops 0x1d1 and 0x82) ----
 

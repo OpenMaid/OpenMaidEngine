@@ -259,6 +259,13 @@ public sealed partial class TextManager : ISurfaceListener
         if (Array.IndexOf(_listeners, listener) < 0) _listeners = [.. _listeners, listener];
     }
 
+    /// <summary>End-text-line ended a line of <paramref name="layoutSlot"/>: the listeners hear it
+    /// (<see cref="ITextListener.LineEnded"/>).</summary>
+    public void LineEnded(int layoutSlot)
+    {
+        foreach (ITextListener listener in _listeners) listener.LineEnded(layoutSlot);
+    }
+
     /// <summary>Where the text manager learns whether the engine thread is in an input wait: the wait indicator shows
     /// only then, and the page a hide-window callback suspends is the waiting one: the input and waits native's.
     /// </summary>

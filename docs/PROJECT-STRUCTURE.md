@@ -369,6 +369,14 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │                                       and the lines of its problems (DataShape, DataShapeCheck,
     │                                       DataLines; spec §7) (Data/); referenced by
     │                                       Ome.Cli, the Godot port (godot/Main.Mods.cs) and the tests
+    │   ├── Ome.Export/                      the game data export (superpowers/specs/2026-11-21-game-data-export-
+    │                                       design.md §6): the declarations and the registry view it reads
+    │                                       (ExportDeclarations, RegistryView), the builder rule (ScriptNames),
+    │                                       the reader (GameDataExporter: the boot, the run-time check, the
+    │                                       descriptions, references and pictures) and the writer of the SQLite
+    │                                       database, its pictures and manifest (ExportWriter); the only project
+    │                                       that names SQLite (Microsoft.Data.Sqlite); referenced by Ome.Cli
+    │                                       (data-export) and the tests, not shipped
     │   ├── Ome.Engine.Frontend/             platform-neutral frontend support: diagnostics/options, page
     │                                       location, performance logging, FFmpeg movie decoding (the
     │                                       decoder the movie native opens), WAV sanitization, the

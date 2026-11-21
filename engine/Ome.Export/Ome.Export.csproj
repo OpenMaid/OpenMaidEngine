@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The game data export (docs/superpowers/specs/2026-11-21-game-data-export-design.md): it runs the game's boot
+       through the engine and writes what the declarations publish. Ome.Cli's data-export command calls it; nothing
+       the releases ship references it, so its SQLite library stays out of the engine (spec §6.1). -->
+  <ItemGroup>
+    <ProjectReference Include="..\Ome.Engine\Ome.Engine.csproj" />
+    <ProjectReference Include="..\Ome.Engine.Vm\Ome.Engine.Vm.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

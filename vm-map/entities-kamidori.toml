@@ -58,14 +58,17 @@ fields = [
 filters = ["race", "sex", "boss_class"]
 
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
-# from file prefixes; milestone 1 checks each column's pictures by eye.
+# from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
+# with the name (47 units); sprite the map's four-frame walking sheet; battle_1 the battle art (AAA); battle_2 and
+# battle_3 are AAA too, except for 28 units whose AAB variant is the clothing-damaged art; battle_face a close-up face
+# (AB).
 [kind.pictures]
 face = "graphic.face_CA_AA"
 sprite = "graphic.map_sprite_compact_CP_AA"
 battle_1 = "graphic.battle_sprite_1_CB_AAA"
 battle_2 = "graphic.battle_sprite_2_CB_AAA_or_AAB"
 battle_3 = "graphic.battle_sprite_3_CB_AAA_or_AAB"
-battle_4 = "graphic.battle_sprite_CB_AB"
+battle_face = "graphic.battle_sprite_CB_AB"
 
 [[kind]]
 id = "skill"
