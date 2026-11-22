@@ -35,8 +35,9 @@ import base_mod_build  # noqa: E402
 IDENTIFIER = re.compile(r"[a-z_][a-z0-9_]*")
 SCRIPT = re.compile(r"[A-Z0-9_]+")
 SCRIPT_PATTERN = re.compile(r"[A-Z0-9_*]*[A-Z0-9_][A-Z0-9_*]*")
-# The site's second path segment under a game is a kind's id, except these (site design §4).
-RESERVED_KINDS = {"tooltips"}
+# The site's second path segment under a game is a kind's id, except these (site design §4): the tooltip files and
+# the database's search page (site plan §9.2).
+RESERVED_KINDS = {"tooltips", "search"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
 EXPORT_TABLES = {"build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref",

@@ -310,9 +310,14 @@ table = "monster"
 [[kind]]
 id = "picture"
 table = "hero"
+
+[[kind]]
+id = "search"
+table = "hero"
 ''')
     for needle in (
-            "tooltips is a path of the site's database", "picture is a table of the export's database",
+            "tooltips is a path of the site's database", "search is a path of the site's database",
+            "picture is a table of the export's database",
             "unknown key 'colour'",
             "exists bio is a row of cells",
             "title class is an integer field the registry's [table.refs] does not mark as referring to a table",
