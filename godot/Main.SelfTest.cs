@@ -209,12 +209,17 @@ public partial class Main
                 && _vm.TextHistory.GetLayoutSnapshot(1).CursorX
                    > liveBinding.ResetCursorX;
 
+            // Op 0x20a binds records 0 to the reveal index inclusive (docs/engine-re.md, "The glyph publisher grows a
+            // cell"): every glyph again, the erased one included, and the pending record after the last.
             _vm.Gfx.EraseRange(liveBinding.FirstObjectHandle + 1, 1);
             _text.PublishAdvTextLayout(_vm.Gfx, liveBinding);
             bool republishedPartialErase =
                 _vm.Gfx.SnapshotVisibleObjects()
-                    .Count(item => InLiveRange(item, liveBinding))
-                == liveObjects.Count;
+                    .Where(item => InLiveRange(item, liveBinding))
+                    .Select(item => item.Handle)
+                    .Order()
+                    .SequenceEqual(Enumerable.Range(0, liveObjects.Count + 1)
+                        .Select(index => liveBinding.FirstObjectHandle + index));
 
             _text.SetAdvPagePresentationSuspended(_vm.Gfx, true);
             bool suspended =
