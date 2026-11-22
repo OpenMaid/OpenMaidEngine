@@ -260,6 +260,43 @@ def test_tables_lint():
         entries, _ = G.load_toml(toml)
         check(G.lint_tables(G.load_tables(toml), entries) == [], f"{toml.name} tables lint clean")
 
+def test_value_facets():
+    base = {"category": "data-table", "source": "inference", "confidence": "med"}
+    entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "hero_sex", "type": "int[4]",
+                             "values": {"1": "Male", "2": "Female"}},
+               ("G", 0x20): {**base, "_addr": 0x20, "name": "hero_race", "type": "int[4]",
+                             "values_from": {"global": "race_names", "first": 1}, "unit": "%"},
+               ("GS", 0x30): {**base, "_addr": 0x30, "name": "race_names", "type": "string[3]"},
+               ("G", 0x40): {**base, "_addr": 0x40, "name": "hero_sex_mask", "type": "int[4]", "bits_of": "hero_sex"},
+               ("G", 0x50): {**base, "_addr": 0x50, "name": "hero_growth", "type": "int[4][2]", "scale": 0.01},
+               ("G", 0x60): {**base, "_addr": 0x60, "name": "hero_range", "type": "int[4]", "offset": -1}}
+    check(G.lint_values(entries) == [], f"words, a name table, a mask, a scale and an offset lint clean "
+                                        f"({G.lint_values(entries)})")
+    merged = G.merge(entries, {})
+    check(merged[("G", 0x20)].get("values_from") == {"global": "race_names", "first": 1}
+          and merged[("G", 0x40)].get("bits_of") == "hero_sex" and merged[("G", 0x50)].get("scale") == 0.01,
+          "the JSON carries the value facets")
+    line = G.value_facets_line(merged[("G", 0x10)])
+    check(line == "Values: 1 Male, 2 Female.", f"the reference doc lists a global's words ({line!r})")
+    check(G.value_facets_line(merged[("G", 0x60)]) == "Shown as the value − 1.", "the reference doc says an offset")
+    bad = {("G", 0x10): {**base, "_addr": 0x10, "name": "a", "type": "int[4]", "values": {"one": "x", "2": "two\nlines"}},
+           ("G", 0x20): {**base, "_addr": 0x20, "name": "b", "type": "int[4]", "values_from": {"global": "a", "first": "1"}},
+           ("G", 0x30): {**base, "_addr": 0x30, "name": "c", "type": "int[4]", "values_from": {"global": "nowhere"}},
+           ("G", 0x40): {**base, "_addr": 0x40, "name": "d", "type": "int[4]", "bits_of": "e", "scale": 2},
+           ("G", 0x50): {**base, "_addr": 0x50, "name": "e", "type": "int[4]", "scale": 1, "offset": 0, "unit": ""},
+           ("GS", 0x60): {**base, "_addr": 0x60, "name": "f", "type": "string[4]", "values": {"1": "x"}}}
+    errors = G.lint_values(bad)
+    for needle in ("a: values: 'one' is not a whole number", "a: values: the word for 2 must be one line",
+                   "b: values_from a is int[4], not a list of strings", "b: values_from: first must be a whole number",
+                   "c: values_from must be { global, first }", "d: bits_of e, whose values have no words or names",
+                   "d: a mask's bits name values, so it takes no scale", "e: scale must be a positive number other than 1",
+                   "e: offset must be a whole number other than 0", "e: unit must be a word",
+                   "f: values: value facets are for integer globals"):
+        check(any(needle in e for e in errors), f"lint_values flags {needle!r} ({errors})")
+    for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
+        entries, _ = G.load_toml(toml)
+        check(G.lint_values(entries) == [], f"{toml.name} value facets lint clean")
+
 def test_table_refs():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}
     entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "hero_weapons", "type": "int[4][2]"},
@@ -860,6 +897,7 @@ if __name__ == "__main__":
     test_lint_catches_bad_vocab()
     test_lint_warns_on_overlapping_arrays()
     test_tables_lint()
+    test_value_facets()
     test_table_refs()
     test_scopes_lint()
     test_adv_layer_surface_slot_evidence()

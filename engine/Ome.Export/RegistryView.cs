@@ -11,6 +11,54 @@ public sealed record ArrayLayout(string Name, GlobalBank Bank, int Address, IRea
 {
     /// <summary>The cells of one record: a two-dimensional table's row width, else 1.</summary>
     public int Width => Dimensions.Count == 2 ? Dimensions[1] : 1;
+
+    /// <summary>What its values mean to a reader (export plan §5), or null when the registry says nothing.</summary>
+    public ValueFormat? Format { get; init; }
+}
+
+/// <summary>A global's value facets (export plan §5; <c>tools/globals_build.py</c>): OME's words for some values, the
+/// game's table of names (element k of the string global names value first + k), the global whose values a mask's
+/// bits stand for, and how a number is shown: the stored value times the scale, plus the offset, in the unit.</summary>
+public sealed record ValueFormat
+{
+    public IReadOnlyDictionary<long, string> Words { get; init; } = new Dictionary<long, string>();
+    public (string Global, int First)? NamesFrom { get; init; }
+    public string? BitsOf { get; init; }
+    public double? Scale { get; init; }
+    public long? Offset { get; init; }
+    public string? Unit { get; init; }
+
+    /// <summary>Whether a value may have a word or a name: its own, or its bits'.</summary>
+    public bool Names => Words.Count > 0 || NamesFrom is not null || BitsOf is not null;
+
+    internal static ValueFormat? Parse(JsonElement entry)
+    {
+        var format = new ValueFormat
+        {
+            Words = entry.TryGetProperty("values", out JsonElement values) && values.ValueKind == JsonValueKind.Object
+                ? values.EnumerateObject().ToDictionary(pair => long.Parse(pair.Name, CultureInfo.InvariantCulture),
+                                                         pair => pair.Value.GetString()!)
+                : new Dictionary<long, string>(),
+            NamesFrom = entry.TryGetProperty("values_from", out JsonElement from) && from.ValueKind == JsonValueKind.Object
+                ? (from.GetProperty("global").GetString()!, from.GetProperty("first").GetInt32())
+                : null,
+            BitsOf = entry.TryGetProperty("bits_of", out JsonElement bits) && bits.ValueKind == JsonValueKind.String
+                ? bits.GetString()
+                : null,
+            Scale = entry.TryGetProperty("scale", out JsonElement scale) && scale.ValueKind == JsonValueKind.Number
+                ? scale.GetDouble()
+                : null,
+            Offset = entry.TryGetProperty("offset", out JsonElement offset) && offset.ValueKind == JsonValueKind.Number
+                ? offset.GetInt64()
+                : null,
+            Unit = entry.TryGetProperty("unit", out JsonElement unit) && unit.ValueKind == JsonValueKind.String
+                ? unit.GetString()
+                : null,
+        };
+        return format.Names || format.Scale is not null || format.Offset is not null || format.Unit is not null
+            ? format
+            : null;
+    }
 }
 
 /// <summary>A registry table (data patches spec §5): its record count, its fields (field → array) and their
@@ -86,7 +134,7 @@ public sealed class RegistryView
                         && column.Value.GetString() is { Length: > 0 } columnName)
                         columns[index] = columnName;
             int address = Convert.ToInt32(entry.GetProperty("address").GetString(), 16);
-            arrays.Add(new ArrayLayout(name, bank.Value, address, dimensions, columns));
+            arrays.Add(new ArrayLayout(name, bank.Value, address, dimensions, columns) { Format = ValueFormat.Parse(entry) });
         }
         var tables = new List<TableLayout>();
         if (root.TryGetProperty("tables", out JsonElement list))
@@ -146,6 +194,9 @@ public sealed class RegistryView
         if (records != 1 || dimensions.Count > 1) return null;
         return global with { Dimensions = dimensions.Count == 0 ? [1] : [1, dimensions[0]] };
     }
+
+    /// <summary>A named global, or null.</summary>
+    public ArrayLayout? Find(string name) => _arrays.GetValueOrDefault(name);
 
     /// <summary>The address of a named integer cell, as a seed writes it.</summary>
     public int IntegerGlobal(string name)

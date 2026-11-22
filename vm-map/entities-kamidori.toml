@@ -12,7 +12,11 @@
 #
 # A note explains a detail to a reader in a line (the user, 2026-11-22): it says only what the registry's value domain
 # and usage establish for the field's global, in plain words, and only where the label and value leave a reader
-# guessing.
+# guessing. What a value means is the registry's (its globals' value facets: words, the game's names, scale, offset and
+# unit), not a note's; a label names a field whose own name reads as the game stores it.
+#
+# A field is published when it means something to a player (the usability review, 2026-11-22): sort keys, catalog
+# switches, variant and group ids, routines, spawn places and weights are the game's machinery, left to the modder data.
 
 [export]
 # The tables as the game plays with them: INIT2's exit, after every layer (spec §14, answer 2).
@@ -37,11 +41,11 @@ exists = "name"
 title = "name"
 text = ["short_description"]
 fields = [
-    "category", "rank", "sort_key", "price", "attack_element", "min_range", "max_range", "stat_modifiers",
+    "category", "rank", "price", "attack_element", "min_range", "max_range", "stat_modifiers",
     "critical_rate_bonus", "affinity_level_deltas", "condition_level_deltas", "equipped_condition_levels",
     "granted_skill_id", "resource_recovery_amounts", "cursed_flag", "sex_restriction_mask", "character_whitelist",
-    "costume_battle_variant", "growth_enabled", "garden_product_item_id", "garden_production_period",
-    "furniture_area", "furniture_exclusive_group", "furniture_width", "furniture_height",
+    "growth_enabled", "garden_product_item_id", "garden_production_period",
+    "furniture_area", "furniture_width", "furniture_height",
     "furniture_sales_count_bonus", "furniture_purchase_desire_bonus", "furniture_visit_rate_bonus",
     "furniture_high_price_bonus", "furniture_equipment_bonus", "furniture_information_bonus",
     "furniture_mutation_bonus", "furniture_knowledge_bonus", "furniture_staff_count_bonus", "furniture_garden_bonus",
@@ -55,12 +59,17 @@ affinity_level_deltas = "The steps it moves each element's resistance while equi
 condition_level_deltas = "The level it changes each condition by: -5 clears the condition, and a positive number inflicts it or raises it."
 equipped_condition_levels = "The level of each condition its wearer has while it is equipped."
 resource_recovery_amounts = "The HP, SP and FS it restores; 999 restores them in full."
-cursed_flag = "1: a cursed item, which cannot be unequipped."
+cursed_flag = "A cursed item cannot be unequipped."
 character_whitelist = "The characters allowed to equip or use it, up to five."
-growth_enabled = "1: the item gains growth experience as it is used."
-furniture_area = "The room it goes in: 1 the shop, 2 the workshop, 3 the room, 4 the garden."
-furniture_width = "In tiles."
-furniture_height = "In tiles."
+growth_enabled = "The item gains growth experience as it is used."
+furniture_area = "The room it goes in."
+sex_restriction_mask = "Only characters of these sexes may use it."
+
+[kind.labels]
+cursed_flag = "Cursed"
+growth_enabled = "Grows with use"
+sex_restriction_mask = "Usable by"
+character_whitelist = "Characters"
 
 [[kind.description]]
 name = "description"
@@ -74,13 +83,13 @@ exists = "full_name"
 title = "full_name"
 text = ["display_name", "initial_class_title", "bestiary_description"]
 fields = [
-    "race", "sex", "boss_class", "sort_key", "bestiary_listed", "starting_level", "level_cap", "stats",
+    "race", "sex", "bestiary_listed", "starting_level", "level_cap", "stats",
     "stat_growth", "initial_stat_caps", "element_resistance", "equippable_category_mask", "initial_weapon_level",
     "default_attack_item_id", "initial_equipment", "default_costume_item_id", "skill", "party_cost",
     "initial_affinity_tenths", "experience_reward", "bestiary_knowledge_gain", "drop_item", "drop_chance",
     "habitat_area",
 ]
-filters = ["race", "sex", "boss_class"]
+filters = ["race", "sex"]
 
 [[kind.group]]
 name = "stat_table"
@@ -91,13 +100,16 @@ name = "drops"
 fields = ["drop_item", "drop_chance"]
 
 [kind.notes]
-sex = "1 male, 2 female, 3 other or none."
-bestiary_listed = "1: the bestiary lists it."
-stat_table = "Stats are its base values at its starting level, growth what it gains each level in hundredths of a point, and the caps a playable character's own ceilings (0 uses the game's common cap)."
-element_resistance = "Each element's resistance step, from -5 (weakest) to 4 (strongest); 5 is immune and 6 absorbs."
-initial_affinity_tenths = "Its starting affinity divided by ten: 30 is an affinity of 300."
-drops = "Each item it can drop and the percent chance; a chance of 5 or less counts as a rare drop."
+stat_table = "Stats are its base values at its starting level, growth what it gains each level, and the caps a playable character's own ceilings (0 uses the game's common cap)."
+element_resistance = "Each element's resistance, as the game names its steps."
+equippable_category_mask = "The kinds of item it can equip."
+drops = "Each item it can drop and its chance; a chance of 5% or less counts as a rare drop."
 habitat_area = "The world areas the bestiary lists as where it lives."
+
+[kind.labels]
+bestiary_listed = "In the bestiary"
+initial_affinity_tenths = "Initial affinity"
+equippable_category_mask = "Equips"
 
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
 # from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
@@ -119,20 +131,24 @@ exists = "name"
 title = "name"
 text = ["short_description"]
 fields = [
-    "category", "sort_key", "catalog_visible", "equip_cost", "upgrade_family_id", "bundled_skill_ids",
-    "min_range_encoded", "max_range_encoded", "required_weapon_category_mask", "area_target_mode", "area_shape_id",
-    "area_cooldown_turns", "attack_element_encoded", "condition_levels", "combat_stat_deltas", "critical_rate_bonus",
+    "category", "equip_cost", "bundled_skill_ids", "min_range_encoded", "max_range_encoded",
+    "required_weapon_category_mask", "area_cooldown_turns", "attack_element_encoded", "condition_levels", "combat_stat_deltas", "critical_rate_bonus",
     "resource_deltas", "proc_chance_percent",
 ]
 filters = ["category"]
 pictures = { icon = "icon_asset_id" }
 
 [kind.notes]
-min_range_encoded = "Its range plus one, as the game stores it: 1 is adjacent."
-max_range_encoded = "Its range plus one, as the game stores it."
-attack_element_encoded = "Its element plus one, from 2 (physical) to 8 (dark); 0 uses the weapon's element."
+required_weapon_category_mask = "The skill is offered only to a unit whose weapon is one of these."
 condition_levels = "The level of each condition it inflicts."
 resource_deltas = "HP (the amount healed, on a healing skill), SP (a negative number is its cost) and FS."
+
+[kind.labels]
+min_range_encoded = "Min range"
+max_range_encoded = "Max range"
+attack_element_encoded = "Attack element"
+required_weapon_category_mask = "Weapons"
+proc_chance_percent = "Proc chance"
 
 [[kind.description]]
 name = "description"
@@ -150,7 +166,7 @@ skip = { "appear_required_flags.required_flag_1" = 10000 }
 title = "name"
 text = ["description_lines", "requester_name", "category_label"]
 fields = [
-    "sort_key", "difficulty_stars", "deadline_days", "reward_money", "reputation_reward", "reward_item_ids",
+    "difficulty_stars", "deadline_days", "reward_money", "reputation_reward", "reward_item_ids",
     "reward_item_quantities", "prerequisite_quest_id",
 ]
 filters = ["difficulty_stars"]
@@ -161,7 +177,7 @@ name = "reward_items"
 fields = ["reward_item_ids", "reward_item_quantities"]
 
 [kind.notes]
-deadline_days = "The days allowed to finish it; 0 is no deadline."
+deadline_days = "The days allowed to finish it."
 
 # INFO2@0x1171 draws lines 0 to 4 as one block, 5 and 6 under 達成条件 and 7 and 8 under 失敗条件
 # (quest_description_lines in the registry). The English package fills lines 0 to 4 as one paragraph.
@@ -179,8 +195,8 @@ title = "output_item_id"
 text = ["unlock_text"]
 fields = [
     "output_item_id", "ingredient_item_ids", "ingredient_quantities", "evaluation_reward", "mutation_chance",
-    "mutation_item_id", "quest_marker", "required_synthesis_rank", "unlock_craftsman_rank", "unlock_synthesis_rank",
-    "unlock_shop_level", "unlock_workshop_level", "unlock_quarters_level", "unlock_room4_level", "unlock_knowledge",
+    "mutation_item_id", "quest_marker", "unlock_craftsman_rank", "unlock_synthesis_rank",
+    "unlock_shop_level", "unlock_workshop_level", "unlock_quarters_level", "unlock_knowledge",
     "unlock_sense", "unlock_grown_item_id", "unlock_prerequisite_recipe_id",
 ]
 filters = ["unlock_craftsman_rank", "unlock_synthesis_rank"]
@@ -191,11 +207,14 @@ fields = ["ingredient_item_ids", "ingredient_quantities"]
 
 [kind.notes]
 evaluation_reward = "Evaluation points: in full for the first craft, and a tenth of them for each craft after."
-mutation_chance = "The percent chance that a craft mutates into the mutation item, before the studio's multiplier."
-quest_marker = "1: the invention a quest asks for."
-unlock_craftsman_rank = "The craftsman rank needed to learn it, from 0 (新米) to 10 (匠王)."
-unlock_synthesis_rank = "The synthesis rank needed to learn it: 0 is E, then D, C, B, A, and 5 is S."
+mutation_chance = "The chance that a craft mutates into the mutation item, before the studio's multiplier."
+quest_marker = "The invention a quest asks for."
+unlock_craftsman_rank = "The craftsman rank needed to learn it."
+unlock_synthesis_rank = "The synthesis rank needed to learn it."
 unlock_grown_item_id = "Equipment that must be fully grown first."
+
+[kind.labels]
+quest_marker = "Quest invention"
 
 [[kind]]
 id = "condition"
@@ -228,9 +247,14 @@ step = [16, 16]
 size = [15, 15]
 
 [kind.notes]
-susceptibility_group = "Which of a race's resistances the chance to catch it is rolled against: each race has a percent chance for each group, 0 meaning immune. 1 curse, 2 death and fear, 3 charm and confusion, 4 paralysis and poison, 5 drains, 6 water, acid and inflammation, 7 buffs and others."
-levels = "Each level's turns (-1 lasts until cleared), its stat changes, and its HP, SP and FS changes each turn: a drain's are the percent it steals, poison's and acid's are losses."
+susceptibility_group = "Which of a race's resistances the chance to catch it is rolled against: each race has a percent chance for each group, 0 meaning immune."
+levels = "Each level's turns, its stat changes, and its HP, SP and FS changes each turn: a drain's are the percent it steals, poison's and acid's are losses."
 critical_rate_delta = "The change at level 5; a lower level gives its share (level / 5)."
+
+[kind.labels]
+susceptibility_group = "Resisted as"
+can_affect_bosses = "Affects bosses"
+cleared_by_recover = "Cleared by recovery"
 
 [[kind]]
 id = "stage"
@@ -239,7 +263,7 @@ exists = "name"
 title = "name"
 # The select screen's backdrop (select_background_asset_id) is not published: it is a whole background.
 fields = [
-    "labyrinth_id", "floor_number", "sort_key", "recommended_level", "boss_flag", "event_entry_flag",
+    "labyrinth_id", "floor_number", "recommended_level", "boss_flag", "event_entry_flag",
     "prerequisite_labyrinth_id", "prerequisite_floor_number", "required_party_unit_ids", "objective_money_rewards",
     "objective_item_rewards", "objective_evaluation_rewards", "objective_bonus_point_rewards",
 ]
@@ -255,11 +279,16 @@ labels = "reward.condition_text"
 
 [kind.notes]
 labyrinth_id = "The world area whose stage list has it."
-boss_flag = "1: a boss stage, whose name is set between ◆ marks."
-event_entry_flag = "1: choosing it plays an event instead of a battle map."
+boss_flag = "A boss stage's name is set between ◆ marks."
+event_entry_flag = "Choosing it plays an event instead of a battle map."
 prerequisite_labyrinth_id = "With the prerequisite floor, the stage that must be cleared first."
 required_party_unit_ids = "Units that must be in the sortie: the first five before its first clear, the other five once it is cleared or on a boss stage."
 objective_rewards = "What each goal of the stage gives, by the goal as the game words it."
+
+[kind.labels]
+labyrinth_id = "Labyrinth"
+boss_flag = "Boss stage"
+event_entry_flag = "Event stage"
 
 # The dig tables are not published (the user, 2026-11-22): a table is reached only through a floor's dig points, the
 # map objects of a stage, which no loader publishes yet, so its page could not say where it is dug. They go with the
@@ -277,7 +306,7 @@ filters = ["area_type"]
 pictures = { picture = "picture_asset_id" }
 
 [kind.notes]
-area_type = "1: a labyrinth, which lists stages to enter; 2: a town or facility."
+area_type = "A labyrinth lists the stages to enter."
 travel_days = "The days that pass in travelling there; once 30 days have passed, the party must return home."
 
 [[kind]]
@@ -286,7 +315,7 @@ table = "character_profile"
 exists = "name"
 title = "name"
 text = ["epithet", "race_text", "sex_text"]
-fields = ["sort_key", "unit_id"]
+fields = ["unit_id"]
 # The portrait is the standing art the profile screen shows (CS…AAA); the user chose to publish it (plan §4.1).
 pictures = { portrait = "portrait_asset_id" }
 
@@ -301,7 +330,6 @@ table = "objective"
 exists = "text"
 title = "text"
 text = ["chapter_label"]
-fields = ["sort_key"]
 
 [[kind.description]]
 name = "message"
@@ -313,7 +341,6 @@ id = "glossary_entry"
 table = "glossary_entry"
 exists = "name"
 title = "name"
-fields = ["sort_key"]
 
 [[kind.description]]
 name = "explanation"
@@ -333,9 +360,21 @@ read_at = "kamidori.stage.after_loader"
 
 [loader.tables.enemy]
 exists = "unit_id"
-fields = ["unit_id", "min_level", "max_level", "auto_level_scale_divisor", "faction_id", "difficulty_mask",
-          "first_visit_only", "random_selection_weight", "spawn_tile_x", "spawn_tile_y", "spawn_object_slot",
-          "movement_routine_set_ids", "battle_routine_set_ids"]
+fields = ["unit_id", "min_level", "max_level", "difficulty_mask", "first_visit_only"]
+labels = { unit_id = "Unit", difficulty_mask = "Difficulty" }
+notes = { difficulty_mask = "The difficulties the slot is placed on at a floor's start; with none, it is not placed then." }
+
+# The slots on the player's side (the user, 2026-11-22: allies get their own table). A faction other than the
+# player's is hostile when stage_faction_alliance[faction] is 0 or differs from slot 1's, the player's group
+# (FIELD@0xab69, COMMITBTL, CALCSUPPORT; the registry's stage_faction_alliance), so a slot whose faction's group is not 0
+# and is the player's is not; FIELD@0xc45 makes the same test when it places a slot. Only the stage loaders write the
+# alliance: 14 of STINIT's stages give faction 3 the player's group (2026-11-22).
+[[loader.tables.enemy.parts]]
+name = "ally"
+field = "faction_id"
+global = "stage_faction_alliance"
+same_as = 1
+note = "Units whose faction the stage puts in the player's alliance, so they are not the player's enemies."
 
 # The goals the stage's rewards are for, which label the stage's objective_rewards rows. STINIT leaves the first
 # goal's text empty: AIM@0x5b4 and STAGECLEAR@0x8be draw a fixed text in its place, which a literal gives.
@@ -371,7 +410,7 @@ exists = "title_level"
 text = ["title"]
 fields = ["title_level", "party_cost_delta", "party_capacity_delta", "stat_deltas", "stat_cap_deltas",
           "resistance_deltas", "skill_slot_replacements"]
-notes = { title_level = "The level the title comes at; -1: a story event gives it." }
+notes = { title_level = "The level the title comes at." }
 
 # The script relations (spec §6.7, export plan §4.5): where a scene sets a script's arguments to constants and calls it.
 # ADDITEM gives or takes an item by the sign of its count (docs/kamidori-data-tables.md, Giving and taking).

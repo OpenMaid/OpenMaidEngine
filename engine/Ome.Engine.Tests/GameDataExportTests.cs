@@ -37,11 +37,13 @@ public class GameDataExportTests
     private const int ItemNames = 100, ItemShorts = 200, SkillNames = 1500, Scratch = 900;
     private const int ItemCategory = 1000, ItemPrices = 1100, ItemIcon = 1200, ItemHandler = 1300, ItemSkill = 1400,
                       SkillCategory = 1500, CurrentItem = 5000, LootSkill = 1600, LootCount = 1700, CurrentCount = 5001,
-                      JoinSkills = 5100, JoinCount = 5110;
+                      JoinSkills = 5100, JoinCount = 5110, LootSides = 1800;
     // The one-record bonus table (export plan §5) and the rule state its loader seeds: four keys of three rules.
     private const int BonusTitle = 960, BonusLevel = 5200, BonusStats = 5210, RuleState = 5300;
+    // The game's names of the item categories (export plan §5), which ITINIT writes: element k names category k + 1.
+    private const int CategoryNames = 980;
 
-    private static RegistryView Registry() => new(
+    private static RegistryView Registry(bool formats = false) => new(
         [
             new TableLayout("item", 4,
                 [("name", "item_names"), ("short_description", "item_short_descriptions"), ("category", "item_category"),
@@ -60,9 +62,18 @@ public class GameDataExportTests
         [
             Array("item_names", GlobalBank.String, ItemNames, 4),
             Array("item_short_descriptions", GlobalBank.String, ItemShorts, 4),
-            Array("item_category", GlobalBank.Integer, ItemCategory, 4),
+            Array("item_category", GlobalBank.Integer, ItemCategory, 4) with
+            {
+                Format = formats
+                    ? new ValueFormat { NamesFrom = ("category_names", 1), Words = new Dictionary<long, string> { [0] = "None" } }
+                    : null,
+            },
+            Array("category_names", GlobalBank.String, CategoryNames, 3),
             new ArrayLayout("item_prices", GlobalBank.Integer, ItemPrices, [4, 2],
-                            new Dictionary<int, string> { [1] = "sell" }),   // column 0 unnamed
+                            new Dictionary<int, string> { [1] = "sell" })    // column 0 unnamed
+            {
+                Format = formats ? new ValueFormat { Scale = 0.5, Unit = "gold" } : null,
+            },
             Array("item_icon", GlobalBank.Integer, ItemIcon, 4),
             Array("item_handler", GlobalBank.Integer, ItemHandler, 4),
             Array("item_granted_skill", GlobalBank.Integer, ItemSkill, 4),
@@ -75,6 +86,8 @@ public class GameDataExportTests
             new ArrayLayout("joining_skill_count", GlobalBank.Integer, JoinCount, [], new Dictionary<int, string>()),
             Array("loot_skill_ids", GlobalBank.Integer, LootSkill, 3),
             new ArrayLayout("loot_counts", GlobalBank.Integer, LootCount, [3, 2], new Dictionary<int, string>()),
+            // The side of each skill a loot record grants, which a part reads (export plan §5): no table's.
+            Array("loot_sides", GlobalBank.Integer, LootSides, 3),
             new ArrayLayout("bonus_title", GlobalBank.String, BonusTitle, [], new Dictionary<int, string>()),
             new ArrayLayout("bonus_level", GlobalBank.Integer, BonusLevel, [], new Dictionary<int, string>()),
             new ArrayLayout("bonus_stats", GlobalBank.Integer, BonusStats, [3], new Dictionary<int, string> { [0] = "attack" }),
@@ -119,7 +132,7 @@ public class GameDataExportTests
         ExcludedBuilderWrites = 2,   // CGINIT writes item 3's icon
         StringWithoutOrigin = 4,     // a builder cuts item 1's name into item 3's short description (no origin)
         HandlerIsNoTextScript = 8,   // item 2's handler is OTHER, a scene
-        LoaderScriptWrites = 16,     // LOOT itself writes loot record 2's second count
+        LoaderScriptWrites = 16,     // LOOT itself writes loot record 2's second count, and skill 2's side
     }
 
     private sealed class Pictures : IPictureSource
@@ -149,8 +162,9 @@ public class GameDataExportTests
                 (OpSetString, [GS(ItemNames + 2), S(2)]), (OpMov, [G(ItemCategory + 2), I(3)]),
                 (OpMov, [G(ItemSkill + 2), I(2)]),
                 (OpMov, [G(ItemHandler + 2), I(faults.HasFlag(Faults.HandlerIsNoTextScript) ? 10 : 0)]),
+                (OpSetString, [GS(CategoryNames + 1), S(3)]), (OpSetString, [GS(CategoryNames + 2), S(4)]),
                 (OpExit, []),
-            ], "剣", "よく切れる", "盾"),
+            ], "剣", "よく切れる", "盾", "武器", "防具"),
             [2] = Asm("$1$ITINIT.BIN",
                 [(OpSetString, [GS(ItemNames + 3), S(0)]), (OpMov, [G(ItemCategory + 3), I(4)]),
                  (OpMov, [G(ItemIcon + 3), I(78)]), (OpMov, [G(ItemSkill + 3), I(-1)]), (OpExit, [])], "槍"),
@@ -179,17 +193,20 @@ public class GameDataExportTests
             ], "称号"),
             // A screen that draws a fixed string, which a literal gives a record's text from.
             [21] = Asm("AIM.BIN", [(OpSetString, [GS(Scratch + 60), S(0)]), (OpExit, [])], "固定"),
-            // Loot record 1 grants the skill numbered as the item; record 2 skill 1, five of it.
+            // Loot record 1 grants the skill numbered as the item; record 2 skill 1, five of it. Skill 1 is on side 5 and
+            // skill 2 on side 6.
             [11] = Asm("DROPSET.BIN",
             [
                 (OpMov, [G(LootSkill + 1), G(CurrentItem)]), (OpMov, [G(LootCount + 2), I(3)]),
                 (OpMov, [G(LootCount + 3), I(4)]), (OpMov, [G(LootSkill + 2), I(1)]), (OpMov, [G(LootCount + 4), I(5)]),
+                (OpMov, [G(LootSides + 1), I(5)]), (OpMov, [G(LootSides + 2), I(6)]),
                 (OpExit, []),
             ]),
         };
         AddRelationScripts(byId);
         var loot = new List<(int, Operand[])> { (OpCallScript, [I(11)]) };
-        if (faults.HasFlag(Faults.LoaderScriptWrites)) loot.Add((OpMov, [G(LootCount + 5), I(6)]));
+        if (faults.HasFlag(Faults.LoaderScriptWrites))
+            loot.AddRange([(OpMov, [G(LootCount + 5), I(6)]), (OpMov, [G(LootSides + 2), I(5)])]);
         // The point: what LOOT writes after it is never read.
         loot.AddRange([(OpMov, [G(LootSkill + 1), I(99)]), (OpExit, [])]);
         byId[12] = Asm("LOOT.BIN", loot);
@@ -551,6 +568,61 @@ public class GameDataExportTests
             => x is not null && y is not null && x.Name == y.Name && x.Fields.SequenceEqual(y.Fields);
 
         public int GetHashCode(GroupDeclaration group) => group.Name.GetHashCode(StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AShownFieldsValuesHaveTheRegistrysWordsAndTheGamesNamesAndItsNumbersTheirFormat()
+    {
+        // The value facets (export plan §5): item_category's values are named by the game's table, element k naming
+        // value k + 1, and 0 has OME's word; a price is shown halved, in gold. A label names the category for a reader.
+        ExportInputs game = Game();
+        string declarations = Declarations.Replace("\"filters\": [\"category\"],",
+                                                   "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"},",
+                                                   StringComparison.Ordinal);
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = Registry(formats: true),
+            Declarations = ExportDeclarations.Parse(declarations), Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Empty(result.Report.Refusals);
+        ExportKind item = result.Kinds.Single(kind => kind.Declaration.Id == "item");
+        Assert.Equal([new ExportValueName("category", 0, "", "None"), new ExportValueName("category", 2, "ja", "武器"),
+                      new ExportValueName("category", 3, "ja", "防具")],
+                     item.ValueNames.OrderBy(name => name.Value));
+        Assert.Empty(result.Kinds.Single(kind => kind.Declaration.Id == "skill").ValueNames);
+        Assert.Equal([("category", "Kind")], item.Declaration.Labels);
+
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("0::None,2:ja:武器,3:ja:防具", Scalar(
+                "SELECT group_concat(value || ':' || lang || ':' || text, ',') FROM "
+                + "(SELECT * FROM value_name WHERE kind = 'item' AND field = 'category' ORDER BY value, lang)"));
+            // A published column of a field shares its global's format.
+            Assert.Equal("price:0.5:gold:0,price.sell:0.5:gold:0", Scalar(
+                "SELECT group_concat(field || ':' || scale || ':' || unit || ':' || bits, ',') FROM "
+                + "(SELECT * FROM value_format WHERE kind = 'item' AND scale IS NOT NULL ORDER BY field)"));
+            Assert.Equal("0:", Scalar("SELECT bits || ':' || ifnull(scale, '') FROM value_format WHERE field = 'category'"));
+            Assert.Equal("Kind", Scalar("SELECT text FROM label WHERE kind = 'item' AND name = 'category'"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -1017,6 +1089,60 @@ public class GameDataExportTests
                                              && cell.Writer == "LOOT.BIN");
         // The snippet leaves the refused element out.
         Assert.Contains("[field.1.loot.2]\nskill_id = 1\ncount = {0 = 5}\n", sword.Snippet, StringComparison.Ordinal);
+    }
+
+    // The loot whose skill is on skill 1's side (export plan §5): a part, which the site shows apart.
+    private static readonly string Parted = Loader.Replace(
+        "\"fields\": [\"skill_id\", \"count\"]}",
+        "\"fields\": [\"skill_id\", \"count\"], \"parts\": [{\"name\": \"kin\", \"field\": \"skill_id\", "
+        + "\"global\": \"loot_sides\", \"same_as\": 1, \"note\": \"On skill 1's side.\"}]}", StringComparison.Ordinal);
+
+    [Fact]
+    public void ARowIsInThePartWhoseGlobalAtItsFieldIsNotZeroAndEqualsTheNamedCell()
+    {
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), WithLoader(Parted)));
+        Assert.Empty(result.Report.Refusals);
+        ExportLoadedRow Row(int item, int record)
+            => Entity(result, "item", item).Loaded.Single(row => row.Table == "loot" && row.Record == record);
+        Assert.Equal(("kin", "kin"), (Row(1, 1).Part, Row(1, 2).Part));              // skill 1, side 5 as cell 1's
+        Assert.Equal((null, "kin"), (Row(2, 1).Part, Row(2, 2).Part));               // skill 2 is on side 6
+        PartDeclaration part = Assert.Single(result.Kinds[0].Loaded.Single().Declaration.Parts);
+        Assert.Equal(("kin", "skill_id", "loot_sides", 1, "On skill 1's side."),
+                     (part.Name, part.Field, part.Global, part.SameAs, part.Note));
+
+        // A side is compared as a published value is: LOOT's own write is refused and decides nothing.
+        ExportResult faulty = GameDataExporter.Run(WithDeclarations(Game(Faults.LoaderScriptWrites), WithLoader(Parted)));
+        Refusal side = Assert.Single(faulty.Report.Refusals, refusal => refusal.Field == "loot.kin:loot_sides");
+        Assert.Equal((2, 2, LootSides + 2), (side.Id, side.Index, side.Address));
+        Assert.Null(Entity(faulty, "item", 2).Loaded.Single(row => row.Record == 1).Part);
+
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("kin|0|skill_id|loot_sides|1|On skill 1's side.", Scalar(
+                "SELECT name || '|' || position || '|' || field || '|' || global || '|' || same_as || '|' || note "
+                + "FROM loaded_part WHERE kind = 'item' AND loaded = 'loot'"));
+            Assert.Equal("1:1:kin,1:2:kin,2:1:-,2:2:kin", Scalar(
+                "SELECT group_concat(id || ':' || record || ':' || ifnull(part, '-'), ',') FROM "
+                + "(SELECT * FROM \"item.loot\" ORDER BY id, record)"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     // A loader with no scope (export plan §5): items 1 and 2, three steps each, its seeds the key and the key's row of

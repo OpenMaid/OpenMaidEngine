@@ -4009,13 +4009,14 @@
         "item_category": [0, 0, 1],
         "item_costume_gem_sockets": [0, 0, 1],
         "shared_scratch_value": [1, 0, 0],
+        "synthesis_rank_names": [0, 0, 1],
         "unit_canonical_character_id": [0, 0, 4],
         "unit_initial_class_titles": [0, 0, 1],
         "unit_level_cap": [0, 0, 2],
         "unit_stat_growth_rates": [0, 0, 1],
         "weapon_rank_exp_thresholds": [0, 0, 2]
       },
-      "unnamed": [6, 4, 8],
+      "unnamed": [6, 4, 7],
       "patch_points": {
         "kamidori.experience.after_calculation": "0x88"
       },
@@ -4281,9 +4282,10 @@
         "story_event_flags": [0, 0, 4],
         "studio_material_saving": [5, 0, 0],
         "studio_mutation_rate": [1, 0, 0],
-        "studio_synthesis_exp_bonus": [2, 0, 0]
+        "studio_synthesis_exp_bonus": [2, 0, 0],
+        "synthesis_rank_names": [0, 0, 1]
       },
-      "unnamed": [22, 16, 12],
+      "unnamed": [22, 16, 11],
       "waits": {
         "mark-frame-yield": 5,
         "sleep": 1
@@ -4448,9 +4450,10 @@
         "stage_objective_texts": [0, 0, 1],
         "stage_result": [0, 1, 0],
         "story_event_flags": [0, 0, 2],
+        "synthesis_rank_names": [0, 0, 2],
         "unit_canonical_character_id": [0, 0, 2]
       },
-      "unnamed": [11, 9, 4],
+      "unnamed": [11, 9, 2],
       "waits": {
         "crossfade-surfaces": 1,
         "sleep": 1
@@ -4723,6 +4726,7 @@
         "battle_unit_resistance_indices": [0, 0, 1],
         "current_battle_slot": [6, 0, 0],
         "item_attack_element": [0, 0, 1],
+        "labyrinth_difficulty": [1, 0, 0],
         "routine_id": [8, 1, 0],
         "routine_step_index": [12, 2, 0],
         "skill_attack_element_encoded": [0, 0, 2],
@@ -4731,7 +4735,7 @@
         "unit_condition_levels": [0, 0, 1],
         "unit_skill_possessed_flags": [0, 0, 2]
       },
-      "unnamed": [9, 4, 8]
+      "unnamed": [8, 4, 8]
     },
     "BUINIT.BIN": {
       "id": 17670,
@@ -6865,10 +6869,11 @@
         "SHOWSETTLE.BIN"
       ],
       "globals": {
+        "craftsman_rank_names": [0, 0, 2],
         "expedition_elapsed_days": [4, 0, 0],
         "protagonist_craftsman_rank": [2, 0, 0]
       },
-      "unnamed": [7, 1, 10]
+      "unnamed": [7, 1, 8]
     },
     "DRAWSTUDIO.BIN": {
       "id": 17570,
@@ -6925,14 +6930,16 @@
         "alchemy_synthesis_exp": [1, 0, 0],
         "alchemy_synthesis_rank": [3, 0, 0],
         "alchemy_synthesis_rank_exp_thresholds": [0, 0, 1],
+        "craftsman_rank_names": [0, 0, 2],
         "player_evaluation_points": [1, 0, 0],
         "player_money": [1, 0, 0],
         "protagonist_craftsman_rank": [3, 0, 0],
         "studio_extension_costs": [0, 0, 1],
         "studio_extension_required_ranks": [0, 0, 1],
-        "studio_room_levels": [4, 0, 0]
+        "studio_room_levels": [4, 0, 0],
+        "synthesis_rank_names": [0, 0, 1]
       },
-      "unnamed": [2, 1, 3]
+      "unnamed": [2, 1, 0]
     },
     "DRAWTOOLTIP.BIN": {
       "id": 17469,
@@ -6955,6 +6962,7 @@
         "calc_item_stat_totals": [11, 0, 0],
         "current_item_id": [35, 0, 0],
         "current_skill_id": [7, 0, 0],
+        "element_names": [0, 0, 1],
         "item_attack_element": [0, 0, 1],
         "item_category": [0, 0, 12],
         "item_critical_rate_bonus": [0, 0, 1],
@@ -6969,7 +6977,7 @@
         "skill_min_range_encoded": [0, 0, 2],
         "skill_names": [0, 0, 2]
       },
-      "unnamed": [10, 2, 4]
+      "unnamed": [10, 2, 3]
     },
     "DRAWVOL.BIN": {
       "id": 17543,
@@ -7388,6 +7396,7 @@
         "shared_loop_index": [1, 5, 0],
         "skill_names": [0, 0, 2],
         "skill_short_descriptions": [0, 0, 1],
+        "synthesis_rank_names": [0, 0, 1],
         "unit_canonical_character_id": [0, 0, 4],
         "unit_condition_levels": [0, 0, 3],
         "unit_condition_remaining_turns": [0, 0, 3],
@@ -7396,7 +7405,7 @@
         "unit_skill_possessed_flags": [0, 0, 1],
         "weapon_rank_exp_thresholds": [0, 0, 1]
       },
-      "unnamed": [27, 16, 12],
+      "unnamed": [27, 16, 11],
       "waits": {
         "sleep": 1
       }
@@ -7530,9 +7539,11 @@
         "floor_occupation_percent_by_faction": [2, 0, 0],
         "floor_terrain_template": [0, 0, 1],
         "item_category": [0, 0, 2],
+        "item_category_names": [0, 0, 2],
         "item_growth_enabled": [0, 0, 1],
         "item_inventory_counts": [0, 0, 2],
         "item_names": [0, 0, 3],
+        "labyrinth_difficulty": [1, 0, 0],
         "map_neighbor_dx": [0, 0, 18],
         "map_neighbor_dy": [0, 0, 18],
         "map_overlay_mode_flags": [17, 8, 0],
@@ -7655,7 +7666,7 @@
         "world_area_travel_days": [0, 0, 1],
         "world_area_visited_profile_flags": [0, 0, 2]
       },
-      "unnamed": [971, 262, 529],
+      "unnamed": [970, 262, 527],
       "patch_points": {
         "kamidori.stage.after_loader": "0x527",
         "kamidori.stage.after_ready_handlers": "0xd58",
@@ -7782,6 +7793,7 @@
         "joining_unit_count": [0, 3, 0],
         "joining_unit_ids": [0, 3, 0],
         "joining_unit_modes": [0, 3, 0],
+        "labyrinth_difficulty": [2, 2, 0],
         "party_cost_capacity": [0, 1, 0],
         "player_evaluation_points": [0, 1, 0],
         "player_money": [0, 1, 0],
@@ -7802,7 +7814,7 @@
         "unit_voice_family_unit_ids": [0, 0, 1],
         "unit_voice_setting_slot": [0, 0, 1]
       },
-      "unnamed": [92, 49, 23],
+      "unnamed": [90, 47, 23],
       "waits": {
         "crossfade-surfaces": 1,
         "fade-surface-out-to-black": 1,
@@ -8644,6 +8656,7 @@
         "alchemy_synthesis_exp": [1, 0, 0],
         "alchemy_synthesis_rank": [3, 0, 0],
         "alchemy_synthesis_rank_exp_thresholds": [0, 0, 1],
+        "craftsman_rank_names": [0, 0, 2],
         "current_objective_id": [5, 2, 0],
         "debug_unlock_all_entries": [1, 0, 0],
         "objective_chapter_labels": [0, 0, 1],
@@ -8659,9 +8672,10 @@
         "player_money": [1, 0, 0],
         "protagonist_craftsman_rank": [2, 0, 0],
         "story_event_flags": [0, 0, 4],
-        "studio_room_levels": [4, 0, 0]
+        "studio_room_levels": [4, 0, 0],
+        "synthesis_rank_names": [0, 0, 1]
       },
-      "unnamed": [12, 7, 3],
+      "unnamed": [12, 7, 0],
       "waits": {
         "sleep": 1
       }
@@ -8722,6 +8736,7 @@
         "dig_table_item_ids": [0, 0, 1],
         "item_affinity_level_deltas": [0, 0, 1],
         "item_category": [0, 0, 6],
+        "item_category_names": [0, 0, 2],
         "item_critical_rate_bonus": [0, 0, 1],
         "item_granted_skill_id": [0, 0, 2],
         "item_handler_script_id": [0, 0, 1],
@@ -8749,7 +8764,7 @@
         "world_area_state_flags": [0, 0, 3],
         "world_area_visited_profile_flags": [0, 0, 3]
       },
-      "unnamed": [13, 8, 28],
+      "unnamed": [13, 8, 26],
       "patch_points": {
         "kamidori.stage.after_info_reload": "0xd20"
       },
@@ -8775,6 +8790,7 @@
         "alchemy_recipe_unlock_craftsman_ranks": [0, 0, 3],
         "alchemy_recipe_unlock_synthesis_ranks": [0, 0, 3],
         "alchemy_recipe_unlock_texts": [0, 0, 3],
+        "craftsman_rank_names": [0, 0, 2],
         "current_item_id": [3, 1, 0],
         "debug_unlock_all_entries": [1, 0, 0],
         "item_category": [0, 0, 1],
@@ -8782,9 +8798,10 @@
         "item_icon_asset_id": [0, 0, 4],
         "item_inventory_counts": [0, 0, 1],
         "item_names": [0, 0, 3],
-        "item_sort_key": [0, 0, 1]
+        "item_sort_key": [0, 0, 1],
+        "synthesis_rank_names": [0, 0, 3]
       },
-      "unnamed": [8, 6, 8],
+      "unnamed": [8, 6, 3],
       "waits": {
         "sleep": 1
       }
@@ -8847,6 +8864,7 @@
         "condition_level_names": [0, 0, 1],
         "current_skill_id": [47, 2, 0],
         "debug_unlock_all_entries": [1, 0, 0],
+        "element_names": [0, 0, 1],
         "skill_area_cooldown_turns": [0, 0, 2],
         "skill_area_shape_id": [0, 0, 6],
         "skill_attack_element_encoded": [0, 0, 2],
@@ -8863,7 +8881,7 @@
         "skill_resource_deltas": [0, 0, 4],
         "skill_sort_key": [0, 0, 1]
       },
-      "unnamed": [10, 7, 10],
+      "unnamed": [10, 7, 9],
       "waits": {
         "sleep": 1
       }
@@ -8983,7 +9001,10 @@
         "class_change_rule_script_ids": [0, 1, 0],
         "costume_board_loader_script_ids": [0, 1, 0],
         "costume_sprite_hooks": [0, 1, 0],
+        "craftsman_rank_names": [0, 11, 0],
+        "element_names": [0, 8, 0],
         "event_cg_variant_handler_chain": [0, 1, 0],
+        "item_category_names": [0, 25, 0],
         "map_neighbor_dx": [0, 0, 1],
         "map_neighbor_dy": [0, 0, 1],
         "mpinit_layer_script_ids": [0, 1, 0],
@@ -8994,10 +9015,11 @@
         "stage_loader_script_ids": [0, 1, 2],
         "stage_ready_handler_script_ids": [0, 1, 0],
         "stage_round_handler_script_ids": [0, 1, 0],
+        "synthesis_rank_names": [0, 7, 0],
         "town_site_hooks": [0, 1, 0],
         "voice_setting_default_text_colors": [0, 0, 2]
       },
-      "unnamed": [0, 67, 7],
+      "unnamed": [0, 16, 7],
       "patch_points": {
         "kamidori.boot.data_layered": "0x20d",
         "kamidori.boot.data_ready": "0x2cf"
@@ -9652,6 +9674,7 @@
       ],
       "globals": {
         "current_battle_slot": [0, 1, 0],
+        "labyrinth_difficulty": [1, 0, 0],
         "map_routine_activation_percents": [0, 0, 1],
         "map_routine_forbidden_story_flag_ids": [0, 0, 2],
         "map_routine_provider_selectors": [0, 0, 1],
@@ -9663,7 +9686,7 @@
         "unit_condition_baseline_levels": [0, 0, 2],
         "unit_condition_levels": [0, 0, 1]
       },
-      "unnamed": [7, 3, 1]
+      "unnamed": [6, 3, 1]
     },
     "MVSEEK.BIN": {
       "id": 17727,
@@ -10735,12 +10758,13 @@
       ],
       "globals": {
         "character_levels": [1, 0, 0],
+        "craftsman_rank_names": [0, 0, 2],
         "gallery_image_assets": [0, 0, 3],
         "player_evaluation_points": [1, 0, 0],
         "player_money": [1, 0, 0],
         "protagonist_craftsman_rank": [1, 0, 0]
       },
-      "unnamed": [115, 56, 117],
+      "unnamed": [115, 56, 115],
       "waits": {
         "run-timed-callback-sequence": 1,
         "sleep": 1
@@ -20745,10 +20769,11 @@
         "costume_enhancement_effect_targets": [0, 0, 1],
         "costume_enhancement_effect_types": [0, 0, 3],
         "current_item_id": [5, 0, 0],
+        "element_names": [0, 0, 1],
         "item_costume_enhancement_grid": [0, 0, 5],
         "selected_costume_enhancement_id": [7, 0, 0]
       },
-      "unnamed": [7, 3, 1],
+      "unnamed": [7, 3, 0],
       "waits": {
         "sleep": 1
       }
@@ -20782,6 +20807,7 @@
         "expedition_elapsed_days": [1, 1, 0],
         "item_names": [0, 0, 1],
         "item_sort_key": [0, 0, 1],
+        "labyrinth_difficulty": [2, 0, 0],
         "roster_flags": [0, 0, 3],
         "roster_unit_ids": [0, 0, 3],
         "scjump_chain_pending": [2, 4, 0],
@@ -20833,7 +20859,7 @@
         "world_area_visible_count": [4, 1, 0],
         "world_area_visited_profile_flags": [0, 0, 2]
       },
-      "unnamed": [18, 11, 5],
+      "unnamed": [16, 11, 5],
       "patch_points": {
         "kamidori.stage.after_list_preview": "0x1408"
       },
@@ -20983,6 +21009,7 @@
         "battle_unit_unit_ids": [0, 0, 1],
         "current_battle_slot": [59, 0, 0],
         "current_unit_id": [29, 0, 0],
+        "labyrinth_difficulty": [1, 0, 0],
         "stage_enemy_auto_level_scale_divisor": [0, 0, 2],
         "stage_enemy_battle_routine_set_ids": [0, 0, 1],
         "stage_enemy_max_level": [0, 0, 2],
@@ -21001,7 +21028,7 @@
         "unit_starting_level": [0, 0, 7],
         "unit_stat_growth_rates": [0, 0, 1]
       },
-      "unnamed": [4, 0, 2]
+      "unnamed": [3, 0, 2]
     },
     "SETEQUIP.BIN": {
       "id": 17508,
@@ -21131,6 +21158,7 @@
         "current_stage_id": [2, 0, 0],
         "current_stage_turn": [1, 0, 0],
         "field_map_continue_mode": [1, 0, 0],
+        "labyrinth_difficulty": [1, 0, 0],
         "object_type_state_mode": [0, 0, 2],
         "object_type_use_limit": [0, 0, 2],
         "stage_all_objectives_complete_flags": [0, 0, 1],
@@ -21142,7 +21170,7 @@
         "stage_object_use_counts": [0, 0, 1],
         "story_event_flags": [0, 0, 2]
       },
-      "unnamed": [2, 0, 1]
+      "unnamed": [1, 0, 1]
     },
     "SETOCC.BIN": {
       "id": 11600,
@@ -23302,6 +23330,7 @@
         "current_floor_terrain_grid": [0, 0, 1],
         "current_stage_id": [1, 0, 0],
         "current_unit_id": [13, 3, 0],
+        "element_names": [0, 0, 1],
         "item_cursed_flag": [0, 0, 1],
         "item_icon_asset_id": [0, 0, 2],
         "item_names": [0, 0, 5],
@@ -23332,7 +23361,7 @@
         "unit_race": [0, 0, 2],
         "unit_skill_possessed_flags": [0, 0, 1]
       },
-      "unnamed": [18, 4, 17],
+      "unnamed": [18, 4, 16],
       "waits": {
         "sleep": 1
       }
@@ -23620,12 +23649,13 @@
         "joining_unit_count": [0, 1, 0],
         "joining_unit_ids": [0, 1, 0],
         "joining_unit_modes": [0, 1, 0],
+        "labyrinth_difficulty": [0, 1, 0],
         "party_cost_capacity": [0, 1, 0],
         "protagonist_craftsman_rank": [0, 1, 0],
         "scjump_chain_pending": [0, 1, 0],
         "scjump_decision_out": [0, 6, 0]
       },
-      "unnamed": [74, 62, 37],
+      "unnamed": [74, 61, 37],
       "waits": {
         "crossfade-surfaces": 1,
         "fade-surface-out-to-black": 1,

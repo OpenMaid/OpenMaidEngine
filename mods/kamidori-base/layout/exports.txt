@@ -183,6 +183,7 @@ costume_enhancement_material_item_ids
 costume_enhancement_material_quantities
 costume_enhancement_tiers
 costume_sprite_hooks
+craftsman_rank_names
 current_arena_battle_id
 current_battle_slot
 current_card_generation_list_id
@@ -219,6 +220,7 @@ dungeon_hall_grid_x
 dungeon_hall_grid_y
 dungeon_hall_required_flags
 dungeon_hall_textures
+element_names
 event_cg_variant_handler_chain
 event_delta_scalars
 expedition_elapsed_days
@@ -246,6 +248,7 @@ item_affinity_level_deltas
 item_attack_element
 item_battle_animation_id
 item_category
+item_category_names
 item_character_whitelist
 item_condition_level_deltas
 item_costume_battle_variant
@@ -302,6 +305,7 @@ joining_unit_count
 joining_unit_ids
 joining_unit_levels
 joining_unit_modes
+labyrinth_difficulty
 map_neighbor_dx
 map_neighbor_dy
 map_overlay_mode_flags
@@ -545,6 +549,7 @@ studio_shop_visitor_rate
 studio_shop_visitor_rate_by_level
 studio_synthesis_exp_bonus
 studio_synthesis_exp_bonus_by_level
+synthesis_rank_names
 terrain_element_ids
 terrain_move_costs
 terrain_required_skill_ids

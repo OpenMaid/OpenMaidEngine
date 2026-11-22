@@ -687,8 +687,8 @@ authors.
   - **The `field` table has a `columns` column** (spec §7.2 does not): for an array field, a JSON array of its
     elements' names from the registry's `columns`, with null for an unnamed element (`unit.stats` is `["accuracy", …,
     "capacity"]`). The site's milestone 2 needs it to label a record's arrays and to write a modder's name for one
-    element (`unit[1].stats.max_hp`). Values with a meaning per number (a race, a category) have no names in the
-    registry, so the export still gives them as numbers.
+    element (`unit[1].stats.max_hp`). Values with a meaning per number (a race, a category) had no names in the
+    registry then; the value facets below give them names.
 - **A loader publishes its tables** (milestone 3, §4.2). Spec §6.3 runs loaders but does not say where their output
   goes. The `[[loader]]` entry names the tables of its scope it publishes, with `exists` and `fields` as a kind has
   them, and the export gives them three things spec §7.2 lacks: the `loaded` and `loaded_field` tables, a
@@ -808,3 +808,39 @@ authors.
     habitat areas a name and a link ("maybe we add a labyrinth entity or at least get the location name instead of an
     id"). The `dig_table` kind is dropped, since its page could not say where a dig site is; the backlog's stage maps
     item keeps it.
+- **The player view** (the usability review's findings 5, 6 and 9, the user's decisions of 2026-11-22: "Sure, give
+  allies their own table", "I'm fine with your recommendations"). None of it is in spec §5 or §7.2. The lint checks
+  each part, `tools/test_entities_build.py`, `tools/test_globals.py` and the exporter's tests cover it, and the content
+  hash leaves out labels, formats and value names, which are the kind's and the registry's, as it leaves out the name
+  of an entity a reference links to:
+  - **Engine fields are not published.** Sort keys, catalog switches, variant and group ids, a skill's area shape and
+    target mode, an enemy's faction, routines, spawn place, weight and level divisor, a unit's boss class, and two
+    recipe fields no record writes (the required synthesis rank and the fourth room's level) left `fields`, so only the
+    modder panel lists them.
+  - **Labels.** `[kind.labels]` and a loaded table's `labels` give a field or a group the name a reader knows it by,
+    at most 40 characters, where its own name reads as the game stores it (`min_range_encoded` is "Min range",
+    `boss_flag` "Boss stage"). The `label` table holds them (kind, name, text), a loaded table's field written
+    `table.field`.
+  - **Value facets** in the registry, on an integer `[[global]]` (`tools/globals_build.py` lints them, the global
+    reference shows them in a line): `values`, OME's English words for some values (`sex` 1 "Male", `boss_flag` 1
+    "Yes", `duration` -1 "Until cleared"); `values_from = { global, first }`, a string list of the game's that names
+    them, element k naming value first + k (a unit's race from `species_names`, an element resistance from
+    `affinity_level_names` with first -5); `bits_of`, a mask whose bit k stands for value k of that global (an enemy's
+    difficulty, a skill's weapon categories); and `scale`, `offset` and `unit`, a number shown as stored × scale +
+    offset in its unit (growth in hundredths, a skill's range less one, `%`, days, turns, tiles). A mask takes no
+    words, scale or offset. Kamidori has 42 globals with facets, from game readers each (`usage` cites them), and five
+    new ones: the element, craftsman rank, synthesis rank and item category name lists INIT2 writes, and
+    `labyrinth_difficulty` (`0x320b`, 1 normal, 2 hard, as GAMESTART sets it).
+  - **Their tables.** `value_format` (kind, field, scale, offset, unit, bits) for each published field whose global
+    has a facet; `value_name` (kind, field, value, lang, text), with lang `''` for OME's word, `ja` for the game's name
+    and each language's translation of it, which comes from the game's strings as a published text does
+    (`language.String` at its origin). A game's name is refused as published text is, by the field's writer, and a
+    refusal is reported, field `<name>:<global>`. A mask's names are its target's. A loaded table's field is written
+    `table.field`.
+  - **A loaded table's parts.** `[[loader.tables.<table>.parts]]` names a part (`name`, `note`) and its rule: a row is
+    in the part when the list `global` at the row's integer `field` is not 0 and equals the list's element `same_as`;
+    the first part whose rule holds takes it. Kamidori's stage enemies have one, `ally`: a row whose faction
+    `stage_faction_alliance` puts with faction 1, the player's, which is the registry's hostility rule and FIELD@0xc45's
+    test. 42 rows on 18 stages are allies; STINIT gives faction 3 the player's group on 14 stages. The `loaded_part` table holds a table's
+    parts, and the table's rows gain a `part` column; a data file and the modder panel still treat the table as one.
+    A refusal of a cell of the rule's global is reported, field `<table>.<part>:<global>`, and decides nothing.

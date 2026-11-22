@@ -24,7 +24,8 @@ public static class GameDataExporter
     public static readonly IReadOnlySet<string> FixedTables = new HashSet<string>(StringComparer.Ordinal)
     {
         "build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref", "relation",
-        "picture", "cell", "snippet", "script_use", "loaded", "loaded_field",
+        "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part", "label", "value_format",
+        "value_name",
     };
 
     public static ExportResult Run(ExportInputs inputs)
@@ -46,6 +47,7 @@ public static class GameDataExporter
         }
         foreach (LoaderDeclaration loader in declarations.Loaders)
             Load(inputs, boot, loader, kinds, rule, languages, report);
+        foreach (ExportKind kind in kinds) NameValues(inputs, boot, kind, rule, languages, report);
         LinkReferences(kinds, report);
         if (declarations.Relations.Count > 0) FindRelations(inputs, kinds, report);
         foreach (ExportKind kind in kinds) WriteSnippets(inputs, kind, report);
@@ -60,6 +62,54 @@ public static class GameDataExporter
             foreach (ExportKind kind in kinds) CountUnnamed(names, boot, kind, report);
         report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
         return new ExportResult(declarations, kinds, report, inputs.BuildInfo) { Languages = inputs.Languages };
+    }
+
+    /// <summary>The words and names of the values a kind shows (plan §5): for each published field, its own and its
+    /// loaded tables', whose global has value facets, OME's words and the game's names for its values, or for a mask's
+    /// bits those of the global its bits stand for. A name is a string the boot left in the game's table, checked as a
+    /// published text is, in the source language and each translation's.</summary>
+    private static void NameValues(ExportInputs inputs, GameSession boot, ExportKind kind, BuilderRule rule,
+                                   IReadOnlyList<Translation> languages, ExportReport report)
+    {
+        string id = kind.Declaration.Id;
+        var fields = kind.Published.Select(field => (field.Name, field.Array))
+            .Concat(kind.Loaded.SelectMany(table => table.Published.Select(
+                field => ($"{table.Declaration.Name}.{field.Name}", field.Array))));
+        foreach ((string name, ArrayLayout array) in fields)
+        {
+            if (array.Format is not { Names: true } format) continue;
+            ValueFormat named = format;
+            if (format.BitsOf is { } bits)
+                named = inputs.Registry.Find(bits)?.Format
+                        ?? throw new ExportFailure($"{id}.{name}'s bits stand for the values of {bits}, which have no words");
+            foreach ((long value, string word) in named.Words) kind.ValueNames.Add(new ExportValueName(name, value, "", word));
+            if (named.NamesFrom is not { } from) continue;
+            ArrayLayout names = inputs.Registry.Find(from.Global) is { Bank: GlobalBank.String, Dimensions.Count: 1 } list
+                ? list
+                : throw new ExportFailure($"{id}.{name}'s values are named by {from.Global}, which is no list of strings");
+            for (int element = 0; element < names.Dimensions[0]; element++)
+            {
+                int address = names.Address + element;
+                string text = boot.GlobalStrings.GetValueOrDefault(address, "");
+                if (text.Length == 0) continue;
+                string? writer = boot.Writers.TryGetValue(new GlobalCell(GlobalBank.String, address), out string? script)
+                    ? script
+                    : null;
+                if (RefusalOf(boot, new ExportCell(names.Name, element, GlobalBank.String, address, 0, text, writer), rule)
+                    is { } reason)
+                {
+                    report.Refusals.Add(new Refusal(id, 0, $"{name}:{names.Name}", element, GlobalBank.String, address,
+                                                    reason));
+                    continue;
+                }
+                long value = from.First + element;
+                kind.ValueNames.Add(new ExportValueName(name, value, ExportWriter.SourceLanguage, text));
+                if (!boot.StringStores.TryGetValue(address, out TextManager.StringStore store)) continue;
+                foreach (Translation language in languages)
+                    if (language.String(text, store.Origin) is { } translated)
+                        kind.ValueNames.Add(new ExportValueName(name, value, language.Tag, translated));
+            }
+        }
     }
 
     /// <summary>The integer cells a kind's builders (the writers of its cells) wrote that no global of the registry
@@ -299,11 +349,25 @@ public static class GameDataExporter
             if (keys.Table.Fields.Any(field => field.Field == declared.Name))
                 throw new ExportFailure($"{where}: table {declared.Name} has the name of a field of {keys.Table.Name}");
             TableLayout table = registry.Table(declared.Table);
+            var parts = new List<(PartDeclaration, FieldLayout, ArrayLayout)>();
+            foreach (PartDeclaration part in declared.Parts)
+            {
+                FieldLayout field = registry.Resolve(table, part.Field);
+                ArrayLayout global = registry.IntegerArray(part.Global);
+                if (field.Elements != 1 || field.IsString)
+                    throw new ExportFailure($"{where}: table {declared.Name}'s part {part.Name} reads {part.Field}, which "
+                                            + "is not one integer cell of a record");
+                if (global.Dimensions.Count != 1 || part.SameAs < 0 || part.SameAs >= global.Dimensions[0])
+                    throw new ExportFailure($"{where}: table {declared.Name}'s part {part.Name} compares with cell "
+                                            + $"{part.SameAs} of {part.Global}, which is no cell of a list");
+                parts.Add((part, field, global));
+            }
             var loaded = new ExportLoadedTable(declared, loader.Scope, table, registry.FieldsOf(table),
                                                declared.Fields.Select(field => registry.Resolve(table, field)).ToList(),
                                                registry.Resolve(table, declared.Exists))
             {
                 Text = declared.Text.Select(field => registry.Resolve(table, field)).ToList(),
+                Parts = parts,
             };
             if (loaded.Published.Any(field => field.IsString))
                 throw new ExportFailure($"{where}: table {declared.Name} publishes a string among its fields; text is "
@@ -401,7 +465,7 @@ public static class GameDataExporter
                 }
                 values.Add((field.Name, elements));
             }
-            entity.Loaded.Add(new ExportLoadedRow(name, row, values));
+            entity.Loaded.Add(new ExportLoadedRow(name, row, values) { Part = PartOf(run, table, At, keys, entity, rule, report) });
             foreach (FieldLayout field in table.Text)
                 for (int element = 0; element < field.Elements; element++)
                 {
@@ -424,6 +488,35 @@ public static class GameDataExporter
                     return refused ? null : field.IsString ? new DataString(cell.Text ?? "") : new DataInteger(cell.Number);
                 })));
         }
+    }
+
+    /// <summary>The part of its table a loaded record is in (export plan §5): the first part whose global, at the
+    /// index the record's field holds, is not 0 and equals the global's cell the part names; null for none. The cells
+    /// it compares are checked as a published value is: a refused one is reported and decides nothing.</summary>
+    private static string? PartOf(GameSession run, ExportLoadedTable table,
+                                  Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at, ExportKind keys,
+                                  ExportEntity entity, BuilderRule rule, ExportReport report)
+    {
+        foreach ((PartDeclaration part, FieldLayout field, ArrayLayout global) in table.Parts)
+        {
+            var (index, refused) = at(field, 0);
+            if (refused || index.Number < 0 || index.Number >= global.Dimensions[0]) continue;
+            long? Checked(int element)
+            {
+                int address = global.Address + element;
+                string? writer = run.Writers.TryGetValue(new GlobalCell(global.Bank, address), out string? script) ? script : null;
+                var cell = new ExportCell(global.Name, element, global.Bank, address, run.Globals.GetValueOrDefault(address),
+                                          null, writer);
+                if (RefusalOf(run, cell, rule) is not { } reason) return cell.Number;
+                report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id,
+                                                $"{table.Declaration.Name}.{part.Name}:{global.Name}", element,
+                                                cell.Bank, cell.Address, reason));
+                return null;
+            }
+            long? group = Checked((int)index.Number), same = Checked(part.SameAs);
+            if (group is { } value && value != 0 && value == same) return part.Name;
+        }
+        return null;
     }
 
     /// <summary>The cells a seed writes for key <paramref name="key"/> at step <paramref name="step"/>: one for a single

@@ -47,6 +47,7 @@ REGISTRY = "".join([
     g("0x480", "bonus_level", "int"),
     g("0x490", "bonus_stats", "int[3]", {"0": "attack", "1": "defense", "2": "speed"}),
     g("0x4a0", "bonus_skills", "int[2][3]"),
+    g("0x4c0", "foe_side_groups", "int[4]"),
 ]) + '''
 [[table]]
 name = "hero"
@@ -234,7 +235,8 @@ def test_good_declarations():
     check(data.get("loaders", [{}])[0].get("builders") == ["FOEINIT"], "a loader keeps its own builders")
     check(data.get("loaders", [{}])[0].get("tables") == {"foe": {"table": "foe", "exists": "hero",
                                                                "fields": ["hero", "levels"], "text": [],
-                                                               "literals": [], "notes": {}}},
+                                                               "literals": [], "notes": {}, "labels": {},
+                                                               "parts": []}},
           "a loader's published table names its registry table beside its short name")
     check(data.get("loaders", [{}])[0].get("seed") == [{"global": "current_hero_id", "index": [], "value": "key"}],
           "a loader's seed table is written as the list of cells it seeds")
@@ -538,6 +540,10 @@ size = [15, 15]
 class = "1 knight, 2 archer."
 arms = "Each weapon slot and its level."
 
+[kind.labels]
+weapon_level = "Weapon rank"
+arms = "Arms"
+
 [kind.text_blocks.bio]
 summary = [0, 0]
 detail = [1, 1]
@@ -554,6 +560,8 @@ fields = ["hero"]
 text = ["name"]
 literals = [{ record = 0, field = "name", script = "AIM", offset = 0x10 }]
 notes = { hero = "Who it is." }
+labels = { hero = "Foe" }
+parts = [{ name = "friend", field = "hero", global = "foe_side_groups", same_as = 1, note = "On the hero's side." }]
 
 [[loader]]
 keys = "hero"
@@ -592,6 +600,10 @@ def test_design_pass_features():
     check(foe.get("text") == ["name"] and foe.get("literals") == [{"record": 0, "field": "name", "script": "AIM",
                                                                   "offset": 0x10}]
           and foe.get("notes") == {"hero": "Who it is."}, "a loaded table keeps its text, literals and notes")
+    check(hero.get("labels") == {"weapon_level": "Weapon rank", "arms": "Arms"} and foe.get("labels") == {"hero": "Foe"},
+          "the JSON keeps a kind's and a loaded table's labels")
+    check(foe.get("parts") == [{"name": "friend", "field": "hero", "global": "foe_side_groups", "same_as": 1,
+                                "note": "On the hero's side."}], "a loaded table keeps its parts")
     stepped = loaders[1] if len(loaders) > 1 else {}
     check(stepped.get("scope") is None and stepped.get("steps") == 5 and stepped.get("key_range") == [0, 3],
           "a loader with no scope keeps its steps and key range")
@@ -612,6 +624,8 @@ def test_design_pass_features():
                                 'literals = [{ record = 7, field = "hero", script = "aim", offset = -1 }, '
                                 '{ record = 7, field = "hero", script = "AIM", offset = 1 }]')
                        .replace('notes = { hero = "Who it is." }', 'notes = { speed = "fast" }')
+                       .replace('weapon_level = "Weapon rank"', 'trait = "Trait"\nweapon = "two\\nlines"')
+                       .replace('labels = { hero = "Foe" }', 'labels = { levels = "Levels" }')
                        .replace('{ global = "current_hero_id", value = "key" },',
                                 '{ global = "current_hero_id", index = [0], value = "key" },')
                        .replace('[loader.tables.bonus]\ntable = "bonus"', '[loader.tables.bonus]\ntable = "foe"'))
@@ -625,6 +639,8 @@ def test_design_pass_features():
                    "literal: 'hero' is not one of the table's text fields", "literal: record 7 is not one of table foe",
                    "literal: script: 'aim' must be", "literal: offset must be the instruction's dword offset",
                    "literal: record 7's hero has two literals", "note 'speed' names none of the table's fields or text",
+                   "label 'trait' names nothing the page shows", "label weapon must be a name of at most 40 characters",
+                   "table 'foe': label 'levels' names nothing the page shows",
                    "seed current_hero_id is int, so its index must have 0 term(s)",
                    "text_blocks bio: block name 'Summary' must be a lowercase identifier",
                    "text_blocks bio: block detail must be [first, last], lines of the row's 0 to 1",
@@ -640,6 +656,24 @@ def test_design_pass_features():
                    "text_blocks name: name is one line for each record; blocks divide a row of lines",
                    "text_blocks class: 'class' is not one of the kind's text fields"):
         check(needle in output, f"the lint flags {needle!r}")
+
+    output = errors_of(FEATURES.replace(
+        'parts = [{ name = "friend", field = "hero", global = "foe_side_groups", same_as = 1, note = "On the hero\'s side." }]',
+        'parts = [{ name = "Friend", field = "levels", global = "foe_levels", same_as = 1, side = 1 }, '
+        '{ name = "bonus", field = "hero", global = "foe_side_groups", same_as = 9 }, '
+        '{ name = "bonus", field = "hero", global = "nowhere", same_as = 0 }]'))
+    for needle in ("part 'Friend': a part's name must be a lowercase identifier", "part 'Friend': unknown key 'side'",
+                   "part 'Friend': field levels is not one integer cell of a record",
+                   "part 'Friend': global foe_levels is int[5][2], not a list of integers",
+                   "part 'bonus': same_as 9 is not a cell of foe_side_groups",
+                   "part 'bonus': the loader has two parts named bonus",
+                   "part 'bonus': global 'nowhere' is not a global of the registry"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+    output = errors_of(FEATURES.replace('fields = ["hero"]\ntext = ["name"]', 'fields = ["hero"]\ntext = ["name"]')
+                       .replace('name = "friend", field', 'name = "foe", field'))
+    check("table 'foe''s part 'foe' has the name of one of the loader's tables" in output,
+          "the lint flags a part named as one of its loader's tables")
 
     output = errors_of(FEATURES.replace('labels = "foe.name"', 'labels = "boss.name"')
                        .replace('key_range = [0, 3]\n', '').replace('steps = 5\n', '')

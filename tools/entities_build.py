@@ -40,25 +40,31 @@ RESERVED_KINDS = {"tooltips"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
 EXPORT_TABLES = {"build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref",
-                 "relation", "picture", "cell", "snippet", "script_use", "loaded", "loaded_field"}
+                 "relation", "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part",
+                 "label", "value_format", "value_name"}
 KEY = "key"
 STEP = "step"
 EVERY = "*"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
-             "description", "group", "notes", "text_blocks"}
+             "description", "group", "notes", "labels", "text_blocks"}
 DESCRIPTION_KEYS = {"name", "script", "seed"}
 GROUP_KEYS = {"name", "fields", "labels"}
 SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
 # A picture sheet's catalog record, with its extension (SO009.AGF).
 SHEET = re.compile(r"[A-Z0-9_]+\.[A-Z0-9]+")
 LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables"}
-LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes"}
+LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts"}
+PART_KEYS = {"name", "field", "global", "same_as", "note"}
+# One integer list: a part's global, which the row's field indexes.
+LIST_TYPE = re.compile(r"int\[(\d+)\]")
 SEED_KEYS = {"global", "index", "value"}
 LITERAL_KEYS = {"record", "field", "script", "offset"}
 # A note is a line for a reader, shown when they point at a detail's label.
 NOTE_LIMIT = 300
+# A label is a reader's name for a field or group whose own name reads as the game stores it.
+LABEL_LIMIT = 40
 RELATION_KEYS = {"id", "negative", "call", "kind", "key", "count", "where", "exclude"}
 # The shapes of a relation's globals (export plan §4.5): its key one integer cell or a list, whose first cell it
 # reads; its count and the globals of its `where` one integer cell each.
@@ -528,6 +534,8 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         elif key not in shown_fields and key not in group_names:
             errors.append(f"{where}: note {key!r} names none of the kind's fields, text or groups")
         check_note(note, f"{where}: note {key}", errors)
+    # A label (export plan §5): a reader's name for a shown field, grouped or not, or a group.
+    check_labels(kind.get("labels", {}), shown_fields | group_names, where, errors)
 
 
 def check_text_blocks(game: Game, table: dict, kind: dict, where: str, errors: list[str]) -> None:
@@ -566,6 +574,18 @@ def check_text_blocks(game: Game, table: dict, kind: dict, where: str, errors: l
                 errors.append(f"{bwhere}: block {name} starts at line {run[0]}, within the block before it; the blocks "
                               "are in the order the game draws them and share no line")
             end = max(end, run[1])
+
+
+def check_labels(labels, shown: set, where: str, errors: list[str]) -> None:
+    """`labels`: a reader's name for each shown field (or group) whose own name reads as the game stores it."""
+    if not isinstance(labels, dict):
+        errors.append(f"{where}: labels must be a table of field = name")
+        return
+    for key, label in labels.items():
+        if key not in shown:
+            errors.append(f"{where}: label {key!r} names nothing the page shows")
+        if not isinstance(label, str) or not label.strip() or "\n" in label or len(label) > LABEL_LIMIT:
+            errors.append(f"{where}: label {key} must be a name of at most {LABEL_LIMIT} characters, on one line")
 
 
 def check_note(note, where: str, errors: list[str]) -> None:
@@ -683,9 +703,11 @@ def lint_loaded_tables(game: Game, tables, scope: dict | None, scoped: bool, key
                        errors: list[str]) -> dict[str, tuple[dict, dict]]:
     """A loader's published tables (game data export plan §4.2): each a table of its scope, by its short name, or, for
     a loader with no scope, the registry table its `table` names; with `exists`, `fields` and `text` as a kind has
-    them, `literals` (a script's string a record shows in place of its text field's) and `notes`. The rows go under
-    the key kind's entities. Returns each table's registry table and declaration, by short name."""
+    them, `literals` (a script's string a record shows in place of its text field's), `notes`, and `parts` (the rows
+    the site shows apart, export plan §5). The rows go under the key kind's entities. Returns each table's registry
+    table and declaration, by short name."""
     found: dict[str, tuple[dict, dict]] = {}
+    part_names: dict[str, str] = {}
     if not isinstance(tables, dict):
         errors.append(f"{where}: tables must be a table of short name = {{ exists, fields }}")
         return found
@@ -781,7 +803,55 @@ def lint_loaded_tables(game: Game, tables, scope: dict | None, scoped: bool, key
             if key not in shown:
                 errors.append(f"{twhere}: note {key!r} names none of the table's fields or text")
             check_note(note, f"{twhere}: note {key}", errors)
+        check_labels(entry.get("labels", {}), set(shown), twhere, errors)
+        check_parts(game, table, short, entry, shown, twhere, part_names, errors)
+    for name, owner in part_names.items():
+        if name in tables:
+            errors.append(f"{where}: table {owner!r}'s part {name!r} has the name of one of the loader's tables")
     return found
+
+
+def check_parts(game: Game, table: dict, short: str, entry: dict, shown: list[str], where: str,
+                names: dict[str, str], errors: list[str]) -> None:
+    """A loaded table's parts (game data export plan §5): each `{ name, field, global, same_as, note }`, the rows whose
+    integer `field` indexes a cell of the integer list `global` that is not 0 and equals its cell `same_as`. The site
+    shows each part apart under its name; a data file edits the table whole. `names` collects the loader's part names,
+    each by the table it is a part of."""
+    parts = entry.get("parts", [])
+    if not isinstance(parts, list):
+        errors.append(f"{where}: parts must be an array of {{ name, field, global, same_as }}")
+        return
+    if parts and "part" in shown:
+        errors.append(f"{where}: a table with parts publishes no field named part, the column its rows name their "
+                      f"part in")
+    for part in parts:
+        pwhere = f"{where}: part {part.get('name') if isinstance(part, dict) else part!r}"
+        if not isinstance(part, dict) or not {"name", "field", "global", "same_as"} <= set(part):
+            errors.append(f"{pwhere} must be {{ name, field, global, same_as }}, with an optional note")
+            continue
+        unknown_keys(part, PART_KEYS, pwhere, errors)
+        name = part["name"]
+        if not isinstance(name, str) or not IDENTIFIER.fullmatch(name):
+            errors.append(f"{pwhere}: a part's name must be a lowercase identifier")
+        elif name in names:
+            errors.append(f"{pwhere}: the loader has two parts named {name}")
+        else:
+            names[name] = short
+        field = resolve_field(game, table, part["field"], f"{pwhere}: field", errors)
+        if field is not None and (field.kind != "integer" or not field.single):
+            errors.append(f"{pwhere}: field {part['field']} is not one integer cell of a record")
+        global_ = game.globals.get(part["global"]) if isinstance(part["global"], str) else None
+        shape = LIST_TYPE.fullmatch(str((global_ or {}).get("type") or ""))
+        if global_ is None:
+            errors.append(f"{pwhere}: global {part['global']!r} is not a global of the registry")
+        elif shape is None:
+            errors.append(f"{pwhere}: global {part['global']} is {global_.get('type')}, not a list of integers")
+        same_as = part["same_as"]
+        if not isinstance(same_as, int) or isinstance(same_as, bool) or same_as < 0 \
+                or (shape is not None and same_as >= int(shape.group(1))):
+            errors.append(f"{pwhere}: same_as {same_as!r} is not a cell of {part['global']}")
+        if "note" in part:
+            check_note(part["note"], f"{pwhere}: note", errors)
 
 
 def lint_relation(game: Game, relation: dict, source: str, ids: dict[str, str], relation_ids: set[str],
@@ -835,7 +905,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
     def loaded(loader: dict, short: str, entry: dict) -> dict:
         table = scopes[loader["scope"]]["tables"][short] if "scope" in loader else entry["table"]
         return {"table": table, "exists": entry["exists"], "fields": entry.get("fields", []),
-                "text": entry.get("text", []), "literals": entry.get("literals", []), "notes": entry.get("notes", {})}
+                "text": entry.get("text", []), "literals": entry.get("literals", []), "notes": entry.get("notes", {}),
+                "labels": entry.get("labels", {}), "parts": entry.get("parts", [])}
 
     document = {
         "note": "DO NOT EDIT -- generated by tools/entities_build.py --build",
@@ -852,7 +923,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "descriptions": k.get("description", []),
                    "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels")}
                               for g in k.get("group", [])],
-                   "notes": k.get("notes", {}),
+                   "notes": k.get("notes", {}), "labels": k.get("labels", {}),
                    "text_blocks": {ref: [{"name": name, "first": run[0], "last": run[1]} for name, run in runs.items()]
                                    for ref, runs in k.get("text_blocks", {}).items()}}
                   for k in data.get("kind", [])],

@@ -18,6 +18,11 @@ a table's `aliases` and its `[table.field_aliases]` (old name = current field), 
 A table's `[table.refs]` says which of its integer fields hold the ids of another table's records, or packed resource
 ids (`picture`), every element of the field, 0 for none (game data export spec §5.3); the JSON's `tables` and the
 reference doc carry them.
+A global's value facets say what its values mean to a reader (game data export plan §5): `values` gives OME's word for
+some values, `values_from` names the game's own table of names (`{ global, first }`: the string global's element k names
+value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global, and `scale`, `offset` and
+`unit` say how a number is shown (the stored value times scale, plus offset, in unit). The JSON and the reference doc
+carry them; the game data export publishes them.
 See docs/superpowers/specs/2026-07-07-globals-registry-and-story-flags-design.md."""
 from __future__ import annotations
 import os, re, sys, json, math, argparse, collections, tomllib
@@ -355,6 +360,94 @@ def lint_table_aliases(tables: list[dict], globals_by_name: dict) -> list[str]:
     return errors
 
 
+# A global's value facets (game data export plan §5), as the JSON carries them.
+VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit")
+# A word for a value or a unit is a reader's: one line, short.
+VALUE_WORD_LIMIT = 60
+UNIT_LIMIT = 12
+
+
+def lint_values(entries: dict) -> list[str]:
+    """The value facets: `values` keys whole numbers and words one short line; `values_from` a one-dimensional string
+    global and a whole first value; `bits_of` an integer global's mask over a global whose values have words or names;
+    `scale` a positive number other than 1, `offset` a whole number other than 0, `unit` a short word. Facets are for
+    integer globals; a mask's bits name values, so it has no words, names, scale or offset of its own."""
+    errors: list[str] = []
+    by_name = {e["name"]: e for e in entries.values() if e.get("name")}
+    for key, e in sorted(entries.items(), key=lambda item: str(item[0])):
+        present = [facet for facet in VALUE_FACETS if facet in e]
+        if not present:
+            continue
+        tag = e.get("name") or f"0x{e['_addr']:x}"
+        if bank_of(e.get("type")) != "G" or (e.get("type") or "").startswith("float"):
+            errors.append(f"{tag}: {', '.join(present)}: value facets are for integer globals")
+            continue
+        values = e.get("values")
+        if values is not None:
+            if not isinstance(values, dict) or not values:
+                errors.append(f"{tag}: values must be a table of value = word")
+            else:
+                for value, word in values.items():
+                    try:
+                        int(value, 10)
+                    except (TypeError, ValueError):
+                        errors.append(f"{tag}: values: {value!r} is not a whole number")
+                    if not isinstance(word, str) or not word.strip() or "\n" in word or len(word) > VALUE_WORD_LIMIT:
+                        errors.append(f"{tag}: values: the word for {value} must be one line of at most "
+                                      f"{VALUE_WORD_LIMIT} characters")
+        source = e.get("values_from")
+        if source is not None:
+            names = by_name.get(source.get("global")) if isinstance(source, dict) else None
+            if not isinstance(source, dict) or set(source) != {"global", "first"}:
+                errors.append(f"{tag}: values_from must be {{ global, first }}: the string global whose element k "
+                              f"names value first + k")
+            elif names is None:
+                errors.append(f"{tag}: values_from names {source['global']!r}, which the registry does not name")
+            elif not re.fullmatch(r"string\[\d+\]", names.get("type") or ""):
+                errors.append(f"{tag}: values_from {source['global']} is {names.get('type')}, not a list of strings")
+            if isinstance(source, dict) and (not isinstance(source.get("first"), int)
+                                             or isinstance(source.get("first"), bool)):
+                errors.append(f"{tag}: values_from: first must be a whole number, the value element 0 names")
+        bits = e.get("bits_of")
+        if bits is not None:
+            target = by_name.get(bits) if isinstance(bits, str) else None
+            if target is None:
+                errors.append(f"{tag}: bits_of names {bits!r}, which the registry does not name")
+            elif "values" not in target and "values_from" not in target:
+                errors.append(f"{tag}: bits_of {bits}, whose values have no words or names")
+            clash = [facet for facet in ("values", "values_from", "scale", "offset") if facet in e]
+            if clash:
+                errors.append(f"{tag}: a mask's bits name values, so it takes no {', '.join(clash)}")
+        scale = e.get("scale")
+        if scale is not None and (isinstance(scale, bool) or not isinstance(scale, (int, float)) or scale <= 0
+                                  or scale == 1):
+            errors.append(f"{tag}: scale must be a positive number other than 1, what the stored value is multiplied by")
+        offset = e.get("offset")
+        if offset is not None and (isinstance(offset, bool) or not isinstance(offset, int) or offset == 0):
+            errors.append(f"{tag}: offset must be a whole number other than 0, what is added to the stored value")
+        unit = e.get("unit")
+        if unit is not None and (not isinstance(unit, str) or not unit.strip() or len(unit) > UNIT_LIMIT):
+            errors.append(f"{tag}: unit must be a word of at most {UNIT_LIMIT} characters")
+    return errors
+
+
+def value_facets_line(e: dict) -> str:
+    """The reference doc's line for a global's value facets, or ""."""
+    parts = []
+    if values := e.get("values"):
+        parts.append("Values: " + ", ".join(f"{value} {word}" for value, word in
+                                            sorted(values.items(), key=lambda item: int(item[0]))) + ".")
+    if source := e.get("values_from"):
+        parts.append(f"Names: `{source['global']}`, element 0 naming {source['first']}.")
+    if bits := e.get("bits_of"):
+        parts.append(f"Bits: bit k stands for `{bits}` value k.")
+    if "scale" in e or "offset" in e or "unit" in e:
+        shown = "the value" + (f" × {e['scale']:g}" if "scale" in e else "") \
+            + (f" {'+' if e['offset'] > 0 else '−'} {abs(e['offset'])}" if "offset" in e else "")
+        parts.append(f"Shown as {shown}" + (f", in {e['unit']}" if "unit" in e else "") + ".")
+    return " ".join(parts)
+
+
 def lint_aliases(entries: dict) -> list[str]:
     """Errors: an `aliases` value that is not a list of lowercase identifiers, and an alias that is also a global's
     name or another global's alias. A base mod exports a global's aliases beside its name (Lua scripting spec §9.1),
@@ -455,6 +548,9 @@ def merge(curated: dict, auto: dict) -> Registry:
             out[(bank, addr)]["columns"] = {
                 str(column): name for column, name in e["columns"].items()
             }
+        for facet in VALUE_FACETS:
+            if facet in e:
+                out[(bank, addr)][facet] = e[facet]
     return out
 
 
@@ -555,6 +651,8 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                     )
                 )
                 usage += f" Columns: {mapping}."
+            if facets := value_facets_line(e):
+                usage += " " + facets.replace("|", "\\|")
             address = e["address"] if e["bank"] == "G" else f"{e['bank']} {e['address']}"
             L.append(f"| `{address}` | {name} | {e['confidence']} | {e['source']} | {usage} |")
         L.append("")
@@ -573,6 +671,7 @@ def _linted_merge(tp: Path, auto_map: Path | None) -> tuple[Registry, dict, list
     errors += lint_tables(tables, curated)
     errors += lint_scopes(scopes, tables, curated)
     errors += lint_aliases(curated)
+    errors += lint_values(curated)
     for m in warnings: print("warn:", m)
     if errors:
         for m in errors: print("error:", m)

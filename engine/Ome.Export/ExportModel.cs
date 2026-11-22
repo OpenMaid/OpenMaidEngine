@@ -129,7 +129,11 @@ public sealed class ExportEntity(int id)
 
 /// <summary>One record of a loaded table: its published fields' values, in the declaration's order; null for a refused
 /// element.</summary>
-public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(string Field, long?[] Values)> Values);
+public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(string Field, long?[] Values)> Values)
+{
+    /// <summary>The part of the table it is in (export plan §5), or null for the table's own rows.</summary>
+    public string? Part { get; init; }
+}
 
 /// <summary>A table a loader publishes under its key kind (export plan §4.2), with the layouts the writer needs.
 /// </summary>
@@ -139,6 +143,9 @@ public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, strin
 {
     /// <summary>Its published text fields (export plan §5), which the entity's text holds as <c>table.field</c>.</summary>
     public IReadOnlyList<FieldLayout> Text { get; init; } = [];
+
+    /// <summary>Its parts (export plan §5), each with the row's field it reads and the global that field indexes.</summary>
+    public IReadOnlyList<(PartDeclaration Declaration, FieldLayout Field, ArrayLayout Global)> Parts { get; init; } = [];
 }
 
 /// <summary>One kind's entities, with the layouts the writer needs: every field of the table, the published ones,
@@ -152,7 +159,14 @@ public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, 
     /// <summary>The scripts that read, write or index a cell of its table or of its loaded tables, with their counts
     /// (plan §4.3), by script name.</summary>
     public List<(string Script, GlobalUse Use)> ScriptUse { get; } = [];
+    /// <summary>The words and names of its shown fields' values (plan §5), its loaded tables' written table.field.</summary>
+    public List<ExportValueName> ValueNames { get; } = [];
 }
+
+/// <summary>What a value of a shown field means to a reader (plan §5): OME's word for it, in no language
+/// (<see cref="Language"/> empty), or the game's name for it, in the source language or a translation's. A mask's
+/// values are its bits.</summary>
+public sealed record ExportValueName(string Field, long Value, string Language, string Text);
 
 /// <summary>What the export found worth a look (spec §6.1): refused values end the command with exit code 1, the rest
 /// is reported.</summary>

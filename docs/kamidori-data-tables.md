@@ -264,6 +264,18 @@ caller of Kamidori 4.33G joins one unit (a count of 1), and none writes the leve
 
 ### Names, voices, profiles
 
+The game's own names for coded values are string lists, which the screens draw by the value and the export's value
+names read (`values_from` in the registry, export plan §5):
+
+| list | address | written by | names |
+|---|---|---|---|
+| races | `0x61ff[16]` | AFINIT | race r is element r − 1 (INFO5@`0xd3f` draws `0x61fe + race`) |
+| affinity levels | `0x621a[12]` | AFINIT | resistance step s is element s + 5 (INFO3@`0x17b6`) |
+| elements | `0x6212[8]` | INIT2@`0xdb` | element e is element e; a skill stores e + 1 (INFO6@`0x1008`) |
+| craftsman ranks | `0x6226[11]` | INIT2@`0x103` | rank r is element r (DRAWSETTLE@`0xd4`) |
+| synthesis ranks | `0x623a[7]` | INIT2@`0x13a` | rank r is element r, Ｅ to Ｍ (ALCHEMY@`0xd52`) |
+| item categories | `0x6241[26]` | INIT2 | category c is element c, 1 to 25; 0, the innate attacks', has none (INFO3@`0x1710`) |
+
 **CNINIT** (generic extraction is wrong) is keyed by EBINIT id:
 
 | address | contents |
@@ -929,6 +941,17 @@ The stage also defines three kinds of slot:
 - **30 enemy slots** starting at `0x14095a`: unit id `0x140a2c`, level range and divisor, routine sets, and
   flags.
 - **10 fixed ally slots** at `0x140cc0`.
+
+Not every enemy slot is the player's enemy. A slot's faction (`stage_enemy_faction_id`, 2 to 4) is hostile when the
+stage's alliance (`0x14042c[5]`) gives that faction 0 or a group other than faction 1's, the player's, as FIELD@`0xab69`
+and COMMITBTL decide; FIELD@`0xc45` makes the same test as it places the slots. STINIT puts faction 3 in the player's
+group on 14 stages; on Kamidori's clean install 42 slots on 18 stages are allies (soldiers, guards and event
+townsfolk among them), which the game data export shows apart from the enemies (export plan §5).
+
+A slot's difficulty mask (`stage_enemy_difficulty_mask`) has bit d set when the slot is placed at a floor's start on
+difficulty d: FIELD@`0x4aed` and SELSTAGE@`0x7dc` test the bit for `labyrinth_difficulty` (`0x320b`), which GAMESTART
+sets to 1 (normal) or 2 (hard). 2378 slots have mask 7 (both), 2 have 4 (hard only), and 79 have 0, which FIELD never
+places at the start.
 
 ### Map objects (OBINIT) and hall art (HAINIT)
 

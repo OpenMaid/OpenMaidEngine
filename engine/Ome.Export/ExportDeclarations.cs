@@ -63,9 +63,12 @@ public sealed record ExportDeclarations(
             : [];
 
     /// <summary>A declaration's <c>notes</c>, name to line, in order.</summary>
-    internal static IReadOnlyList<(string Name, string Note)> Notes(JsonElement parent)
-        => parent.TryGetProperty("notes", out JsonElement notes)
-            ? notes.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
+    internal static IReadOnlyList<(string Name, string Note)> Notes(JsonElement parent) => Pairs(parent, "notes");
+
+    /// <summary>A declaration's table of name to text, in order: its <c>notes</c> or its <c>labels</c>.</summary>
+    internal static IReadOnlyList<(string Name, string Text)> Pairs(JsonElement parent, string key)
+        => parent.TryGetProperty(key, out JsonElement pairs) && pairs.ValueKind == JsonValueKind.Object
+            ? pairs.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
             : [];
 }
 
@@ -92,6 +95,10 @@ public sealed record KindDeclaration(
 
     /// <summary>A line for a reader for each field or group that needs one (export plan §5), by its name.</summary>
     public IReadOnlyList<(string Name, string Note)> Notes { get; init; } = [];
+
+    /// <summary>A reader's name for a field or group whose own name reads as the game stores it (export plan §5):
+    /// <c>min_range_encoded</c> is "Min range".</summary>
+    public IReadOnlyList<(string Name, string Label)> Labels { get; init; } = [];
 
     /// <summary>The blocks a text field's lines are drawn in (export plan §5), by the field, in the order the game
     /// draws them.</summary>
@@ -133,6 +140,7 @@ public sealed record KindDeclaration(
                     .Select(pair => SheetPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
                 : [],
             Notes = ExportDeclarations.Notes(kind),
+            Labels = ExportDeclarations.Pairs(kind, "labels"),
             TextBlocks = kind.TryGetProperty("text_blocks", out JsonElement blocks)
                 ? blocks.EnumerateObject().Select(pair => (pair.Name, (IReadOnlyList<TextBlockDeclaration>)pair.Value
                     .EnumerateArray().Select(block => new TextBlockDeclaration(block.GetProperty("name").GetString()!,
@@ -289,13 +297,15 @@ public readonly record struct SeedIndex(SeedIndexKind Kind, int Value)
 public enum SeedIndexKind { Number, Key, Step, Every }
 
 /// <summary>A table a loader publishes (export plan §4.2): its short name, its registry table, which of its records
-/// exist, its published fields and text (export plan §5), the literals a record shows in place of its text, and the
-/// notes for its fields.</summary>
+/// exist, its published fields and text (export plan §5), the literals a record shows in place of its text, the
+/// notes for its fields, and the parts the site shows apart.</summary>
 public sealed record LoadedTableDeclaration(string Name, string Table, string Exists, IReadOnlyList<string> Fields)
 {
     public IReadOnlyList<string> Text { get; init; } = [];
     public IReadOnlyList<LiteralDeclaration> Literals { get; init; } = [];
     public IReadOnlyList<(string Name, string Note)> Notes { get; init; } = [];
+    public IReadOnlyList<(string Name, string Label)> Labels { get; init; } = [];
+    public IReadOnlyList<PartDeclaration> Parts { get; init; } = [];
 
     internal static LoadedTableDeclaration Parse(string name, JsonElement table)
         => new(name, table.GetProperty("table").GetString()!, table.GetProperty("exists").GetString()!,
@@ -308,7 +318,27 @@ public sealed record LoadedTableDeclaration(string Name, string Table, string Ex
                     literal.GetProperty("script").GetString()!, literal.GetProperty("offset").GetInt32())).ToList()
                 : [],
             Notes = ExportDeclarations.Notes(table),
+            Labels = ExportDeclarations.Pairs(table, "labels"),
+            Parts = table.TryGetProperty("parts", out JsonElement parts)
+                ? parts.EnumerateArray().Select(part => new PartDeclaration(
+                    part.GetProperty("name").GetString()!, part.GetProperty("field").GetString()!,
+                    part.GetProperty("global").GetString()!, part.GetProperty("same_as").GetInt32())
+                {
+                    Note = part.TryGetProperty("note", out JsonElement note) && note.ValueKind == JsonValueKind.String
+                        ? note.GetString()
+                        : null,
+                }).ToList()
+                : [],
         };
+}
+
+/// <summary>A part of a loaded table that the site shows apart (export plan §5), such as a stage's allies among its
+/// enemy slots: the rows whose <see cref="Field"/> indexes a cell of the one-dimensional integer global
+/// <see cref="Global"/> that is not 0 and equals its cell <see cref="SameAs"/>, as the run left them. The first part a
+/// row matches is its part; the rest are the table's own. A data file still edits all of them as one table.</summary>
+public sealed record PartDeclaration(string Name, string Field, string Global, int SameAs)
+{
+    public string? Note { get; init; }
 }
 
 /// <summary>A record whose text field the game shows a script's string in place of (export plan §5): the string operand
