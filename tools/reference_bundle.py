@@ -10,7 +10,8 @@ site's reference section reads, built from the repository alone.
 
 The zip holds, at its root:
   bundle.json                        format, OME version, commit and dirty flag, the games, every other file's hash
-  games.json                         each game: its titles, engine build, support levels, store site, base mod
+  games.json                         each game: its titles, engine build, support levels, store site, base mod, and
+                                     the paths of its generated references, which the guides link
   opcodes.json                       vm-map/opcodes.toml as tools/opcodes_build.py emits it
   docs/modding/**                    the modding guides, as git tracks them
   games/<game>/globals.json          the registry's curated globals, tables, references and scopes (no auto map)
@@ -275,6 +276,12 @@ def _game_files(game: str, manifest: dict) -> tuple[dict[str, bytes], dict]:
     if index is not None:
         files[prefix + "scripts.json"] = _json_bytes(merge_scripts(game, index, notes))
     base = tomllib.loads((base_mod / "manifest.toml").read_text(encoding="utf-8"))
+    context = paths.ToolContext.resolve(game, environ={})
+    references = {}
+    for kind, doc in (("globals", context.global_reference_doc), ("patch_points", context.patch_point_reference_doc)):
+        if not doc.is_file():
+            raise BundleError(f"{game} has no generated reference {doc.relative_to(paths.REPO).as_posix()}")
+        references[kind] = doc.relative_to(paths.REPO).as_posix()
     entry = {
         "id": game,
         "title": manifest["displayTitle"],
@@ -285,6 +292,7 @@ def _game_files(game: str, manifest: dict) -> tuple[dict[str, bytes], dict]:
         "site": manifest.get("launcher", {}).get("site"),
         "base_mod": {"id": base["id"], "version": base["version"]},
         "script_index": index is not None,
+        "references": references,
     }
     return files, entry
 

@@ -86,6 +86,10 @@ class ToolContextTests(unittest.TestCase):
         self.assertEqual(
             paths.REPO / "docs/global-reference-kamidori.md", kamidori.global_reference_doc
         )
+        self.assertEqual(paths.REPO / "docs/patch-point-reference.md", himegari.patch_point_reference_doc)
+        self.assertEqual(
+            paths.REPO / "docs/patch-point-reference-kamidori.md", kamidori.patch_point_reference_doc
+        )
 
     def _script_layout(self, root: Path) -> None:
         (root / "game").mkdir()

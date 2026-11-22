@@ -49,11 +49,11 @@ def globals_toml(profile_id: str) -> Path:
 
 
 def global_reference(profile_id: str) -> str:
-    return "global-reference.md" if profile_id == "himegari" else f"global-reference-{profile_id}.md"
+    return paths.ToolContext.resolve(profile_id, environ={}).global_reference_doc.name
 
 
 def patch_point_reference(profile_id: str) -> str:
-    return "patch-point-reference.md" if profile_id == "himegari" else f"patch-point-reference-{profile_id}.md"
+    return paths.ToolContext.resolve(profile_id, environ={}).patch_point_reference_doc.name
 
 
 def patch_points(profile_id: str) -> list[str]:

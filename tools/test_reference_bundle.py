@@ -168,6 +168,13 @@ class RepositoryBundleTests(unittest.TestCase):
                 self.assertTrue(any(name.startswith(prefix + "events/") for name in files))
                 self.assertEqual(rb.index_path(game["id"]).is_file(), game["script_index"])
                 self.assertEqual(game["script_index"], prefix + "scripts.json" in files)
+                context = paths.ToolContext.resolve(game["id"], environ={})
+                self.assertEqual(
+                    {"globals": context.global_reference_doc.relative_to(paths.REPO).as_posix(),
+                     "patch_points": context.patch_point_reference_doc.relative_to(paths.REPO).as_posix()},
+                    game["references"])
+                for doc in game["references"].values():
+                    self.assertTrue((paths.REPO / doc).is_file(), doc)
                 globals_json = json.loads(files[prefix + "globals.json"])
                 registry = paths.ToolContext.resolve(game["id"], environ={}).globals_toml
                 self.assertEqual(f"vm-map/{registry.name}", globals_json["meta"]["generated_from"])

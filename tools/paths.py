@@ -105,6 +105,15 @@ class ToolContext:
         return REPO / "docs" / name
 
     @property
+    def patch_point_reference_doc(self) -> Path:
+        """Generated human reference for this game's patch points."""
+        name = (
+            "patch-point-reference.md" if self.profile_id == "himegari"
+            else f"patch-point-reference-{self.profile_id}.md"
+        )
+        return REPO / "docs" / name
+
+    @property
     def sys4ini(self) -> Path:
         return self.game_root / "SYS4INI.BIN"
 

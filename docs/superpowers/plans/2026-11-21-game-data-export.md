@@ -450,8 +450,13 @@ was written with the build, not before it.
   `battle_unit_unit_ids` by `current_battle_slot`). A note's name matches an index key without case and without
   `.BIN`.
 - **`games.json`** gives each game its `id`, `title` and catalog `titles`, `engine_build`, `script_revisions`,
-  `support`, the store `site` from its launcher entry, its base mod's `id` and `version`, and whether it has a
-  `script_index`.
+  `support`, the store `site` from its launcher entry, its base mod's `id` and `version`, whether it has a
+  `script_index`, and its `references`: the repository paths of its generated global and patch point references
+  (`globals`, `patch_points`), which the guides link and the site replaces with its own pages. Added 2026-11-21, when
+  the site's reference pages (site milestone 3) were the bundle's first reader: without it the site kept OME's rule
+  for those files' names (Himegari's have no suffix). `tools/paths.py` now names both files
+  (`patch_point_reference_doc` beside `global_reference_doc`), and `patch_points_build.py` and
+  `modding_games_build.py` take the name from it.
 - **`scripts.json`** keeps the index's fields as they are and adds `layer_of` and `note` (`summary`, `source`,
   `arguments` when it has some); its `index_format` names the index's format.
 - **The publisher** imports `reference_bundle` for `verify_archive` and `archive_name`, so the builder and the release
@@ -546,7 +551,8 @@ was written with the build, not before it.
 - **`scripts.json` links a layer's script to its base** (`layer_of`), so a note on `ITINIT` serves `$1$ITINIT` to
   `$3$ITINIT` on the site; spec §8.2 does not have it.
 - **`games.json` holds more than the support levels** (spec §8.1): the titles, the engine build and script
-  revisions, the store site and the base mod's version, which site §6 shows.
+  revisions, the store site and the base mod's version, which site §6 shows, and the paths of the game's generated
+  references, which the site maps the guides' links to them by.
 - **The reference asset's name carries the tag** (`OME-reference-v0.10.0.zip`), as spec §8.1's
   `OME-reference-<version>.zip` says; the publisher's expected assets are therefore computed from the tag. The
   publisher checks the bundle's `bundle.json` against the tag and the tagged commit, which spec §8.3 does not ask.

@@ -35,8 +35,7 @@ import sys4load  # noqa: E402
 PROFILE = paths.CONTEXT.profile_id
 REGISTRY = paths.VM_MAP / f"patch-points-{PROFILE}.toml"
 OUTPUT_JSON = paths.CONTEXT.game_build / "patch-points.json"
-REFERENCE_DOC = paths.REPO / "docs" / (
-    "patch-point-reference.md" if PROFILE == "himegari" else f"patch-point-reference-{PROFILE}.md")
+REFERENCE_DOC = paths.CONTEXT.patch_point_reference_doc
 
 NAME = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 FINGERPRINT = re.compile(r"^sha256:[0-9a-f]{64}$")
