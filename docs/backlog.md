@@ -293,6 +293,17 @@ still handled on their own. Each change should be behaviour-neutral and pass the
 
 ## Mod loader and modding
 
+- **Modding from a release.** A release ships the engine and the launcher only (`tools/publish_engine.py` publishes
+  `godot/OME.csproj`), so every modding guide starts from a source checkout:
+  - "Your first mod" needs the .NET SDK, Python 3.11 and Godot, and runs `dotnet run --project engine/Ome.Cli`,
+    `.\run-godot.cmd` and `tools/locate_page.py` from `age-reimpl/`;
+  - the guides expect the game at `games/<game>/` beside the repository, and some link text is a file's path
+    (`games/README.md`, `../backlog.md`).
+
+  The site's usability review found it (site plan §10.3, finding 10). The user wants it fixed on its own, once the
+  site's design and workflow settle (2026-11-22: "it's been an ongoing 'issue' that you need to repo to perform
+  modding"). "Toolchain packaging for exported ports" below is the linking half of it. Done when a release carries the
+  mod commands and the page locator, and the guides start from a release with the from-source steps marked as such.
 - **Toolchain packaging for exported ports.** Fragments compile against the repository's OMS modules
   (`oms/<game>/`), globals and patch points (`build/games/<game>/`). An exported port without the repository
   links only mods that need none of them (`tools-reference.md`, port `--mod`). Done when an export carries or
