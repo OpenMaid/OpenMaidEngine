@@ -69,7 +69,7 @@ def _strip_empty_rows(records, fields):
 QUEST_CAPACITY = 2000
 QUEST_STRINGS = {"name": 0x625F, "requester": 0xB07F, "category": 0xB84F}
 QUEST_TEXT = (0x6A2F, 9)  # 0 header, 1-4 overview, 5-6 clear condition, 7-8 failure condition
-QUEST_INTS = {"requester_icon_asset_id": 0x3B6E92, "journal_sort_key": 0x3B7662,
+QUEST_INTS = {"journal_icon_asset_id": 0x3B6E92, "journal_sort_key": 0x3B7662,
               "deadline_days": 0x3B7E32, "prerequisite_quest_id": 0x3B8602,
               "failure_result_flag_id": 0x3BEB92, "difficulty_stars": 0x3BF362,
               "reward_money": 0x3C0AD2}

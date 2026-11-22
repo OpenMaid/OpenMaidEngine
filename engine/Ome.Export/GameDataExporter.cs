@@ -25,7 +25,7 @@ public static class GameDataExporter
     {
         "build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref", "relation",
         "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part", "label", "value_format", "qualifier", "referenced_as",
-        "value_name",
+        "value_name", "column_name",
     };
 
     public static ExportResult Run(ExportInputs inputs)
@@ -66,17 +66,22 @@ public static class GameDataExporter
 
     /// <summary>The words and names of the values a kind shows (plan §5): for each published field, its own and its
     /// loaded tables', whose global has value facets, OME's words and the game's names for its values, or for a mask's
-    /// bits those of the global its bits stand for. A name is a string the boot left in the game's table, checked as a
-    /// published text is, in the source language and each translation's.</summary>
+    /// bits those of the global its bits stand for; and the game's names for a shown row of cells' columns
+    /// (<c>columns_from</c>).</summary>
     private static void NameValues(ExportInputs inputs, GameSession boot, ExportKind kind, BuilderRule rule,
                                    IReadOnlyList<Translation> languages, ExportReport report)
     {
         string id = kind.Declaration.Id;
-        var fields = kind.Published.Select(field => (field.Name, field.Array))
+        var fields = kind.Published.Select(field => (field.Name, Field: field))
             .Concat(kind.Loaded.SelectMany(table => table.Published.Select(
-                field => ($"{table.Declaration.Name}.{field.Name}", field.Array))));
-        foreach ((string name, ArrayLayout array) in fields)
+                field => ($"{table.Declaration.Name}.{field.Name}", Field: field))));
+        foreach ((string name, FieldLayout field) in fields)
         {
+            ArrayLayout array = field.Array;
+            if (field.IsArray && array.ColumnNamesFrom is { } columns)
+                foreach ((int element, string language, string text) in GameNames(inputs, boot, rule, languages, report, id,
+                                                                              name, columns.Global))
+                    kind.ColumnNames.Add(new ExportColumnName(name, columns.First + element, language, text));
             if (array.Format is not { Names: true } format) continue;
             ValueFormat named = format;
             if (format.BitsOf is { } bits)
@@ -84,31 +89,42 @@ public static class GameDataExporter
                         ?? throw new ExportFailure($"{id}.{name}'s bits stand for the values of {bits}, which have no words");
             foreach ((long value, string word) in named.Words) kind.ValueNames.Add(new ExportValueName(name, value, "", word));
             if (named.NamesFrom is not { } from) continue;
-            ArrayLayout names = inputs.Registry.Find(from.Global) is { Bank: GlobalBank.String, Dimensions.Count: 1 } list
-                ? list
-                : throw new ExportFailure($"{id}.{name}'s values are named by {from.Global}, which is no list of strings");
-            for (int element = 0; element < names.Dimensions[0]; element++)
+            foreach ((int element, string language, string text) in GameNames(inputs, boot, rule, languages, report, id,
+                                                                          name, from.Global))
+                kind.ValueNames.Add(new ExportValueName(name, from.First + element, language, text));
+        }
+    }
+
+    /// <summary>The strings of one of the game's tables of names, by element: each a string the boot left there,
+    /// checked as a published text is, in the source language and each translation's. <paramref name="field"/> names
+    /// the field they name in a refusal.</summary>
+    private static IEnumerable<(int Element, string Language, string Text)> GameNames(
+        ExportInputs inputs, GameSession boot, BuilderRule rule, IReadOnlyList<Translation> languages, ExportReport report,
+        string kind, string field, string global)
+    {
+        ArrayLayout names = inputs.Registry.Find(global) is { Bank: GlobalBank.String, Dimensions.Count: 1 } list
+            ? list
+            : throw new ExportFailure($"{kind}.{field} is named by {global}, which is no list of strings");
+        for (int element = 0; element < names.Dimensions[0]; element++)
+        {
+            int address = names.Address + element;
+            string text = boot.GlobalStrings.GetValueOrDefault(address, "");
+            if (text.Length == 0) continue;
+            string? writer = boot.Writers.TryGetValue(new GlobalCell(GlobalBank.String, address), out string? script)
+                ? script
+                : null;
+            if (RefusalOf(boot, new ExportCell(names.Name, element, GlobalBank.String, address, 0, text, writer), rule)
+                is { } reason)
             {
-                int address = names.Address + element;
-                string text = boot.GlobalStrings.GetValueOrDefault(address, "");
-                if (text.Length == 0) continue;
-                string? writer = boot.Writers.TryGetValue(new GlobalCell(GlobalBank.String, address), out string? script)
-                    ? script
-                    : null;
-                if (RefusalOf(boot, new ExportCell(names.Name, element, GlobalBank.String, address, 0, text, writer), rule)
-                    is { } reason)
-                {
-                    report.Refusals.Add(new Refusal(id, 0, $"{name}:{names.Name}", element, GlobalBank.String, address,
-                                                    reason));
-                    continue;
-                }
-                long value = from.First + element;
-                kind.ValueNames.Add(new ExportValueName(name, value, ExportWriter.SourceLanguage, text));
-                if (!boot.StringStores.TryGetValue(address, out TextManager.StringStore store)) continue;
-                foreach (Translation language in languages)
-                    if (language.String(text, store.Origin) is { } translated)
-                        kind.ValueNames.Add(new ExportValueName(name, value, language.Tag, translated));
+                report.Refusals.Add(new Refusal(kind, 0, $"{field}:{names.Name}", element, GlobalBank.String, address,
+                                                reason));
+                continue;
             }
+            yield return (element, ExportWriter.SourceLanguage, text);
+            if (!boot.StringStores.TryGetValue(address, out TextManager.StringStore store)) continue;
+            foreach (Translation language in languages)
+                if (language.String(text, store.Origin) is { } translated)
+                    yield return (element, language.Tag, translated);
         }
     }
 

@@ -14,6 +14,13 @@ public sealed record ArrayLayout(string Name, GlobalBank Bank, int Address, IRea
 
     /// <summary>What its values mean to a reader (export plan §5), or null when the registry says nothing.</summary>
     public ValueFormat? Format { get; init; }
+
+    /// <summary>The game's table of names for its columns (<c>columns_from</c>): element k of the string global names
+    /// column first + k; null when the registry gives none.</summary>
+    public (string Global, int First)? ColumnNamesFrom { get; init; }
+
+    /// <summary>The registry table whose record k its column k is (<c>columns_ref</c>), or null.</summary>
+    public string? ColumnsOf { get; init; }
 }
 
 /// <summary>A global's value facets (export plan §5; <c>tools/globals_build.py</c>): OME's words for some values, the
@@ -134,7 +141,17 @@ public sealed class RegistryView
                         && column.Value.GetString() is { Length: > 0 } columnName)
                         columns[index] = columnName;
             int address = Convert.ToInt32(entry.GetProperty("address").GetString(), 16);
-            arrays.Add(new ArrayLayout(name, bank.Value, address, dimensions, columns) { Format = ValueFormat.Parse(entry) });
+            arrays.Add(new ArrayLayout(name, bank.Value, address, dimensions, columns)
+            {
+                Format = ValueFormat.Parse(entry),
+                ColumnNamesFrom = entry.TryGetProperty("columns_from", out JsonElement from)
+                                  && from.ValueKind == JsonValueKind.Object
+                    ? (from.GetProperty("global").GetString()!, from.GetProperty("first").GetInt32())
+                    : null,
+                ColumnsOf = entry.TryGetProperty("columns_ref", out JsonElement of) && of.ValueKind == JsonValueKind.String
+                    ? of.GetString()
+                    : null,
+            });
         }
         var tables = new List<TableLayout>();
         if (root.TryGetProperty("tables", out JsonElement list))

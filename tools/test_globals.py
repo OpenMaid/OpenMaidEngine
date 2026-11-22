@@ -297,6 +297,37 @@ def test_value_facets():
         entries, _ = G.load_toml(toml)
         check(G.lint_values(entries) == [], f"{toml.name} value facets lint clean")
 
+def test_column_facets():
+    base = {"category": "data-table", "source": "inference", "confidence": "med"}
+    entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "hero_resists", "type": "int[4][3]",
+                             "columns_from": {"global": "element_names", "first": 0}},
+               ("GS", 0x20): {**base, "_addr": 0x20, "name": "element_names", "type": "string[3]"},
+               ("G", 0x30): {**base, "_addr": 0x30, "name": "hero_ailments", "type": "int[unit][5]",
+                             "columns_ref": "ailment"},
+               ("G", 0x40): {**base, "_addr": 0x40, "name": "bonus_resists", "type": "int[3]",
+                             "columns_from": {"global": "element_names", "first": 0}}}
+    tables = [{"name": "ailment", "records": 5, "built_by": "boot", "fields": {}}]
+    check(G.lint_columns(entries, tables) == [], f"column names from a list and columns of a table lint clean "
+                                                 f"({G.lint_columns(entries, tables)})")
+    merged = G.merge(entries, {})
+    check(merged[("G", 0x10)].get("columns_from") == {"global": "element_names", "first": 0}
+          and merged[("G", 0x30)].get("columns_ref") == "ailment", "the JSON carries the column facets")
+    check(G.column_facets_line(merged[("G", 0x10)]) == "Column names: `element_names`, element 0 naming column 0."
+          and G.column_facets_line(merged[("G", 0x30)]) == "Column k is record k of `ailment`.",
+          "the reference doc says where a global's columns get their names")
+    bad = {("G", 0x10): {**base, "_addr": 0x10, "name": "a", "type": "int[4][3]",
+                         "columns_from": {"global": "b", "first": "0"}, "columns_ref": "nowhere"},
+           ("G", 0x20): {**base, "_addr": 0x20, "name": "b", "type": "int[4]", "columns_from": {"global": "b"}},
+           ("GS", 0x30): {**base, "_addr": 0x30, "name": "c", "type": "string[4]", "columns_ref": "ailment"}}
+    errors = G.lint_columns(bad, tables)
+    for needle in ("a: columns_from and columns_ref both name its columns", "a: columns_from b is int[4], not a list",
+                   "a: columns_from: first must be a whole number", "a: columns_ref names 'nowhere'",
+                   "b: columns_from must be { global, first }", "c: columns_ref: column facets are for integer arrays"):
+        check(any(needle in e for e in errors), f"lint_columns flags {needle!r} ({errors})")
+    for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
+        entries, _ = G.load_toml(toml)
+        check(G.lint_columns(entries, G.load_tables(toml)) == [], f"{toml.name} column facets lint clean")
+
 def test_table_refs():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}
     entries = {("G", 0x10): {**base, "_addr": 0x10, "name": "hero_weapons", "type": "int[4][2]"},

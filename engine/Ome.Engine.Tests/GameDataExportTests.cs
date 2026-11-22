@@ -73,6 +73,9 @@ public class GameDataExportTests
                             new Dictionary<int, string> { [1] = "sell" })    // column 0 unnamed
             {
                 Format = formats ? new ValueFormat { Scale = 0.5, Unit = "gold" } : null,
+                // The column facets: the game's names for its columns, and the table whose records they are.
+                ColumnNamesFrom = formats ? ("category_names", 0) : null,
+                ColumnsOf = formats ? "skill" : null,
             },
             Array("item_icon", GlobalBank.Integer, ItemIcon, 4),
             Array("item_handler", GlobalBank.Integer, ItemHandler, 4),
@@ -579,6 +582,7 @@ public class GameDataExportTests
         // Qualifiers and reference headings (export plan §5) go to the database as the declarations give them.
         string declarations = Declarations.Replace("\"filters\": [\"category\"],",
                                                    "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"}, "
+                                                   + "\"about\": \"Things to carry.\", "
                                                    + "\"qualifiers\": [\"category\", \"short_description\"], "
                                                    + "\"referenced_as\": [{\"field\": \"granted_skill\", "
                                                    + "\"heading\": \"Granted by\", \"details\": [\"price\"], "
@@ -597,6 +601,9 @@ public class GameDataExportTests
                      item.ValueNames.OrderBy(name => name.Value));
         Assert.Empty(result.Kinds.Single(kind => kind.Declaration.Id == "skill").ValueNames);
         Assert.Equal([("category", "Kind")], item.Declaration.Labels);
+        // A row of cells' columns take the game's names; one column of it is no row, and has none.
+        Assert.Equal([new ExportColumnName("price", 1, "ja", "武器"), new ExportColumnName("price", 2, "ja", "防具")],
+                     item.ColumnNames.OrderBy(name => name.Column));
 
         string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
         try
@@ -626,6 +633,13 @@ public class GameDataExportTests
                 "SELECT group_concat(position || ':' || field, ',') FROM (SELECT * FROM qualifier ORDER BY position)"));
             Assert.Equal("item:granted_skill::Granted by:[\"price\"]", Scalar(
                 "SELECT kind || ':' || field || ':' || part || ':' || heading || ':' || details FROM referenced_as"));
+            Assert.Equal("1:ja:武器,2:ja:防具", Scalar(
+                "SELECT group_concat(column_index || ':' || lang || ':' || text, ',') FROM "
+                + "(SELECT * FROM column_name WHERE kind = 'item' AND field = 'price' ORDER BY column_index)"));
+            Assert.Equal("price:skill", Scalar(
+                "SELECT group_concat(name || ':' || column_kind, ',') FROM field WHERE column_kind IS NOT NULL"));
+            Assert.Equal("Things to carry.:", Scalar(
+                "SELECT group_concat(ifnull(about, ''), ':') FROM (SELECT * FROM kind ORDER BY id)"));
         }
         finally
         {

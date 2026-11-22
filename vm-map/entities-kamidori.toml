@@ -43,6 +43,7 @@ explicit_pictures = ["CB*AAB", "CB052AAA", "CB504AAA", "CB505AAA"]
 [[kind]]
 id = "item"
 table = "item"
+about = "Every item: its category, rank and price, the stats, resistances and conditions it changes, the skill it grants, and its use as furniture or in the garden."
 exists = "name"
 title = "name"
 text = ["short_description"]
@@ -62,7 +63,7 @@ pictures = { icon = "icon_asset_id", furniture = "furniture_sprite_asset_id" }
 
 [kind.notes]
 price = "Buy is what a shop charges for it, sell what a vendor pays for it, and retail the base price it sells for in the player's own shop."
-affinity_level_deltas = "The steps it moves each element's resistance while equipped: +1 is one step more resistant."
+affinity_level_deltas = "How it changes each element's resistance while equipped. The game names a change by the grade that many steps past the middle one, as it names a unit's resistance."
 condition_level_deltas = "The level it changes each condition by: -5 clears the condition, and a positive number inflicts it or raises it."
 equipped_condition_levels = "The level of each condition its wearer has while it is equipped."
 resource_recovery_amounts = "The HP, SP and FS it restores; 999 restores them in full."
@@ -73,6 +74,7 @@ furniture_area = "The room it goes in."
 sex_restriction_mask = "Only characters of these sexes may use it."
 
 [kind.labels]
+affinity_level_deltas = "Element resistance"
 cursed_flag = "Cursed"
 growth_enabled = "Grows with use"
 sex_restriction_mask = "Usable by"
@@ -91,6 +93,7 @@ seed = { current_item_id = "key" }
 [[kind]]
 id = "unit"
 table = "unit"
+about = "Every character and monster: stats and growth, element resistances, starting equipment and skills, what it drops, and the areas it lives in."
 exists = "full_name"
 title = "full_name"
 text = ["display_name", "initial_class_title", "bestiary_description"]
@@ -149,6 +152,7 @@ battle_face = "graphic.battle_sprite_CB_AB"
 [[kind]]
 id = "skill"
 table = "skill"
+about = "Every skill: its category and equip cost, its range and element, the conditions it inflicts, and the stats and resources it changes."
 exists = "name"
 title = "name"
 text = ["short_description"]
@@ -186,6 +190,7 @@ seed = { current_skill_id = "key" }
 [[kind]]
 id = "quest"
 table = "quest"
+about = "Journal quests and reward notices: what each asks, its difficulty and deadline, its rewards, and the quest that must come first."
 exists = "name"
 # The 20 仮 placeholders, which no flag ever posts: their first appear flag is 10000.
 skip = { "appear_required_flags.required_flag_1" = 10000 }
@@ -197,7 +202,7 @@ fields = [
 ]
 filters = ["difficulty_stars"]
 qualifiers = ["requester_name"]
-pictures = { requester = "requester_icon_asset_id" }
+pictures = { journal_icon = "journal_icon_asset_id" }
 
 [[kind.group]]
 name = "reward_items"
@@ -223,6 +228,7 @@ failure_condition = [7, 8]
 [[kind]]
 id = "recipe"
 table = "recipe"
+about = "Alchemy recipes: the item each makes, its ingredients, what unlocks it, and the chance it makes something else."
 exists = "output_item_id"
 # A recipe has no name of its own: the game lists it by the item it makes.
 title = "output_item_id"
@@ -262,6 +268,7 @@ unlock_prerequisite_recipe_id = "Must be learned before"
 [[kind]]
 id = "condition"
 table = "condition"
+about = "The conditions a unit can have in battle, each with five levels: what each level changes, how long it lasts, and what resists it."
 exists = "level_names.level_1"
 # A condition is named by its levels (猛毒1 to 猛毒5); the first names it.
 title = "level_names.level_1"
@@ -305,6 +312,7 @@ immunity_skill_id = "Gives immunity to"
 [[kind]]
 id = "stage"
 table = "stage_catalog"
+about = "Every stage of every labyrinth: its floor and recommended level, the enemies on it, its objectives' rewards, and what opens it."
 exists = "name"
 title = "name"
 # The select screen's backdrop (select_background_asset_id) is not published: it is a whole background.
@@ -356,6 +364,7 @@ required_party_unit_ids = { heading = "Must join the sortie on", details = ["lab
 [[kind]]
 id = "world_area"
 table = "world_area"
+about = "The places on the world map, labyrinths, towns and facilities, and the days entering each takes."
 exists = "name"
 title = "name"
 fields = ["area_type", "travel_days"]
@@ -369,6 +378,7 @@ travel_days = "The days that pass in travelling there; once 30 days have passed,
 [[kind]]
 id = "character_profile"
 table = "character_profile"
+about = "The character profiles of the game's information menu: each one's epithet, race and sex, portrait and biography."
 exists = "name"
 title = "name"
 text = ["epithet", "race_text", "sex_text"]
@@ -386,6 +396,7 @@ seed = { character_profile_selected_id = "key" }
 [[kind]]
 id = "objective"
 table = "objective"
+about = "The chapter objectives the game shows, each with its message."
 exists = "text"
 title = "text"
 text = ["chapter_label"]
@@ -399,6 +410,7 @@ seed = { current_objective_id = "key" }
 [[kind]]
 id = "glossary_entry"
 table = "glossary_entry"
+about = "The glossary of the game's information menu, each entry with its explanation."
 exists = "name"
 title = "name"
 

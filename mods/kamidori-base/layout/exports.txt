@@ -364,13 +364,14 @@ quest_difficulty_stars
 quest_elapsed_days
 quest_failure_result_flag_ids
 quest_failure_trigger_flag_ids
+quest_journal_icon_asset_ids
 quest_journal_seen_states
 quest_journal_sort_keys
 quest_names
 quest_notification_bits
 quest_prerequisite_quest_ids
 quest_reputation_rewards
-quest_requester_icon_asset_ids
+quest_requester_icon_asset_ids = quest_journal_icon_asset_ids
 quest_requester_names
 quest_reward_item_ids
 quest_reward_item_quantities
@@ -769,10 +770,11 @@ field quest.description_lines
 field quest.difficulty_stars
 field quest.failure_result_flag
 field quest.failure_trigger_flags
+field quest.journal_icon_asset_id
 field quest.name
 field quest.prerequisite_quest_id
 field quest.reputation_reward
-field quest.requester_icon_asset_id
+field quest.requester_icon_asset_id = quest.journal_icon_asset_id
 field quest.requester_name
 field quest.reward_item_ids
 field quest.reward_item_quantities

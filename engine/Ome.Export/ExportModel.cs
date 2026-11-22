@@ -161,12 +161,19 @@ public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, 
     public List<(string Script, GlobalUse Use)> ScriptUse { get; } = [];
     /// <summary>The words and names of its shown fields' values (plan §5), its loaded tables' written table.field.</summary>
     public List<ExportValueName> ValueNames { get; } = [];
+    /// <summary>The game's names for its shown fields' columns (<c>columns_from</c>), its loaded tables' written
+    /// table.field.</summary>
+    public List<ExportColumnName> ColumnNames { get; } = [];
 }
 
 /// <summary>What a value of a shown field means to a reader (plan §5): OME's word for it, in no language
 /// (<see cref="Language"/> empty), or the game's name for it, in the source language or a translation's. A mask's
 /// values are its bits.</summary>
 public sealed record ExportValueName(string Field, long Value, string Language, string Text);
+
+/// <summary>The game's name for a column of a shown field (<c>columns_from</c>): a string of the game's table of names,
+/// in the source language or a translation's.</summary>
+public sealed record ExportColumnName(string Field, int Column, string Language, string Text);
 
 /// <summary>What the export found worth a look (spec §6.1): refused values end the command with exit code 1, the rest
 /// is reported.</summary>

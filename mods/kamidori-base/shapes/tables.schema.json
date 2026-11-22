@@ -2779,6 +2779,12 @@
           },
           "additionalProperties": false
         },
+        "journal_icon_asset_id": {
+          "description": "quest.journal_icon_asset_id: quest_journal_icon_asset_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
         "name": {
           "description": "quest.name: quest_names, text the save's code page (932) can encode",
           "type": "string"
@@ -2817,7 +2823,7 @@
           "additionalProperties": false
         },
         "requester_icon_asset_id": {
-          "description": "quest.requester_icon_asset_id: quest_requester_icon_asset_ids, a whole number",
+          "description": "quest.requester_icon_asset_id: an old name of quest.journal_icon_asset_id; write journal_icon_asset_id",
           "type": "integer",
           "minimum": -2147483648,
           "maximum": 4294967295

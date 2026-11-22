@@ -23,6 +23,10 @@ some values, `values_from` names the game's own table of names (`{ global, first
 value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global, and `scale`, `offset` and
 `unit` say how a number is shown (the stored value times scale, plus offset, in unit). The JSON and the reference doc
 carry them; the game data export publishes them.
+An array's column facets name its columns for a reader where `columns` gives OME's words: `columns_from` names the
+game's own table of names (`{ global, first }`: the string global's element k names column first + k, as an element's
+names its resistances), and `columns_ref` the table whose record k column k is (an item's condition levels, by
+condition id). The JSON and the reference doc carry them; the game data export publishes them.
 See docs/superpowers/specs/2026-07-07-globals-registry-and-story-flags-design.md."""
 from __future__ import annotations
 import os, re, sys, json, math, argparse, collections, tomllib
@@ -362,6 +366,8 @@ def lint_table_aliases(tables: list[dict], globals_by_name: dict) -> list[str]:
 
 # A global's value facets (game data export plan §5), as the JSON carries them.
 VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit")
+# An array's column facets, as the JSON carries them.
+COLUMN_FACETS = ("columns_from", "columns_ref")
 # A word for a value or a unit is a reader's: one line, short.
 VALUE_WORD_LIMIT = 60
 UNIT_LIMIT = 12
@@ -429,6 +435,51 @@ def lint_values(entries: dict) -> list[str]:
         if unit is not None and (not isinstance(unit, str) or not unit.strip() or len(unit) > UNIT_LIMIT):
             errors.append(f"{tag}: unit must be a word of at most {UNIT_LIMIT} characters")
     return errors
+
+
+def lint_columns(entries: dict, tables: list[dict]) -> list[str]:
+    """The column facets: `columns_from` a one-dimensional string global and a whole first column, `columns_ref` a
+    table of the registry, and one of them at most; both are for integer arrays, whose columns they name."""
+    errors: list[str] = []
+    by_name = {e["name"]: e for e in entries.values() if e.get("name")}
+    table_names = {t.get("name") for t in tables}
+    for key, e in sorted(entries.items(), key=lambda item: str(item[0])):
+        present = [facet for facet in COLUMN_FACETS if facet in e]
+        if not present:
+            continue
+        tag = e.get("name") or f"0x{e['_addr']:x}"
+        if not re.fullmatch(r"int(\[[^\]]*\])+", e.get("type") or ""):
+            errors.append(f"{tag}: {', '.join(present)}: column facets are for integer arrays")
+            continue
+        if len(present) > 1:
+            errors.append(f"{tag}: columns_from and columns_ref both name its columns; give one")
+        source = e.get("columns_from")
+        if source is not None:
+            names = by_name.get(source.get("global")) if isinstance(source, dict) else None
+            if not isinstance(source, dict) or set(source) != {"global", "first"}:
+                errors.append(f"{tag}: columns_from must be {{ global, first }}: the string global whose element k "
+                              f"names column first + k")
+            elif names is None:
+                errors.append(f"{tag}: columns_from names {source['global']!r}, which the registry does not name")
+            elif not re.fullmatch(r"string\[\d+\]", names.get("type") or ""):
+                errors.append(f"{tag}: columns_from {source['global']} is {names.get('type')}, not a list of strings")
+            if isinstance(source, dict) and (not isinstance(source.get("first"), int)
+                                             or isinstance(source.get("first"), bool)):
+                errors.append(f"{tag}: columns_from: first must be a whole number, the column element 0 names")
+        ref = e.get("columns_ref")
+        if ref is not None and (not isinstance(ref, str) or ref not in table_names):
+            errors.append(f"{tag}: columns_ref names {ref!r}, which is no table of the registry")
+    return errors
+
+
+def column_facets_line(e: dict) -> str:
+    """The reference doc's line for an array's column facets, or ""."""
+    parts = []
+    if source := e.get("columns_from"):
+        parts.append(f"Column names: `{source['global']}`, element 0 naming column {source['first']}.")
+    if ref := e.get("columns_ref"):
+        parts.append(f"Column k is record k of `{ref}`.")
+    return " ".join(parts)
 
 
 def value_facets_line(e: dict) -> str:
@@ -548,7 +599,7 @@ def merge(curated: dict, auto: dict) -> Registry:
             out[(bank, addr)]["columns"] = {
                 str(column): name for column, name in e["columns"].items()
             }
-        for facet in VALUE_FACETS:
+        for facet in VALUE_FACETS + COLUMN_FACETS:
             if facet in e:
                 out[(bank, addr)][facet] = e[facet]
     return out
@@ -651,6 +702,8 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                     )
                 )
                 usage += f" Columns: {mapping}."
+            if facets := column_facets_line(e):
+                usage += " " + facets.replace("|", "\\|")
             if facets := value_facets_line(e):
                 usage += " " + facets.replace("|", "\\|")
             address = e["address"] if e["bank"] == "G" else f"{e['bank']} {e['address']}"
@@ -672,6 +725,7 @@ def _linted_merge(tp: Path, auto_map: Path | None) -> tuple[Registry, dict, list
     errors += lint_scopes(scopes, tables, curated)
     errors += lint_aliases(curated)
     errors += lint_values(curated)
+    errors += lint_columns(curated, tables)
     for m in warnings: print("warn:", m)
     if errors:
         for m in errors: print("error:", m)

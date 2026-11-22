@@ -522,6 +522,7 @@ title = "name"
 text = ["bio"]
 fields = ["class", "weapon", "weapon_level"]
 qualifiers = ["class"]
+about = "The heroes who join the party."
 
 [[kind.group]]
 name = "arms"
@@ -616,6 +617,7 @@ def test_design_pass_features():
     check(foe.get("parts") == [{"name": "friend", "field": "hero", "global": "foe_side_groups", "same_as": 1,
                                 "note": "On the hero's side."}], "a loaded table keeps its parts")
     check(hero.get("qualifiers") == ["class"], "the JSON keeps a kind's qualifiers")
+    check(hero.get("about") == "The heroes who join the party.", "the JSON keeps a kind's about line")
     check(hero.get("referenced_as") == [
         {"field": "weapon", "heading": "Wielded by", "details": ["weapon_level", "class"], "parts": {}},
         {"field": "foe.hero", "heading": "Fought on", "details": ["class", "foe.name"],
@@ -663,6 +665,8 @@ def test_design_pass_features():
                    "table foe is a table of scope stage, which a loader with that scope reads"):
         check(needle in output, f"the lint flags {needle!r}")
 
+    output = errors_of(FEATURES.replace('about = "The heroes who join the party."', 'about = "' + "x" * 161 + '"'))
+    check("about is 161 characters; it is a line of at most 160" in output, "the lint flags a long about line")
     output = errors_of(FEATURES.replace('qualifiers = ["class"]', 'qualifiers = ["class", "nobody", "weapon", "class"]')
                        .replace('weapon = { heading = "Wielded by", details = ["weapon_level", "class"] }',
                                 'weapon = { heading = "Wielded by", details = ["bio", "level"], extra = 1, '

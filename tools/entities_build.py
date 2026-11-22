@@ -49,7 +49,9 @@ EVERY = "*"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
-             "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as"}
+             "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about"}
+# A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
+ABOUT_LIMIT = 160
 REFERENCED_AS_KEYS = {"heading", "details", "parts"}
 QUALIFIER_LIMIT = 3
 DETAIL_LIMIT = 4
@@ -544,6 +546,13 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         check_note(note, f"{where}: note {key}", errors)
     # A label (export plan §5): a reader's name for a shown field, grouped or not, or a group.
     check_labels(kind.get("labels", {}), shown_fields | group_names, where, errors)
+    # About (site plan §10.3, finding 18): what the kind's entities are, in one line, for its card and its list.
+    if "about" in kind:
+        about = kind["about"]
+        if not isinstance(about, str) or not about.strip() or "\n" in about:
+            errors.append(f"{where}: about must be one line of text")
+        elif len(about) > ABOUT_LIMIT:
+            errors.append(f"{where}: about is {len(about)} characters; it is a line of at most {ABOUT_LIMIT}")
     # Qualifiers (export plan §5): the shown fields, one cell a record, that tell apart entities with one name.
     qualifiers = kind.get("qualifiers", [])
     if not isinstance(qualifiers, list):
@@ -1051,7 +1060,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels")}
                               for g in k.get("group", [])],
                    "notes": k.get("notes", {}), "labels": k.get("labels", {}),
-                   "qualifiers": k.get("qualifiers", []),
+                   "qualifiers": k.get("qualifiers", []), "about": k.get("about"),
                    "referenced_as": [
                        {"field": field, "heading": entry if isinstance(entry, str) else entry["heading"],
                         "details": [] if isinstance(entry, str) else entry.get("details", []),

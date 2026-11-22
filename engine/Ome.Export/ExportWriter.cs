@@ -98,10 +98,13 @@ public static class ExportWriter
         string[] fixedTables =
         [
             "CREATE TABLE build_info (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-            "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, aliases TEXT NOT NULL, entities INTEGER NOT NULL)",
+            // A kind's about is the line that says what its entities are (site plan §10.3), null for none.
+            "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, aliases TEXT NOT NULL, "
+            + "entities INTEGER NOT NULL, about TEXT)",
+            // A row of cells' column_kind is the kind whose entity k its column k is (columns_ref), null for none.
             "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
             + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
-            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, PRIMARY KEY (kind, name))",
+            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, column_kind TEXT, PRIMARY KEY (kind, name))",
             // A kind's groups (export plan §5): its fields shown as one table, a row for each element, in order.
             "CREATE TABLE field_group (kind TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, "
             + "field TEXT NOT NULL, PRIMARY KEY (kind, name, position))",
@@ -141,7 +144,8 @@ public static class ExportWriter
             + "records INTEGER NOT NULL, rows INTEGER NOT NULL, PRIMARY KEY (kind, name))",
             "CREATE TABLE loaded_field (kind TEXT NOT NULL, loaded TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, "
             + "published INTEGER NOT NULL, text INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, bank TEXT, "
-            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, PRIMARY KEY (kind, loaded, name))",
+            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, column_kind TEXT, "
+            + "PRIMARY KEY (kind, loaded, name))",
             // A loaded table's parts (export plan §5), which the site shows apart, in order: a row is in the part when
             // global[field] is not 0 and equals global[same_as]. A parted table's rows name theirs in a part column,
             // null for the table's own.
@@ -157,6 +161,10 @@ public static class ExportWriter
             // What a shown field's value means (export plan §5): OME's word, lang '', or the game's name in a language.
             "CREATE TABLE value_name (kind TEXT NOT NULL, field TEXT NOT NULL, value INTEGER NOT NULL, lang TEXT NOT NULL, "
             + "text TEXT NOT NULL, PRIMARY KEY (kind, field, value, lang))",
+            // The game's names for a shown row of cells' columns (columns_from), in a language; a loaded table's field
+            // is written table.field.
+            "CREATE TABLE column_name (kind TEXT NOT NULL, field TEXT NOT NULL, column_index INTEGER NOT NULL, "
+            + "lang TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, field, column_index, lang))",
             // The fields that tell apart a kind's entities with one name (export plan §5), in order.
             "CREATE TABLE qualifier (kind TEXT NOT NULL, position INTEGER NOT NULL, field TEXT NOT NULL, "
             + "PRIMARY KEY (kind, position))",
@@ -261,8 +269,10 @@ public static class ExportWriter
     {
         KindDeclaration declaration = kind.Declaration;
         string id = declaration.Id;
-        using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "aliases", "entities"))
-            insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count);
+        using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "aliases", "entities",
+                                         "about"))
+            insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count,
+                       declaration.About);
         WriteFields(connection, kind, kinds);
 
         string[] columns = ["id", .. kind.Published.Select(field => field.Name), "content_hash"];
@@ -315,7 +325,7 @@ public static class ExportWriter
                 insert.Row(id, name, table.Table.Name, table.Scope, table.Table.Records, rows.Count);
             using (var insert = new Inserter(connection, "loaded_field", "kind", "loaded", "name", "type", "published",
                                              "text", "ref_table", "ref_kind", "bank", "address", "width", "column_index",
-                                             "columns"))
+                                             "columns", "column_kind"))
                 foreach (FieldLayout field in table.TableFields)
                 {
                     string? refTable = table.Table.Refs.GetValueOrDefault(field.Field);
@@ -326,7 +336,7 @@ public static class ExportWriter
                                table.Published.Any(published => published.Name == field.Name) ? 1 : 0,
                                table.Text.Any(text => text.Name == field.Name) ? 1 : 0, refTable, refKind,
                                BankName(field.Array.Bank), field.Array.Address, field.Array.Width, field.Column,
-                               ColumnNames(field));
+                               ColumnNames(field), ColumnKind(field, kinds));
                 }
             using (var insert = new Inserter(connection, "loaded_part", "kind", "loaded", "name", "position", "field",
                                              "global", "same_as", "note"))
@@ -356,6 +366,13 @@ public static class ExportWriter
         return JsonSerializer.Serialize(names);
     }
 
+    /// <summary>The kind whose entity k a row of cells' column k is (<c>columns_ref</c>): the kind of that table, or
+    /// null when none is declared or the field is no row.</summary>
+    private static string? ColumnKind(FieldLayout field, IReadOnlyList<ExportKind> kinds)
+        => field.IsArray && field.Array.ColumnsOf is { } table
+            ? kinds.FirstOrDefault(other => other.Table.Name == table)?.Declaration.Id
+            : null;
+
     private static string BankName(GlobalBank bank) => bank switch
     {
         GlobalBank.String => "string",
@@ -372,7 +389,7 @@ public static class ExportWriter
             .DistinctBy(field => field.Name).ToList();
         using var insert = new Inserter(connection, "field", "kind", "name", "type", "published", "text", "filter",
                                         "ref_table", "ref_kind", "picture", "bank", "address", "width", "column_index",
-                                        "columns");
+                                        "columns", "column_kind");
         foreach (FieldLayout field in named)
         {
             string? refTable = kind.Table.Refs.GetValueOrDefault(field.Field);
@@ -388,11 +405,11 @@ public static class ExportWriter
             insert.Row(declaration.Id, field.Name, field.TypeName, declaration.Fields.Contains(field.Name) ? 1 : 0, text ? 1 : 0,
                        declaration.Filters.Contains(field.Name) ? 1 : 0, refTable, refKind,
                        pictureNames.Length == 0 ? null : string.Join(",", pictureNames), BankName(field.Array.Bank),
-                       field.Array.Address, field.Array.Width, field.Column, ColumnNames(field));
+                       field.Array.Address, field.Array.Width, field.Column, ColumnNames(field), ColumnKind(field, kinds));
         }
         foreach (DescriptionDeclaration description in declaration.Descriptions)
             insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null,
-                       null);
+                       null, null);
         using (var groups = new Inserter(connection, "field_group", "kind", "name", "position", "field"))
             foreach (GroupDeclaration group in declaration.Groups)
                 for (int position = 0; position < group.Fields.Count; position++)
@@ -430,6 +447,9 @@ public static class ExportWriter
         using (var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text"))
             foreach (ExportValueName name in kind.ValueNames)
                 names.Row(declaration.Id, name.Field, name.Value, name.Language, name.Text);
+        using (var names = new Inserter(connection, "column_name", "kind", "field", "column_index", "lang", "text"))
+            foreach (ExportColumnName name in kind.ColumnNames)
+                names.Row(declaration.Id, name.Field, name.Column, name.Language, name.Text);
         using (var qualifiers = new Inserter(connection, "qualifier", "kind", "position", "field"))
             for (int position = 0; position < declaration.Qualifiers.Count; position++)
                 qualifiers.Row(declaration.Id, position, declaration.Qualifiers[position]);

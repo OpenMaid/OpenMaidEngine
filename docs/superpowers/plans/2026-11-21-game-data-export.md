@@ -866,3 +866,20 @@ authors.
     (ALCHEMY), a recipe's grown item and prerequisite (CHECKRECIPE), a skill's bundle (CALCREVISE), a condition's
     immunity (ADDILLSUB), a stage's prerequisite labyrinth (CHECKSTAGE). Three quantity and floor fields gained labels
     for their columns.
+- **Columns the game names, and what a kind is** (the usability review's findings 14 and 18, which the user approved
+  on 2026-11-22). Neither is in spec §5 or §7.2:
+  - **Column facets** in the registry, on an integer array (`tools/globals_build.py` lints them, the global reference
+    shows them): `columns_from = { global, first }`, a string list of the game's whose element k names column
+    first + k, and `columns_ref`, a registry table whose record k column k is; one of them at most. They name columns
+    where `columns` gives OME's words, which stay, since they are the base mods' layout names. Kamidori's element rows
+    take `element_names` (a unit's resistances, an item's resistance changes, a title change's, CALCARM's totals), and
+    its condition rows the `condition` table (an item's condition changes and equipped levels, a skill's inflictions,
+    a unit's condition state), as ILINIT's ids index them. An item's resistance change also takes
+    `affinity_level_names` with first -5, the grade INFO3@0x017a4 draws for it, as a unit's resistance does.
+  - **Their tables.** `column_name` (kind, field, column_index, lang, text), the game's names as `value_name` holds a
+    value's, read, refused and translated alike (a refusal's field is `<name>:<global>`); and a `column_kind` column in
+    `field` and `loaded_field`, the kind whose table `columns_ref` names, null when no kind shows it. A published column
+    of a field (`price.sell`) is one cell, so it has neither.
+  - **About.** A kind's `about` is one line, at most 160 characters, that says what its entities are; the site shows it
+    on the kind's card and its list. The `kind` table has an `about` column, null for none. Kamidori says each of its
+    eleven kinds from its fields and its table's usage.

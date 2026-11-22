@@ -111,6 +111,10 @@ public sealed record KindDeclaration(
     /// <summary>How the kind's references read on their targets' pages (export plan §5), by the referring field.</summary>
     public IReadOnlyList<ReferenceHeadingDeclaration> ReferencedAs { get; init; } = [];
 
+    /// <summary>What its entities are, in one line, for the site's card and list of the kind (site plan §10.3), or
+    /// null.</summary>
+    public string? About { get; init; }
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -154,6 +158,9 @@ public sealed record KindDeclaration(
                         block.GetProperty("first").GetInt32(), block.GetProperty("last").GetInt32())).ToList())).ToList()
                 : [],
             Qualifiers = ExportDeclarations.Strings(kind, "qualifiers"),
+            About = kind.TryGetProperty("about", out JsonElement about) && about.ValueKind == JsonValueKind.String
+                ? about.GetString()
+                : null,
             ReferencedAs = kind.TryGetProperty("referenced_as", out JsonElement referenced)
                 ? referenced.EnumerateArray().Select(entry => new ReferenceHeadingDeclaration(
                     entry.GetProperty("field").GetString()!, entry.GetProperty("heading").GetString()!,

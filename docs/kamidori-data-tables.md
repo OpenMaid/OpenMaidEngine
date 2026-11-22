@@ -265,13 +265,14 @@ caller of Kamidori 4.33G joins one unit (a count of 1), and none writes the leve
 ### Names, voices, profiles
 
 The game's own names for coded values are string lists, which the screens draw by the value and the export's value
-names read (`values_from` in the registry, export plan §5):
+names read (`values_from` in the registry, export plan §5), and so do the columns of a row they index (`columns_from`).
+A row of condition levels is indexed by ILINIT's condition ids, column c being condition c (`columns_ref`):
 
 | list | address | written by | names |
 |---|---|---|---|
 | races | `0x61ff[16]` | AFINIT | race r is element r − 1 (INFO5@`0xd3f` draws `0x61fe + race`) |
-| affinity levels | `0x621a[12]` | AFINIT | resistance step s is element s + 5 (INFO3@`0x17b6`) |
-| elements | `0x6212[8]` | INIT2@`0xdb` | element e is element e; a skill stores e + 1 (INFO6@`0x1008`) |
+| affinity levels | `0x621a[12]` | AFINIT | resistance step s is element s + 5 (INFO3@`0x17b6`); an item's change d is element d + 5 too (INFO3@`0x017a4`) |
+| elements | `0x6212[8]` | INIT2@`0xdb` | element e is element e; a skill stores e + 1 (INFO6@`0x1008`); column e of an element row too (`columns_from`: a unit's resistances, INFO5@`0x00f2a`) |
 | craftsman ranks | `0x6226[11]` | INIT2@`0x103` | rank r is element r (DRAWSETTLE@`0xd4`) |
 | synthesis ranks | `0x623a[7]` | INIT2@`0x13a` | rank r is element r, Ｅ to Ｍ (ALCHEMY@`0xd52`) |
 | item categories | `0x6241[26]` | INIT2 | category c is element c, 1 to 25; 0, the innate attacks', has none (INFO3@`0x1710`) |

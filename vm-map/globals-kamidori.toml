@@ -693,6 +693,7 @@ usage = "INFO5@0x00f2a draws 0x621a[5+v] for k=1..7 beside element names 0x6212+
 source = "investigation"
 confidence = "high"
 columns = { "1" = "physical", "2" = "earth", "3" = "cold", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns_from = { global = "element_names", first = 0 }
 
 [[global]]
 address = "0x2b91a4"
@@ -1006,6 +1007,7 @@ usage = "CALCCC@0x001df adds to character_resistances 0x643f5[c][k]."
 source = "investigation"
 confidence = "high"
 columns = { "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns_from = { global = "element_names", first = 0 }
 
 [[global]]
 address = "0x2d201f"
@@ -1330,6 +1332,7 @@ usage = "Main condition state. RECOVER@0x0005f, ADDILLSUB, CALCREVISE@0x005e6 an
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x61320"
@@ -1341,6 +1344,7 @@ usage = "Maintained by ADDILLSUB@0x00159 and RECOVER@0x000ac."
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x618fc"
@@ -1352,6 +1356,7 @@ usage = "Rebuilt by EQUIP@0x000ce from item_equipped_condition_levels. RECOVER r
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x7ea4f"
@@ -1573,6 +1578,7 @@ usage = "CALCARM@0x00010 seeds it from item_affinity_level_deltas and adds enhan
 source = "investigation"
 confidence = "high"
 columns = { "0" = "unused", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns_from = { global = "element_names", first = 0 }
 
 [[global]]
 address = "0x2a9b79"
@@ -1769,6 +1775,8 @@ usage = "CALCARM@0x00000 copies the row into work 0x2a9b71. CALCREVISE@0x002f9 a
 source = "investigation"
 confidence = "high"
 columns = { "0" = "unused", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns_from = { global = "element_names", first = 0 }
+values_from = { global = "affinity_level_names", first = -5 }
 
 [[global]]
 address = "0x2e39b8"
@@ -1822,6 +1830,7 @@ usage = "USEITEM@0x004fd passes each nonzero column to ADDILLSUB as (condition i
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x2f6298"
@@ -1833,6 +1842,7 @@ usage = "EQUIP@0x000d9 adds every equipped item's row into the unit baseline con
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x304cf8"
@@ -2336,6 +2346,7 @@ usage = "CALCDMG@0x0136b adds it to the weapon's item_condition_level_deltas and
 source = "investigation"
 confidence = "high"
 columns = { "1" = "instant_death", "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "strong_acid", "12" = "inflammation", "13" = "fear", "14" = "hp_regeneration", "15" = "sp_regeneration", "16" = "fs_regeneration", "17" = "exaltation", "18" = "accuracy_up", "19" = "evasion_up", "20" = "physical_attack_up", "21" = "physical_defense_up", "22" = "magic_attack_up", "23" = "magic_defense_up", "24" = "speed_up", "25" = "critical_up", "26" = "movement_down", "27" = "no_return", "28" = "injury" }
+columns_ref = "condition"
 
 [[global]]
 address = "0x3acc48"
@@ -6257,11 +6268,12 @@ confidence = "high"
 
 [[global]]
 address = "0x3b6e92"
-name = "quest_requester_icon_asset_ids"
+name = "quest_journal_icon_asset_ids"
+aliases = ["quest_requester_icon_asset_ids"]
 category = "data-table"
 type = "int[2000]"
 value_domain = "packed AGF resource id (IC3xxx.AGF, $n$ packed ids in appends); 0 = no icon"
-usage = "INFO2@0xc31/0xc54 set-texture's the requester icon onto each journal card, centred via get-texture-size."
+usage = "INFO2@0xc31/0xc54 set-texture's the icon onto each journal card (a WANTED poster), centred via get-texture-size. It pictures what the quest is about, not who asks: quest 1's is the sword it restores, and its requester ユエラ is text in the card's detail pane (quest_requester_names; seen in the port's quest journal from the k1clean save 019, 2026-11-22). Formerly named as the requester's icon."
 source = "investigation"
 confidence = "high"
 
@@ -6765,7 +6777,7 @@ name = "quest_names"
 description_lines = "quest_description_lines"
 requester_name = "quest_requester_names"
 category_label = "quest_category_labels"
-requester_icon_asset_id = "quest_requester_icon_asset_ids"
+journal_icon_asset_id = "quest_journal_icon_asset_ids"
 sort_key = "quest_journal_sort_keys"
 deadline_days = "quest_deadline_days"
 prerequisite_quest_id = "quest_prerequisite_quest_ids"
@@ -6783,7 +6795,10 @@ reward_item_quantities = "quest_reward_item_quantities"
 [table.refs]
 reward_item_ids = "item"
 prerequisite_quest_id = "quest"
-requester_icon_asset_id = "picture"
+journal_icon_asset_id = "picture"
+
+[table.field_aliases]
+requester_icon_asset_id = "journal_icon_asset_id"
 
 [[table]]
 name = "recipe"
