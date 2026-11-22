@@ -81,7 +81,8 @@ internal static class DataExportCommand
                 Names = GlobalNames.Load(Paths.GlobalsJson(gameId)),
                 Languages = languages,
                 Messages = languages.Count == 0 ? null : new ScriptMessageIndex(table, OpcodeContracts.Load(Paths.OpcodesJson)),
-                Pictures = new CatalogPictures(new ResourceMap(catalog, store, Console.Error.WriteLine, allowBmpAsAgf)),
+                Pictures = new CatalogPictures(new ResourceMap(catalog, store, Console.Error.WriteLine, allowBmpAsAgf),
+                                               catalog),
                 BuildInfo =
                 [
                     ("title", catalog.Title),
@@ -210,10 +211,48 @@ internal static class DataExportCommand
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())))[..12];
     }
 
-    /// <summary>The catalog's pictures, decoded as <c>Ome.Cli picture</c> decodes them (spec §6.5), once each.</summary>
-    private sealed class CatalogPictures(ResourceMap resources) : IPictureSource
+    /// <summary>The catalog's pictures, decoded as <c>Ome.Cli picture</c> decodes them (spec §6.5), once each; and cells
+    /// cut from a sheet named by its catalog record (export plan §5), each sheet decoded once.</summary>
+    private sealed class CatalogPictures(ResourceMap resources, Sys4AssetCatalog catalog) : IPictureSource
     {
         private readonly Dictionary<long, ExportPicture?> _decoded = new();
+        private readonly Dictionary<string, (string Stem, RgbaImage Image)?> _sheets = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<(string, int, int, int, int), ExportPicture?> _cells = new();
+
+        public ExportPicture? Cell(string sheet, int x, int y, int width, int height)
+        {
+            if (_cells.TryGetValue((sheet, x, y, width, height), out ExportPicture? known)) return known;
+            ExportPicture? picture = null;
+            if (Sheet(sheet) is { } decoded && x + width <= decoded.Image.Width && y + height <= decoded.Image.Height)
+            {
+                var pixels = new byte[width * height * 4];
+                for (int row = 0; row < height; row++)
+                    Array.Copy(decoded.Image.Pixels, ((y + row) * decoded.Image.Width + x) * 4, pixels, row * width * 4,
+                               width * 4);
+                // Named by the sheet and the cell's place and size, so two cells never share a file.
+                picture = new ExportPicture($"{decoded.Stem}-{x}-{y}-{width}x{height}",
+                                            PngWriter.Write(new RgbaImage(width, height, pixels)), width, height);
+            }
+            _cells[(sheet, x, y, width, height)] = picture;
+            return picture;
+        }
+
+        private (string Stem, RgbaImage Image)? Sheet(string name)
+        {
+            if (_sheets.TryGetValue(name, out var known)) return known;
+            (string, RgbaImage)? sheet = null;
+            if (catalog.ResolveMountedName(name) is { IsPlaceholder: false } entry)
+                try
+                {
+                    sheet = (Path.GetFileNameWithoutExtension(entry.Name), resources.DecodeTexture(entry));
+                }
+                catch (Exception error) when (error is InvalidDataException or IOException)
+                {
+                    Console.Error.WriteLine($"data-export: picture sheet {entry.Name}: {error.Message}");
+                }
+            _sheets[name] = sheet;
+            return sheet;
+        }
 
         public ExportPicture? Resolve(long packedId)
         {

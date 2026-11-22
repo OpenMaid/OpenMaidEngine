@@ -105,6 +105,16 @@ public static class ExportWriter
             // A kind's groups (export plan §5): its fields shown as one table, a row for each element, in order.
             "CREATE TABLE field_group (kind TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, "
             + "field TEXT NOT NULL, PRIMARY KEY (kind, name, position))",
+            // A group's row labels (export plan §5): a loaded table's text field, table.field, whose record r labels
+            // row r.
+            "CREATE TABLE group_label (kind TEXT NOT NULL, name TEXT NOT NULL, labels TEXT NOT NULL, "
+            + "PRIMARY KEY (kind, name))",
+            // A line that explains a detail to a reader (export plan §5): a field's, a group's, or a loaded table's
+            // field's, written table.field.
+            "CREATE TABLE note (kind TEXT NOT NULL, name TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, name))",
+            // The blocks a text field's lines are drawn in (export plan §5): lines first to last, in the game's order.
+            "CREATE TABLE text_block (kind TEXT NOT NULL, field TEXT NOT NULL, position INTEGER NOT NULL, "
+            + "name TEXT NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, PRIMARY KEY (kind, field, position))",
             "CREATE TABLE text (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
             "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
@@ -125,11 +135,13 @@ public static class ExportWriter
             + "addresses INTEGER NOT NULL, PRIMARY KEY (kind, script))",
             // A loader's published tables (export plan §4.2): each listed, its fields as `field` lists a kind's, and its
             // rows in a table named <kind>.<name>.
-            "CREATE TABLE loaded (kind TEXT NOT NULL, name TEXT NOT NULL, table_name TEXT NOT NULL, scope TEXT NOT NULL, "
+            // Its scope is null for a table no data file edits (export plan §5), whose loader has none. A loaded text
+            // field's values are the entity's text, written table.field.
+            "CREATE TABLE loaded (kind TEXT NOT NULL, name TEXT NOT NULL, table_name TEXT NOT NULL, scope TEXT, "
             + "records INTEGER NOT NULL, rows INTEGER NOT NULL, PRIMARY KEY (kind, name))",
             "CREATE TABLE loaded_field (kind TEXT NOT NULL, loaded TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, "
-            + "published INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, bank TEXT, address INTEGER, width INTEGER, "
-            + "column_index INTEGER, columns TEXT, PRIMARY KEY (kind, loaded, name))",
+            + "published INTEGER NOT NULL, text INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, bank TEXT, "
+            + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, PRIMARY KEY (kind, loaded, name))",
         ];
         foreach (string sql in fixedTables) Execute(connection, sql);
         foreach (ExportKind kind in result.Kinds)
@@ -278,7 +290,8 @@ public static class ExportWriter
             using (var insert = new Inserter(connection, "loaded", "kind", "name", "table_name", "scope", "records", "rows"))
                 insert.Row(id, name, table.Table.Name, table.Scope, table.Table.Records, rows.Count);
             using (var insert = new Inserter(connection, "loaded_field", "kind", "loaded", "name", "type", "published",
-                                             "ref_table", "ref_kind", "bank", "address", "width", "column_index", "columns"))
+                                             "text", "ref_table", "ref_kind", "bank", "address", "width", "column_index",
+                                             "columns"))
                 foreach (FieldLayout field in table.TableFields)
                 {
                     string? refTable = table.Table.Refs.GetValueOrDefault(field.Field);
@@ -286,7 +299,8 @@ public static class ExportWriter
                         ? null
                         : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
                     insert.Row(id, name, field.Name, field.TypeName,
-                               table.Published.Any(published => published.Name == field.Name) ? 1 : 0, refTable, refKind,
+                               table.Published.Any(published => published.Name == field.Name) ? 1 : 0,
+                               table.Text.Any(text => text.Name == field.Name) ? 1 : 0, refTable, refKind,
                                BankName(field.Array.Bank), field.Array.Address, field.Array.Width, field.Column,
                                ColumnNames(field));
                 }
@@ -336,7 +350,9 @@ public static class ExportWriter
                 ? null
                 : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
             string[] pictureNames = declaration.Pictures.Where(picture => picture.Field == field.Name)
-                .Select(picture => picture.Name).ToArray();
+                .Select(picture => picture.Name)
+                .Concat(declaration.Sheets.Where(sheet => sheet.Field == field.Name).Select(sheet => sheet.Name))
+                .ToArray();
             // A title that is a reference takes its target's title (game data export plan §4.1); it is no text field.
             bool text = field.IsString && (field.Name == declaration.Title || declaration.Text.Contains(field.Name));
             insert.Row(declaration.Id, field.Name, field.TypeName, declaration.Fields.Contains(field.Name) ? 1 : 0, text ? 1 : 0,
@@ -347,10 +363,22 @@ public static class ExportWriter
         foreach (DescriptionDeclaration description in declaration.Descriptions)
             insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null,
                        null);
-        using var groups = new Inserter(connection, "field_group", "kind", "name", "position", "field");
-        foreach (GroupDeclaration group in declaration.Groups)
-            for (int position = 0; position < group.Fields.Count; position++)
-                groups.Row(declaration.Id, group.Name, position, group.Fields[position]);
+        using (var groups = new Inserter(connection, "field_group", "kind", "name", "position", "field"))
+            foreach (GroupDeclaration group in declaration.Groups)
+                for (int position = 0; position < group.Fields.Count; position++)
+                    groups.Row(declaration.Id, group.Name, position, group.Fields[position]);
+        using (var labels = new Inserter(connection, "group_label", "kind", "name", "labels"))
+            foreach (GroupDeclaration group in declaration.Groups)
+                if (group.Labels != null) labels.Row(declaration.Id, group.Name, group.Labels);
+        using (var blocks = new Inserter(connection, "text_block", "kind", "field", "position", "name", "first", "last"))
+            foreach ((string field, IReadOnlyList<TextBlockDeclaration> list) in declaration.TextBlocks)
+                for (int position = 0; position < list.Count; position++)
+                    blocks.Row(declaration.Id, field, position, list[position].Name, list[position].First, list[position].Last);
+        using var notes = new Inserter(connection, "note", "kind", "name", "text");
+        foreach ((string name, string note) in declaration.Notes) notes.Row(declaration.Id, name, note);
+        foreach (ExportLoadedTable table in kind.Loaded)
+            foreach ((string name, string note) in table.Declaration.Notes)
+                notes.Row(declaration.Id, $"{table.Declaration.Name}.{name}", note);
     }
 
     /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, its text in each language, references,

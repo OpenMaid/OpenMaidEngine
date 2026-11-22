@@ -642,6 +642,7 @@ world_map_scroll_x
 world_map_scroll_y
 world_map_zoom_mode
 table character_profile
+table class_change
 table condition
 table dig_table
 table glossary_entry
@@ -652,7 +653,9 @@ table recipe
 table skill
 table stage_catalog
 table stage_enemy
+table stage_reward
 table unit
+table world_area
 field character_profile.biography_script_id
 field character_profile.epithet
 field character_profile.name
@@ -664,6 +667,15 @@ field character_profile.sex_text
 field character_profile.sort_key
 field character_profile.unit_id
 field character_profile.unlock_flags
+field class_change.party_capacity_delta
+field class_change.party_cost_delta
+field class_change.resistance_deltas
+field class_change.skill_learn_flags
+field class_change.skill_slot_replacements
+field class_change.stat_cap_deltas
+field class_change.stat_deltas
+field class_change.title
+field class_change.title_level
 field condition.can_affect_bosses
 field condition.cleared_by_recover
 field condition.critical_rate_delta
@@ -844,6 +856,7 @@ field stage_enemy.spawn_object_slot
 field stage_enemy.spawn_tile_x
 field stage_enemy.spawn_tile_y
 field stage_enemy.unit_id
+field stage_reward.condition_text
 field unit.auto_level_scale_divisor
 field unit.bestiary_description
 field unit.bestiary_knowledge_gain
@@ -888,5 +901,12 @@ field unit.unused_0x2bd024
 field unit.voice
 field unit.voice_family_unit_id
 field unit.voice_setting_slot
+field world_area.area_type
+field world_area.map_x
+field world_area.map_y
+field world_area.name
+field world_area.picture_asset_id
+field world_area.travel_days
 scope stage
 scope stage.enemy
+scope stage.reward

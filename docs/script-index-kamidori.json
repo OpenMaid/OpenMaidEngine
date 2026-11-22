@@ -5242,7 +5242,10 @@
         "shared_loop_index": [5, 2, 0],
         "skill_bundled_skill_ids": [0, 0, 3]
       },
-      "unnamed": [0, 1, 6]
+      "unnamed": [0, 1, 6],
+      "patch_points": {
+        "kamidori.class_change.rules_run": "0x60"
+      }
     },
     "CALCDMG.BIN": {
       "id": 13365,

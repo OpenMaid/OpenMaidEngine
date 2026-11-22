@@ -760,9 +760,51 @@ authors.
   (a condition's turns, nine stat changes and three resource changes at each of its five levels). The export gives
   them in a `field_group` table (kind, name, position, field), which spec §7.2 lacks; the content hash leaves them out,
   since they arrange the page and change no value, and the declarations' hash in `build_info` covers them. Kamidori
-  declares seven: a recipe's ingredients, a quest's reward items, a unit's stats and its drops, a condition's levels,
-  a stage's objective rewards and a dig table's slots.
+  declares six: a recipe's ingredients, a quest's reward items, a unit's stats and its drops, a condition's levels and
+  a stage's objective rewards.
 - **Kamidori publishes no story flags or scene numbers** (the user, 2026-11-22, on the built site: "the numbers shown
   dont really mean anything, so those would be better as modder mode things"). The flags that gate a quest, a recipe,
   a stage, a dig table, a character profile, an objective and a stage's enemies, and a glossary entry's unlock scenes,
   are left out of `fields`, so the site's modder panel alone lists them, with the cells a script wrote.
+- **The design pass's second batch** (the user's notes on the built site, 2026-11-22), none of which spec §5 or §7.2
+  has. The lint checks each, `tools/test_entities_build.py` and the exporter's tests cover it, and the content hash
+  leaves out what only arranges or explains the page:
+  - **Notes.** `[kind.notes]` gives a line (at most 300 characters) that explains a detail, keyed by what the infobox
+    shows as one row: a field outside every group, a text field, or a group. A loaded table's `notes` key its fields.
+    The `note` table holds them (kind, name, text), a loaded table's field written `table.field`. The user: "Some entity
+    details may want their own simpler explanation tooltip where we can explain a bit", and a note says only what the
+    registry grounds.
+  - **A group's labels.** `labels = "table.field"` names a text field of a table the kind's loaders publish, whose
+    record r names row r: a stage's objective rewards are labelled by each objective's condition ("Stage objective
+    rewards should have the objective text"). The `group_label` table holds them; the site then shows that loaded
+    table only in the group.
+  - **A picture cut from a sheet.** A `[kind.pictures]` value may be a table: `field` numbers a cell of the catalog
+    picture `sheet`, `first` being the first, `columns` to a row from `origin`, `step` apart, each `size`. A number
+    below `first` is no picture; a cell off the sheet is reported as unresolved. Kamidori's condition icons are SO009's
+    15-pixel cells, as DRAWCHSTATE draws them.
+  - **Text blocks.** `[kind.text_blocks.<field>]` divides a text field's row of lines into the blocks the game draws
+    them in, `name = [first, last]`, in order and sharing no line. The `text_block` table holds them. A quest's lines are
+    an overview (0 to 4), a clear condition (5, 6) and a failure condition (7, 8), as INFO2 draws them, so the site
+    shows its text as a table ("Quest text should be a table"); the registry's column names, `source_header` for line
+    0, would have split the overview, and the English package fills lines 0 to 4 as one paragraph.
+  - **Loaded text and literals.** A loaded table's `text` lists string fields, written to the `text` table as
+    `table.field`, its index the row times the width plus the element, and translated as a kind's text is; the
+    `loaded_field` table gains a `text` column. A `literals` entry gives one record's text field the string a script
+    stores at a dword offset instead: STINIT leaves a stage's first objective text empty, and AIM draws
+    「占有率１００％」 in its place.
+  - **A loader with no scope.** It names each table's registry table (`table`), runs every key or those in
+    `key_range = [first, last]`, and may run each key `steps` times, its rows numbered step times the table's records
+    plus the record. Its `seed` may be a list of cells, `{ global, index, value }`, an index's terms being numbers,
+    `"key"`, `"step"` or `"*"` (every element). `loaded.scope` is null for such a table. Kamidori's title changes are
+    one: CALCCC for each unit and each of its twenty title columns, with that column's rule state 2, the others 1 and
+    the unit's level 99, read at the new patch point `kamidori.class_change.rules_run` (CALCCC@0x60, after the rule
+    scripts). CALCCC zeroes the block before the rules add to it, so it is the loader's builder. 127 rows, as many as
+    the rule scripts have rules.
+  - **A one-record table.** A registry `[[table]]` with `records = 1` may name scalars (its one cell) and 1-D arrays
+    (its one row), so the class change block is a table without its globals being retyped, which would change the
+    base mod's released layout. `globals_build`, `base_mod_build`, `entities_build` and the exporter's `RegistryView`
+    read it alike. Its `built_by` is `class_change`, which `ome-records` does not edit, so no data file reaches it.
+  - **World areas and the dig tables.** A `world_area` kind (AMINIT2's areas) gives a stage's labyrinth and a unit's
+    habitat areas a name and a link ("maybe we add a labyrinth entity or at least get the location name instead of an
+    id"). The `dig_table` kind is dropped, since its page could not say where a dig site is; the backlog's stage maps
+    item keeps it.

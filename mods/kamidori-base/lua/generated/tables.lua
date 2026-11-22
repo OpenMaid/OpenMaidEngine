@@ -25,6 +25,21 @@ return {
                 unlock_flags = { global = "character_profile_unlock_flag_ids", kind = "integer", width = 3 },
             },
         },
+        class_change = {
+            records = 1,
+            built_by = "class_change",
+            fields = {
+                party_capacity_delta = { global = "class_change_party_capacity_delta", kind = "integer" },
+                party_cost_delta = { global = "class_change_party_cost_delta", kind = "integer" },
+                resistance_deltas = { global = "class_change_resistance_deltas", kind = "integer", width = 8, columns = { physical = 1, earth = 2, ice = 3, fire = 4, lightning = 5, holy = 6, dark = 7 } },
+                skill_learn_flags = { global = "class_change_skill_learn_flags", kind = "integer", width = 1000 },
+                skill_slot_replacements = { global = "class_change_skill_slot_replacements", kind = "integer", width = 8 },
+                stat_cap_deltas = { global = "class_change_stat_cap_deltas", kind = "integer", width = 14, columns = { accuracy = 0, evasion = 1, physical_attack = 2, physical_defense = 3, magic_attack = 4, magic_defense = 5, agility = 6, luck = 7, movement = 8, customer_service = 9, max_hp = 10, max_sp = 11, max_fs = 12, capacity = 13 } },
+                stat_deltas = { global = "class_change_stat_deltas", kind = "integer", width = 14, columns = { accuracy = 0, evasion = 1, physical_attack = 2, physical_defense = 3, magic_attack = 4, magic_defense = 5, agility = 6, luck = 7, movement = 8, customer_service = 9, max_hp = 10, max_sp = 11, max_fs = 12, capacity = 13 } },
+                title = { global = "class_change_title_out", kind = "string" },
+                title_level = { global = "class_change_title_priority", kind = "integer" },
+            },
+        },
         condition = {
             records = 30,
             built_by = "boot",
@@ -265,6 +280,13 @@ return {
                 unit_id = { global = "stage_enemy_unit_id", kind = "integer" },
             },
         },
+        stage_reward = {
+            records = 4,
+            built_by = "stage",
+            fields = {
+                condition_text = { global = "stage_reward_condition_texts", kind = "string" },
+            },
+        },
         unit = {
             records = 1000,
             built_by = "boot",
@@ -315,8 +337,20 @@ return {
                 voice_setting_slot = { global = "unit_voice_setting_slot", kind = "integer" },
             },
         },
+        world_area = {
+            records = 100,
+            built_by = "boot",
+            fields = {
+                area_type = { global = "world_area_kinds", kind = "integer" },
+                map_x = { global = "world_area_map_x", kind = "integer" },
+                map_y = { global = "world_area_map_y", kind = "integer" },
+                name = { global = "world_area_names", kind = "string" },
+                picture_asset_id = { global = "world_area_icon_asset_ids", kind = "integer" },
+                travel_days = { global = "world_area_travel_days", kind = "integer" },
+            },
+        },
     },
     scopes = {
-        stage = { first = 1, last = 999, tables = { enemy = "stage_enemy" } },
+        stage = { first = 1, last = 999, tables = { enemy = "stage_enemy", reward = "stage_reward" } },
     },
 }

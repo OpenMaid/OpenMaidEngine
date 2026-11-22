@@ -42,6 +42,11 @@ REGISTRY = "".join([
     g("0x440", "trap_damage", "int[5]"),
     g("0x30", "joining_hero_ids", "int[2]"),
     g("0x32", "joining_hero_count", "int"),
+    g("0x460", "hero_rule_state", "int[4][5]"),
+    g("0x60", "bonus_title", "string"),
+    g("0x480", "bonus_level", "int"),
+    g("0x490", "bonus_stats", "int[3]", {"0": "attack", "1": "defense", "2": "speed"}),
+    g("0x4a0", "bonus_skills", "int[2][3]"),
 ]) + '''
 [[table]]
 name = "hero"
@@ -86,6 +91,16 @@ records = 5
 built_by = "stage"
 [table.fields]
 damage = "trap_damage"
+
+# A block the game keeps one of (registry one-record tables): a scalar is its one cell, a 1-D array its one row.
+[[table]]
+name = "bonus"
+records = 1
+built_by = "bonus"
+[table.fields]
+title = "bonus_title"
+level = "bonus_level"
+stats = "bonus_stats"
 
 [[scope]]
 name = "stage"
@@ -218,15 +233,22 @@ def test_good_declarations():
           "an optional list or table is present and empty")
     check(data.get("loaders", [{}])[0].get("builders") == ["FOEINIT"], "a loader keeps its own builders")
     check(data.get("loaders", [{}])[0].get("tables") == {"foe": {"table": "foe", "exists": "hero",
-                                                               "fields": ["hero", "levels"]}},
+                                                               "fields": ["hero", "levels"], "text": [],
+                                                               "literals": [], "notes": {}}},
           "a loader's published table names its registry table beside its short name")
+    check(data.get("loaders", [{}])[0].get("seed") == [{"global": "current_hero_id", "index": [], "value": "key"}],
+          "a loader's seed table is written as the list of cells it seeds")
+    check(data.get("loaders", [{}])[0].get("steps") == 1 and data["loaders"][0].get("key_range") is None,
+          "a loader without steps runs once for each key, every key")
     check(data.get("script_relations", [{}])[0].get("count") is None, "a relation without a count has count null")
     check(data.get("script_relations", [{}])[0].get("where") == {}, "a relation without a where has an empty one")
     check(data.get("script_relations", [{}, {}])[1].get("where") == {"joining_hero_count": 1},
           "a relation keeps its where")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
-    check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"]}], "the JSON keeps a kind's groups")
+    check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"], "labels": None}],
+          "the JSON keeps a kind's groups")
+    check(hero.get("notes") == {} and hero.get("text_blocks") == {}, "a kind without notes or text blocks has empty tables")
     check(weapon.get("groups") == [], "a kind without groups has an empty list")
     code, _, written_again = run(GOOD, write=True)
     same = {k: v for k, v in json.loads(written_again or "{}").items() if k != "generated_from"}
@@ -352,7 +374,8 @@ name = "arms"
 fields = ["weapon", "trait"]
 ''', write=True)
     check(code == 0 and written is not None
-          and json.loads(written)["kinds"][0]["groups"] == [{"name": "arms", "fields": ["weapon", "trait"]}],
+          and json.loads(written)["kinds"][0]["groups"] == [{"name": "arms", "fields": ["weapon", "trait"],
+                                                             "labels": None}],
           f"a field a multiple of the narrowest's width may join a group: {output}")
 
 
@@ -486,6 +509,151 @@ where = { joining_hero_count = "one" }
         check(needle in output, f"the lint flags {needle!r}")
 
 
+# The design pass's additions (export plan §5): notes, a picture cut from a sheet, a group labelled by a loaded table's
+# text, a literal, and a loader with no scope that runs each key in steps with indexed seeds over a one-record table.
+FEATURES = EXPORT + '''
+[[kind]]
+id = "hero"
+table = "hero"
+exists = "name"
+title = "name"
+text = ["bio"]
+fields = ["class", "weapon", "weapon_level"]
+
+[[kind.group]]
+name = "arms"
+fields = ["weapon", "weapon_level"]
+labels = "foe.name"
+
+[kind.pictures.badge]
+field = "handler"
+sheet = "BADGES.AGF"
+first = 1
+columns = 4
+origin = [0, 100]
+step = [16, 16]
+size = [15, 15]
+
+[kind.notes]
+class = "1 knight, 2 archer."
+arms = "Each weapon slot and its level."
+
+[kind.text_blocks.bio]
+summary = [0, 0]
+detail = [1, 1]
+
+[[loader]]
+scope = "stage"
+keys = "hero"
+script = "FIELD"
+read_at = "demo.stage.loaded"
+
+[loader.tables.foe]
+exists = "hero"
+fields = ["hero"]
+text = ["name"]
+literals = [{ record = 0, field = "name", script = "AIM", offset = 0x10 }]
+notes = { hero = "Who it is." }
+
+[[loader]]
+keys = "hero"
+key_range = [0, 3]
+steps = 5
+script = "FIELD"
+read_at = "demo.stage.loaded"
+seed = [
+    { global = "current_hero_id", value = "key" },
+    { global = "hero_rule_state", index = ["key", "*"], value = 1 },
+    { global = "hero_rule_state", index = ["key", "step"], value = 2 },
+]
+
+[loader.tables.bonus]
+table = "bonus"
+exists = "level"
+text = ["title"]
+fields = ["level", "stats"]
+'''
+
+
+def test_design_pass_features():
+    code, output, written = run(FEATURES, write=True)
+    check(code == 0, f"notes, a sheet picture, group labels, a literal and a stepped loader lint clean ({output.strip()})")
+    data = json.loads(written or "{}")
+    hero = data.get("kinds", [{}])[0]
+    check(hero.get("groups", [{}])[0].get("labels") == "foe.name", "the JSON keeps a group's labels")
+    check(hero.get("notes") == {"class": "1 knight, 2 archer.", "arms": "Each weapon slot and its level."},
+          "the JSON keeps a kind's notes")
+    check(hero.get("pictures", {}).get("badge", {}).get("sheet") == "BADGES.AGF", "the JSON keeps a sheet picture")
+    check(hero.get("text_blocks") == {"bio": [{"name": "summary", "first": 0, "last": 0},
+                                              {"name": "detail", "first": 1, "last": 1}]},
+          "the JSON keeps a text field's blocks in their order")
+    loaders = data.get("loaders", [{}, {}])
+    foe = loaders[0].get("tables", {}).get("foe", {})
+    check(foe.get("text") == ["name"] and foe.get("literals") == [{"record": 0, "field": "name", "script": "AIM",
+                                                                  "offset": 0x10}]
+          and foe.get("notes") == {"hero": "Who it is."}, "a loaded table keeps its text, literals and notes")
+    stepped = loaders[1] if len(loaders) > 1 else {}
+    check(stepped.get("scope") is None and stepped.get("steps") == 5 and stepped.get("key_range") == [0, 3],
+          "a loader with no scope keeps its steps and key range")
+    check(stepped.get("seed", [{}])[2:] == [{"global": "hero_rule_state", "index": ["key", "step"], "value": 2}],
+          "an indexed seed keeps its terms, in order")
+    check(stepped.get("tables", {}).get("bonus", {}).get("table") == "bonus",
+          "a loader with no scope names each table's registry table")
+
+    output = errors_of(FEATURES.replace('class = "1 knight, 2 archer."',
+                                        'weapon = "a slot"\nnobody = "x"\nbio = "two\\nlines"')
+                       .replace('labels = "foe.name"', 'labels = "foe.hero"')
+                       .replace('sheet = "BADGES.AGF"', 'sheet = "badges"\nshade = 1')
+                       .replace('summary = [0, 0]\ndetail = [1, 1]', 'Summary = [1, 1]\ndetail = [0, 2]')
+                       .replace('size = [15, 15]', 'size = [17, 15]')
+                       .replace('key_range = [0, 3]', 'key_range = [3, 0]')
+                       .replace('steps = 5', 'steps = 0')
+                       .replace('literals = [{ record = 0, field = "name", script = "AIM", offset = 0x10 }]',
+                                'literals = [{ record = 7, field = "hero", script = "aim", offset = -1 }, '
+                                '{ record = 7, field = "hero", script = "AIM", offset = 1 }]')
+                       .replace('notes = { hero = "Who it is." }', 'notes = { speed = "fast" }')
+                       .replace('{ global = "current_hero_id", value = "key" },',
+                                '{ global = "current_hero_id", index = [0], value = "key" },')
+                       .replace('[loader.tables.bonus]\ntable = "bonus"', '[loader.tables.bonus]\ntable = "foe"'))
+    for needle in ("note weapon: the field is shown in group 'arms'; note the group",
+                   "note 'nobody' names none of the kind's fields, text or groups",
+                   "note bio must be one line of text",
+                   "labels 'foe.hero': 'hero' is no text field of table foe",
+                   "picture badge: unknown key 'shade'", "sheet 'badges' must be a picture's catalog name",
+                   "size [17, 15] is larger than step [16, 16]",
+                   "key_range must be [first, last]", "steps must be a whole number from 1 to 1000",
+                   "literal: 'hero' is not one of the table's text fields", "literal: record 7 is not one of table foe",
+                   "literal: script: 'aim' must be", "literal: offset must be the instruction's dword offset",
+                   "literal: record 7's hero has two literals", "note 'speed' names none of the table's fields or text",
+                   "seed current_hero_id is int, so its index must have 0 term(s)",
+                   "text_blocks bio: block name 'Summary' must be a lowercase identifier",
+                   "text_blocks bio: block detail must be [first, last], lines of the row's 0 to 1",
+                   "table foe is a table of scope stage, which a loader with that scope reads"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+    output = errors_of(FEATURES.replace('text = ["bio"]\nfields = ["class"', 'text = ["bio", "name"]\nfields = ["class"')
+                       .replace('[kind.text_blocks.bio]\nsummary = [0, 0]\ndetail = [1, 1]',
+                                        '[kind.text_blocks.bio]\nsummary = [1, 1]\ndetail = [0, 1]\n'
+                                        '[kind.text_blocks.name]\nall = [0, 0]\n'
+                                        '[kind.text_blocks.class]\nall = [0, 0]'))
+    for needle in ("text_blocks bio: block detail starts at line 0, within the block before it",
+                   "text_blocks name: name is one line for each record; blocks divide a row of lines",
+                   "text_blocks class: 'class' is not one of the kind's text fields"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+    output = errors_of(FEATURES.replace('labels = "foe.name"', 'labels = "boss.name"')
+                       .replace('key_range = [0, 3]\n', '').replace('steps = 5\n', '')
+                       .replace('[loader.tables.bonus]\ntable = "bonus"', '[loader.tables.bonus]')
+                       .replace('[loader.tables.foe]\n', '[loader.tables.foe]\ntable = "foe"\n'))
+    for needle in ("labels 'boss.name': 'boss' is no table the kind's loaders publish",
+                   "seed hero_rule_state is indexed by the key, which the loader's key_range must keep below 4",
+                   "seed hero_rule_state is indexed by the step, which the loader's steps must keep below 5",
+                   "a seed is indexed by the step, and the loader has no steps",
+                   "a loader with no scope names each table's registry table: table None",
+                   "a loader with a scope names its tables by the scope's short names, not by table"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+
 def test_the_repository_declarations():
     for profile_id in build.profiles_with_entities():
         import contextlib, io
@@ -504,6 +672,7 @@ def main():
     test_description_errors()
     test_group_errors()
     test_loader_and_relation_errors()
+    test_design_pass_features()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0

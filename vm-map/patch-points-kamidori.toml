@@ -83,6 +83,21 @@ fingerprint = "sha256:0c93c6815a7b6903564000ff470d4c5854b5baac4c994cddcda81899e2
 site = 0x527
 
 [[point]]
+name = "kamidori.class_change.rules_run"
+script = "CALCCC.BIN"
+description = """
+Every rule script of class_change_rule_script_ids has run for current_character_id (CCINIT, then each append's \
+$n$CCINIT), and CALCCC has applied nothing yet: the class change block (class_change_title_priority, \
+class_change_title_out and the class_change_*_delta arrays, the skill slot replacements and the skill learn flags) \
+holds the sum of the rules that fired in this call, each of which has set bit 0 of its column of \
+character_class_change_state. A title priority of 0 means none fired, and CALCCC exits; otherwise it adds the deltas \
+to the character and copies the title into character_class_titles."""
+
+[[point.at]]                    # both installs: neither has a loose CALCCC, so each serves the archive's
+fingerprint = "sha256:ce198812dd6236dbc104ff99cdbee005a2dcd633f7233ef9c76caae694560824"
+site = 0x60
+
+[[point]]
 name = "kamidori.stage.after_info_reload"
 script = "INFO3.BIN"
 description = """

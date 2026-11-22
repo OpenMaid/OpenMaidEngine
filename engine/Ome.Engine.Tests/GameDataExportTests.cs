@@ -38,6 +38,8 @@ public class GameDataExportTests
     private const int ItemCategory = 1000, ItemPrices = 1100, ItemIcon = 1200, ItemHandler = 1300, ItemSkill = 1400,
                       SkillCategory = 1500, CurrentItem = 5000, LootSkill = 1600, LootCount = 1700, CurrentCount = 5001,
                       JoinSkills = 5100, JoinCount = 5110;
+    // The one-record bonus table (export plan §5) and the rule state its loader seeds: four keys of three rules.
+    private const int BonusTitle = 960, BonusLevel = 5200, BonusStats = 5210, RuleState = 5300;
 
     private static RegistryView Registry() => new(
         [
@@ -51,6 +53,9 @@ public class GameDataExportTests
             // The loot table of the scope `field` (export plan §4.2): a loader builds it for one item at a time.
             new TableLayout("field_loot", 3, [("skill_id", "loot_skill_ids"), ("count", "loot_counts")],
                             new Dictionary<string, string> { ["skill_id"] = "skill" }),
+            // A block the game keeps one of (export plan §5): a scalar string, a scalar and a list as its one record.
+            new TableLayout("bonus", 1, [("title", "bonus_title"), ("level", "bonus_level"), ("stats", "bonus_stats")],
+                            new Dictionary<string, string>()),
         ],
         [
             Array("item_names", GlobalBank.String, ItemNames, 4),
@@ -70,6 +75,10 @@ public class GameDataExportTests
             new ArrayLayout("joining_skill_count", GlobalBank.Integer, JoinCount, [], new Dictionary<int, string>()),
             Array("loot_skill_ids", GlobalBank.Integer, LootSkill, 3),
             new ArrayLayout("loot_counts", GlobalBank.Integer, LootCount, [3, 2], new Dictionary<int, string>()),
+            new ArrayLayout("bonus_title", GlobalBank.String, BonusTitle, [], new Dictionary<int, string>()),
+            new ArrayLayout("bonus_level", GlobalBank.Integer, BonusLevel, [], new Dictionary<int, string>()),
+            new ArrayLayout("bonus_stats", GlobalBank.Integer, BonusStats, [3], new Dictionary<int, string> { [0] = "attack" }),
+            new ArrayLayout("rule_state", GlobalBank.Integer, RuleState, [4, 3], new Dictionary<int, string>()),
         ]);
 
     private static ArrayLayout Array(string name, GlobalBank bank, int address, int records)
@@ -118,6 +127,11 @@ public class GameDataExportTests
         public ExportPicture? Resolve(long packedId) => packedId is 77 or 79
             ? new ExportPicture($"ICON{packedId:000}", Encoding.ASCII.GetBytes($"png {packedId}"), 32, 16)
             : null;
+
+        // A sheet's cells (export plan §5): SHEET.AGF holds one row of cells, so a cell below it is none.
+        public ExportPicture? Cell(string sheet, int x, int y, int width, int height) => sheet == "SHEET.AGF" && y < 18
+            ? new ExportPicture($"SHEET-{x}-{y}", Encoding.ASCII.GetBytes($"png {x} {y}"), width, height)
+            : null;
     }
 
     private static Script Asm(string name, IReadOnlyList<(int, Operand[])> code, params string[] strings)
@@ -155,6 +169,16 @@ public class GameDataExportTests
                 (OpCallScript, [I(10)]), (OpExit, []),
             ], "【", "】", "鋭", "するど", "い"),
             [10] = Asm("OTHER.BIN", [(OpShowText, [I(0), S(0)]), (OpExit, [])], "他の台詞"),
+            // The bonus loader's script (export plan §5): the level is the key, the stats key 1's row of the rule state,
+            // and the title a string of its own.
+            [20] = Asm("RULES.BIN",
+            [
+                (OpMov, [G(BonusLevel), G(CurrentItem)]), (OpMov, [G(BonusStats), G(RuleState + 3)]),
+                (OpMov, [G(BonusStats + 1), G(RuleState + 4)]), (OpMov, [G(BonusStats + 2), G(RuleState + 5)]),
+                (OpSetString, [GS(BonusTitle), S(0)]), (OpExit, []),
+            ], "称号"),
+            // A screen that draws a fixed string, which a literal gives a record's text from.
+            [21] = Asm("AIM.BIN", [(OpSetString, [GS(Scratch + 60), S(0)]), (OpExit, [])], "固定"),
             // Loot record 1 grants the skill numbered as the item; record 2 skill 1, five of it.
             [11] = Asm("DROPSET.BIN",
             [
@@ -608,9 +632,12 @@ public class GameDataExportTests
               "G:0x10": {"address": "0x10", "bank": "G", "name": "unit_graphic", "type": "int[3][4]",
                          "columns": {"0": "face_CA_AA", "2": "sprite"}},
               "GS:0x20": {"address": "0x20", "bank": "GS", "name": "unit_names", "type": "string[3]"},
-              "G:0x40": {"address": "0x40", "bank": "G", "name": "current_unit", "type": "int"}},
+              "G:0x40": {"address": "0x40", "bank": "G", "name": "current_unit", "type": "int"},
+              "G:0x50": {"address": "0x50", "bank": "G", "name": "a_list", "type": "int[4]", "columns": {"1": "second"}}},
              "tables": [{"name": "unit", "records": 3, "fields": {"graphic": "unit_graphic", "name": "unit_names"},
-                         "refs": {"graphic": "picture"}}]}
+                         "refs": {"graphic": "picture"}},
+                        {"name": "block", "records": 1, "fields": {"unit": "current_unit", "list": "a_list"}},
+                        {"name": "bad", "records": 3, "fields": {"list": "a_list"}}]}
             """);
         try
         {
@@ -626,6 +653,15 @@ public class GameDataExportTests
             Assert.Equal("string", registry.Resolve(unit, "name").TypeName);
             Assert.Equal(0x40, registry.IntegerGlobal("current_unit"));
             Assert.Throws<InvalidDataException>(() => registry.IntegerGlobal("unit_names"));
+            // A one-record table (export plan §5): a scalar is its one cell, a list of n its one row of n.
+            TableLayout block = registry.Table("block");
+            Assert.Equal((0x40, 1, false), (registry.Resolve(block, "unit").Cell(0, 0), registry.Resolve(block, "unit").Elements,
+                                            registry.Resolve(block, "unit").IsArray));
+            FieldLayout list = registry.Resolve(block, "list");
+            Assert.Equal((0x50 + 2, 4, true, "int[4]"), (list.Cell(0, 2), list.Elements, list.IsArray, list.TypeName));
+            Assert.Equal(0x50 + 1, registry.Resolve(block, "list.second").Cell(0, 0));
+            Assert.Throws<InvalidDataException>(() => registry.Resolve(registry.Table("bad"), "list"));   // 4 is not 3
+            Assert.Equal([3, 4], registry.IntegerArray("unit_graphic").Dimensions);
         }
         finally
         {
@@ -981,6 +1017,129 @@ public class GameDataExportTests
                                              && cell.Writer == "LOOT.BIN");
         // The snippet leaves the refused element out.
         Assert.Contains("[field.1.loot.2]\nskill_id = 1\ncount = {0 = 5}\n", sword.Snippet, StringComparison.Ordinal);
+    }
+
+    // A loader with no scope (export plan §5): items 1 and 2, three steps each, its seeds the key and the key's row of
+    // the rule state, every rule 1 and the step's 2; RULES is its own builder.
+    private const string Stepped = """
+        "loaders": [{"scope": null, "keys": "item", "key_range": [1, 2], "steps": 3, "skip": {}, "script": "RULES",
+                     "seed": [{"global": "current_item_id", "index": [], "value": "key"},
+                              {"global": "rule_state", "index": ["key", "*"], "value": 1},
+                              {"global": "rule_state", "index": ["key", "step"], "value": 2}],
+                     "read_at": "testgame.rules.ready", "builders": ["RULES"],
+                     "tables": {"bonus": {"table": "bonus", "exists": "level", "fields": ["level", "stats"],
+                                          "text": ["title"], "literals": [], "notes": {"level": "The key."}}}}]
+        """;
+
+    private static ExportResult RunStepped(string loader = Stepped, string? declarations = null)
+    {
+        ExportInputs game = Game();
+        Script rules = game.ScriptByName("RULES")!;
+        return GameDataExporter.Run(WithDeclarations(game, declarations ?? WithLoader(loader),
+            stopOf: point => point == "testgame.rules.ready"
+                ? new RunStop("RULES", rules.Instructions[^1].Offset)
+                : game.StopOf!(point)));
+    }
+
+    [Fact]
+    public void ALoaderWithStepsRunsEachKeyOnceAStepWithItsSeedsAndReadsAOneRecordTable()
+    {
+        ExportResult result = RunStepped();
+        Assert.Equal(6, result.Report.LoaderRuns);                                     // items 1 and 2, three steps
+        Assert.Empty(result.Report.LoaderHalts);
+        Assert.Empty(result.Report.Refusals);
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal([0, 1, 2], sword.Loaded.Select(row => row.Record));               // step k is record k
+        Assert.Equal([2, 1, 1], Loaded(sword, "bonus", 0, "stats"));                   // "*" then the step's cell
+        Assert.Equal([1, 2, 1], Loaded(sword, "bonus", 1, "stats"));
+        Assert.Equal([1, 1, 2], Loaded(sword, "bonus", 2, "stats"));
+        Assert.Equal([1], Loaded(sword, "bonus", 2, "level"));
+        ExportEntity shield = Entity(result, "item", 2);
+        Assert.Equal([0, 0, 0], Loaded(shield, "bonus", 0, "stats"));                  // its own row, not key 1's
+        Assert.Equal([2], Loaded(shield, "bonus", 0, "level"));
+        Assert.Empty(Entity(result, "item", 3).Loaded);                                // outside the key range
+        // The text is the entity's, as table.field by row; its cell shows the text; no data file reaches the table.
+        Assert.Equal("称号", Text(sword, "bonus.title", 2));
+        Assert.Contains(sword.Cells, cell => cell.Field == "bonus.title" && cell.Index == 1 && cell.Raw == "称号");
+        Assert.DoesNotContain(".bonus.", sword.Snippet ?? "", StringComparison.Ordinal);
+        ExportLoadedTable table = result.Kinds.Single(kind => kind.Declaration.Id == "item").Loaded.Single();
+        Assert.Null(table.Scope);
+        Assert.Equal(["title"], table.Text.Select(field => field.Name));
+    }
+
+    [Fact]
+    public void ALiteralGivesARecordsTextFromAScriptsString()
+    {
+        ExportResult result = RunStepped(Stepped.Replace("\"literals\": []",
+            "\"literals\": [{\"record\": 0, \"field\": \"title\", \"script\": \"AIM\", \"offset\": 0}]",
+            StringComparison.Ordinal));
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal(["固定", "固定", "固定"], Enumerable.Range(0, 3).Select(row => Text(sword, "bonus.title", row)));
+        ExportFailure failure = Assert.Throws<ExportFailure>(() => RunStepped(Stepped.Replace("\"literals\": []",
+            "\"literals\": [{\"record\": 0, \"field\": \"title\", \"script\": \"AIM\", \"offset\": 1}]",
+            StringComparison.Ordinal)));
+        Assert.Contains("AIM@0x1 starts no instruction", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASheetPictureIsTheCellItsFieldNumbers()
+    {
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["pictures"]!["badge"] = JsonNode.Parse("""
+            {"field": "category", "sheet": "SHEET.AGF", "first": 1, "columns": 3, "origin": [0, 10], "step": [8, 8],
+             "size": [7, 7]}
+            """);
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        string? Badge(int id) => Entity(result, "item", id).Pictures.SingleOrDefault(p => p.Name == "badge").Picture?.Name;
+        Assert.Equal("SHEET-8-10", Badge(1));                                          // category 2: the second cell
+        Assert.Equal("SHEET-16-10", Badge(2));                                         // category 3: the third
+        Assert.Null(Badge(3));                                                         // category 4: the next row, off it
+        Assert.Contains(("item", 3, "badge", 4L), result.Report.UnresolvedPictures);
+        Assert.Equal(7, Entity(result, "item", 1).Pictures.Single(p => p.Name == "badge").Picture.Width);
+    }
+
+    [Fact]
+    public void TheDatabaseHoldsNotesGroupLabelsTextBlocksAndLoadedText()
+    {
+        JsonNode declarations = JsonNode.Parse(WithLoader(Stepped))!;
+        declarations["kinds"]![0]!["groups"] = JsonNode.Parse(
+            """[{"name": "prices", "fields": ["price", "category"], "labels": "bonus.title"}]""");
+        declarations["kinds"]![0]!["notes"] = JsonNode.Parse("""{"category": "1 a sword.", "prices": "Buy and sell."}""");
+        declarations["kinds"]![0]!["text_blocks"] = JsonNode.Parse(
+            """{"short_description": [{"name": "first", "first": 0, "last": 0}, {"name": "rest", "first": 1, "last": 3}]}""");
+        ExportResult result = RunStepped(declarations: declarations.ToJsonString());
+        Assert.Equal("bonus.title", result.Kinds[0].Declaration.Groups.Single().Labels);
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("prices=bonus.title", Scalar("SELECT name || '=' || labels FROM group_label WHERE kind = 'item'"));
+            Assert.Equal("bonus.level:The key.,category:1 a sword.,prices:Buy and sell.", Scalar(
+                "SELECT group_concat(name || ':' || text, ',') FROM (SELECT * FROM note WHERE kind = 'item' ORDER BY name)"));
+            Assert.Equal("title", Scalar("SELECT name FROM loaded_field WHERE kind = 'item' AND loaded = 'bonus' AND text = 1"));
+            Assert.Equal("short_description:0:first:0-0,short_description:1:rest:1-3", Scalar(
+                "SELECT group_concat(field || ':' || position || ':' || name || ':' || first || '-' || last, ',') FROM "
+                + "(SELECT * FROM text_block WHERE kind = 'item' ORDER BY field, position)"));
+            Assert.Equal("1", Scalar("SELECT scope IS NULL FROM loaded WHERE kind = 'item' AND name = 'bonus'"));
+            Assert.Equal("3", Scalar("SELECT count(*) FROM text WHERE kind = 'item' AND id = 1 AND field = 'bonus.title'"));
+            Assert.Equal("[1,2,1]", Scalar("SELECT stats FROM \"item.bonus\" WHERE id = 1 AND record = 1"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------- script_use (§4.3)

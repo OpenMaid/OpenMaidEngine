@@ -58,7 +58,7 @@ EBINIT unit records keyed by unit id, with the per-unit runtime arrays (history 
 | drop_required_flag | unit_drop_required_flag_ids | `0x2cd1f4` | `int[1000][10]` | |
 | drop_excluding_flag | unit_drop_excluding_flag_ids | `0x2cf904` | `int[1000][5]` | |
 | large_battle_sprite | unit_large_battle_sprite | `0x2d0c8c` | `int[1000]` | |
-| habitat_area | unit_habitat_area_ids | `0x2d1074` | `int[1000][4]` | |
+| habitat_area | unit_habitat_area_ids | `0x2d1074` | `int[1000][4]` | `world_area` |
 
 ### item[2000]
 
@@ -182,6 +182,16 @@ The current stage's enemy slots. STINIT, then each append's $n$STINIT, the stage
 | required_story_flags | stage_enemy_required_story_flags | `0x140b58` | `int[30][7]` | |
 | forbidden_story_flags | stage_enemy_forbidden_story_flags | `0x140c2a` | `int[30][5]` | |
 
+### stage_reward[4]
+
+Built by: `stage`.
+
+The current stage's four clear-reward rows: the condition each one's reward is for, which STINIT (and each append's $n$STINIT) writes with the rest of the stage (docs/kamidori-data-tables.md, Stage catalog). Row i's rewards are stage_catalog's objective_*_rewards element i. AIM@0x5b4 and STAGECLEAR@0x8be draw a fixed label for row 0 in place of its text, which STINIT leaves empty; rows 1 to 3 draw their text (AIM@0x5bc, STAGECLEAR@0x8c6). A data file reaches it through the stage scope.
+
+| field | global | address | type |
+|---|---|---|---|
+| condition_text | stage_reward_condition_texts | `GS 0x24af` | `string[4]` |
+
 ### quest[2000]
 
 Built by: `boot`.
@@ -271,10 +281,10 @@ STINIT2's stage catalog keyed by stage id, the id current_stage_id and the stage
 |---|---|---|---|---|
 | name | stage_display_names | `GS 0x24b3` | `string[1000]` | |
 | select_background_asset_id | stage_select_background_asset_ids | `0x140d4c` | `int[1000]` | pictures |
-| labyrinth_id | stage_labyrinth_ids | `0x141134` | `int[1000]` | |
+| labyrinth_id | stage_labyrinth_ids | `0x141134` | `int[1000]` | `world_area` |
 | floor_number | stage_floor_numbers | `0x14151c` | `int[1000]` | |
 | required_party_unit_ids | stage_required_party_unit_ids | `0x141904` | `int[1000][10]` | `unit` |
-| prerequisite_labyrinth_id | stage_prerequisite_labyrinth_ids | `0x144014` | `int[1000]` | |
+| prerequisite_labyrinth_id | stage_prerequisite_labyrinth_ids | `0x144014` | `int[1000]` | `world_area` |
 | prerequisite_floor_number | stage_prerequisite_floor_numbers | `0x1443fc` | `int[1000]` | |
 | required_story_flags | stage_required_story_flag_ids | `0x1447e4` | `int[1000][7]` | |
 | forbidden_story_flags | stage_forbidden_story_flag_ids | `0x14633c` | `int[1000][7]` | |
@@ -286,6 +296,39 @@ STINIT2's stage catalog keyed by stage id, the id current_stage_id and the stage
 | boss_flag | stage_boss_flags | `0x14c4e4` | `int[1000]` | |
 | event_entry_flag | stage_event_entry_flags | `0x14c8cc` | `int[1000]` | |
 | sort_key | stage_select_sort_keys | `0x14ccb4` | `int[1000]` | |
+
+### class_change[1]
+
+Built by: `class_change`.
+
+What a title change gives, as CALCCC adds it up for current_character_id (docs/kamidori-data-tables.md, Class changes): it zeroes the block, runs every rule script of class_change_rule_script_ids (CCINIT, then each append's $n$CCINIT), and applies the block to the character when a rule fired. A rule fires once (bit 0 of character_class_change_state[character][column]) when its character's level reaches its threshold, or, for an event title, once a story scene has set bit 1; it takes the title when its level beats the title so far, an event's counting as -1. No data file edits it: it is the sum of the rules that fire, rebuilt on every call, which kamidori-base refuses as a table no format edits. The rules themselves are CCINIT's code, which an OMS patch changes.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| title | class_change_title_out | `GS 0x4227` | `string` | |
+| title_level | class_change_title_priority | `0x2d2014` | `int` | |
+| party_capacity_delta | class_change_party_capacity_delta | `0x2d2015` | `int` | |
+| party_cost_delta | class_change_party_cost_delta | `0x2d2016` | `int` | |
+| resistance_deltas | class_change_resistance_deltas | `0x2d2017` | `int[8]` | |
+| stat_deltas | class_change_stat_deltas | `0x2d201f` | `int[14]` | |
+| stat_cap_deltas | class_change_stat_cap_deltas | `0x2d202d` | `int[14]` | |
+| skill_slot_replacements | class_change_skill_slot_replacements | `0x2d203b` | `int[8]` | `skill` |
+| skill_learn_flags | class_change_skill_learn_flags | `0x2d2043` | `int[1000]` | |
+
+### world_area[100]
+
+Built by: `boot`.
+
+AMINIT2's world areas keyed by area id, the places of the world map: ids 1 to 38 with gaps ($1$ adds 31 and 33, $3$ 34 to 38). An area's id is the labyrinth id a stage takes (ALLMAP@0xc7a copies the chosen area into the labyrinth), and a unit's habitat areas are area ids. Type 1 is a labyrinth, whose stages SELSTAGE lists; type 2 is a town or facility. Which areas are discovered or enterable is saved state (world_area_state_flags), not here.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | world_area_names | `GS 0x241d` | `string[100]` | |
+| area_type | world_area_kinds | `0x13e93c` | `int[100]` | |
+| travel_days | world_area_travel_days | `0x13ea68` | `int[100]` | |
+| picture_asset_id | world_area_icon_asset_ids | `0x13e874` | `int[100]` | pictures |
+| map_x | world_area_map_x | `0x13e9a0` | `int[100]` | |
+| map_y | world_area_map_y | `0x13ea04` | `int[100]` | |
 
 ### dig_table[200]
 
@@ -359,6 +402,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | name | table |
 |---|---|
 | enemy | stage_enemy |
+| reward | stage_reward |
 
 ## choice-output
 
@@ -373,9 +417,9 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2d2014` | class_change_title_priority | high | investigation | Zeroed by CALCCC; CCINIT keeps the title of the highest-threshold rule; nonzero makes ADDEXP@0x00419 / scenes call SHOWCC. |
 | `0x2d2015` | class_change_party_capacity_delta | high | investigation | CALCCC@0x000a1 adds to party_cost_capacity 0x7ea3b. |
 | `0x2d2016` | class_change_party_cost_delta | high | investigation | CALCCC@0x000b6 adds to character_party_cost 0x6577d[c]. |
-| `0x2d2017` | class_change_resistance_deltas | high | investigation | CALCCC@0x001df adds to character_resistances 0x643f5[c][k]. |
-| `0x2d201f` | class_change_stat_deltas | high | investigation | CALCCC@0x000f0 adds to character_stats (14-col layout of unit_base_stats). |
-| `0x2d202d` | class_change_stat_cap_deltas | high | investigation | CALCCC@0x00114 adds to character_stat_caps, clamped to the global cap 0x2a2da7[0]. |
+| `0x2d2017` | class_change_resistance_deltas | high | investigation | CALCCC@0x001df adds to character_resistances 0x643f5[c][k]. Columns: 1=physical, 2=earth, 3=ice, 4=fire, 5=lightning, 6=holy, 7=dark. |
+| `0x2d201f` | class_change_stat_deltas | high | investigation | CALCCC@0x000f0 adds to character_stats (14-col layout of unit_base_stats). Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=agility, 7=luck, 8=movement, 9=customer_service, 10=max_hp, 11=max_sp, 12=max_fs, 13=capacity. |
+| `0x2d202d` | class_change_stat_cap_deltas | high | investigation | CALCCC@0x00114 adds to character_stat_caps, clamped to the global cap 0x2a2da7[0]. Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=agility, 7=luck, 8=movement, 9=customer_service, 10=max_hp, 11=max_sp, 12=max_fs, 13=capacity. |
 | `0x2d203b` | class_change_skill_slot_replacements | high | investigation | CALCCC@0x00223 overwrites character_skill_list[c][k] when >0. |
 | `0x2d2043` | class_change_skill_learn_flags | high | investigation | CALCCC@0x0026f sets character_learned_skill_flags[c][skill]=1 (and the persistent skill-seen bank 0xf6483 when 0x64201 bit1). |
 | `0x2d2822` | joining_unit_ids | high | investigation | UNITECH's list of the units it adds to the party, beside joining_unit_modes and joining_unit_levels, read for the first joining_unit_count entries (UNITECH@0x0001e sets current_unit_id from it). Every caller writes entry 0 and a count of 1 before call-script UNITECH. |

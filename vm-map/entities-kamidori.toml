@@ -9,6 +9,10 @@
 # The story flags and scene numbers that gate a record (a quest's appear flags, a recipe's unlock flags, a glossary
 # entry's scenes) are left out: their numbers mean nothing to a reader, so they are modder data only (the user,
 # 2026-11-22). A group shows published rows of cells of one width as one table, a row for each element.
+#
+# A note explains a detail to a reader in a line (the user, 2026-11-22): it says only what the registry's value domain
+# and usage establish for the field's global, in plain words, and only where the label and value leave a reader
+# guessing.
 
 [export]
 # The tables as the game plays with them: INIT2's exit, after every layer (spec §14, answer 2).
@@ -45,6 +49,19 @@ fields = [
 filters = ["category", "rank", "attack_element"]
 pictures = { icon = "icon_asset_id", furniture = "furniture_sprite_asset_id" }
 
+[kind.notes]
+price = "Buy is what a shop charges for it, sell what a vendor pays for it, and retail the base price it sells for in the player's own shop."
+affinity_level_deltas = "The steps it moves each element's resistance while equipped: +1 is one step more resistant."
+condition_level_deltas = "The level it changes each condition by: -5 clears the condition, and a positive number inflicts it or raises it."
+equipped_condition_levels = "The level of each condition its wearer has while it is equipped."
+resource_recovery_amounts = "The HP, SP and FS it restores; 999 restores them in full."
+cursed_flag = "1: a cursed item, which cannot be unequipped."
+character_whitelist = "The characters allowed to equip or use it, up to five."
+growth_enabled = "1: the item gains growth experience as it is used."
+furniture_area = "The room it goes in: 1 the shop, 2 the workshop, 3 the room, 4 the garden."
+furniture_width = "In tiles."
+furniture_height = "In tiles."
+
 [[kind.description]]
 name = "description"
 script = { field = "handler_script_id" }        # ITMES or a `$n$ITMES`, as SHOP calls it
@@ -72,6 +89,15 @@ fields = ["stats", "stat_growth", "initial_stat_caps"]
 [[kind.group]]
 name = "drops"
 fields = ["drop_item", "drop_chance"]
+
+[kind.notes]
+sex = "1 male, 2 female, 3 other or none."
+bestiary_listed = "1: the bestiary lists it."
+stat_table = "Stats are its base values at its starting level, growth what it gains each level in hundredths of a point, and the caps a playable character's own ceilings (0 uses the game's common cap)."
+element_resistance = "Each element's resistance step, from -5 (weakest) to 4 (strongest); 5 is immune and 6 absorbs."
+initial_affinity_tenths = "Its starting affinity divided by ten: 30 is an affinity of 300."
+drops = "Each item it can drop and the percent chance; a chance of 5 or less counts as a rare drop."
+habitat_area = "The world areas the bestiary lists as where it lives."
 
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
 # from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
@@ -101,6 +127,13 @@ fields = [
 filters = ["category"]
 pictures = { icon = "icon_asset_id" }
 
+[kind.notes]
+min_range_encoded = "Its range plus one, as the game stores it: 1 is adjacent."
+max_range_encoded = "Its range plus one, as the game stores it."
+attack_element_encoded = "Its element plus one, from 2 (physical) to 8 (dark); 0 uses the weapon's element."
+condition_levels = "The level of each condition it inflicts."
+resource_deltas = "HP (the amount healed, on a healing skill), SP (a negative number is its cost) and FS."
+
 [[kind.description]]
 name = "description"
 script = { field = "handler_script_id" }        # SKMES or a `$n$SKMES`, as INFO6 calls it
@@ -127,6 +160,16 @@ pictures = { requester = "requester_icon_asset_id" }
 name = "reward_items"
 fields = ["reward_item_ids", "reward_item_quantities"]
 
+[kind.notes]
+deadline_days = "The days allowed to finish it; 0 is no deadline."
+
+# INFO2@0x1171 draws lines 0 to 4 as one block, 5 and 6 under 達成条件 and 7 and 8 under 失敗条件
+# (quest_description_lines in the registry). The English package fills lines 0 to 4 as one paragraph.
+[kind.text_blocks.description_lines]
+overview = [0, 4]
+clear_condition = [5, 6]
+failure_condition = [7, 8]
+
 [[kind]]
 id = "recipe"
 table = "recipe"
@@ -146,6 +189,14 @@ filters = ["unlock_craftsman_rank", "unlock_synthesis_rank"]
 name = "ingredients"
 fields = ["ingredient_item_ids", "ingredient_quantities"]
 
+[kind.notes]
+evaluation_reward = "Evaluation points: in full for the first craft, and a tenth of them for each craft after."
+mutation_chance = "The percent chance that a craft mutates into the mutation item, before the studio's multiplier."
+quest_marker = "1: the invention a quest asks for."
+unlock_craftsman_rank = "The craftsman rank needed to learn it, from 0 (新米) to 10 (匠王)."
+unlock_synthesis_rank = "The synthesis rank needed to learn it: 0 is E, then D, C, B, A, and 5 is S."
+unlock_grown_item_id = "Equipment that must be fully grown first."
+
 [[kind]]
 id = "condition"
 table = "condition"
@@ -153,10 +204,9 @@ exists = "level_names.level_1"
 # A condition is named by its levels (猛毒1 to 猛毒5); the first names it.
 title = "level_names.level_1"
 text = ["level_names"]
-# icon_id indexes a sheet of status icons (1 to 16), so it is no picture.
 fields = [
-    "susceptibility_group", "immunity_skill_id", "can_affect_bosses", "cleared_by_recover", "icon_id",
-    "duration_turns", "stat_deltas", "critical_rate_delta", "resource_deltas",
+    "susceptibility_group", "immunity_skill_id", "can_affect_bosses", "cleared_by_recover", "duration_turns",
+    "stat_deltas", "critical_rate_delta", "resource_deltas",
 ]
 filters = ["susceptibility_group"]
 
@@ -164,6 +214,23 @@ filters = ["susceptibility_group"]
 [[kind.group]]
 name = "levels"
 fields = ["duration_turns", "stat_deltas", "resource_deltas"]
+
+# The status icon: icon_id numbers a 15-pixel cell of SO009's sheet, ten to a row from (0, 941) in steps of 16, as
+# DRAWCHSTATE@0x1aa to 0x205 cuts it (checked against each condition's name, 2026-11-22). Death and the three drains
+# have icon 0, which is none.
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO009.AGF"
+first = 1
+columns = 10
+origin = [0, 941]
+step = [16, 16]
+size = [15, 15]
+
+[kind.notes]
+susceptibility_group = "Which of a race's resistances the chance to catch it is rolled against: each race has a percent chance for each group, 0 meaning immune. 1 curse, 2 death and fear, 3 charm and confusion, 4 paralysis and poison, 5 drains, 6 water, acid and inflammation, 7 buffs and others."
+levels = "Each level's turns (-1 lasts until cleared), its stat changes, and its HP, SP and FS changes each turn: a drain's are the percent it steals, poison's and acid's are losses."
+critical_rate_delta = "The change at level 5; a lower level gives its share (level / 5)."
 
 [[kind]]
 id = "stage"
@@ -178,21 +245,40 @@ fields = [
 ]
 filters = ["labyrinth_id", "boss_flag"]
 
+# A row for each goal of the stage, labelled by the goal's text as the stage's loader writes it (reward.condition_text
+# below; the user, 2026-11-22).
 [[kind.group]]
 name = "objective_rewards"
 fields = ["objective_money_rewards", "objective_item_rewards", "objective_evaluation_rewards",
           "objective_bonus_point_rewards"]
+labels = "reward.condition_text"
 
+[kind.notes]
+labyrinth_id = "The world area whose stage list has it."
+boss_flag = "1: a boss stage, whose name is set between ◆ marks."
+event_entry_flag = "1: choosing it plays an event instead of a battle map."
+prerequisite_labyrinth_id = "With the prerequisite floor, the stage that must be cleared first."
+required_party_unit_ids = "Units that must be in the sortie: the first five before its first clear, the other five once it is cleared or on a boss stage."
+objective_rewards = "What each goal of the stage gives, by the goal as the game words it."
+
+# The dig tables are not published (the user, 2026-11-22): a table is reached only through a floor's dig points, the
+# map objects of a stage, which no loader publishes yet, so its page could not say where it is dug. They go with the
+# stage maps (docs/backlog.md).
+
+# The world areas (the user, 2026-11-22): the places of the world map, which a stage's labyrinth and a unit's habitat
+# name. Their map position is modder data.
 [[kind]]
-id = "dig_table"
-table = "dig_table"
-# Every written table sets its first slot. A dig table has no name, so it has no title.
-exists = "item_ids.0"
-fields = ["item_ids", "roll_thresholds"]
+id = "world_area"
+table = "world_area"
+exists = "name"
+title = "name"
+fields = ["area_type", "travel_days"]
+filters = ["area_type"]
+pictures = { picture = "picture_asset_id" }
 
-[[kind.group]]
-name = "slots"
-fields = ["item_ids", "roll_thresholds"]
+[kind.notes]
+area_type = "1: a labyrinth, which lists stages to enter; 2: a town or facility."
+travel_days = "The days that pass in travelling there; once 30 days have passed, the party must return home."
 
 [[kind]]
 id = "character_profile"
@@ -250,6 +336,42 @@ exists = "unit_id"
 fields = ["unit_id", "min_level", "max_level", "auto_level_scale_divisor", "faction_id", "difficulty_mask",
           "first_visit_only", "random_selection_weight", "spawn_tile_x", "spawn_tile_y", "spawn_object_slot",
           "movement_routine_set_ids", "battle_routine_set_ids"]
+
+# The goals the stage's rewards are for, which label the stage's objective_rewards rows. STINIT leaves the first
+# goal's text empty: AIM@0x5b4 and STAGECLEAR@0x8be draw a fixed text in its place, which a literal gives.
+[loader.tables.reward]
+exists = "condition_text"
+text = ["condition_text"]
+literals = [{ record = 0, field = "condition_text", script = "AIM", offset = 0x5b4 }]
+
+# The title changes (the user, 2026-11-22): CCINIT's rules (and each append's), as CALCCC adds them up. A run for each
+# rule column of a character: every other column marked applied, this one marked event-unlocked and not applied, the
+# character at level 99, so that only that column's rule can fire, whether a level or an event gives it (no rule has
+# both, and no two share a character and column, 2026-11-22). What it gives is read before CALCCC applies it. A
+# variant unit (unit_canonical_character_id) has no rules of its own, so no rows. No scope: no data file edits what a
+# class change gives (the registry's class_change table).
+[[loader]]
+keys = "unit"
+key_range = [1, 99]
+steps = 20
+script = "CALCCC"
+seed = [
+    { global = "current_character_id", value = "key" },
+    { global = "character_levels", index = ["key"], value = 99 },
+    { global = "character_class_change_state", index = ["key", "*"], value = 1 },
+    { global = "character_class_change_state", index = ["key", "step"], value = 2 },
+]
+read_at = "kamidori.class_change.rules_run"
+# CALCCC zeroes the block before the rules add to it, so a delta no rule touches is CALCCC's zero.
+builders = ["CALCCC"]
+
+[loader.tables.title_change]
+table = "class_change"
+exists = "title_level"
+text = ["title"]
+fields = ["title_level", "party_cost_delta", "party_capacity_delta", "stat_deltas", "stat_cap_deltas",
+          "resistance_deltas", "skill_slot_replacements"]
+notes = { title_level = "The level the title comes at; -1: a story event gives it." }
 
 # The script relations (spec §6.7, export plan §4.5): where a scene sets a script's arguments to constants and calls it.
 # ADDITEM gives or takes an item by the sign of its count (docs/kamidori-data-tables.md, Giving and taking).

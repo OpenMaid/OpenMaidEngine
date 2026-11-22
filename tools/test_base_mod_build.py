@@ -100,6 +100,27 @@ def test_shapes():
     check(build.dimensions("bool") is None and build.dimensions("int[1.5]") is None, "anything else is no shape")
 
 
+def test_shape_labels():
+    # A table built by a label the handlers do not apply takes no value, at the top and under its scope, and no
+    # definition of it is written.
+    tables = [{"name": "unit", "records": 2, "built_by": "boot", "aliases": ["units"],
+               "fields": {"level": {"global": "unit_levels", "kind": "integer"}}},
+              {"name": "foe", "records": 3, "built_by": "stage", "aliases": ["foes"],
+               "fields": {"hp": {"global": "foe_hp", "kind": "integer"}}}]
+    scopes = [{"name": "stage", "first": 1, "last": 9, "tables": {"foe": "foe"}}]
+    shape = json.loads(build.render_shape("test", tables, "src", "manifest", scopes, labels=["boot"]))
+    refused = {"description": "foe is built by stage, which test.tables does not edit", "type": "null"}
+    check(shape["properties"]["foe"] == refused and shape["properties"]["foes"] == refused,
+          "a table of a label the handlers do not apply is refused by its name and its old names")
+    check(shape["definitions"]["scope.stage"]["additionalProperties"]["properties"]["foe"] == refused,
+          "and under its scope")
+    check("records.foe" not in shape["definitions"] and "records.unit" in shape["definitions"],
+          "only the tables the format edits have definitions")
+    every = json.loads(build.render_shape("test", tables, "src", "manifest", scopes))
+    check(every["definitions"]["scope.stage"]["additionalProperties"]["properties"]["foe"]
+          == {"$ref": "#/definitions/records.foe"}, "without labels, every table is offered")
+
+
 def test_layout():
     with tempfile.TemporaryDirectory() as directory:
         mods, source = workspace(Path(directory))
@@ -229,6 +250,45 @@ def test_record_map():
         check(text.endswith("    },\n}\n") and "\r" not in text, "the module ends with its table and a newline")
         again, _ = generate(mods, source)
         check(record_map(again) == text, "the record map is the same each time it is generated")
+
+
+def test_one_record_table():
+    """A block the game keeps one of: its scalar is the one record's cell, its 1-D array the one record's row."""
+    registry = REGISTRY + (entry("0x80", "bonus_level", "int") + entry("0x84", "bonus_stats", "int[3]",
+                                                                      'columns = { "0" = "attack" }\n')) + '''
+[[table]]
+name = "bonus"
+records = 1
+built_by = "rules"
+
+[table.fields]
+level = "bonus_level"
+stats = "bonus_stats"
+'''
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory), registry)
+        files, errors = generate(mods, source)
+        check(not errors, f"a one-record table over a scalar and a 1-D array generates ({errors})")
+        lines = [line.strip() for line in record_map(files).splitlines() if line.startswith("                ")]
+        check(lines == ['level = { global = "bonus_level", kind = "integer" },',
+                        'stats = { global = "bonus_stats", kind = "integer", width = 3, columns = { attack = 0 } },'],
+              f"the scalar is a cell and the 1-D array a row of its width ({lines})")
+        check("            records = 1," in record_map(files), "the table has its one record")
+        shape = json.loads(next(text for path, text in files.items() if path.name == build.SHAPE_FILE))
+        check(shape["properties"]["bonus"] == {"$ref": "#/definitions/records.bonus"},
+              "without handlers to read, the shape offers every table")
+        # The format's handlers apply boot tables only (lua/tables.lua's labels): the shape refuses the rules' block,
+        # as ome-records' applier would at the file's first delivery.
+        write({mods / "test-base" / "lua" / "tables.lua": 'local applier = records.applier {\n    labels = { "boot" },\n}\n'})
+        files, errors = generate(mods, source)
+        shape = json.loads(next(text for path, text in files.items() if path.name == build.SHAPE_FILE))
+        check(not errors and shape["properties"]["bonus"] == {
+            "description": "bonus is built by rules, which test.tables does not edit", "type": "null"},
+              f"the shape refuses a table built by a label the handlers do not apply ({errors})")
+        write({mods / "test-base" / "lua" / "tables.lua": "local applier = records.applier {}\n"})
+        _, errors = generate(mods, source)
+        check(any("lua/tables.lua: no `labels" in error for error in errors),
+              f"handlers without a labels line block the build ({errors})")
 
 
 def test_record_map_without_tables():
@@ -585,10 +645,12 @@ def test_table_shape():
 
 def main():
     test_shapes()
+    test_shape_labels()
     test_layout()
     test_shape_errors()
     test_rename_rule()
     test_record_map()
+    test_one_record_table()
     test_record_map_without_tables()
     test_record_map_errors()
     test_alias_lint()

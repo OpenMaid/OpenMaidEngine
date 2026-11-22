@@ -27,6 +27,10 @@ public interface IPictureSource
 {
     /// <summary>The picture a packed resource id names, or null when it names none.</summary>
     ExportPicture? Resolve(long packedId);
+
+    /// <summary>A cell cut from the catalog picture <paramref name="sheet"/> (export plan §5), or null when there is no
+    /// such picture or the cell lies outside it.</summary>
+    ExportPicture? Cell(string sheet, int x, int y, int width, int height) => null;
 }
 
 /// <summary>A package a language of the export comes from (spec §6.4): what the site credits.</summary>
@@ -129,9 +133,13 @@ public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(st
 
 /// <summary>A table a loader publishes under its key kind (export plan §4.2), with the layouts the writer needs.
 /// </summary>
-public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, string Scope, TableLayout Table,
+public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, string? Scope, TableLayout Table,
                                        IReadOnlyList<FieldLayout> TableFields, IReadOnlyList<FieldLayout> Published,
-                                       FieldLayout Exists);
+                                       FieldLayout Exists)
+{
+    /// <summary>Its published text fields (export plan §5), which the entity's text holds as <c>table.field</c>.</summary>
+    public IReadOnlyList<FieldLayout> Text { get; init; } = [];
+}
 
 /// <summary>One kind's entities, with the layouts the writer needs: every field of the table, the published ones,
 /// and every field or column the declaration names.</summary>

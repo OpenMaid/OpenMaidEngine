@@ -142,6 +142,22 @@ def dims_of(type_: str | None) -> list[int] | None:
     return [int(d) for d in dims]
 
 
+def record_dims(type_: str | None, records: int) -> list[int] | None:
+    """A table field's global as `records` records: [records] (a cell each) or [records, n] (a row of n each). A
+    table of one record may also name a scalar, its one cell, or a 1-D array of n, its one row of n: a block the game
+    keeps one of, such as what a class change gives. None for any other shape."""
+    if records == 1 and re.fullmatch(r"(?:int|string|float)", type_ or ""):
+        return [1]
+    dims = dims_of(type_)
+    if dims is None:
+        return None
+    if len(dims) in (1, 2) and dims[0] == records:
+        return dims
+    if records == 1 and len(dims) == 1:
+        return [1, dims[0]]
+    return None
+
+
 def extent_of(type_: str | None) -> int | None:
     """Cells a fully sized array covers (`int[1000][14]` -> 14000), or None (see dims_of)."""
     dims = dims_of(type_)
@@ -252,10 +268,10 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
             if e is None:
                 errors.append(f"{tag}: field {field} names unknown global {global_name!r}")
                 continue
-            dims = dims_of(e.get("type"))
-            if dims is None or len(dims) not in (1, 2) or dims[0] != records:
-                errors.append(f"{tag}: field {field} needs a fully sized [{records}] or [{records}][n] array; "
-                              f"{global_name} is {e.get('type')!r}")
+            if record_dims(e.get("type"), records) is None:
+                errors.append(f"{tag}: field {field} needs a fully sized [{records}] or [{records}][n] array"
+                              + (", a scalar or a 1-D array" if records == 1 else "")
+                              + f"; {global_name} is {e.get('type')!r}")
     return errors + lint_table_aliases(tables, by_name) + lint_table_refs(tables, by_name)
 
 

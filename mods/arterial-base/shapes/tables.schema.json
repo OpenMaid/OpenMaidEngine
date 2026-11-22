@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "DO NOT EDIT -- generated from vm-map/globals-arterial.toml and engine/Ome.Engine/Profiles/arterial.json by tools/base_mod_build.py --build. The shape of arterial.tables, the kind arterial-base accepts (data patches spec §7): a file's record tables by name, each record by its id in decimal, each field by name, and each scope's tables by its id and their short names. A field the save holds, a scoped table's own name and a named column's number take no value, and say why. The base mod still checks, at a file's first delivery, what a shape cannot say: text the save's code page cannot encode, one cell named twice through an old name, and a part at an event this install does not raise.",
+  "description": "DO NOT EDIT -- generated from vm-map/globals-arterial.toml and engine/Ome.Engine/Profiles/arterial.json by tools/base_mod_build.py --build. The shape of arterial.tables, the kind arterial-base accepts (data patches spec §7): a file's record tables by name, each record by its id in decimal, each field by name, and each scope's tables by its id and their short names. A field the save holds, a scoped table's own name, a table the format does not edit and a named column's number take no value, and say why. The base mod still checks, at a file's first delivery, what a shape cannot say: text the save's code page cannot encode, one cell named twice through an old name, and a part at an event this install does not raise.",
   "type": "object",
   "properties": {
     "area": {

@@ -1,10 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "description": "DO NOT EDIT -- generated from vm-map/globals-kamidori.toml and engine/Ome.Engine/Profiles/kamidori.json by tools/base_mod_build.py --build. The shape of kamidori.tables, the kind kamidori-base accepts (data patches spec §7): a file's record tables by name, each record by its id in decimal, each field by name, and each scope's tables by its id and their short names. A field the save holds, a scoped table's own name and a named column's number take no value, and say why. The base mod still checks, at a file's first delivery, what a shape cannot say: text the save's code page cannot encode, one cell named twice through an old name, and a part at an event this install does not raise.",
+  "description": "DO NOT EDIT -- generated from vm-map/globals-kamidori.toml and engine/Ome.Engine/Profiles/kamidori.json by tools/base_mod_build.py --build. The shape of kamidori.tables, the kind kamidori-base accepts (data patches spec §7): a file's record tables by name, each record by its id in decimal, each field by name, and each scope's tables by its id and their short names. A field the save holds, a scoped table's own name, a table the format does not edit and a named column's number take no value, and say why. The base mod still checks, at a file's first delivery, what a shape cannot say: text the save's code page cannot encode, one cell named twice through an old name, and a part at an event this install does not raise.",
   "type": "object",
   "properties": {
     "character_profile": {
       "$ref": "#/definitions/records.character_profile"
+    },
+    "class_change": {
+      "description": "class_change is built by class_change, which kamidori.tables does not edit",
+      "type": "null"
     },
     "condition": {
       "$ref": "#/definitions/records.condition"
@@ -40,8 +44,15 @@
       "description": "stage_enemy is reached through its scope: write stage.<id>.enemy",
       "type": "null"
     },
+    "stage_reward": {
+      "description": "stage_reward is reached through its scope: write stage.<id>.reward",
+      "type": "null"
+    },
     "unit": {
       "$ref": "#/definitions/records.unit"
+    },
+    "world_area": {
+      "$ref": "#/definitions/records.world_area"
     }
   },
   "additionalProperties": false,
@@ -4207,6 +4218,17 @@
       },
       "additionalProperties": false
     },
+    "record.stage_reward": {
+      "description": "stage_reward: one record's fields, by name; write stage.<id>.reward.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "condition_text": {
+          "description": "stage_reward.condition_text: stage_reward_condition_texts, text the save's code page (932) can encode",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "record.unit": {
       "description": "unit: one record's fields, by name; write unit.<id>.<field> = ...",
       "type": "object",
@@ -5805,6 +5827,47 @@
       },
       "additionalProperties": false
     },
+    "record.world_area": {
+      "description": "world_area: one record's fields, by name; write world_area.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "area_type": {
+          "description": "world_area.area_type: world_area_kinds, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_x": {
+          "description": "world_area.map_x: world_area_map_x, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_y": {
+          "description": "world_area.map_y: world_area_map_y, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "name": {
+          "description": "world_area.name: world_area_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "picture_asset_id": {
+          "description": "world_area.picture_asset_id: world_area_icon_asset_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "travel_days": {
+          "description": "world_area.travel_days: world_area_travel_days, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        }
+      },
+      "additionalProperties": false
+    },
     "records.character_profile": {
       "description": "character_profile: records by id, 0 to 199; write character_profile.<id>.<field> = ...",
       "type": "object",
@@ -5926,6 +5989,17 @@
         "$ref": "#/definitions/record.stage_enemy"
       }
     },
+    "records.stage_reward": {
+      "description": "stage_reward: records by id, 0 to 3; write stage.<id>.reward.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 3
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.stage_reward"
+      }
+    },
     "records.unit": {
       "description": "unit: records by id, 0 to 999; write unit.<id>.<field> = ...",
       "type": "object",
@@ -5937,19 +6011,33 @@
         "$ref": "#/definitions/record.unit"
       }
     },
+    "records.world_area": {
+      "description": "world_area: records by id, 0 to 99; write world_area.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 99
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.world_area"
+      }
+    },
     "scope.stage": {
-      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy.<id>.<field> = ...",
+      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy or reward.<id>.<field> = ...",
       "type": "object",
       "x-ome-decimal-keys": {
         "minimum": 1,
         "maximum": 999
       },
       "additionalProperties": {
-        "description": "one stage's tables, by short name; write stage.<id>.enemy.<id>.<field> = ...",
+        "description": "one stage's tables, by short name; write stage.<id>.enemy or reward.<id>.<field> = ...",
         "type": "object",
         "properties": {
           "enemy": {
             "$ref": "#/definitions/records.stage_enemy"
+          },
+          "reward": {
+            "$ref": "#/definitions/records.stage_reward"
           }
         },
         "additionalProperties": false

@@ -61,6 +61,12 @@ public sealed record ExportDeclarations(
         => parent.TryGetProperty(name, out JsonElement list)
             ? list.EnumerateArray().Select(item => item.GetString()!).ToList()
             : [];
+
+    /// <summary>A declaration's <c>notes</c>, name to line, in order.</summary>
+    internal static IReadOnlyList<(string Name, string Note)> Notes(JsonElement parent)
+        => parent.TryGetProperty("notes", out JsonElement notes)
+            ? notes.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
+            : [];
 }
 
 /// <summary>One kind (spec §5.2): a registry table, which of its records are entities, and what is published. Its
@@ -81,6 +87,16 @@ public sealed record KindDeclaration(
 {
     public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
 
+    /// <summary>The pictures cut from a sheet (export plan §5): a cell a field numbers.</summary>
+    public IReadOnlyList<SheetPictureDeclaration> Sheets { get; init; } = [];
+
+    /// <summary>A line for a reader for each field or group that needs one (export plan §5), by its name.</summary>
+    public IReadOnlyList<(string Name, string Note)> Notes { get; init; } = [];
+
+    /// <summary>The blocks a text field's lines are drawn in (export plan §5), by the field, in the order the game
+    /// draws them.</summary>
+    public IReadOnlyList<(string Field, IReadOnlyList<TextBlockDeclaration> Blocks)> TextBlocks { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -97,7 +113,8 @@ public sealed record KindDeclaration(
             ExportDeclarations.Strings(kind, "fields"),
             ExportDeclarations.Strings(kind, "filters"),
             kind.TryGetProperty("pictures", out JsonElement pictures)
-                ? pictures.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
+                ? pictures.EnumerateObject().Where(pair => pair.Value.ValueKind == JsonValueKind.String)
+                    .Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
                 : [],
             kind.TryGetProperty("descriptions", out JsonElement descriptions)
                 ? descriptions.EnumerateArray().Select(DescriptionDeclaration.Parse).ToList()
@@ -105,14 +122,64 @@ public sealed record KindDeclaration(
         {
             Groups = kind.TryGetProperty("groups", out JsonElement groups)
                 ? groups.EnumerateArray().Select(group => new GroupDeclaration(
-                    group.GetProperty("name").GetString()!, ExportDeclarations.Strings(group, "fields"))).ToList()
+                    group.GetProperty("name").GetString()!, ExportDeclarations.Strings(group, "fields"))
+                    {
+                        Labels = group.TryGetProperty("labels", out JsonElement labels)
+                                 && labels.ValueKind == JsonValueKind.String ? labels.GetString() : null,
+                    }).ToList()
+                : [],
+            Sheets = kind.TryGetProperty("pictures", out JsonElement sheets)
+                ? sheets.EnumerateObject().Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
+                    .Select(pair => SheetPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
+                : [],
+            Notes = ExportDeclarations.Notes(kind),
+            TextBlocks = kind.TryGetProperty("text_blocks", out JsonElement blocks)
+                ? blocks.EnumerateObject().Select(pair => (pair.Name, (IReadOnlyList<TextBlockDeclaration>)pair.Value
+                    .EnumerateArray().Select(block => new TextBlockDeclaration(block.GetProperty("name").GetString()!,
+                        block.GetProperty("first").GetInt32(), block.GetProperty("last").GetInt32())).ToList())).ToList()
                 : [],
         };
 }
 
+/// <summary>A block of a text field's row of lines (export plan §5): lines <see cref="First"/> to <see cref="Last"/>,
+/// which the game draws together (a quest's clear condition).</summary>
+public sealed record TextBlockDeclaration(string Name, int First, int Last);
+
 /// <summary>A group of a kind's published fields (export plan §5), in its order: rows of cells, each field's width a
-/// multiple of the narrowest's.</summary>
-public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields);
+/// multiple of the narrowest's. <see cref="Labels"/> names a text field of a table the kind's loaders publish
+/// (<c>table.field</c>), whose record r labels row r.</summary>
+public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields)
+{
+    public string? Labels { get; init; }
+}
+
+/// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture
+/// <see cref="Sheet"/>, <see cref="First"/> being the first, <see cref="Columns"/> to a row from the origin, a step
+/// apart, each of the size; a number below the first is no picture.</summary>
+public sealed record SheetPictureDeclaration(string Name, string Field, string Sheet, int First, int Columns,
+                                             (int X, int Y) Origin, (int X, int Y) Step, (int Width, int Height) Size)
+{
+    /// <summary>The cell's left and top in the sheet for number <paramref name="number"/>, or null for none.</summary>
+    public (int X, int Y)? Cell(long number)
+    {
+        if (number < First) return null;
+        long index = number - First;
+        return ((int)(Origin.X + index % Columns * Step.X), (int)(Origin.Y + index / Columns * Step.Y));
+    }
+
+    internal static SheetPictureDeclaration Parse(string name, JsonElement sheet)
+    {
+        (int, int) Pair(string key)
+        {
+            JsonElement[] pair = [.. sheet.GetProperty(key).EnumerateArray()];
+            return (pair[0].GetInt32(), pair[1].GetInt32());
+        }
+        return new SheetPictureDeclaration(name, sheet.GetProperty("field").GetString()!,
+                                           sheet.GetProperty("sheet").GetString()!, sheet.GetProperty("first").GetInt32(),
+                                           sheet.GetProperty("columns").GetInt32(), Pair("origin"), Pair("step"),
+                                           Pair("size"));
+    }
+}
 
 /// <summary>A description (spec §5.7): text a script shows for a record, run with its seeds.</summary>
 /// <param name="ScriptField">The field holding the packed id of the script the game calls for the record, or null.</param>
@@ -137,42 +204,116 @@ public sealed record DescriptionDeclaration(
     }
 }
 
-/// <summary>A loader (spec §6.3): for each entity of the kind <see cref="Keys"/> not skipped, <see cref="Script"/> run
-/// from the booted session with the seeds to the <see cref="ReadAt"/> point, then the published tables of
-/// <see cref="Scope"/> read (export plan §4.2).</summary>
+/// <summary>A loader (spec §6.3): for each entity of the kind <see cref="Keys"/> in <see cref="KeyRange"/> and not
+/// skipped, <see cref="Script"/> run from the booted session <see cref="Steps"/> times, each with the seeds, to the
+/// <see cref="ReadAt"/> point; then its published tables read (export plan §4.2): the tables of <see cref="Scope"/>, or,
+/// for a loader with none, registry tables that no data file edits (export plan §5). Run k's records are numbered k
+/// times the table's records plus the record.</summary>
 public sealed record LoaderDeclaration(
-    string Scope,
+    string? Scope,
     string Keys,
     IReadOnlyList<(string Field, long Value)> Skip,
     string Script,
-    IReadOnlyList<(string Global, SeedValue Value)> Seed,
+    IReadOnlyList<SeedCell> Seed,
     string ReadAt,
     IReadOnlyList<string> Builders,
     IReadOnlyList<LoadedTableDeclaration> Tables)
 {
+    /// <summary>The first and last key it runs for, or null for every entity of the kind.</summary>
+    public (int First, int Last)? KeyRange { get; init; }
+
+    /// <summary>The runs for each key, from step 0.</summary>
+    public int Steps { get; init; } = 1;
+
+    /// <summary>How messages and the report name it: by its scope, or by its script when it has none.</summary>
+    public string Name => Scope ?? Script;
+
     internal static LoaderDeclaration Parse(JsonElement loader)
         => new(
-            loader.GetProperty("scope").GetString()!,
+            loader.TryGetProperty("scope", out JsonElement scope) && scope.ValueKind == JsonValueKind.String
+                ? scope.GetString()
+                : null,
             loader.GetProperty("keys").GetString()!,
             loader.TryGetProperty("skip", out JsonElement skip)
                 ? skip.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetInt64())).ToList()
                 : [],
             loader.GetProperty("script").GetString()!,
             loader.TryGetProperty("seed", out JsonElement seed)
-                ? seed.EnumerateObject().Select(pair => (pair.Name, SeedValue.Parse(pair.Value))).ToList()
+                ? seed.ValueKind == JsonValueKind.Object
+                    ? seed.EnumerateObject().Select(pair => new SeedCell(pair.Name, [], SeedValue.Parse(pair.Value))).ToList()
+                    : seed.EnumerateArray().Select(SeedCell.Parse).ToList()
                 : [],
             loader.GetProperty("read_at").GetString()!,
             ExportDeclarations.Strings(loader, "builders"),
             loader.TryGetProperty("tables", out JsonElement tables)
-                ? tables.EnumerateObject().Select(pair => new LoadedTableDeclaration(
-                    pair.Name, pair.Value.GetProperty("table").GetString()!, pair.Value.GetProperty("exists").GetString()!,
-                    ExportDeclarations.Strings(pair.Value, "fields"))).ToList()
-                : []);
+                ? tables.EnumerateObject().Select(pair => LoadedTableDeclaration.Parse(pair.Name, pair.Value)).ToList()
+                : [])
+        {
+            KeyRange = loader.TryGetProperty("key_range", out JsonElement range) && range.ValueKind == JsonValueKind.Array
+                ? (range[0].GetInt32(), range[1].GetInt32())
+                : null,
+            Steps = loader.TryGetProperty("steps", out JsonElement steps) && steps.ValueKind == JsonValueKind.Number
+                ? steps.GetInt32()
+                : 1,
+        };
 }
 
-/// <summary>A table a loader publishes (export plan §4.2): its short name in the scope, its registry table, which of its
-/// records exist, and its published fields.</summary>
-public sealed record LoadedTableDeclaration(string Name, string Table, string Exists, IReadOnlyList<string> Fields);
+/// <summary>A cell a loader's seed writes before each run (export plan §5): a named integer global, at an index of a
+/// term for each of its dimensions (none for one cell): a number, the key, the step, or every index of the dimension.
+/// Seeds are written in order.</summary>
+public sealed record SeedCell(string Global, IReadOnlyList<SeedIndex> Index, SeedValue Value)
+{
+    internal static SeedCell Parse(JsonElement entry)
+        => new(entry.GetProperty("global").GetString()!,
+               entry.TryGetProperty("index", out JsonElement index)
+                   ? index.EnumerateArray().Select(SeedIndex.Parse).ToList()
+                   : [],
+               SeedValue.Parse(entry.GetProperty("value")));
+}
+
+/// <summary>One index term of a <see cref="SeedCell"/>.</summary>
+public readonly record struct SeedIndex(SeedIndexKind Kind, int Value)
+{
+    internal static SeedIndex Parse(JsonElement term)
+        => term.ValueKind == JsonValueKind.Number
+            ? new SeedIndex(SeedIndexKind.Number, term.GetInt32())
+            : term.GetString() switch
+            {
+                "key" => new SeedIndex(SeedIndexKind.Key, 0),
+                "step" => new SeedIndex(SeedIndexKind.Step, 0),
+                "*" => new SeedIndex(SeedIndexKind.Every, 0),
+                _ => throw new InvalidDataException($"a seed index term is a number, \"key\", \"step\" or \"*\", not {term}"),
+            };
+}
+
+public enum SeedIndexKind { Number, Key, Step, Every }
+
+/// <summary>A table a loader publishes (export plan §4.2): its short name, its registry table, which of its records
+/// exist, its published fields and text (export plan §5), the literals a record shows in place of its text, and the
+/// notes for its fields.</summary>
+public sealed record LoadedTableDeclaration(string Name, string Table, string Exists, IReadOnlyList<string> Fields)
+{
+    public IReadOnlyList<string> Text { get; init; } = [];
+    public IReadOnlyList<LiteralDeclaration> Literals { get; init; } = [];
+    public IReadOnlyList<(string Name, string Note)> Notes { get; init; } = [];
+
+    internal static LoadedTableDeclaration Parse(string name, JsonElement table)
+        => new(name, table.GetProperty("table").GetString()!, table.GetProperty("exists").GetString()!,
+               ExportDeclarations.Strings(table, "fields"))
+        {
+            Text = ExportDeclarations.Strings(table, "text"),
+            Literals = table.TryGetProperty("literals", out JsonElement literals)
+                ? literals.EnumerateArray().Select(literal => new LiteralDeclaration(
+                    literal.GetProperty("record").GetInt32(), literal.GetProperty("field").GetString()!,
+                    literal.GetProperty("script").GetString()!, literal.GetProperty("offset").GetInt32())).ToList()
+                : [],
+            Notes = ExportDeclarations.Notes(table),
+        };
+}
+
+/// <summary>A record whose text field the game shows a script's string in place of (export plan §5): the string operand
+/// of the instruction at <see cref="Script"/>@<see cref="Offset"/> (a dword offset), translated at that site.</summary>
+public sealed record LiteralDeclaration(int Record, string Field, string Script, int Offset);
 
 /// <summary>A seed's value: the record's id (<c>"key"</c>) or a number.</summary>
 public readonly record struct SeedValue(bool IsKey, long Value)

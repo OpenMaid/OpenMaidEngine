@@ -152,13 +152,15 @@ drop_chance.drop_1 = 100   # 30
   | `condition` | conditions such as poison, five levels each (ILINIT) | 0 to 29 | 28 |
   | `stage_catalog` | the stage list: names, gates, rewards (STINIT2) | 0 to 999 | 209 |
   | `dig_table` | what a dig point yields (DIINIT) | 0 to 199 | 93 |
+  | `world_area` | the world map's areas: labyrinths, towns and facilities (AMINIT2) | 0 to 99 | 33 |
   | `character_profile` | the character profiles (CIINIT) | 0 to 199 | 43 |
   | `objective` | the chapter objectives (FAINIT) | 0 to 1999 | 126 |
   | `glossary_entry` | the glossary (VIINIT) | 0 to 999 | 163 |
 
-  The stage list's table is `stage_catalog`, since `stage` names a floor's enemies (below). A field with a row takes
-  its columns by the names the reference gives (`stats.max_hp`, `level_names.level_1`), and by number only where a
-  column has no name.
+  The stage list's table is `stage_catalog`, since `stage` names a floor's enemies and objective texts (below). A
+  field with a row takes its columns by the names the reference gives (`stats.max_hp`, `level_names.level_1`), and by
+  number only where a column has no name. The reference's `class_change` table, the block the title-change rules
+  fill, is not one a file writes: `kamidori.tables` does not edit it, and the shape refuses it.
 - **Saved fields are refused:** `item.inventory_count`, `item.growth_exp`, `item.growth_level`,
   `item.costume_enhancement_grid` and `item.costume_gem_sockets`. They lie below the saved prefix, so a load would
   bring the saved value back over the edit.
@@ -205,6 +207,12 @@ drop_chance.drop_1 = 100   # 30
 - **INFO's 獲得地点 view reads no enemy.** To find the floors whose dig points yield an item, it runs every stage's
   loaders and reads the stages' objects, which no data file edits; it raises no event for those stages. Off a floor
   (INFO opened from the town or the workshop) it raises no event at all and leaves `current_stage_id` at 1000.
+- **A stage's objective texts** are the `stage_reward` table, named through the stage as its enemies are:
+  `stage.51.reward.2.condition_text` names the condition of stage 51's objective reward 2, in the order of
+  `stage_catalog`'s `objective_money_rewards` and the other reward rows (records 0 to 3). STINIT writes records 1 to
+  3 for each stage and leaves record 0 empty: AIM@`0x5b4` and STAGECLEAR@`0x8be` draw a fixed 占有率１００％ in its
+  place, so a text for record 0 shows nowhere. The part is applied with the stage's enemies, each time its loaders
+  run, and none of it is saved.
 - **A character keeps a copy of its definition.** When a unit joins, UNITECH copies part of its definition into the
   character's saved state (`../../kamidori-data-tables.md`, "Runtime character state"), which the game uses from
   then on. An edit to these fields reaches a character who joins after it, not one who has joined, and what was copied
@@ -252,8 +260,8 @@ drop_chance.drop_1 = 100   # 30
   ADDEXP adds through `shared_scratch_value`), and the levels and stats that follow are saved; and
   `item.growth_mastery_reward_items` names the item added to the inventory when an item's growth is mastered
   (`CHECKIMPROVE@0x139`, through ADDITEM).
-- **The quest, recipe, condition, stage list and dig tables** are read where the game uses them, with four copies
-  into saved state:
+- **The quest, recipe, condition, stage list, world area and dig tables** are read where the game uses them, with
+  these copies into saved state:
   - `condition.duration_turns` gives a condition's turns when it is applied (`unit_condition_remaining_turns`,
     `ADDILLSUB@0x193` and `0x1b1`), so a save made on a floor keeps the turns it gave. `condition.stat_deltas` and
     `critical_rate_delta` are worked into the battle units' stats too, but CALCREVISE rebuilds those from scratch
@@ -263,6 +271,9 @@ drop_chance.drop_1 = 100   # 30
     expedition starts (`FIELD@0x265`).
   - `stage_catalog.name` becomes the location title (`GS[0x278]`, `FIELD@0x52e`), which a save copies into its
     slot's label (`SAVE@0xd53`): the save list shows the name the stage had when the save was made.
+  - `world_area.name` becomes the location title too, when a town is entered (`TOWN@0xc`).
+  - `world_area.travel_days` is added to `expedition_elapsed_days` on entering an area (`SELSTAGE@0xc00`,
+    `TOWN@0x7b`, and `FIELD@0x271` on a fresh labyrinth entry), which a save keeps and the settlement consumes.
 
   Play keeps its results here as well:
   - A quest's appear, clear and failure flags, prerequisite and deadline set its state bits (CHECKCONTRACT), and its

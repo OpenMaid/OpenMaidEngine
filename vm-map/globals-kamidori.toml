@@ -996,6 +996,7 @@ type = "int[8]"
 usage = "CALCCC@0x001df adds to character_resistances 0x643f5[c][k]."
 source = "investigation"
 confidence = "high"
+columns = { "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
 
 [[global]]
 address = "0x2d201f"
@@ -1005,6 +1006,7 @@ type = "int[14]"
 usage = "CALCCC@0x000f0 adds to character_stats (14-col layout of unit_base_stats)."
 source = "investigation"
 confidence = "high"
+columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "agility", "7" = "luck", "8" = "movement", "9" = "customer_service", "10" = "max_hp", "11" = "max_sp", "12" = "max_fs", "13" = "capacity" }
 
 [[global]]
 address = "0x2d202d"
@@ -1014,6 +1016,7 @@ type = "int[14]"
 usage = "CALCCC@0x00114 adds to character_stat_caps, clamped to the global cap 0x2a2da7[0]."
 source = "investigation"
 confidence = "high"
+columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "agility", "7" = "luck", "8" = "movement", "9" = "customer_service", "10" = "max_hp", "11" = "max_sp", "12" = "max_fs", "13" = "capacity" }
 
 [[global]]
 address = "0x2d203b"
@@ -6509,6 +6512,7 @@ skill = "skill"
 voice_family_unit_id = "unit"
 graphic = "picture"
 history_face_asset_id = "picture"
+habitat_area = "world_area"
 
 [[table]]
 name = "item"
@@ -6647,6 +6651,15 @@ forbidden_story_flags = "stage_enemy_forbidden_story_flags"
 unit_id = "unit"
 
 [[table]]
+name = "stage_reward"
+records = 4
+built_by = "stage"
+usage = "The current stage's four clear-reward rows: the condition each one's reward is for, which STINIT (and each append's $n$STINIT) writes with the rest of the stage (docs/kamidori-data-tables.md, Stage catalog). Row i's rewards are stage_catalog's objective_*_rewards element i. AIM@0x5b4 and STAGECLEAR@0x8be draw a fixed label for row 0 in place of its text, which STINIT leaves empty; rows 1 to 3 draw their text (AIM@0x5bc, STAGECLEAR@0x8c6). A data file reaches it through the stage scope."
+
+[table.fields]
+condition_text = "stage_reward_condition_texts"
+
+[[table]]
 name = "quest"
 records = 2000
 built_by = "boot"
@@ -6766,6 +6779,45 @@ sort_key = "stage_select_sort_keys"
 required_party_unit_ids = "unit"
 objective_item_rewards = "item"
 select_background_asset_id = "picture"
+labyrinth_id = "world_area"
+prerequisite_labyrinth_id = "world_area"
+
+[[table]]
+name = "class_change"
+records = 1
+built_by = "class_change"
+usage = "What a title change gives, as CALCCC adds it up for current_character_id (docs/kamidori-data-tables.md, Class changes): it zeroes the block, runs every rule script of class_change_rule_script_ids (CCINIT, then each append's $n$CCINIT), and applies the block to the character when a rule fired. A rule fires once (bit 0 of character_class_change_state[character][column]) when its character's level reaches its threshold, or, for an event title, once a story scene has set bit 1; it takes the title when its level beats the title so far, an event's counting as -1. No data file edits it: it is the sum of the rules that fire, rebuilt on every call, which kamidori-base refuses as a table no format edits. The rules themselves are CCINIT's code, which an OMS patch changes."
+
+[table.fields]
+title = "class_change_title_out"
+title_level = "class_change_title_priority"
+party_capacity_delta = "class_change_party_capacity_delta"
+party_cost_delta = "class_change_party_cost_delta"
+resistance_deltas = "class_change_resistance_deltas"
+stat_deltas = "class_change_stat_deltas"
+stat_cap_deltas = "class_change_stat_cap_deltas"
+skill_slot_replacements = "class_change_skill_slot_replacements"
+skill_learn_flags = "class_change_skill_learn_flags"
+
+[table.refs]
+skill_slot_replacements = "skill"
+
+[[table]]
+name = "world_area"
+records = 100
+built_by = "boot"
+usage = "AMINIT2's world areas keyed by area id, the places of the world map: ids 1 to 38 with gaps ($1$ adds 31 and 33, $3$ 34 to 38). An area's id is the labyrinth id a stage takes (ALLMAP@0xc7a copies the chosen area into the labyrinth), and a unit's habitat areas are area ids. Type 1 is a labyrinth, whose stages SELSTAGE lists; type 2 is a town or facility. Which areas are discovered or enterable is saved state (world_area_state_flags), not here."
+
+[table.fields]
+name = "world_area_names"
+area_type = "world_area_kinds"
+travel_days = "world_area_travel_days"
+picture_asset_id = "world_area_icon_asset_ids"
+map_x = "world_area_map_x"
+map_y = "world_area_map_y"
+
+[table.refs]
+picture_asset_id = "picture"
 
 [[table]]
 name = "dig_table"
@@ -6841,3 +6893,4 @@ usage = "A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appe
 
 [scope.tables]
 enemy = "stage_enemy"
+reward = "stage_reward"

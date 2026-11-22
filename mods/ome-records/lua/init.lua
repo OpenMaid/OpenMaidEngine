@@ -109,7 +109,8 @@ function records.applier(config)
             end
         end
     end
-    -- Each scoped table's scope and short name, and the names a document's top level may use.
+    -- Each scoped table's scope and short name, and the names a document's top level may use: a table whose label
+    -- the caller does not apply is no name to suggest, as the shape never suggests a key it refuses.
     local scopes = map.scopes or {}
     local scoped = {}
     for scope_name, scope in pairs(scopes) do
@@ -117,7 +118,7 @@ function records.applier(config)
     end
     local top = {}
     for name in pairs(map.tables) do
-        if scoped[name] == nil then top[#top + 1] = name end
+        if scoped[name] == nil and labels[map.tables[name].built_by] then top[#top + 1] = name end
     end
     table.sort(top)
     local top_names = "tables: " .. table.concat(top, ", ")

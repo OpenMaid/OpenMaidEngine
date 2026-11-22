@@ -794,6 +794,24 @@ Taken by this plan (§6.2), not by the user; each is reported to the parent sess
 - **`omp lua-stubs` writes the shapes** of the kinds it describes. Spec §7 has editors check a data file from the
   owner's shape, and the engine ships the base mods inside itself, so a modder needs a command that writes one out.
 
+### 9.3 A table of one record (2026-11-22)
+
+Taken for the game data export's title changes (its plan's §5), not by the user. Spec §6.3 has each field of a
+`[[table]]` name a fully sized 1-D or 2-D array of its record count. A table of one record (`records = 1`) may now
+also name a scalar, its one cell, and a 1-D array, its one row, so a block the game keeps one of is a table without
+its globals being retyped, which would change the base mod's released layout. `globals_build.py`, `base_mod_build.py`
+(the record map and the shape), `entities_build.py` and the exporter read it alike. Kamidori's `class_change` block is
+the first; its `built_by` label is `class_change`, which `ome-records` does not edit, so no data file reaches it.
+
+The shape says so too, the same day: before, a file that wrote `class_change` passed the shape and `omp check`, and
+failed only at its first delivery ("is built by class_change, which this format does not edit"). `base_mod_build.py`
+now reads the labels a base mod's `lua/tables.lua` hands the applier (its `labels = { ... }` line), and a table built
+by another label, with its old names, takes no value in the shape (at the top and under a scope), whose error says
+why. A base mod with handlers but no such line fails the build. `ome-records` 1.0.1 leaves such a table out of the
+names it lists for a misspelt table, as the shape never suggests a key it refuses. The drift test
+(`DataPatchTests.Shapes.cs`) reads the same line and checks that the shape and the applier both refuse such a table
+at its name.
+
 ## 10. What M1 found
 
 ### 10.1 Gate 10, measured (task 8, 2026-11-18)

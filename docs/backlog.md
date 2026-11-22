@@ -486,6 +486,39 @@ test's results: `localization-import-test.md`. The future work spec §17 lists s
   `tools/drive/scenarios/geometry/` reaches a stat box screen and an item table on both targets, with their regions
   in `text_geometry_compare.py`, and passes, or each difference is explained.
 
+## Game data export and the site
+
+From the user's design pass on the built site (2026-11-22). The export's design is
+`superpowers/specs/2026-11-21-game-data-export-design.md`, and its plan's §5 keeps what was built since.
+
+- **Stage maps on the site.** The user: "be able to render out the stage to display on the site, possibly with
+  custom icons for things like enemy markers. This should probably be generalized so we can render out stages from
+  other games, even if they're in a different format (arterial stages are a background, nodes and connectors for
+  example)". The user asked to backlog it and think more on it later.
+  - **Kamidori:** a floor is a tile grid with edges between tiles, terrain from LAINIT, doors and hidden doors
+    (`kamidori-data-tables.md`, "How a dungeon floor is stored (MPINIT)"), with map objects placed on it (OBINIT,
+    "Map objects (OBINIT) and hall art (HAINIT)") and the stage's enemies at their spawn tiles (`stage.enemy`'s
+    `spawn_tile_x` and `spawn_tile_y`, which the export publishes).
+  - **Arterial:** an area is a background picture with points and the routes between them (MPINIT and ROINIT,
+    `arterial-data-tables.md`, "On-demand tables").
+  - Done when the export declares a map for a kind in a form both games fit (a background or a grid, its nodes or
+    tiles, the links between them, and the markers placed on them, each with an icon), the exporter writes it, and the
+    site draws it on the entity's page.
+- **Dig sites on a stage's page.** The `dig_table` kind was dropped on 2026-11-22: its page listed a table's items
+  but could not say where the table is used. The user: "Maybe we drop dig tables or merge them into stage data". A
+  dig site is a map object of type `0x20` (採取) or `0x21` (発掘), whose payload picks a DIINIT table
+  (`kamidori-data-tables.md`, "World map, gathering, arena"). Done when a stage's page lists its dig sites with the
+  items each can give, most likely with the stage maps above, which place the map objects.
+- **Costumes.** The user: "One entity type we may want to add are costumes. Wil and the 3 heroines get them, and
+  they contain upgrades costing materials and giving benefits." A costume is an item (`unit_default_costume_item_id`,
+  ITINIT costume ids 101 to 151). Its board is 15×15 nodes (`item_costume_enhancement_grid`, whose node bits the
+  player buys, saved state), laid out per costume by COINIT, run on demand with the costume in `0x2d2846`, into
+  `costume_board_grid` (33×33, nodes at even cells holding 100 plus an AFINIT node type, links between them). A node
+  type's effects are AFINIT's boot catalog (`costume_enhancement_effect_types`, `_targets`, `_amounts` and `_tiers`);
+  CALCARM sums them. What a node costs in materials is not in the registry yet. Done when a `costume` kind (or the
+  costume items' pages) shows each costume's board: its nodes, what each gives and what it costs, read through a
+  loader that runs COINIT for each costume.
+
 ## Platform and project
 
 - **Portability gates** listed in `remake-architecture-and-roadmap.md` ("The open portability gates remain separate

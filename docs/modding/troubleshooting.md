@@ -461,9 +461,9 @@ problems are listed and the rest counted. **"… holds more than 400,000 values,
 path.** The file does not match its kind's shape, and the link stops before any code runs
 ([data-files.md](data-files.md), "Shapes"). A misspelt key or one cut short lists the nearest names, or the names
 there when none is close; a key the format does not offer gives the reason (`unit.12.stats.0: column 0 is named:
-write <column>`, a saved field, a scoped table's own name); a key that should be a whole number says how
-(`unit.0xc: a key here is written in decimal: 12`, `stage.0: a key here is a whole number from <first> to <last>, not
-0`); and a value of the wrong kind or out of range says what the cell takes (`names[2]: takes a string, not 2`), and
+write <column>`, a saved field, a scoped table's own name, a table the format does not edit); a key that should be a
+whole number says how (`unit.0xc: a key here is written in decimal: 12`, `stage.0: a key here is a whole number from
+<first> to <last>, not 0`); and a value of the wrong kind or out of range says what the cell takes (`names[2]: takes a string, not 2`), and
 where a table goes what to write there (`unit.12.stats: takes a table, not an array (unit.stats: <global>, a row of
 <N> columns by name; write stats.<column> = ...)`). The ids, names and numbers here are placeholders: the game's
 guide (`games/<game>.md`) has its own. Fix the line it names. An editor finds most of these as

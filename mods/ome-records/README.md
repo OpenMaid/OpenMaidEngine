@@ -35,6 +35,8 @@ mod passes its record map and its own access in. The engine mounts it when a mou
 - **Scopes** (data patches spec §6.2). A record map may key tables by a scope of the game (`scopes = { stage = {
   first = 1, last = 999, tables = { enemy = "stage_enemy" } } }` beside `tables`). A document reaches such a table
   only through its scope, by a decimal id in the range and the table's short name: `stage["12"].enemy["3"].unit_id`.
+  A table whose `built_by` is none of the applier's labels is a problem at its name (`… is built by class_change, which
+  this format does not edit`), and the list of names a misspelt table gets leaves it out.
   Its own name at the top level is a problem that gives that spelling, and so are an id outside the range
   (`stage.0: stage has ids 1 to 999`) and a short name the scope lacks (`stage.12.enemyy: stage has no table enemyy
   (tables: enemy)`). An `apply` without `scope` writes none of a scope's parts.

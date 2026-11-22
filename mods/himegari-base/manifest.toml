@@ -25,7 +25,7 @@ version = ">=1, <2"
 # shapes/tables.schema.json first, which base_mod_build.py generates from the same record map (spec §7).
 [[accepts]]
 kind = "himegari.tables"
-description = "Edits to the game's record tables: units, items and skills, which the boot builds, and each stage's enemies, which its loader writes."
+description = "Edits to the game's record tables: the boot's, such as units, items and skills, and each stage's, such as its enemies, which its loaders write."
 shape = "tables.schema.json"
 
 [[accepts.at]]

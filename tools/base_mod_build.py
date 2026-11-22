@@ -222,7 +222,13 @@ def record_tables(tables: list[dict], values: list[dict], prefixes: dict[str, in
                 errors.append(f"{where} names {global_name}, which the layout does not map")
                 continue
             dims = value["dims"]
-            if dims[0] != table["records"] or len(dims) not in (1, 2):
+            # A table of one record may name a scalar (its one cell) or a 1-D array (its one row), as
+            # globals_build.record_dims allows.
+            if table["records"] == 1 and len(dims) == 0:
+                dims = [1]
+            elif table["records"] == 1 and len(dims) == 1 and dims[0] != 1:
+                dims = [1, dims[0]]
+            if not dims or dims[0] != table["records"] or len(dims) not in (1, 2):
                 errors.append(f"{where}: {global_name} is not {table['records']} records of one cell or one row")
                 continue
             entry: dict = {"global": global_name, "kind": KINDS[value["bank"]]}
@@ -393,15 +399,40 @@ def _field_shape(table: str, field: str, entry: dict) -> dict:
             "type": "object", "properties": dict(sorted(properties.items())), "additionalProperties": False}
 
 
-def render_shape(profile_id: str, tables: list[dict], source: str, manifest: str, scopes: list[dict] = ()) -> str:
+LABELS_LINE = re.compile(r"^\s*labels\s*=\s*\{([^}]*)\}", re.MULTILINE)
+
+
+def format_labels(root: Path) -> tuple[list[str] | None, str | None]:
+    """The `built_by` labels the base mod's `<game>.tables` handlers apply: the `labels = { ... }` line of its
+    hand-kept `lua/tables.lua`, which hands them to ome-records' applier. None when the base mod has no such file."""
+    handlers = root / "lua" / "tables.lua"
+    if not handlers.is_file():
+        return None, None
+    match = LABELS_LINE.search(handlers.read_text(encoding="utf-8"))
+    labels = re.findall(r'"([a-z_][a-z0-9_]*)"', match.group(1)) if match else []
+    if not labels:
+        return None, (f"{handlers.relative_to(root.parent.parent).as_posix()}: no `labels = {{ \"...\" }}` line, which "
+                      "names the tables the format applies")
+    return labels, None
+
+
+def render_shape(profile_id: str, tables: list[dict], source: str, manifest: str, scopes: list[dict] = (),
+                 labels: list[str] | None = None) -> str:
     """The shape of the kind <game>.tables (data patches spec §7, plan §6.2), as JSON in the shape subset: what
-    ome-records' applier takes, in the terms a shape can say. Each schema's keywords come in one order, with its
-    description first; names in `properties` and `definitions` are sorted, so a registry change is a small diff."""
+    ome-records' applier takes, in the terms a shape can say. A table built by a label the format's handlers do not
+    apply (`labels`; all of them when None) takes no value, as the applier refuses it. Each schema's keywords come in
+    one order, with its description first; names in `properties` and `definitions` are sorted, so a registry change
+    is a small diff."""
     scoped = {table_name: (scope["name"], short) for scope in scopes for short, table_name in scope["tables"].items()}
     definitions: dict[str, dict] = {}
     top: dict[str, dict] = {}
     for table in tables:
         name, last = table["name"], table["records"] - 1
+        if labels is not None and table["built_by"] not in labels:
+            for spelling in [name, *table.get("aliases", [])]:
+                top[spelling] = _not_offered(f"{name} is built by {table['built_by']}, which {profile_id}.tables "
+                                             f"does not edit")
+            continue
         fields = {field: _field_shape(name, field, entry) for field, entry in table["fields"].items()}
         for old, current in (table.get("old_fields") or {}).items():
             if table["fields"][current].get("state"):
@@ -428,9 +459,14 @@ def render_shape(profile_id: str, tables: list[dict], source: str, manifest: str
             for alias in table.get("aliases", []):
                 top[alias] = {"description": f"{alias}: an old name of the table {name}; write {name}",
                               "$ref": f"#/definitions/records.{name}"}
+    refused = {table["name"]: table["built_by"] for table in tables
+               if labels is not None and table["built_by"] not in labels}
     for scope in scopes:
         scope_name, first, last = scope["name"], scope["first"], scope["last"]
-        parts = {short: {"$ref": f"#/definitions/records.{table_name}"} for short, table_name in scope["tables"].items()}
+        parts = {short: (_not_offered(f"{table_name} is built by {refused[table_name]}, which {profile_id}.tables does "
+                                      f"not edit") if table_name in refused
+                         else {"$ref": f"#/definitions/records.{table_name}"})
+                 for short, table_name in scope["tables"].items()}
         write = f"write {scope_name}.<id>.{' or '.join(sorted(parts))}.<id>.<field> = ..."
         definitions[f"scope.{scope_name}"] = {
             "description": f"{scope_name}: each {scope_name}'s tables by its id, {first} to {last}; {write}",
@@ -445,7 +481,8 @@ def render_shape(profile_id: str, tables: list[dict], source: str, manifest: str
                         f"The shape of {profile_id}.tables, the kind {base_mod_id(profile_id)} accepts (data patches "
                         f"spec §7): a file's record tables by name, each record by its id in decimal, each field by "
                         f"name, and each scope's tables by its id and their short names. A field the save holds, a "
-                        f"scoped table's own name and a named column's number take no value, and say why. The base "
+                        f"scoped table's own name, a table the format does not edit and a named column's number take "
+                        f"no value, and say why. The base "
                         f"mod still checks, at a file's first delivery, what a shape cannot say: text the save's code "
                         f"page cannot encode, one cell named twice through an old name, and a part at an event this "
                         f"install does not raise."),
@@ -605,6 +642,9 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
         errors += map_errors
     points, point_errors = render_points(profile_id, points_registry)
     errors += point_errors
+    labels, label_error = format_labels(root)
+    if label_error:
+        errors.append(f"{base_mod_id(profile_id)}: {label_error}")
     names = exported_names(values, tables if not table_errors else [], scopes if not table_errors else [])
     exports = root / "layout" / "exports.txt"
     released = parse_exports(exports.read_text(encoding="utf-8")) if exports.is_file() else None
@@ -616,7 +656,7 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
                                                                           _shown(manifest),
                                                                           scopes if not table_errors else []),
              root / "shapes" / SHAPE_FILE: render_shape(profile_id, record_map, source, _shown(manifest),
-                                                        scopes if not table_errors else [])}
+                                                        scopes if not table_errors else [], labels)}
     return files, errors
 
 

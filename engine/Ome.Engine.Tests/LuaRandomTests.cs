@@ -185,7 +185,11 @@ public sealed class LuaRandomTests : IDisposable
             return drawn;
         }
 
-        // Eight draws of 15 bits each: two runs alike by chance once in 2^120.
-        Assert.NotEqual(Rolled(), Rolled());
+        // The generator is seeded from the tick count when the memory is built, as native's srand is, so two runs built
+        // in one tick draw alike: the second is built in a later tick. Two seeds apart give eight draws apart.
+        string first = Rolled();
+        int tick = Environment.TickCount;
+        SpinWait.SpinUntil(() => Environment.TickCount != tick);
+        Assert.NotEqual(first, Rolled());
     }
 }

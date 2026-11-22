@@ -119,10 +119,10 @@ public sealed class RegistryView
         int dot = reference.IndexOf('.', StringComparison.Ordinal);
         string field = dot < 0 ? reference : reference[..dot];
         string? arrayName = table.Fields.FirstOrDefault(pair => pair.Field == field).Array;
-        if (arrayName is null || !_arrays.TryGetValue(arrayName, out ArrayLayout? array))
+        if (arrayName is null || !_arrays.TryGetValue(arrayName, out ArrayLayout? global))
             throw new InvalidDataException($"table {table.Name} has no field {field}");
-        if (array.Dimensions.Count == 0 || array.Dimensions[0] != table.Records)
-            throw new InvalidDataException($"{table.Name}.{field}'s array {arrayName} is not {table.Records} records long");
+        ArrayLayout array = AsRecords(global, table.Records)
+            ?? throw new InvalidDataException($"{table.Name}.{field}'s array {arrayName} is not {table.Records} records long");
         if (dot < 0) return new FieldLayout(reference, field, array, null);
         string columnName = reference[(dot + 1)..];
         int column = array.Columns.FirstOrDefault(pair => pair.Value == columnName) is { Value: not null } named
@@ -136,11 +136,29 @@ public sealed class RegistryView
         return new FieldLayout(reference, field, array, column);
     }
 
+    /// <summary>A global as <paramref name="records"/> records: its own dimensions when they lead with the count, and for
+    /// a table of one record a scalar as <c>[1]</c> and a list of n as <c>[1][n]</c>, its one row (the registry's
+    /// one-record tables, <c>globals_build.record_dims</c>); null for any other shape.</summary>
+    private static ArrayLayout? AsRecords(ArrayLayout global, int records)
+    {
+        IReadOnlyList<int> dimensions = global.Dimensions;
+        if (dimensions.Count is 1 or 2 && dimensions[0] == records) return global;
+        if (records != 1 || dimensions.Count > 1) return null;
+        return global with { Dimensions = dimensions.Count == 0 ? [1] : [1, dimensions[0]] };
+    }
+
     /// <summary>The address of a named integer cell, as a seed writes it.</summary>
     public int IntegerGlobal(string name)
         => _arrays.TryGetValue(name, out ArrayLayout? cell) && cell.Bank == GlobalBank.Integer && cell.Dimensions.Count == 0
             ? cell.Address
             : throw new InvalidDataException($"the registry has no integer global {name}");
+
+    /// <summary>A named integer global, one cell or an array, as a loader's seed writes it (export plan §5).</summary>
+    public ArrayLayout IntegerArray(string name)
+        => _arrays.TryGetValue(name, out ArrayLayout? array) && array.Bank == GlobalBank.Integer
+           && array.Dimensions.All(size => size > 0)
+            ? array
+            : throw new InvalidDataException($"the registry has no integer global {name} of a fixed size");
 
     /// <summary>The address of a named integer global, or of the first cell of a named list of them (a one-dimensional
     /// array), as a script relation's key reads it (export plan §4.5).</summary>

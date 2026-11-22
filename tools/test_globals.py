@@ -241,6 +241,21 @@ def test_tables_lint():
                    "'dup': defined twice", "field 'Level' must be", "'unbuilt': built_by must be",
                    "'loud': built_by must be"):
         check(any(needle in e for e in errors), f"lint_tables flags {needle!r}")
+    # A block the game keeps one of: a scalar is its one record's cell, a 1-D array its one record's row.
+    one = {("G", 0x70): {**base, "_addr": 0x70, "name": "bonus_level", "type": "int"},
+           ("GS", 0x70): {**base, "_addr": 0x70, "name": "bonus_title", "type": "string"},
+           ("G", 0x80): {**base, "_addr": 0x80, "name": "bonus_stats", "type": "int[3]"},
+           ("G", 0x90): {**base, "_addr": 0x90, "name": "bonus_grid", "type": "int[2][3]"}}
+    block = {"name": "bonus", "records": 1, "built_by": "rules",
+             "fields": {"level": "bonus_level", "title": "bonus_title", "stats": "bonus_stats"}}
+    check(G.lint_tables([block], one) == [], "a one-record table over a scalar, a string and a 1-D array lints clean")
+    check([G.record_dims("int", 1), G.record_dims("int[3]", 1), G.record_dims("int[1][3]", 1)] == [[1], [1, 3], [1, 3]],
+          "a one-record table's scalar is [1] and its 1-D array [1][n]")
+    check(G.record_dims("int", 4) is None and G.record_dims("int[2][3]", 1) is None,
+          "a scalar is a record of a one-record table only, and a 2-D array must start with the record count")
+    errors = G.lint_tables([{**block, "fields": {"grid": "bonus_grid"}}], one)
+    check(any("field grid needs a fully sized [1] or [1][n] array, a scalar or a 1-D array" in e for e in errors),
+          f"a one-record table refuses a 2-D array of another count ({errors})")
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
         entries, _ = G.load_toml(toml)
         check(G.lint_tables(G.load_tables(toml), entries) == [], f"{toml.name} tables lint clean")
@@ -292,10 +307,11 @@ def test_scopes_lint():
                    "'upside': first and last must be", "'upside': defined twice", "'empty': needs a [scope.tables] map",
                    "table hero is named by scope 'hero' already"):
         check(any(needle in e for e in errors), f"lint_scopes flags {needle!r} ({errors})")
-    # Each registry's scopes: the two dungeon games key stage_enemy by stage; Arterial keys its area tables by area.
+    # Each registry's scopes: the two dungeon games key stage_enemy by stage, and Kamidori its objective rewards too;
+    # Arterial keys its area tables by area.
     expected = {
         "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy"})],
-        "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy"})],
+        "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "reward": "stage_reward"})],
         "globals-arterial.toml": [("area", 1, 299, {"point": "area_point", "route": "area_route", "unit": "area_unit"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):

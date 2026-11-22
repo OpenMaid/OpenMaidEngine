@@ -195,7 +195,7 @@ public sealed partial class DataPatchTests : IDisposable
         { "} }, item = { [\"12\"] = { name = \"Lily 한\"", "item.12.name", "a string cell holds text the save can encode (code page 932); U+D55C is not in it" },
         { "} }, stage_enemy = { [\"3\"] = { unit_id = 761", "stage_enemy", "stage_enemy is reached through its scope: write stage.<id>.enemy" },
         { "} }, stage = { [\"0\"] = { enemy = 1", "stage.0", "stage has ids 1 to 999" },
-        { "} }, units = { [\"3\"] = { level = 1", "units", "no record table is named units (tables: character_profile, condition, dig_table, glossary_entry, item, objective, quest, recipe, skill, stage_catalog, unit; scopes: stage)" },
+        { "} }, units = { [\"3\"] = { level = 1", "units", "no record table is named units (tables: character_profile, condition, dig_table, glossary_entry, item, objective, quest, recipe, skill, stage_catalog, unit, world_area; scopes: stage)" },
     };
 
     [Theory]
@@ -592,8 +592,8 @@ public sealed partial class DataPatchTests : IDisposable
                                                             string.Join(", ", kind.At.Select(at => $"{at.Event.Replace(game, "<game>")} {at.Handler}"))))
                                    .ToList();
         }).ToList();
-        const string Description = "Edits to the game's record tables: units, items and skills, which the boot builds, and "
-                                   + "each stage's enemies, which its loader writes.";
+        const string Description = "Edits to the game's record tables: the boot's, such as units, items and skills, and "
+                                   + "each stage's, such as its enemies, which its loaders write.";
         const string Shared = "<game>.data.layered tables.lua:apply_boot, <game>.stage.loaded tables.lua:apply_stage";
         Assert.Equal([("<game>.tables", Description, Shared)], declared[0]);
         Assert.Equal([("<game>.tables", Description, Shared + ", <game>.stage.previewed tables.lua:apply_stage")], declared[1]);

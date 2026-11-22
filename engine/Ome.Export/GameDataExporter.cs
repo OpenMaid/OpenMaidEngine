@@ -23,8 +23,8 @@ public static class GameDataExporter
     /// <summary>The export's own tables (spec §7.2), which a kind's table may not share a name with.</summary>
     public static readonly IReadOnlySet<string> FixedTables = new HashSet<string>(StringComparer.Ordinal)
     {
-        "build_info", "kind", "field", "field_group", "text", "ref", "relation", "picture", "cell", "snippet",
-        "script_use", "loaded", "loaded_field",
+        "build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref", "relation",
+        "picture", "cell", "snippet", "script_use", "loaded", "loaded_field",
     };
 
     public static ExportResult Run(ExportInputs inputs)
@@ -44,7 +44,8 @@ public static class GameDataExporter
                 throw new ExportFailure($"kind {kind.Id} has the name of one of the export's own tables");
             kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, languages, report));
         }
-        foreach (LoaderDeclaration loader in declarations.Loaders) Load(inputs, boot, loader, kinds, rule, report);
+        foreach (LoaderDeclaration loader in declarations.Loaders)
+            Load(inputs, boot, loader, kinds, rule, languages, report);
         LinkReferences(kinds, report);
         if (declarations.Relations.Count > 0) FindRelations(inputs, kinds, report);
         foreach (ExportKind kind in kinds) WriteSnippets(inputs, kind, report);
@@ -147,12 +148,14 @@ public static class GameDataExporter
         IReadOnlyList<FieldLayout> textFields = texts.Select(text => registry.Resolve(table, text)).ToList();
         var textArrays = new HashSet<string>(textFields.Select(field => field.Field), StringComparer.Ordinal);
         var pictures = kind.Pictures.Select(picture => (picture.Name, Field: registry.Resolve(table, picture.Field))).ToList();
-        foreach ((string name, FieldLayout field) in pictures)
+        var sheets = kind.Sheets.Select(sheet => (Sheet: sheet, Field: registry.Resolve(table, sheet.Field))).ToList();
+        foreach ((string name, FieldLayout field) in pictures.Concat(sheets.Select(pair => (pair.Sheet.Name, pair.Field))))
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
         // The snippet sets what the site shows of a record (plan §4.3): its published fields, its text and its pictures.
-        IReadOnlyList<FieldLayout> snippetFields = [.. published, .. textFields, .. pictures.Select(picture => picture.Field)];
+        IReadOnlyList<FieldLayout> snippetFields = [.. published, .. textFields, .. pictures.Select(picture => picture.Field),
+                                                    .. sheets.Select(sheet => sheet.Field)];
         var entities = new List<ExportEntity>();
         for (int record = 0; record < table.Records; record++)
         {
@@ -214,6 +217,15 @@ public static class GameDataExporter
                     entity.Pictures.Add((name, explicitPictures.Mark(picture)));
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
+            // A cell of a sheet (plan §5): a number below the sheet's first is no picture.
+            foreach ((SheetPictureDeclaration sheet, FieldLayout field) in sheets)
+            {
+                var (cell, refused) = At(field, 0);
+                if (refused || inputs.Pictures == null || sheet.Cell(cell.Number) is not { } at) continue;
+                if (inputs.Pictures.Cell(sheet.Sheet, at.X, at.Y, sheet.Size.Width, sheet.Size.Height) is { } picture)
+                    entity.Pictures.Add((sheet.Name, explicitPictures.Mark(picture)));
+                else report.UnresolvedPictures.Add((kind.Id, record, sheet.Name, cell.Number));
+            }
             foreach (DescriptionDeclaration description in kind.Descriptions)
                 Describe(inputs, boot, kind, entity, description, At, table, languages, report);
             entity.SnippetRecord.AddRange(SnippetEntries(tableFields, snippetFields, (field, column) =>
@@ -224,7 +236,7 @@ public static class GameDataExporter
             entities.Add(entity);
         }
         var declared = published.Concat(textFields).Concat(pictures.Select(picture => picture.Field))
-            .Concat(skips.Select(skip => skip.Field)).Append(exists)
+            .Concat(sheets.Select(sheet => sheet.Field)).Concat(skips.Select(skip => skip.Field)).Append(exists)
             .DistinctBy(field => field.Name).ToList();
         return new ExportKind(kind, table, tableFields, published, declared, entities);
     }
@@ -258,13 +270,15 @@ public static class GameDataExporter
 
     // ------------------------------------------------------------------------------------------------- loaders (§6.3)
 
-    /// <summary>Runs <paramref name="loader"/> once for each entity of its key kind (export plan §4.2): from a copy of
-    /// the booted session, with its seeds, to its point; then reads its published tables' records that exist, each
-    /// shown cell checked as a kind's are (§5.5), with the loader's own builders beside the export's.</summary>
+    /// <summary>Runs <paramref name="loader"/> for each entity of its key kind in its key range (export plan §4.2, §5):
+    /// from a copy of the booted session, once for each step, with its seeds, to its point; then reads its published
+    /// tables' records that exist, each shown cell checked as a kind's are (§5.5), with the loader's own builders beside
+    /// the export's. Run k's records are numbered k times the table's records plus the record. A published text is
+    /// translated at its origin, as a kind's (plan §4.6), and a literal gives a record's text from a script.</summary>
     private static void Load(ExportInputs inputs, GameSession boot, LoaderDeclaration loader, IReadOnlyList<ExportKind> kinds,
-                             BuilderRule exportRule, ExportReport report)
+                             BuilderRule exportRule, IReadOnlyList<Translation> languages, ExportReport report)
     {
-        string where = $"loader {loader.Scope}";
+        string where = $"loader {loader.Name}";
         ExportKind keys = kinds.FirstOrDefault(kind => kind.Declaration.Id == loader.Keys)
                           ?? throw new ExportFailure($"{where}: its keys {loader.Keys} is no kind");
         if (inputs.StopOf is null) throw new ExportFailure($"{where} reads at {loader.ReadAt}, and no patch point is resolved");
@@ -273,10 +287,13 @@ public static class GameDataExporter
                         ?? throw new ExportFailure($"{where} runs {loader.Script}, which the install lacks");
         if (ScriptNames.Normalized(script.Name) != stop.Script)
             throw new ExportFailure($"{where} reads at {loader.ReadAt}, which lies in {stop.Script}, not in {loader.Script}");
+        if (loader.Steps < 1) throw new ExportFailure($"{where} runs {loader.Steps} steps");
         RegistryView registry = inputs.Registry;
         BuilderRule rule = exportRule.With(loader.Builders);
         var skips = loader.Skip.Select(skip => (Field: registry.Resolve(keys.Table, skip.Field), skip.Value)).ToList();
+        var seeds = loader.Seed.Select(seed => (Seed: seed, Array: registry.IntegerArray(seed.Global))).ToList();
         var tables = new List<ExportLoadedTable>();
+        var literals = new List<(ExportLoadedTable Table, LiteralDeclaration Literal, List<ExportText> Texts)>();
         foreach (LoadedTableDeclaration declared in loader.Tables)
         {
             if (keys.Table.Fields.Any(field => field.Field == declared.Name))
@@ -284,78 +301,181 @@ public static class GameDataExporter
             TableLayout table = registry.Table(declared.Table);
             var loaded = new ExportLoadedTable(declared, loader.Scope, table, registry.FieldsOf(table),
                                                declared.Fields.Select(field => registry.Resolve(table, field)).ToList(),
-                                               registry.Resolve(table, declared.Exists));
+                                               registry.Resolve(table, declared.Exists))
+            {
+                Text = declared.Text.Select(field => registry.Resolve(table, field)).ToList(),
+            };
             if (loaded.Published.Any(field => field.IsString))
-                throw new ExportFailure($"{where}: table {declared.Name} publishes a string, which a loaded table does not");
+                throw new ExportFailure($"{where}: table {declared.Name} publishes a string among its fields; text is "
+                                        + "published as text");
+            if (loaded.Text.Any(field => !field.IsString))
+                throw new ExportFailure($"{where}: table {declared.Name}'s text names a field that holds no string");
             tables.Add(loaded);
+            foreach (LiteralDeclaration literal in declared.Literals)
+                literals.Add((loaded, literal, LiteralTexts(inputs, literal, languages, where)));
         }
         keys.Loaded.AddRange(tables);
 
         foreach (ExportEntity entity in keys.Entities)
         {
+            if (loader.KeyRange is { } range && (entity.Id < range.First || entity.Id > range.Last)) continue;
             if (skips.Any(skip => Read(boot, skip.Field, entity.Id, 0).Number == skip.Value)) continue;
-            GameSession run = boot.CopyState();
-            foreach ((string global, SeedValue value) in loader.Seed)
-                run.Seed(registry.IntegerGlobal(global), value.For(entity.Id));
-            var options = new VmOptions(MaxSteps: inputs.LoaderMaxSteps)
+            for (int step = 0; step < loader.Steps; step++)
             {
-                ProfileId = inputs.GameId, RecordsWrites = true, StopAt = stop,
-            };
-            SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
-                                              build: inputs.Build);
-            report.LoaderRuns++;
-            if (result.Halt != stop.HaltReason)
-            {
-                report.LoaderHalts.Add((loader.Scope, keys.Declaration.Id, entity.Id, result.Halt ?? ""));
-                continue;
-            }
-            foreach (ExportLoadedTable table in tables)
-                for (int record = 0; record < table.Table.Records; record++)
+                GameSession run = boot.CopyState();
+                foreach ((SeedCell seed, ArrayLayout array) in seeds)
+                    foreach (int address in SeedAddresses(array, seed.Index, entity.Id, step, where))
+                        run.Seed(address, seed.Value.For(entity.Id));
+                var options = new VmOptions(MaxSteps: inputs.LoaderMaxSteps)
                 {
-                    if (Read(run, table.Exists, record, 0).IsDefault) continue;
-                    string name = table.Declaration.Name;
-                    // Every field's cells, as a kind's (§6.6): an integer's value is shown and checked; a string, which a
-                    // loaded table does not publish, shows its address and writer only. Its cells are the key entity's,
-                    // the field written <table>.<field> and the index the record times the width plus the element.
-                    var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
-                    foreach (FieldLayout field in table.TableFields)
-                        for (int element = 0; element < field.Elements; element++)
-                        {
-                            ExportCell cell = Read(run, field, record, element);
-                            string? reason = field.IsString ? null : RefusalOf(run, cell, rule);
-                            int index = record * field.Elements + element;
-                            if (reason != null)
-                                report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id, $"{name}.{field.Field}", index,
-                                                                cell.Bank, cell.Address, reason));
-                            cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null);
-                            if (cell.Writer != null || !cell.IsDefault)
-                                entity.Cells.Add(new ExportModderCell($"{name}.{field.Field}", index, cell.Bank, cell.Address,
-                                    reason != null || field.IsString ? null : cell.Number.ToString(CultureInfo.InvariantCulture),
-                                    cell.Writer));
-                        }
-                    (ExportCell Cell, bool Refused) At(FieldLayout field, int element)
-                        => cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))];
-
-                    var values = new List<(string Field, long?[] Values)>();
-                    foreach (FieldLayout field in table.Published)
-                    {
-                        var elements = new long?[field.Elements];
-                        for (int element = 0; element < field.Elements; element++)
-                        {
-                            var (cell, refused) = At(field, element);
-                            elements[element] = refused ? null : cell.Number;
-                        }
-                        values.Add((field.Name, elements));
-                    }
-                    entity.Loaded.Add(new ExportLoadedRow(name, record, values));
-                    entity.SnippetRows.Add((loader.Scope, name, record,
-                        SnippetEntries(table.TableFields, table.Published, (field, column) =>
-                        {
-                            var (cell, refused) = At(field, column);
-                            return refused ? null : new DataInteger(cell.Number);
-                        })));
+                    ProfileId = inputs.GameId, RecordsWrites = true, StopAt = stop,
+                };
+                SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
+                                                  build: inputs.Build);
+                report.LoaderRuns++;
+                if (result.Halt != stop.HaltReason)
+                {
+                    report.LoaderHalts.Add((loader.Name, keys.Declaration.Id, entity.Id, result.Halt ?? ""));
+                    continue;
                 }
+                foreach (ExportLoadedTable table in tables)
+                    ReadLoadedTable(run, table, step, keys, entity, rule, languages, report);
+                // A literal stands for a record's text whatever the run left there (plan §5).
+                foreach ((ExportLoadedTable table, LiteralDeclaration literal, List<ExportText> texts) in literals)
+                {
+                    string field = $"{table.Declaration.Name}.{literal.Field}";
+                    int index = step * table.Table.Records + literal.Record;
+                    entity.Texts.RemoveAll(text => text.Field == field && text.Index == index);
+                    entity.Texts.AddRange(texts.Select(text => text with { Field = field, Index = index }));
+                }
+            }
         }
+    }
+
+    /// <summary>One run's records of <paramref name="table"/> that exist, under the key entity: its fields' values, its
+    /// text in each language, its cells for the modder data, and its snippet rows when a data file reaches it (a scope's
+    /// table).</summary>
+    private static void ReadLoadedTable(GameSession run, ExportLoadedTable table, int step, ExportKind keys,
+                                        ExportEntity entity, BuilderRule rule, IReadOnlyList<Translation> languages,
+                                        ExportReport report)
+    {
+        string name = table.Declaration.Name;
+        var textArrays = new HashSet<string>(table.Text.Select(field => field.Field), StringComparer.Ordinal);
+        for (int record = 0; record < table.Table.Records; record++)
+        {
+            if (Read(run, table.Exists, record, 0).IsDefault) continue;
+            int row = step * table.Table.Records + record;
+            // Every field's cells, as a kind's (§6.6): an integer's value is shown and checked, and so is a published
+            // text; another string shows its address and writer only. Its cells are the key entity's, the field written
+            // <table>.<field> and the index the row times the width plus the element.
+            var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
+            foreach (FieldLayout field in table.TableFields)
+            {
+                bool shown = !field.IsString || textArrays.Contains(field.Field);
+                for (int element = 0; element < field.Elements; element++)
+                {
+                    ExportCell cell = Read(run, field, record, element);
+                    string? reason = shown ? RefusalOf(run, cell, rule) : null;
+                    int index = row * field.Elements + element;
+                    if (reason != null)
+                        report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id, $"{name}.{field.Field}", index,
+                                                        cell.Bank, cell.Address, reason));
+                    cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null);
+                    if (cell.Writer != null || !cell.IsDefault)
+                        entity.Cells.Add(new ExportModderCell($"{name}.{field.Field}", index, cell.Bank, cell.Address,
+                            reason != null || !shown ? null : cell.Text ?? cell.Number.ToString(CultureInfo.InvariantCulture),
+                            cell.Writer));
+                }
+            }
+            (ExportCell Cell, bool Refused) At(FieldLayout field, int element)
+                => cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))];
+
+            var values = new List<(string Field, long?[] Values)>();
+            foreach (FieldLayout field in table.Published)
+            {
+                var elements = new long?[field.Elements];
+                for (int element = 0; element < field.Elements; element++)
+                {
+                    var (cell, refused) = At(field, element);
+                    elements[element] = refused ? null : cell.Number;
+                }
+                values.Add((field.Name, elements));
+            }
+            entity.Loaded.Add(new ExportLoadedRow(name, row, values));
+            foreach (FieldLayout field in table.Text)
+                for (int element = 0; element < field.Elements; element++)
+                {
+                    var (cell, refused) = At(field, element);
+                    if (refused || cell.Text is not { Length: > 0 } text) continue;
+                    string textField = $"{name}.{field.Name}";
+                    int index = row * field.Elements + element;
+                    entity.Texts.Add(new ExportText(textField, index, text));
+                    if (!run.StringStores.TryGetValue(cell.Address, out TextManager.StringStore store)) continue;
+                    foreach (Translation language in languages)
+                        if (language.String(text, store.Origin) is { } translated)
+                            entity.Texts.Add(new ExportText(textField, index, translated, language.Tag));
+                }
+            // A data file reaches a scope's table only (plan §5): a table with none has no snippet rows.
+            if (table.Scope is not { } scope) continue;
+            entity.SnippetRows.Add((scope, name, row,
+                SnippetEntries(table.TableFields, [.. table.Published, .. table.Text], (field, column) =>
+                {
+                    var (cell, refused) = At(field, column);
+                    return refused ? null : field.IsString ? new DataString(cell.Text ?? "") : new DataInteger(cell.Number);
+                })));
+        }
+    }
+
+    /// <summary>The cells a seed writes for key <paramref name="key"/> at step <paramref name="step"/>: one for a single
+    /// cell, and for an array each cell its index terms name, "*" naming every index of its dimension.</summary>
+    private static IEnumerable<int> SeedAddresses(ArrayLayout array, IReadOnlyList<SeedIndex> index, int key, int step,
+                                                  string where)
+    {
+        if (index.Count != array.Dimensions.Count)
+            throw new ExportFailure($"{where}: a seed of {array.Name} has {index.Count} index terms for its "
+                                    + $"{array.Dimensions.Count} dimensions");
+        IEnumerable<int> offsets = [0];
+        for (int dimension = 0; dimension < index.Count; dimension++)
+        {
+            int size = array.Dimensions[dimension];
+            int stride = array.Dimensions.Skip(dimension + 1).Aggregate(1, (product, next) => product * next);
+            SeedIndex term = index[dimension];
+            int[] values = term.Kind switch
+            {
+                SeedIndexKind.Key => [key],
+                SeedIndexKind.Step => [step],
+                SeedIndexKind.Every => [.. Enumerable.Range(0, size)],
+                _ => [term.Value],
+            };
+            if (values.Any(value => value < 0 || value >= size))
+                throw new ExportFailure($"{where}: a seed of {array.Name} indexes {string.Join(", ", values)} in a "
+                                        + $"dimension of {size}");
+            offsets = offsets.SelectMany(offset => values.Select(value => offset + value * stride)).ToList();
+        }
+        return offsets.Select(offset => array.Address + offset);
+    }
+
+    /// <summary>A literal's text (plan §5): the string operand of the instruction at its script and offset, and its
+    /// translations at that site.</summary>
+    private static List<ExportText> LiteralTexts(ExportInputs inputs, LiteralDeclaration literal,
+                                                 IReadOnlyList<Translation> languages, string where)
+    {
+        Script script = inputs.ScriptByName(literal.Script)
+                        ?? throw new ExportFailure($"{where}: a literal is in {literal.Script}, which the install lacks");
+        if (!script.IndexByOffset.TryGetValue(literal.Offset, out int at))
+            throw new ExportFailure($"{where}: {literal.Script}@0x{literal.Offset:x} starts no instruction");
+        string? text = script.Instructions[at].Args
+            .Where(operand => operand.Type == TextOpcodes.LiteralOperandType)
+            .Select(operand => script.Strings.TryGetValue((int)operand.Value, out string? value) ? value : null)
+            .FirstOrDefault(value => value != null);
+        if (text is not { Length: > 0 })
+            throw new ExportFailure($"{where}: {literal.Script}@0x{literal.Offset:x} has no string operand");
+        var site = new TextSite(script.Name, literal.Offset);
+        var texts = new List<ExportText> { new(literal.Field, 0, text) };
+        foreach (Translation language in languages)
+            if (language.String(text, site) is { } translated)
+                texts.Add(new ExportText(literal.Field, 0, translated, language.Tag));
+        return texts;
     }
 
     // ------------------------------------------------------------------------------------------------- snippets (§6.6)

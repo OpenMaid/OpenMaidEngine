@@ -21,7 +21,7 @@ public sealed partial class DataPatchTests
     private sealed record MapField(string Table, string Name, string Kind, int Width, bool State,
                                    IReadOnlyDictionary<int, string> ColumnNames);
 
-    private sealed record MapTable(string Name, int Records, IReadOnlyList<MapField> Fields)
+    private sealed record MapTable(string Name, int Records, string BuiltBy, IReadOnlyList<MapField> Fields)
     {
         public string Last => (Records - 1).ToString(CultureInfo.InvariantCulture);
     }
@@ -40,7 +40,7 @@ public sealed partial class DataPatchTests
         local lines = {}
         for _, name in ipairs(sorted(map.tables)) do
             local spec = map.tables[name]
-            lines[#lines + 1] = "table|" .. name .. "|" .. spec.records
+            lines[#lines + 1] = "table|" .. name .. "|" .. spec.records .. "|" .. spec.built_by
             for _, field in ipairs(sorted(spec.fields)) do
                 local f = spec.fields[field]
                 local columns = {}
@@ -62,6 +62,7 @@ public sealed partial class DataPatchTests
     {
         var fields = new Dictionary<string, List<MapField>>(StringComparer.Ordinal);
         var records = new Dictionary<string, int>(StringComparer.Ordinal);
+        var builtBy = new Dictionary<string, string>(StringComparer.Ordinal);
         var scopes = new List<MapScope>();
         foreach (string line in Chunk(native, $"{profile}-base", DumpMap).Split('\n'))
         {
@@ -70,6 +71,7 @@ public sealed partial class DataPatchTests
             {
                 case "table":
                     records[part[1]] = int.Parse(part[2], CultureInfo.InvariantCulture);
+                    builtBy[part[1]] = part[3];
                     fields[part[1]] = [];
                     break;
                 case "field":
@@ -87,8 +89,20 @@ public sealed partial class DataPatchTests
                     break;
             }
         }
-        return (records.ToDictionary(pair => pair.Key, pair => new MapTable(pair.Key, pair.Value, fields[pair.Key]),
+        return (records.ToDictionary(pair => pair.Key, pair => new MapTable(pair.Key, pair.Value, builtBy[pair.Key], fields[pair.Key]),
                                      StringComparer.Ordinal), scopes);
+    }
+
+    /// <summary>The labels the base mod's handlers hand the applier: the <c>labels = { ... }</c> line of its
+    /// <c>lua/tables.lua</c>, which <c>tools/base_mod_build.py</c> reads for the shape.</summary>
+    private static HashSet<string> AppliedLabels(string profile)
+    {
+        string handlers = File.ReadAllText(Path.Combine(Paths.Repo, "mods", $"{profile}-base", "lua", "tables.lua"));
+        var line = System.Text.RegularExpressions.Regex.Match(handlers, @"^\s*labels\s*=\s*\{([^}]*)\}",
+                                                              System.Text.RegularExpressions.RegexOptions.Multiline);
+        Assert.True(line.Success, "lua/tables.lua has a labels line");
+        return System.Text.RegularExpressions.Regex.Matches(line.Groups[1].Value, "\"([a-z_][a-z0-9_]*)\"")
+                     .Select(match => match.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
     }
 
     /// <summary>A document as a tree of keys, written out as TOML for the shape and as a Lua table for the applier.</summary>
@@ -148,9 +162,15 @@ public sealed partial class DataPatchTests
 
     /// <summary>The cases of the drift test, from the record map: what both take, what both refuse and where, and what
     /// only the owner refuses.</summary>
-    private static List<DriftCase> DriftCases(Dictionary<string, MapTable> tables, List<MapScope> scopes)
+    private static List<DriftCase> DriftCases(Dictionary<string, MapTable> tables, List<MapScope> scopes, HashSet<string> labels)
     {
         var cases = new List<DriftCase>();
+        // A table built by a label the handlers do not apply is refused whole, at its name, by both; the cases below
+        // are on the tables the format edits.
+        foreach (MapTable table in tables.Values.Where(table => !labels.Contains(table.BuiltBy)))
+            cases.Add(new DriftCase($"the table {table.Name}, built by {table.BuiltBy}",
+                                    new Doc().Set(1L, table.Name, "0", table.Fields[0].Name), table.Name));
+        tables = tables.Values.Where(table => labels.Contains(table.BuiltBy)).ToDictionary(table => table.Name, StringComparer.Ordinal);
         var scoped = scopes.SelectMany(scope => scope.Tables.Select(pair => (Scope: scope, Short: pair.Key, Table: pair.Value)))
                            .ToDictionary(entry => entry.Table, StringComparer.Ordinal);
         string P(params string[] parts) => string.Join(".", parts);
@@ -278,7 +298,8 @@ public sealed partial class DataPatchTests
         Scripting native = Started(profile);
         var (tables, scopes) = RecordMap(native, profile);
         Assert.NotEmpty(scopes);
-        List<DriftCase> cases = DriftCases(tables, scopes);
+        HashSet<string> labels = AppliedLabels(profile);
+        List<DriftCase> cases = DriftCases(tables, scopes, labels);
         var disagreements = new List<string>();
         int number = 0;
         foreach (DriftCase drift in cases)
@@ -316,11 +337,17 @@ public sealed partial class DataPatchTests
                 // A state field is called saved state by both, not an unknown field.
                 if (drift.What.StartsWith("the state field", StringComparison.Ordinal))
                     same &= shapePaths.Concat(applierPaths).All(problem => problem.Reason.Contains("is saved state", StringComparison.Ordinal));
+                // A table the format does not edit is called that by both, not an unknown table.
+                if (drift.What.StartsWith("the table ", StringComparison.Ordinal))
+                    same &= shapePaths.Concat(applierPaths).All(problem => problem.Reason.Contains("does not edit", StringComparison.Ordinal));
                 if (!same) disagreements.Add(Show());
             }
         }
         Assert.True(disagreements.Count == 0, string.Join("\n", disagreements));
         Assert.Contains(cases, drift => drift.What.StartsWith("the state field", StringComparison.Ordinal));
+        // Kamidori's title-change block is built by its own label, which neither base mod's handlers apply.
+        if (profile == "kamidori")
+            Assert.Contains(cases, drift => drift.What == "the table class_change, built by class_change");
     }
 
     // ------------------------------------------------------------------------------------------------- gate 12

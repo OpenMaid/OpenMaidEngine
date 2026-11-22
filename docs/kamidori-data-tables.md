@@ -321,6 +321,14 @@ which a story scene sets (e.g. SC0450@`0x5123`); without it, the script exits.
 - Base: 103 rules for 26 characters, 15 of them event-gated, including the protagonist's ranks 匠巣…匠王.
 - Appends: `$1$` 3 rules, `$2$` 5, `$3$` 16 (including 大匠王).
 
+**Read as a table.** Over all four scripts, the 127 rules key 30 characters, no two share a character and a state
+column (the highest column is 11), and no rule has both an event gate and a level gate. So one CALCCC run for each
+character and column, with that column's state 2 (bit 1 set, bit 0 clear), the character's other columns 1 (taken)
+and its level 99, fires exactly that column's rule. The registry names the output block as the one-record table
+`class_change`, and the patch point `kamidori.class_change.rules_run` (CALCCC@`0x60`, after the rule scripts) is
+where it is read; the game data export publishes it so, as a unit's title changes. A variant unit with its own id
+(`unit_canonical_character_id`) has no rules of its own.
+
 **Open questions:**
 - `0x2bd024` has no reader.
 - `0x4f9a7` (enemy auto-scale reference level) is not decoded.
@@ -904,6 +912,11 @@ Stage header:
 | alliances | `0x14042c[5]` |
 | reward-gating flags | `0x140424[4×2]` |
 | objective strings / description / reward texts | `0x249f[2×6]` / `0x24ab[4]` / `0x24af[4]` |
+
+The reward texts (`stage_reward_condition_texts`, the registry's `stage_reward` table under the `stage` scope) name the
+condition each of the four objective rewards is given for, in the order of the reward slots: STINIT writes rows 1 to
+3 for each stage (ステージクリア, 全ての出撃門占有, …) and leaves row 0 empty, where AIM@`0x5b4` and
+STAGECLEAR@`0x8be` draw a fixed 占有率１００％.
 
 The stage also defines three kinds of slot:
 

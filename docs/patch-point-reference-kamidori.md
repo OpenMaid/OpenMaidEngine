@@ -27,6 +27,16 @@ INIT2's exit. Every data table is built: the 28 base *INIT scripts, each mounted
 | `sha256:5e4932184f30e6d35d9ee9b259f2987bd62e443479fa2d207fde2edfbac5a65d` | `0x2cf` |
 | `sha256:a60b27687b52d51c06ecfb1371e3aea7393b45a21612bb3715992ef2970925f8` | `0x2cf` |
 
+## `kamidori.class_change.rules_run`
+
+Script: `CALCCC.BIN`
+
+Every rule script of class_change_rule_script_ids has run for current_character_id (CCINIT, then each append's $n$CCINIT), and CALCCC has applied nothing yet: the class change block (class_change_title_priority, class_change_title_out and the class_change_*_delta arrays, the skill slot replacements and the skill learn flags) holds the sum of the rules that fired in this call, each of which has set bit 0 of its column of character_class_change_state. A title priority of 0 means none fired, and CALCCC exits; otherwise it adds the deltas to the character and copies the title into character_class_titles.
+
+| Revision | Site |
+|---|---|
+| `sha256:ce198812dd6236dbc104ff99cdbee005a2dcd633f7233ef9c76caae694560824` | `0x60` |
+
 ## `kamidori.experience.after_calculation`
 
 Script: `ADDEXP.BIN`
