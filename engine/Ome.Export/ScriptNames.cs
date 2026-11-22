@@ -24,17 +24,24 @@ public static class ScriptNames
 }
 
 /// <summary>Which scripts' writes may be published (spec §5.5): a script whose base name matches a builder pattern
-/// and is no excluded builder.</summary>
-public sealed class BuilderRule(IReadOnlyList<string> builders, IReadOnlyList<string> excluded)
+/// and is no excluded builder. A derived script's writes are withheld without a refusal (export plan §5): play state
+/// the boot works out from the tables, as Arterial's <c>COUNTSKILL</c> counts the party's skills.</summary>
+public sealed class BuilderRule(IReadOnlyList<string> builders, IReadOnlyList<string> excluded,
+                                IReadOnlyList<string>? derived = null)
 {
     private readonly HashSet<string> _excluded = new(excluded, StringComparer.Ordinal);
+    private readonly HashSet<string> _derived = new(derived ?? [], StringComparer.Ordinal);
 
     /// <summary>This rule with more builders: a loader's own (spec §6.3).</summary>
-    public BuilderRule With(IReadOnlyList<string> more) => more.Count == 0 ? this : new([.. builders, .. more], excluded);
+    public BuilderRule With(IReadOnlyList<string> more)
+        => more.Count == 0 ? this : new([.. builders, .. more], excluded, [.. _derived]);
 
     public bool Allows(string script)
     {
         string name = ScriptNames.Base(script);
         return !_excluded.Contains(name) && builders.Any(pattern => ScriptNames.Matches(pattern, name));
     }
+
+    /// <summary>Whether <paramref name="script"/>, a cell's writer, is a derived script.</summary>
+    public bool Derives(string? script) => script != null && _derived.Contains(ScriptNames.Base(script));
 }

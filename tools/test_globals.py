@@ -269,8 +269,9 @@ def test_value_facets():
                ("GS", 0x30): {**base, "_addr": 0x30, "name": "race_names", "type": "string[3]"},
                ("G", 0x40): {**base, "_addr": 0x40, "name": "hero_sex_mask", "type": "int[4]", "bits_of": "hero_sex"},
                ("G", 0x50): {**base, "_addr": 0x50, "name": "hero_growth", "type": "int[4][2]", "scale": 0.01},
-               ("G", 0x60): {**base, "_addr": 0x60, "name": "hero_range", "type": "int[4]", "offset": -1}}
-    check(G.lint_values(entries) == [], f"words, a name table, a mask, a scale and an offset lint clean "
+               ("G", 0x60): {**base, "_addr": 0x60, "name": "hero_range", "type": "int[4]", "offset": -1},
+               ("G", 0x70): {**base, "_addr": 0x70, "name": "hero_race_mask", "type": "int[4]", "bits_of": "race_names"}}
+    check(G.lint_values(entries) == [], f"words, a name table, two masks, a scale and an offset lint clean "
                                         f"({G.lint_values(entries)})")
     merged = G.merge(entries, {})
     check(merged[("G", 0x20)].get("values_from") == {"global": "race_names", "first": 1}
@@ -288,7 +289,8 @@ def test_value_facets():
     errors = G.lint_values(bad)
     for needle in ("a: values: 'one' is not a whole number", "a: values: the word for 2 must be one line",
                    "b: values_from a is int[4], not a list of strings", "b: values_from: first must be a whole number",
-                   "c: values_from must be { global, first }", "d: bits_of e, whose values have no words or names",
+                   "c: values_from must be { global, first }",
+                   "d: bits_of e, whose values have no words or names, and which is no list of strings",
                    "d: a mask's bits name values, so it takes no scale", "e: scale must be a positive number other than 1",
                    "e: offset must be a whole number other than 0", "e: unit must be a word",
                    "f: values: value facets are for integer globals"):
@@ -353,6 +355,27 @@ def test_table_refs():
                    "the target 'monster', which is neither a table", "whose global hero_names is not an integer",
                    "'loose': refs must be a table"):
         check(any(needle in e for e in errors), f"lint_tables flags {needle!r}")
+    # A two-field reference: the record is the row times 3 plus the slot (Arterial's cards, row x 30 + slot).
+    entries[("G", 0x40)] = {**base, "_addr": 0x40, "name": "hero_slots", "type": "int[4][2]"}
+    entries[("G", 0x50)] = {**base, "_addr": 0x50, "name": "hero_ranks", "type": "int[4]"}
+    keyed = [{"name": "hero", "records": 4, "built_by": "boot",
+              "fields": {"weapon": "hero_weapons", "slot": "hero_slots", "icon": "hero_icons", "rank": "hero_ranks",
+                         "name": "hero_names"},
+              "refs": {"weapon": {"table": "weapon", "times": 3, "plus": "slot"}}}, weapon]
+    check(G.lint_tables(keyed, entries) == [], f"a two-field reference lints clean ({G.lint_tables(keyed, entries)})")
+    table = G.table_json(keyed[0])
+    check(table.get("refs") == {"weapon": "weapon"} and table.get("ref_keys") == {"weapon": {"times": 3, "plus": "slot"}},
+          f"the JSON writes a two-field reference's table and its key apart ({table})")
+    check("ref_keys" not in G.table_json(good[0]), "a table without two-field references has no ref_keys key")
+    keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 0, "plus": "rank"},
+                        "icon": {"table": "picture", "times": 3, "plus": "icon"},
+                        "rank": {"table": "weapon", "plus": "name"}}
+    errors = G.lint_tables(keyed, entries)
+    for needle in ("weapon times 0, which must be a whole number above 0",
+                   "plus rank, whose global hero_ranks is int[4], not as wide as hero_weapons",
+                   "a two-field reference to picture", "icon plus 'icon', which must be another field",
+                   "rank a two-field reference, which must be { table, times, plus }"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
 
 def test_scopes_lint():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}

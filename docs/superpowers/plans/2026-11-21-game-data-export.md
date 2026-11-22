@@ -883,3 +883,42 @@ authors.
   - **About.** A kind's `about` is one line, at most 160 characters, that says what its entities are; the site shows it
     on the kind's card and its list. The `kind` table has an `about` column, null for none. Kamidori says each of its
     eleven kinds from its fields and its table's usage.
+- **A second game: Arterial** (2026-11-22; the user: "I'd like to make sure what we've done is generalizable to the
+  other games without a bunch of hardcoding"). `vm-map/entities-arterial.toml` declares 18 kinds from the registry's
+  tables: cards, talents, skills, items, conditions, 奥義, characters, character profiles, glossary entries, tips,
+  recipes, shop entries, decks, battles, battle rules, arena opponents, goals and areas. A kind that is Kamidori's too
+  takes Kamidori's id (`character_profile`, `glossary_entry`). The site needed its settings (`site.config.mjs`) and
+  three fixes of wording that named Kamidori's kinds or its English (site plan §12). The first export ran unchanged
+  and exited 1 on 265 refusals. Four things the declarations and the registry could not say were added, none of them
+  in spec §5 or §7.2. The lint checks each, and `tools/test_entities_build.py`, `tools/test_globals.py` and the
+  exporter's tests cover it:
+  - **Derived scripts.** `[export] derived` names scripts that work out play state from the tables during the boot.
+    INIT2 runs COUNTSKILL, which counts the party's skills (none at the boot) into the skill table's `party_count`, the
+    265 refused cells. A derived script's writes are withheld without a refusal: no value, and the writer in the modder
+    panel. The unnamed-cells count leaves out what it wrote. The lint refuses a derived script that is a builder or a
+    text script.
+  - **Two-field references.** A `[table.refs]` value may be `{ table, times, plus }`: the record is the field's value
+    times `times`, plus the value of field `plus` at the same element. An Arterial card is a row and a slot (row × 30 +
+    slot), and every table that names a card names it that way: a deck's cards and drops, a recipe's product and
+    ingredients, a reward. A value of 0 or below stays none. The JSON's `tables` give `ref_keys`, and the export writes
+    the record's id as it writes a one-field reference's, so the site needed no change. The lint refuses a two-field
+    reference to `picture`, a `times` below 1, and a `plus` that is not another integer field of the same width.
+  - **A mask named by a list of strings.** `bits_of` may name a string list, its element k naming bit k. A card's races
+    take INIT2's `race_names` (`0x12a7c`), since no integer global's values carry them.
+  - **A title of several references.** A kind's `title` may be a list of two or more reference fields: the entity is
+    named by the first that names a record. An Arterial recipe or shop entry makes an item or a card (432 of the 617
+    recipes make a card), so both are titled `["item", "card_row"]`. The export's `kind` table keeps the first in
+    `title_field` and the rest, a JSON array, in `title_fallbacks`. The lint refuses a list of one, a name given twice,
+    and an entry that is no reference to a table. `test_entities_build.py`'s title tests, which its `main` had never
+    run, now run.
+
+  The registry gained six globals: the card rarity and item kind name lists INIT2 writes, the arena names ARINIT
+  writes, and the ids INFOVI, INFOCH and INFOTI set before they run VIMES, CIMES and TIMES, which seed the glossary,
+  profile and tip descriptions. A card is named for its character, so cards are qualified by rarity, cost and attack;
+  shop entries, which sell some things more than once, by their least chapter and rank. The export reads in 14 s: 18
+  kinds, 303 description runs with none empty, 4967 snippets with no problem, and 1638 pictures, 72 of them explicit,
+  all card art, found by looking at each. Kamidori's export is the same as before but for the `kind` table's new
+  column.
+  What the declarations still cannot say is in the backlog ("Game data export and the site"): a table keyed by another
+  table's records, a card named by two elements of one field, and the 235 cells the builders wrote that no global
+  names.

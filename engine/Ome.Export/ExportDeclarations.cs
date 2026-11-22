@@ -21,6 +21,10 @@ public sealed record ExportDeclarations(
     /// extension, a <c>*</c> matching any run of characters (<c>[export] explicit_pictures</c>).</summary>
     public IReadOnlyList<string> ExplicitPictures { get; init; } = [];
 
+    /// <summary>The derived scripts (<c>[export] derived</c>, export plan §5): what they write during the boot is play
+    /// state worked out from the tables, withheld without a refusal.</summary>
+    public IReadOnlyList<string> Derived { get; init; } = [];
+
     /// <summary>The loaders (spec §6.3, export plan §4.2): the scripts the export runs once for each key entity, and the
     /// tables of their scope it publishes under that entity.</summary>
     public IReadOnlyList<LoaderDeclaration> Loaders { get; init; } = [];
@@ -48,6 +52,7 @@ public sealed record ExportDeclarations(
             root.GetProperty("kinds").EnumerateArray().Select(KindDeclaration.Parse).ToList())
         {
             ExplicitPictures = Strings(export, "explicit_pictures"),
+            Derived = Strings(export, "derived"),
             Loaders = root.TryGetProperty("loaders", out JsonElement loaders)
                 ? loaders.EnumerateArray().Select(LoaderDeclaration.Parse).ToList()
                 : [],
@@ -90,6 +95,10 @@ public sealed record KindDeclaration(
 {
     public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
 
+    /// <summary>The references a title falls back on, in order, when <see cref="Title"/>, a reference too, names no
+    /// record (export plan §5): an Arterial recipe makes an item or a card, and is named by the one it makes.</summary>
+    public IReadOnlyList<string> TitleFallbacks { get; init; } = [];
+
     /// <summary>The pictures cut from a sheet (export plan §5): a cell a field numbers.</summary>
     public IReadOnlyList<SheetPictureDeclaration> Sheets { get; init; } = [];
 
@@ -124,8 +133,9 @@ public sealed record KindDeclaration(
             kind.TryGetProperty("skip", out JsonElement skip)
                 ? skip.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetInt64())).ToList()
                 : [],
-            kind.TryGetProperty("title", out JsonElement title) && title.ValueKind == JsonValueKind.String
-                ? title.GetString()
+            !kind.TryGetProperty("title", out JsonElement title) ? null
+                : title.ValueKind == JsonValueKind.String ? title.GetString()
+                : title.ValueKind == JsonValueKind.Array ? title.EnumerateArray().Select(t => t.GetString()).FirstOrDefault()
                 : null,
             ExportDeclarations.Strings(kind, "text"),
             ExportDeclarations.Strings(kind, "fields"),
@@ -158,6 +168,9 @@ public sealed record KindDeclaration(
                         block.GetProperty("first").GetInt32(), block.GetProperty("last").GetInt32())).ToList())).ToList()
                 : [],
             Qualifiers = ExportDeclarations.Strings(kind, "qualifiers"),
+            TitleFallbacks = kind.TryGetProperty("title", out JsonElement titles) && titles.ValueKind == JsonValueKind.Array
+                ? titles.EnumerateArray().Skip(1).Select(t => t.GetString()!).ToList()
+                : [],
             About = kind.TryGetProperty("about", out JsonElement about) && about.ValueKind == JsonValueKind.String
                 ? about.GetString()
                 : null,

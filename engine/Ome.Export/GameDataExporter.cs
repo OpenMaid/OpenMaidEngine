@@ -31,7 +31,7 @@ public static class GameDataExporter
     public static ExportResult Run(ExportInputs inputs)
     {
         ExportDeclarations declarations = inputs.Declarations;
-        var rule = new BuilderRule(declarations.Builders, declarations.ExcludedBuilders);
+        var rule = new BuilderRule(declarations.Builders, declarations.ExcludedBuilders, declarations.Derived);
         var report = new ExportReport();
         var explicitPictures = new ExplicitPictures(declarations.ExplicitPictures);
         GameSession boot = Boot(inputs, report);
@@ -59,7 +59,7 @@ public static class GameDataExporter
                         .Select(array => (array.Bank, array.Address, array.Address + array.Dimensions[0] * array.Width))])
                     .OrderBy(use => use.Script, StringComparer.Ordinal));
         if (inputs.Names is { } names)
-            foreach (ExportKind kind in kinds) CountUnnamed(names, boot, kind, report);
+            foreach (ExportKind kind in kinds) CountUnnamed(names, boot, kind, rule, report);
         report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
         return new ExportResult(declarations, kinds, report, inputs.BuildInfo) { Languages = inputs.Languages };
     }
@@ -85,8 +85,19 @@ public static class GameDataExporter
             if (array.Format is not { Names: true } format) continue;
             ValueFormat named = format;
             if (format.BitsOf is { } bits)
-                named = inputs.Registry.Find(bits)?.Format
+            {
+                ArrayLayout? target = inputs.Registry.Find(bits);
+                if (target is { Bank: GlobalBank.String, Dimensions.Count: 1 })
+                {
+                    // The game's names of the bits (export plan §5): element k names bit k, Arterial's races.
+                    foreach ((int element, string language, string text) in GameNames(inputs, boot, rule, languages, report,
+                                                                                  id, name, bits))
+                        kind.ValueNames.Add(new ExportValueName(name, element, language, text));
+                    continue;
+                }
+                named = target?.Format
                         ?? throw new ExportFailure($"{id}.{name}'s bits stand for the values of {bits}, which have no words");
+            }
             foreach ((long value, string word) in named.Words) kind.ValueNames.Add(new ExportValueName(name, value, "", word));
             if (named.NamesFrom is not { } from) continue;
             foreach ((int element, string language, string text) in GameNames(inputs, boot, rule, languages, report, id,
@@ -130,10 +141,12 @@ public static class GameDataExporter
 
     /// <summary>The integer cells a kind's builders (the writers of its cells) wrote that no global of the registry
     /// names (spec §6.6, plan §4.3): an array the registry has yet to name. Reported, not published.</summary>
-    private static void CountUnnamed(GlobalNames names, GameSession boot, ExportKind kind, ExportReport report)
+    private static void CountUnnamed(GlobalNames names, GameSession boot, ExportKind kind, BuilderRule rule,
+                                     ExportReport report)
     {
+        // A derived script wrote some of the kind's cells, and is no builder: what else it wrote is play state.
         var builders = kind.Entities.SelectMany(entity => entity.Cells).Select(cell => cell.Writer).OfType<string>()
-            .ToHashSet(StringComparer.Ordinal);
+            .Where(writer => !rule.Derives(writer)).ToHashSet(StringComparer.Ordinal);
         int[] cells = boot.Writers.Where(pair => pair.Key.Bank == GlobalBank.Integer && builders.Contains(pair.Value)
                                                  && names.NameOf(pair.Key) == null)
             .Select(pair => pair.Key.Address).Order().ToArray();
@@ -230,7 +243,8 @@ public static class GameDataExporter
             var entity = new ExportEntity(record);
 
             // Every named field's cells, each checked once (§5.5, §6.6): an integer's value is shown, so a value no
-            // builder wrote is refused; a string is shown only when the kind publishes it as text.
+            // builder wrote is refused; a string is shown only when the kind publishes it as text; and a derived
+            // script's cell is withheld, its writer shown (export plan §5).
             // Keyed by bank and address: a string array and an integer array may share addresses in their banks.
             var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
             foreach (FieldLayout field in tableFields)
@@ -239,11 +253,12 @@ public static class GameDataExporter
                 for (int element = 0; element < field.Elements; element++)
                 {
                     ExportCell cell = Read(boot, field, record, element);
-                    bool shown = !field.IsString || publishedText;
+                    bool derived = rule.Derives(cell.Writer);
+                    bool shown = (!field.IsString || publishedText) && !derived;
                     string? reason = shown ? RefusalOf(boot, cell, rule) : null;
                     if (reason != null)
                         report.Refusals.Add(new Refusal(kind.Id, record, field.Field, element, cell.Bank, cell.Address, reason));
-                    cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null);
+                    cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null || derived);
                     if (cell.Writer != null || !cell.IsDefault)
                         entity.Cells.Add(new ExportModderCell(field.Field, element, cell.Bank, cell.Address,
                             reason != null || !shown ? null : cell.Text ?? cell.Number.ToString(CultureInfo.InvariantCulture),
@@ -262,6 +277,8 @@ public static class GameDataExporter
                     values[element] = refused ? null : cell.Number;
                 }
                 entity.Values.Add((field.Name, values));
+                if (table.RefKeys.TryGetValue(field.Field, out RefKey? key))
+                    entity.KeyedRefs[field.Name] = KeyedIds(field, tableFields, key, At);
             }
             // A string is translated at its origin, which stands for the site the game draws it at (plan §4.6).
             foreach (FieldLayout field in textFields)
@@ -446,21 +463,23 @@ public static class GameDataExporter
             if (Read(run, table.Exists, record, 0).IsDefault) continue;
             int row = step * table.Table.Records + record;
             // Every field's cells, as a kind's (§6.6): an integer's value is shown and checked, and so is a published
-            // text; another string shows its address and writer only. Its cells are the key entity's, the field written
-            // <table>.<field> and the index the row times the width plus the element.
+            // text; another string, and a derived script's cell, shows its address and writer only. Its cells are the
+            // key entity's, the field written <table>.<field> and the index the row times the width plus the element.
             var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
             foreach (FieldLayout field in table.TableFields)
             {
-                bool shown = !field.IsString || textArrays.Contains(field.Field);
+                bool text = !field.IsString || textArrays.Contains(field.Field);
                 for (int element = 0; element < field.Elements; element++)
                 {
                     ExportCell cell = Read(run, field, record, element);
+                    bool derived = rule.Derives(cell.Writer);
+                    bool shown = text && !derived;
                     string? reason = shown ? RefusalOf(run, cell, rule) : null;
                     int index = row * field.Elements + element;
                     if (reason != null)
                         report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id, $"{name}.{field.Field}", index,
                                                         cell.Bank, cell.Address, reason));
-                    cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null);
+                    cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null || derived);
                     if (cell.Writer != null || !cell.IsDefault)
                         entity.Cells.Add(new ExportModderCell($"{name}.{field.Field}", index, cell.Bank, cell.Address,
                             reason != null || !shown ? null : cell.Text ?? cell.Number.ToString(CultureInfo.InvariantCulture),
@@ -471,6 +490,7 @@ public static class GameDataExporter
                 => cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))];
 
             var values = new List<(string Field, long?[] Values)>();
+            var keyed = new Dictionary<string, long?[]>(StringComparer.Ordinal);
             foreach (FieldLayout field in table.Published)
             {
                 var elements = new long?[field.Elements];
@@ -480,8 +500,13 @@ public static class GameDataExporter
                     elements[element] = refused ? null : cell.Number;
                 }
                 values.Add((field.Name, elements));
+                if (table.Table.RefKeys.TryGetValue(field.Field, out RefKey? key))
+                    keyed[field.Name] = KeyedIds(field, table.TableFields, key, At);
             }
-            entity.Loaded.Add(new ExportLoadedRow(name, row, values) { Part = PartOf(run, table, At, keys, entity, rule, report) });
+            entity.Loaded.Add(new ExportLoadedRow(name, row, values)
+            {
+                Part = PartOf(run, table, At, keys, entity, rule, report), KeyedRefs = keyed,
+            });
             foreach (FieldLayout field in table.Text)
                 for (int element = 0; element < field.Elements; element++)
                 {
@@ -832,6 +857,25 @@ public static class GameDataExporter
 
     // ------------------------------------------------------------------------------------------------- references (§5.3)
 
+    /// <summary>The records a two-field reference names (<c>[table.refs]</c> <c>{ table, times, plus }</c>, export plan
+    /// §5): each element's value times <c>times</c>, plus the <c>plus</c> field's value at the same element. A value of
+    /// 0 or below stays as it is, none; an element either of whose cells is withheld is null.</summary>
+    private static long?[] KeyedIds(FieldLayout field, IReadOnlyList<FieldLayout> tableFields, RefKey key,
+                                    Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
+    {
+        FieldLayout plus = tableFields.First(other => other.Field == key.Plus);
+        var ids = new long?[field.Elements];
+        for (int element = 0; element < field.Elements; element++)
+        {
+            var (value, refused) = at(field, element);
+            var (part, partRefused) = at(plus, field.Column ?? element);
+            ids[element] = refused || partRefused ? null
+                : value.Number <= 0 ? value.Number
+                : value.Number * key.Times + part.Number;
+        }
+        return ids;
+    }
+
     private static void LinkReferences(IReadOnlyList<ExportKind> kinds, ExportReport report)
     {
         var kindOfTable = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -865,7 +909,8 @@ public static class GameDataExporter
             {
                 if (!kind.Table.Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
                 foreach (ExportEntity entity in kind.Entities)
-                    Link(kind, entity, target, field.Name, 0, entity.Values.First(value => value.Field == field.Name).Values);
+                    Link(kind, entity, target, field.Name, 0, entity.KeyedRefs.GetValueOrDefault(field.Name)
+                                                              ?? entity.Values.First(value => value.Field == field.Name).Values);
             }
             // A loaded table's references are the key entity's (export plan §4.2): its field written <table>.<field>,
             // its index the record times the field's width plus the element.
@@ -877,7 +922,8 @@ public static class GameDataExporter
                     foreach (ExportEntity entity in kind.Entities)
                         foreach (ExportLoadedRow row in entity.Loaded.Where(row => row.Table == table.Declaration.Name))
                             Link(kind, entity, target, name, row.Record * field.Elements,
-                                 row.Values.First(value => value.Field == field.Name).Values);
+                                 row.KeyedRefs.GetValueOrDefault(field.Name)
+                                 ?? row.Values.First(value => value.Field == field.Name).Values);
                 }
         }
     }

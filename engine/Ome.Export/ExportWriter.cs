@@ -98,9 +98,11 @@ public static class ExportWriter
         string[] fixedTables =
         [
             "CREATE TABLE build_info (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
-            // A kind's about is the line that says what its entities are (site plan §10.3), null for none.
-            "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, aliases TEXT NOT NULL, "
-            + "entities INTEGER NOT NULL, about TEXT)",
+            // A kind's about is the line that says what its entities are (site plan §10.3), null for none. Its title
+            // fallbacks (export plan §5) are the references, a JSON array, that name it in turn when title_field's names
+            // no record.
+            "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, "
+            + "title_fallbacks TEXT NOT NULL, aliases TEXT NOT NULL, entities INTEGER NOT NULL, about TEXT)",
             // A row of cells' column_kind is the kind whose entity k its column k is (columns_ref), null for none.
             "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
             + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
@@ -269,10 +271,10 @@ public static class ExportWriter
     {
         KindDeclaration declaration = kind.Declaration;
         string id = declaration.Id;
-        using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "aliases", "entities",
-                                         "about"))
-            insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count,
-                       declaration.About);
+        using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "title_fallbacks",
+                                         "aliases", "entities", "about"))
+            insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.TitleFallbacks),
+                       JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count, declaration.About);
         WriteFields(connection, kind, kinds);
 
         string[] columns = ["id", .. kind.Published.Select(field => field.Name), "content_hash"];

@@ -17,10 +17,13 @@ a table's `aliases` and its `[table.field_aliases]` (old name = current field), 
 §6.2): its ids' range and, in `[scope.tables]`, each table's short name under it; the JSON lists them as `scopes`.
 A table's `[table.refs]` says which of its integer fields hold the ids of another table's records, or packed resource
 ids (`picture`), every element of the field, 0 for none (game data export spec §5.3); the JSON's `tables` and the
-reference doc carry them.
+reference doc carry them. A reference whose record is made of two fields is `{ table, times, plus }`: the record is the
+field's value times `times`, plus field `plus`'s value at the same element (Arterial's cards, row × 30 + slot); the JSON
+writes its table under `refs` and the rest under `ref_keys`.
 A global's value facets say what its values mean to a reader (game data export plan §5): `values` gives OME's word for
 some values, `values_from` names the game's own table of names (`{ global, first }`: the string global's element k names
-value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global, and `scale`, `offset` and
+value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global (or for element k of a
+list of strings, the game's names of the bits: Arterial's races), and `scale`, `offset` and
 `unit` say how a number is shown (the stored value times scale, plus offset, in unit). The JSON and the reference doc
 carry them; the game data export publishes them.
 An array's column facets name its columns for a reader where `columns` gives OME's words: `columns_from` names the
@@ -287,11 +290,26 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
 REF_PICTURE = "picture"
 
 
+def ref_target(value) -> str | None:
+    """A reference's target table: the value itself, or a two-field reference's `table`."""
+    return value.get("table") if isinstance(value, dict) else value
+
+
+def split_refs(refs: dict) -> tuple[dict, dict]:
+    """A table's references as the JSON writes them: field = target table under `refs`, and a two-field reference's
+    `{ times, plus }` under `ref_keys`."""
+    targets = {field: ref_target(value) for field, value in refs.items()}
+    keys = {field: {"times": value.get("times"), "plus": value.get("plus")}
+            for field, value in refs.items() if isinstance(value, dict)}
+    return targets, keys
+
+
 def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
     """The references (game data export spec §5.3). Errors: `refs` that is not a table of field = target, a field that
     is not a field of the table (an old name included: a reference names the current one), a target that is neither
     a table of the registry nor `picture`, and a field whose global is not an integer array, since an id is an
-    integer."""
+    integer. A two-field reference is `{ table, times, plus }`, its table a table of the registry, `times` a whole
+    number above 0 and `plus` another integer field of the table, as wide as the field."""
     errors: list[str] = []
     names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
     for t in tables:
@@ -299,14 +317,42 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
         if refs is None or not isinstance(name, str):
             continue
         tag = f"table {name!r}"
-        if not isinstance(refs, dict) or not all(isinstance(v, str) for v in refs.values()):
-            errors.append(f"{tag}: refs must be a table of field = the table its values name, or {REF_PICTURE}")
+        if not isinstance(refs, dict) or not all(isinstance(v, (str, dict)) for v in refs.values()):
+            errors.append(f"{tag}: refs must be a table of field = the table its values name, {REF_PICTURE}, or "
+                          f"{{ table, times, plus }}")
             continue
         fields = t.get("fields") if isinstance(t.get("fields"), dict) else {}
-        for field, target in refs.items():
+
+        def type_of(field: str) -> str:
+            e = globals_by_name.get(fields[field])
+            return str(e.get("type") or "") if e is not None else ""
+
+        for field, value in refs.items():
             if field not in fields:
                 errors.append(f"{tag}: refs names {field!r}, which is not a field of the table")
                 continue
+            target = ref_target(value)
+            if isinstance(value, dict):
+                if set(value) != {"table", "times", "plus"}:
+                    errors.append(f"{tag}: refs gives {field} a two-field reference, which must be "
+                                  f"{{ table, times, plus }}")
+                    continue
+                if target == REF_PICTURE:
+                    errors.append(f"{tag}: refs gives {field} a two-field reference to {REF_PICTURE}, which is one "
+                                  f"cell")
+                times, plus = value["times"], value["plus"]
+                if not isinstance(times, int) or isinstance(times, bool) or times < 1:
+                    errors.append(f"{tag}: refs gives {field} times {times!r}, which must be a whole number above 0")
+                if not isinstance(plus, str) or plus not in fields or plus == field:
+                    errors.append(f"{tag}: refs gives {field} plus {plus!r}, which must be another field of the table")
+                else:
+                    plus_type, field_type = type_of(plus), type_of(field)
+                    if bank_of(plus_type) != "G" or plus_type.startswith("float"):
+                        errors.append(f"{tag}: refs gives {field} plus {plus}, whose global {fields[plus]} is not an "
+                                      f"integer array")
+                    elif plus_type.partition("[")[2] != field_type.partition("[")[2]:
+                        errors.append(f"{tag}: refs gives {field} plus {plus}, whose global {fields[plus]} is "
+                                      f"{plus_type}, not as wide as {fields[field]} ({field_type})")
             if target != REF_PICTURE and target not in names:
                 errors.append(f"{tag}: refs gives {field} the target {target!r}, which is neither a table of the "
                               f"registry nor {REF_PICTURE}")
@@ -375,7 +421,8 @@ UNIT_LIMIT = 12
 
 def lint_values(entries: dict) -> list[str]:
     """The value facets: `values` keys whole numbers and words one short line; `values_from` a one-dimensional string
-    global and a whole first value; `bits_of` an integer global's mask over a global whose values have words or names;
+    global and a whole first value; `bits_of` an integer global's mask over a global whose values have words or names,
+    or over a list of strings whose element k names bit k;
     `scale` a positive number other than 1, `offset` a whole number other than 0, `unit` a short word. Facets are for
     integer globals; a mask's bits name values, so it has no words, names, scale or offset of its own."""
     errors: list[str] = []
@@ -419,8 +466,11 @@ def lint_values(entries: dict) -> list[str]:
             target = by_name.get(bits) if isinstance(bits, str) else None
             if target is None:
                 errors.append(f"{tag}: bits_of names {bits!r}, which the registry does not name")
+            elif re.fullmatch(r"string\[\d+\]", target.get("type") or ""):
+                pass                                    # the game's names of the bits, element k naming bit k
             elif "values" not in target and "values_from" not in target:
-                errors.append(f"{tag}: bits_of {bits}, whose values have no words or names")
+                errors.append(f"{tag}: bits_of {bits}, whose values have no words or names, and which is no list "
+                              f"of strings")
             clash = [facet for facet in ("values", "values_from", "scale", "offset") if facet in e]
             if clash:
                 errors.append(f"{tag}: a mask's bits name values, so it takes no {', '.join(clash)}")
@@ -635,7 +685,10 @@ def table_json(t: dict) -> dict:
     if t.get("field_aliases"):
         out["field_aliases"] = dict(sorted(t["field_aliases"].items()))
     if t.get("refs"):
-        out["refs"] = dict(sorted(t["refs"].items()))
+        targets, keys = split_refs(t["refs"])
+        out["refs"] = dict(sorted(targets.items()))
+        if keys:
+            out["ref_keys"] = dict(sorted(keys.items()))
     return out
 
 
@@ -668,8 +721,10 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 shown = field + (f" (formerly {', '.join(old_fields[field])})" if old_fields.get(field) else "")
                 row = f"| {shown} | {global_name} | `{address}` | `{e['type']}` |"
                 if refs:
-                    target = refs.get(field)
-                    row += " pictures |" if target == REF_PICTURE else f" `{target}` |" if target else " |"
+                    value = refs.get(field)
+                    target = ref_target(value)
+                    key = f" (× {value['times']} + {value['plus']})" if isinstance(value, dict) else ""
+                    row += " pictures |" if target == REF_PICTURE else f" `{target}`{key} |" if target else " |"
                 L.append(row)
             L.append("")
         for s in scopes:

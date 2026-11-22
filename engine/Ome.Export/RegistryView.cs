@@ -71,7 +71,17 @@ public sealed record ValueFormat
 /// <summary>A registry table (data patches spec §5): its record count, its fields (field → array) and their
 /// references (game data export spec §5.3).</summary>
 public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string Field, string Array)> Fields,
-                                 IReadOnlyDictionary<string, string> Refs);
+                                 IReadOnlyDictionary<string, string> Refs)
+{
+    /// <summary>Its two-field references' keys, by field (<c>ref_keys</c>): the record a value names is the value times
+    /// <see cref="RefKey.Times"/> plus the <see cref="RefKey.Plus"/> field's value.</summary>
+    public IReadOnlyDictionary<string, RefKey> RefKeys { get; init; } = new Dictionary<string, RefKey>();
+}
+
+/// <summary>How a two-field reference names its record (export plan §5): the field's value times
+/// <paramref name="Times"/>, plus field <paramref name="Plus"/>'s value at the same element. Arterial names a card by
+/// its row and slot, row × 30 + slot.</summary>
+public sealed record RefKey(int Times, string Plus);
 
 /// <summary>A field as a declaration names it (<c>stats</c>, or one column, <c>graphic.face_CA_AA</c>): the cells it
 /// covers in each record.</summary>
@@ -162,8 +172,14 @@ public sealed class RegistryView
                 var refs = entry.TryGetProperty("refs", out JsonElement refMap)
                     ? refMap.EnumerateObject().ToDictionary(pair => pair.Name, pair => pair.Value.GetString()!, StringComparer.Ordinal)
                     : new Dictionary<string, string>(StringComparer.Ordinal);
+                var keys = entry.TryGetProperty("ref_keys", out JsonElement keyMap)
+                    ? keyMap.EnumerateObject().ToDictionary(
+                        pair => pair.Name,
+                        pair => new RefKey(pair.Value.GetProperty("times").GetInt32(), pair.Value.GetProperty("plus").GetString()!),
+                        StringComparer.Ordinal)
+                    : new Dictionary<string, RefKey>(StringComparer.Ordinal);
                 tables.Add(new TableLayout(entry.GetProperty("name").GetString()!, entry.GetProperty("records").GetInt32(),
-                                           fields, refs));
+                                           fields, refs) { RefKeys = keys });
             }
         return new RegistryView(tables, arrays);
     }

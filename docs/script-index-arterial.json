@@ -243,7 +243,9 @@
       "id": 16778000,
       "fingerprint": "sha256:68a67cb486312c8aa14dad05340dfe68c099d10f84abc37b874a28850a2a1bb8",
       "instructions": 28,
-      "unnamed": [3, 0, 0],
+      "globals": {
+        "profile_selected_id": [3, 0, 0]
+      },
       "waits": {
         "show-text": 9
       }
@@ -1123,7 +1125,9 @@
       "id": 16778103,
       "fingerprint": "sha256:315ec1111e0436b59158ac66b4331d6ef5d6733c206f2dea3fabe16d39c0ed65",
       "instructions": 6,
-      "unnamed": [1, 0, 0],
+      "globals": {
+        "glossary_selected_id": [1, 0, 0]
+      },
       "waits": {
         "show-text": 1
       }
@@ -4245,6 +4249,7 @@
       ],
       "globals": {
         "adv_face_id": [2, 1, 0],
+        "arena_names": [0, 0, 1],
         "arena_place_id": [4, 0, 0],
         "battle_id": [0, 3, 0],
         "battle_result": [2, 2, 0],
@@ -4282,7 +4287,7 @@
         "shop_entry_skills": [0, 0, 1],
         "time_slot": [1, 0, 0]
       },
-      "unnamed": [117, 108, 150],
+      "unnamed": [117, 108, 149],
       "waits": {
         "mark-frame-yield": 2,
         "sleep": 1
@@ -4317,6 +4322,7 @@
         "INIT2.BIN"
       ],
       "globals": {
+        "arena_names": [0, 9, 0],
         "opponent_arenas": [0, 67, 0],
         "opponent_battles": [0, 67, 0],
         "opponent_names": [0, 67, 0],
@@ -4333,7 +4339,7 @@
         "opponent_tournament_groups": [0, 21, 0],
         "opponent_weekdays": [0, 7, 0]
       },
-      "unnamed": [0, 56, 0]
+      "unnamed": [0, 47, 0]
     },
     "ATTACK.BIN": {
       "id": 15109,
@@ -5327,7 +5333,9 @@
       "id": 19558,
       "fingerprint": "sha256:0e17cce3d14eb33ffbca8c58af3d0c5ba57bafe875fc8821a7c180f823bc7dcd",
       "instructions": 289,
-      "unnamed": [32, 0, 0],
+      "globals": {
+        "profile_selected_id": [32, 0, 0]
+      },
       "waits": {
         "show-text": 96
       }
@@ -7426,10 +7434,11 @@
         "profile_names": [0, 0, 2],
         "profile_pictures": [0, 0, 2],
         "profile_scripts": [0, 0, 1],
+        "profile_selected_id": [24, 1, 0],
         "profile_sort_keys": [0, 0, 1],
         "scene_seen_flags": [0, 0, 2]
       },
-      "unnamed": [64, 10, 41],
+      "unnamed": [40, 9, 41],
       "waits": {
         "sleep": 1
       }
@@ -7579,10 +7588,11 @@
         "tip_pictures": [0, 0, 2],
         "tip_scenes": [0, 0, 3],
         "tip_scripts": [0, 0, 1],
+        "tip_selected_id": [8, 1, 0],
         "tip_sort_keys": [0, 0, 1],
         "tip_titles": [0, 0, 2]
       },
-      "unnamed": [46, 9, 36],
+      "unnamed": [38, 8, 36],
       "waits": {
         "sleep": 1
       }
@@ -7601,11 +7611,12 @@
         "glossary_pictures": [0, 0, 2],
         "glossary_scenes": [0, 0, 3],
         "glossary_scripts": [0, 0, 1],
+        "glossary_selected_id": [8, 1, 0],
         "glossary_sort_keys": [0, 0, 1],
         "glossary_titles": [0, 0, 2],
         "scene_seen_flags": [0, 0, 2]
       },
-      "unnamed": [46, 9, 34],
+      "unnamed": [38, 8, 34],
       "waits": {
         "sleep": 1
       }
@@ -7678,6 +7689,7 @@
         "card_current_leader_lp": [0, 0, 1],
         "card_current_slots": [0, 0, 1],
         "card_race_flags": [0, 0, 2],
+        "card_rarity_names": [0, 5, 0],
         "character_face_ids": [0, 0, 3],
         "face_character_ids": [0, 0, 1],
         "face_slots": [0, 0, 1],
@@ -7685,6 +7697,7 @@
         "item_card_rows": [0, 0, 2],
         "item_card_slots": [0, 0, 2],
         "item_excluded_races": [0, 0, 2],
+        "item_kind_names": [0, 5, 0],
         "item_owned_counts": [0, 0, 1],
         "item_required_attack": [0, 0, 1],
         "item_required_control": [0, 0, 1],
@@ -7704,7 +7717,7 @@
         "uninit_script_ids": [0, 1, 0],
         "voice_setting_text_colors": [0, 0, 2]
       },
-      "unnamed": [2, 32, 18],
+      "unnamed": [2, 22, 18],
       "patch_points": {
         "arterial.boot.data_layered": "0x17f",
         "arterial.boot.data_ready": "0x3a4"
@@ -22221,7 +22234,9 @@
       "id": 20615,
       "fingerprint": "sha256:3bd49771791ce88f0cb207347c4866f154f7e33a18a0829b673d99451c218294",
       "instructions": 578,
-      "unnamed": [75, 0, 0],
+      "globals": {
+        "tip_selected_id": [75, 0, 0]
+      },
       "waits": {
         "show-text": 176
       }
@@ -22438,7 +22453,9 @@
       "id": 20963,
       "fingerprint": "sha256:14fd0b4fc341ab2dec0fd011db830a162ac7913ac72f26dba4241a98a651f159",
       "instructions": 1939,
-      "unnamed": [192, 0, 0],
+      "globals": {
+        "glossary_selected_id": [192, 0, 0]
+      },
       "waits": {
         "display-furigana": 133,
         "show-text": 681

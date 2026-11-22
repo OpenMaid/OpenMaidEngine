@@ -529,6 +529,18 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   CALCARM sums them. What a node costs in materials is not in the registry yet. Done when a `costume` kind (or the
   costume items' pages) shows each costume's board: its nodes, what each gives and what it costs, read through a
   loader that runs COINIT for each costume.
+- **What Arterial's declarations cannot say yet** (the second game's test of the export, 2026-11-22; export plan §5,
+  "A second game: Arterial"):
+  - **A table keyed by another table's records.** `party_member` is kept for each character, by its `CHINIT` id: the
+    skills, items and card each level brings. No kind can show it on the character's page. Done when a kind or a
+    loaded table can say that its record r belongs to record r of another kind, and the character's page shows it.
+  - **A card named by two elements of one field.** `battle_leader_cards` holds (row, slot) pairs in one array of four,
+    and `area_unit_cards` a pair in an array of two. A two-field reference takes its parts from two fields at the same
+    element, so neither links to its card. Done when `[table.refs]` can name a record from elements 2k and 2k + 1.
+    An item's `card_rows` and `card_slots`, which limit the cards that may carry it, wait on the same question.
+  - **Unnamed cells.** The builders wrote 235 cells that no global names: battle 90, character 96, opponent 21,
+    ultimate 26 and condition 2 (the export's report gives their ranges). Done when the registry names them, or says
+    why they are not data.
 
 ## Platform and project
 

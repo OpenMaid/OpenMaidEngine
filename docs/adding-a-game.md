@@ -263,6 +263,13 @@ This step is static and can start once P1 is reached.
   game's workspace gate `script-index-check`, and it gives the project site's reference a page for each script. Write
   what the data document establishes about a script (a table's builder, a loader and the globals its caller sets)
   in `vm-map/scripts-<id>.toml`, and run `reference_bundle.py --check`.
+- Declare what the project site's database publishes in `vm-map/entities-<id>.toml` (game data export spec §5, and
+  `entities-kamidori.toml` and `entities-arterial.toml` as examples). Its kinds take the registry's tables, and
+  `[table.refs]` in the registry links their records. Run `entities_build.py --game <id> --build`, then
+  `Ome.Cli data-export --game <id>`, and read its report: refusals, references that name no record, and cells the
+  builders wrote that no global names. Look at every picture the export writes, and name the ones with nudity in
+  `[export] explicit_pictures`. The site reads the export from `data/<id>/` and takes its settings from
+  `site.config.mjs` in the `ome-site` repository.
 - **Facts go to:** `docs/<id>-data-tables.md` (layouts and how the data is stored), the registry, and the generated
   `docs/global-reference-<id>.md`. Each new document gets a row in `AGENTS.md`'s map.
 - **Done when** M2's gate passes.
@@ -322,7 +329,7 @@ does not replace the sweep. What each method can settle:
 | Identity and build | `engine/Ome.Engine/Profiles/<id>.json`, `engine/Ome.Engine.Vm/EngineBuilds.cs`; the install is `games/<id>/`, outside the repository |
 | Opcodes | `vm-map/opcodes.toml` (`profile_ids`, `[[observation]]`, `[[abi_layer]]`, evidence), `VirtualMachine.Handlers.cs` and the handlers, `tools/operand_access.py` `ENGINES` |
 | Driving and checks | `tools/drive/<id>.toml`, `tools/drive/scenarios/<id>-*.steps`, `tools/validate.py` (the game's test filter and terminal gate), the game's workspace tests |
-| Data | `vm-map/globals-<id>.toml`, `tools/init_<id>*.py`, `docs/<id>-data-tables.md`, `vm-map/scripts-<id>.toml` |
+| Data | `vm-map/globals-<id>.toml`, `tools/init_<id>*.py`, `docs/<id>-data-tables.md`, `vm-map/scripts-<id>.toml`, `vm-map/entities-<id>.toml` |
 | Modding | `oms/<id>/adv.oms`, `vm-map/patch-points-<id>.toml`, `mods/<id>-base/`, `docs/modding/games/<id>.md`, examples |
 | Generated | `docs/global-reference-<id>.md`, `docs/patch-point-reference-<id>.md`, `docs/modding/games/README.md`, `docs/opcode-reference.md`, the base mod's `layout/`, record map and shape, `docs/script-index-<id>.json` |
 | References | `engine-re.md`, `sys4-format-notes.md`, `PROJECT-STRUCTURE.md`, `tools-reference.md`, `AGENTS.md`'s map, `backlog.md`, the Ghidra project, the status memory and changelog |

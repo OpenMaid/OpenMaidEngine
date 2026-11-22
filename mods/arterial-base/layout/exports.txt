@@ -32,6 +32,7 @@ area_unit_pictures
 area_unit_routines
 area_unit_scales
 area_unit_state_ids
+arena_names
 arena_place_id
 battle_backgrounds
 battle_decks
@@ -97,6 +98,7 @@ card_pictures
 card_prices
 card_race_flags
 card_rarities
+card_rarity_names
 card_recipe_icons
 card_requires_party_flags
 card_row_character_ids
@@ -169,6 +171,7 @@ glossary_picture_y
 glossary_pictures
 glossary_scenes
 glossary_scripts
+glossary_selected_id
 glossary_sort_keys
 glossary_titles
 goal_bit1_scenes_not_played
@@ -205,6 +208,7 @@ item_effect_movies
 item_effect_styles
 item_excluded_races
 item_hp_bonuses
+item_kind_names
 item_kinds
 item_leader_lp_bonuses
 item_lines
@@ -268,6 +272,7 @@ profile_lines
 profile_names
 profile_pictures
 profile_scripts
+profile_selected_id
 profile_sort_keys
 race_names
 random_condition_switches
@@ -339,6 +344,7 @@ tip_picture_y
 tip_pictures
 tip_scenes
 tip_scripts
+tip_selected_id
 tip_sort_keys
 tip_titles
 tumes_script_ids

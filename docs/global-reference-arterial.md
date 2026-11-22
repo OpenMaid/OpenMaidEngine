@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/globals-arterial.toml by tools/globals_build.py --build -->
 # Global Variable Reference — arterial (generated)
 
-10241 globals (363 curated, 9878 auto shape-inferred). Source of truth: `vm-map/globals-arterial.toml`.
+10243 globals (369 curated, 9874 auto shape-inferred). Source of truth: `vm-map/globals-arterial.toml`.
 
 ## Tables
 
@@ -13,25 +13,25 @@ Built by: `boot`.
 
 CHINIT characters keyed by character id: whoever can speak a page. `character[12].name` is character_names[12][0].
 
-| field | global | address | type |
-|---|---|---|---|
-| name | character_names | `GS 0x4154` | `string[1000][6]` |
-| full_name | character_full_names | `GS 0x7994` | `string[1000]` |
-| voice_character_id | character_voice_character_ids | `0x297db9` | `int[1000]` |
-| voice_kind | character_voice_kinds | `0x29ee8e` | `int[1000]` |
-| voice_setting_slot | character_voice_setting_slots | `0x2981a1` | `int[1000]` |
-| face_id | character_face_ids | `0x266c91` | `int[1000][100]` |
-| face_history_picture | character_face_history_pictures | `0x27f331` | `int[1000][100]` |
-| sort_key | character_sort_keys | `0x29eaa6` | `int[1000]` |
-| ultimate_id | character_ultimate_ids | `0x29f65e` | `int[1000]` |
-| voice_clips | character_voice_clips | `0x2a09e6` | `int[1000][9]` |
-| book_picture | character_book_pictures | `0x2a2d0e` | `int[1000][5]` |
-| picture | character_pictures | `0x2a4096` | `int[1000][5]` |
-| fellow_picture | character_fellow_pictures | `0x2a541e` | `int[1000][5]` |
-| unit_picture | character_unit_pictures | `0x2a67a6` | `int[1000][5]` |
-| unit_picture_2 | character_unit_pictures_2 | `0x2a7b2e` | `int[1000][5]` |
-| unit_extra_picture | character_unit_extra_pictures | `0x2a8eb6` | `int[1000][5]` |
-| menu_picture | character_menu_pictures | `0x2aa23e` | `int[1000][5]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | character_names | `GS 0x4154` | `string[1000][6]` | |
+| full_name | character_full_names | `GS 0x7994` | `string[1000]` | |
+| voice_character_id | character_voice_character_ids | `0x297db9` | `int[1000]` | `character` |
+| voice_kind | character_voice_kinds | `0x29ee8e` | `int[1000]` | |
+| voice_setting_slot | character_voice_setting_slots | `0x2981a1` | `int[1000]` | |
+| face_id | character_face_ids | `0x266c91` | `int[1000][100]` | |
+| face_history_picture | character_face_history_pictures | `0x27f331` | `int[1000][100]` | |
+| sort_key | character_sort_keys | `0x29eaa6` | `int[1000]` | |
+| ultimate_id | character_ultimate_ids | `0x29f65e` | `int[1000]` | `ultimate` |
+| voice_clips | character_voice_clips | `0x2a09e6` | `int[1000][9]` | |
+| book_picture | character_book_pictures | `0x2a2d0e` | `int[1000][5]` | pictures |
+| picture | character_pictures | `0x2a4096` | `int[1000][5]` | pictures |
+| fellow_picture | character_fellow_pictures | `0x2a541e` | `int[1000][5]` | |
+| unit_picture | character_unit_pictures | `0x2a67a6` | `int[1000][5]` | |
+| unit_picture_2 | character_unit_pictures_2 | `0x2a7b2e` | `int[1000][5]` | |
+| unit_extra_picture | character_unit_extra_pictures | `0x2a8eb6` | `int[1000][5]` | |
+| menu_picture | character_menu_pictures | `0x2aa23e` | `int[1000][5]` | |
 
 ### card[6000]
 
@@ -39,48 +39,48 @@ Built by: `boot`.
 
 CDINIT cards keyed by row * 30 + slot (200 rows of 30 slots; a deck names a card by its row and its slot).
 
-| field | global | address | type |
-|---|---|---|---|
-| name | card_names | `GS 0x7d7c` | `string[6000]` |
-| flavor | card_flavor_lines | `GS 0x94ec` | `string[6000][3]` |
-| append_number | card_append_numbers | `0x2b338f` | `int[6000]` |
-| rarity | card_rarities | `0x2b79df` | `int[6000]` |
-| race_flags | card_race_flags | `0x2bc02f` | `int[6000]` |
-| slots | card_slots | `0x2c4ccf` | `int[6000]` |
-| control | card_control | `0x2bef0f` | `int[6000]` |
-| cost | card_costs | `0x2bd79f` | `int[6000]` |
-| hp | card_hp | `0x2c355f` | `int[6000]` |
-| leader_lp | card_leader_lp | `0x2c1def` | `int[6000]` |
-| attack | card_attack | `0x2c067f` | `int[6000]` |
-| talent_id | card_talent_ids | `0x2c643f` | `int[6000][2]` |
-| price | card_prices | `0x2c931f` | `int[6000][2]` |
-| picture | card_pictures | `0x2cd96f` | `int[6000][2]` |
-| slot_growth | card_slot_growth | `0x30c93f` | `int[6000][10]` |
-| hp_growth | card_hp_growth | `0x2fdedf` | `int[6000][10]` |
-| leader_lp_growth | card_leader_lp_growth | `0x2ef47f` | `int[6000][10]` |
-| attack_growth | card_attack_growth | `0x2e0a1f` | `int[6000][10]` |
-| owned_count | card_owned_counts | `0x4f30` | `int[6000]` |
-| experience | card_experience | `0x7e10` | `int[6000]` |
-| level | card_levels | `0x440e56` | `int[6000]` |
-| max_level | card_max_levels | `0x43f6e6` | `int[6000]` |
-| level_progress | card_level_progress | `0x4425c6` | `int[6000]` |
-| current_slots | card_current_slots | `0x4454a6` | `int[6000]` |
-| current_control | card_current_control | `0x448386` | `int[6000]` |
-| current_cost | card_current_costs | `0x446c16` | `int[6000]` |
-| current_hp | card_current_hp | `0x44c9d6` | `int[6000]` |
-| current_leader_lp | card_current_leader_lp | `0x44b266` | `int[6000]` |
-| current_attack | card_current_attack | `0x449af6` | `int[6000]` |
-| sort_key | card_sort_keys | `0x2b4aff` | `int[6000]` |
-| requires_party | card_requires_party_flags | `0x2b626f` | `int[6000]` |
-| in_book | card_book_flags | `0x2b914f` | `int[6000]` |
-| copyable | card_copyable_flags | `0x2ba8bf` | `int[6000]` |
-| subtractive_effect | card_subtractive_effect_flags | `0x2cc1ff` | `int[6000]` |
-| leader_picture | card_leader_pictures | `0x2d084f` | `int[6000][2]` |
-| attack_picture | card_attack_pictures | `0x2d372f` | `int[6000][2]` |
-| recipe_icon | card_recipe_icons | `0x2d660f` | `int[6000]` |
-| attack_effect | card_attack_effects | `0x2d7d7f` | `int[6000]` |
-| voice_clips | card_voice_clips | `0x2d94ef` | `int[6000][5]` |
-| obtained | card_obtained_flags | `0x66a0` | `int[6000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | card_names | `GS 0x7d7c` | `string[6000]` | |
+| flavor | card_flavor_lines | `GS 0x94ec` | `string[6000][3]` | |
+| append_number | card_append_numbers | `0x2b338f` | `int[6000]` | |
+| rarity | card_rarities | `0x2b79df` | `int[6000]` | |
+| race_flags | card_race_flags | `0x2bc02f` | `int[6000]` | |
+| slots | card_slots | `0x2c4ccf` | `int[6000]` | |
+| control | card_control | `0x2bef0f` | `int[6000]` | |
+| cost | card_costs | `0x2bd79f` | `int[6000]` | |
+| hp | card_hp | `0x2c355f` | `int[6000]` | |
+| leader_lp | card_leader_lp | `0x2c1def` | `int[6000]` | |
+| attack | card_attack | `0x2c067f` | `int[6000]` | |
+| talent_id | card_talent_ids | `0x2c643f` | `int[6000][2]` | `talent` |
+| price | card_prices | `0x2c931f` | `int[6000][2]` | |
+| picture | card_pictures | `0x2cd96f` | `int[6000][2]` | pictures |
+| slot_growth | card_slot_growth | `0x30c93f` | `int[6000][10]` | |
+| hp_growth | card_hp_growth | `0x2fdedf` | `int[6000][10]` | |
+| leader_lp_growth | card_leader_lp_growth | `0x2ef47f` | `int[6000][10]` | |
+| attack_growth | card_attack_growth | `0x2e0a1f` | `int[6000][10]` | |
+| owned_count | card_owned_counts | `0x4f30` | `int[6000]` | |
+| experience | card_experience | `0x7e10` | `int[6000]` | |
+| level | card_levels | `0x440e56` | `int[6000]` | |
+| max_level | card_max_levels | `0x43f6e6` | `int[6000]` | |
+| level_progress | card_level_progress | `0x4425c6` | `int[6000]` | |
+| current_slots | card_current_slots | `0x4454a6` | `int[6000]` | |
+| current_control | card_current_control | `0x448386` | `int[6000]` | |
+| current_cost | card_current_costs | `0x446c16` | `int[6000]` | |
+| current_hp | card_current_hp | `0x44c9d6` | `int[6000]` | |
+| current_leader_lp | card_current_leader_lp | `0x44b266` | `int[6000]` | |
+| current_attack | card_current_attack | `0x449af6` | `int[6000]` | |
+| sort_key | card_sort_keys | `0x2b4aff` | `int[6000]` | |
+| requires_party | card_requires_party_flags | `0x2b626f` | `int[6000]` | |
+| in_book | card_book_flags | `0x2b914f` | `int[6000]` | |
+| copyable | card_copyable_flags | `0x2ba8bf` | `int[6000]` | |
+| subtractive_effect | card_subtractive_effect_flags | `0x2cc1ff` | `int[6000]` | |
+| leader_picture | card_leader_pictures | `0x2d084f` | `int[6000][2]` | pictures |
+| attack_picture | card_attack_pictures | `0x2d372f` | `int[6000][2]` | |
+| recipe_icon | card_recipe_icons | `0x2d660f` | `int[6000]` | |
+| attack_effect | card_attack_effects | `0x2d7d7f` | `int[6000]` | |
+| voice_clips | card_voice_clips | `0x2d94ef` | `int[6000][5]` | |
+| obtained | card_obtained_flags | `0x66a0` | `int[6000]` | |
 
 ### talent[1000]
 
@@ -119,41 +119,41 @@ Built by: `boot`.
 
 ITINIT items keyed by item id.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | item_names | `GS 0xfec8` | `string[2000]` |
-| text | item_lines | `GS 0x10698` | `string[2000][3]` |
-| append_number | item_append_numbers | `0x31f79a` | `int[2000]` |
-| rarity | item_rarities | `0x3216da` | `int[2000]` |
-| price | item_prices | `0x32b31a` | `int[2000][2]` |
-| picture | item_pictures | `0x32c2ba` | `int[2000][2]` |
-| owned_count | item_owned_counts | `0x3f90` | `int[2000]` |
-| card_row | item_card_rows | `0x326cca` | `int[2000]` |
-| card_slot | item_card_slots | `0x32749a` | `int[2000]` |
-| required_slots | item_required_slots | `0x32267a` | `int[2000]` |
-| required_races | item_required_races | `0x327c6a` | `int[2000]` |
-| excluded_races | item_excluded_races | `0x32843a` | `int[2000]` |
-| required_cost | item_required_costs | `0x328c0a` | `int[2000]` |
-| required_control | item_required_control | `0x3293da` | `int[2000]` |
-| required_hp | item_required_hp | `0x32ab4a` | `int[2000]` |
-| required_leader_lp | item_required_leader_lp | `0x32a37a` | `int[2000]` |
-| required_attack | item_required_attack | `0x329baa` | `int[2000]` |
-| sort_key | item_sort_keys | `0x31ff6a` | `int[2000]` |
-| kind | item_kinds | `0x32073a` | `int[2000]` |
-| no_carry_over | item_no_carry_over_flags | `0x320f0a` | `int[2000]` |
-| in_book | item_book_flags | `0x321eaa` | `int[2000]` |
-| cost_bonus | item_cost_bonuses | `0x322e4a` | `int[2000]` |
-| control_bonus | item_control_bonuses | `0x32361a` | `int[2000]` |
-| attack_bonus | item_attack_bonuses | `0x323dea` | `int[2000]` |
-| leader_lp_bonus | item_leader_lp_bonuses | `0x3245ba` | `int[2000]` |
-| hp_bonus | item_hp_bonuses | `0x324d8a` | `int[2000]` |
-| condition_id | item_condition_ids | `0x32555a` | `int[2000]` |
-| target | item_targets | `0x325d2a` | `int[2000]` |
-| talent_id | item_talent_ids | `0x3264fa` | `int[2000]` |
-| effect_style | item_effect_styles | `0x32d25a` | `int[2000]` |
-| effect_draw_mode | item_effect_draw_modes | `0x32da2a` | `int[2000]` |
-| effect_movie | item_effect_movies | `0x32e1fa` | `int[2000][3]` |
-| obtained | item_obtained_flags | `0x4760` | `int[2000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | item_names | `GS 0xfec8` | `string[2000]` | |
+| text | item_lines | `GS 0x10698` | `string[2000][3]` | |
+| append_number | item_append_numbers | `0x31f79a` | `int[2000]` | |
+| rarity | item_rarities | `0x3216da` | `int[2000]` | |
+| price | item_prices | `0x32b31a` | `int[2000][2]` | |
+| picture | item_pictures | `0x32c2ba` | `int[2000][2]` | pictures |
+| owned_count | item_owned_counts | `0x3f90` | `int[2000]` | |
+| card_row | item_card_rows | `0x326cca` | `int[2000]` | |
+| card_slot | item_card_slots | `0x32749a` | `int[2000]` | |
+| required_slots | item_required_slots | `0x32267a` | `int[2000]` | |
+| required_races | item_required_races | `0x327c6a` | `int[2000]` | |
+| excluded_races | item_excluded_races | `0x32843a` | `int[2000]` | |
+| required_cost | item_required_costs | `0x328c0a` | `int[2000]` | |
+| required_control | item_required_control | `0x3293da` | `int[2000]` | |
+| required_hp | item_required_hp | `0x32ab4a` | `int[2000]` | |
+| required_leader_lp | item_required_leader_lp | `0x32a37a` | `int[2000]` | |
+| required_attack | item_required_attack | `0x329baa` | `int[2000]` | |
+| sort_key | item_sort_keys | `0x31ff6a` | `int[2000]` | |
+| kind | item_kinds | `0x32073a` | `int[2000]` | |
+| no_carry_over | item_no_carry_over_flags | `0x320f0a` | `int[2000]` | |
+| in_book | item_book_flags | `0x321eaa` | `int[2000]` | |
+| cost_bonus | item_cost_bonuses | `0x322e4a` | `int[2000]` | |
+| control_bonus | item_control_bonuses | `0x32361a` | `int[2000]` | |
+| attack_bonus | item_attack_bonuses | `0x323dea` | `int[2000]` | |
+| leader_lp_bonus | item_leader_lp_bonuses | `0x3245ba` | `int[2000]` | |
+| hp_bonus | item_hp_bonuses | `0x324d8a` | `int[2000]` | |
+| condition_id | item_condition_ids | `0x32555a` | `int[2000]` | `condition` |
+| target | item_targets | `0x325d2a` | `int[2000]` | |
+| talent_id | item_talent_ids | `0x3264fa` | `int[2000]` | `talent` |
+| effect_style | item_effect_styles | `0x32d25a` | `int[2000]` | |
+| effect_draw_mode | item_effect_draw_modes | `0x32da2a` | `int[2000]` | |
+| effect_movie | item_effect_movies | `0x32e1fa` | `int[2000][3]` | |
+| obtained | item_obtained_flags | `0x4760` | `int[2000]` | |
 
 ### area_point[200]
 
@@ -203,22 +203,22 @@ Built by: `boot`.
 
 DEINIT decks keyed by deck id: a name and up to 20 cards, each as a row and a slot of CDINIT.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | deck_names | `GS 0x1201c` | `string[1000]` |
-| card_row | deck_card_rows | `0x334856` | `int[1000][30]` |
-| card_slot | deck_card_slots | `0x33bd86` | `int[1000][30]` |
-| card_max_copies | deck_card_max_copies | `0x3432b6` | `int[1000][30]` |
-| card_copies | deck_card_copies | `0x34a7e6` | `int[1000][30]` |
-| card_copy_chance | deck_card_copy_chances | `0x351d16` | `int[1000][30]` |
-| card_max_unless_scene | deck_card_max_unless_scenes | `0x359246` | `int[1000][30]` |
-| card_max_once_scene | deck_card_max_once_scenes | `0x360776` | `int[1000][30]` |
-| start_board | deck_start_boards | `0x367ca6` | `int[1000][6]` |
-| cpu_profile | deck_cpu_profiles | `0x369416` | `int[1000]` |
-| drop_weight | deck_drop_weights | `0x3697fe` | `int[1000][4]` |
-| drop_item | deck_drop_items | `0x36a79e` | `int[1000][4]` |
-| drop_card_row | deck_drop_card_rows | `0x36b73e` | `int[1000][4]` |
-| drop_card_slot | deck_drop_card_slots | `0x36c6de` | `int[1000][4]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | deck_names | `GS 0x1201c` | `string[1000]` | |
+| card_row | deck_card_rows | `0x334856` | `int[1000][30]` | `card` (× 30 + card_slot) |
+| card_slot | deck_card_slots | `0x33bd86` | `int[1000][30]` | |
+| card_max_copies | deck_card_max_copies | `0x3432b6` | `int[1000][30]` | |
+| card_copies | deck_card_copies | `0x34a7e6` | `int[1000][30]` | |
+| card_copy_chance | deck_card_copy_chances | `0x351d16` | `int[1000][30]` | |
+| card_max_unless_scene | deck_card_max_unless_scenes | `0x359246` | `int[1000][30]` | |
+| card_max_once_scene | deck_card_max_once_scenes | `0x360776` | `int[1000][30]` | |
+| start_board | deck_start_boards | `0x367ca6` | `int[1000][6]` | |
+| cpu_profile | deck_cpu_profiles | `0x369416` | `int[1000]` | `cpu_profile` |
+| drop_weight | deck_drop_weights | `0x3697fe` | `int[1000][4]` | |
+| drop_item | deck_drop_items | `0x36a79e` | `int[1000][4]` | `item` |
+| drop_card_row | deck_drop_card_rows | `0x36b73e` | `int[1000][4]` | `card` (× 30 + drop_card_slot) |
+| drop_card_slot | deck_drop_card_slots | `0x36c6de` | `int[1000][4]` | |
 
 ### party_member[100]
 
@@ -226,20 +226,20 @@ Built by: `boot`.
 
 CCINIT party characters keyed by character id (the same ids as character), with their saved state: what each brings at each of its levels, and its level, experience, 奥義 level, picture set and open skill lines.
 
-| field | global | address | type |
-|---|---|---|---|
-| start_skill_lines | party_member_start_skill_lines | `0x29fa46` | `int[100][4]` |
-| level_card_row | party_member_level_card_rows | `0x2ab5c7` | `int[100][40]` |
-| level_card_slot | party_member_level_card_slots | `0x2ac567` | `int[100][40]` |
-| level_item | party_member_level_items | `0x2ad507` | `int[100][40]` |
-| level_skills | party_member_level_skills | `0x2ae4a7` | `int[100][160]` |
-| level_ultimate_level | party_member_level_ultimate_levels | `0x2b2327` | `int[100][40]` |
-| flags | party_member_flags | `0x3ae0` | `int[100]` |
-| level | party_member_levels | `0x3ba8` | `int[100]` |
-| experience | party_member_experience | `0x3c0c` | `int[100]` |
-| ultimate_level | party_member_ultimate_levels | `0x3c70` | `int[100]` |
-| picture_set | party_member_picture_sets | `0x3d38` | `int[100]` |
-| skill_lines | party_member_skill_lines | `0x3d9c` | `int[100][4]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| start_skill_lines | party_member_start_skill_lines | `0x29fa46` | `int[100][4]` | |
+| level_card_row | party_member_level_card_rows | `0x2ab5c7` | `int[100][40]` | `card` (× 30 + level_card_slot) |
+| level_card_slot | party_member_level_card_slots | `0x2ac567` | `int[100][40]` | |
+| level_item | party_member_level_items | `0x2ad507` | `int[100][40]` | `item` |
+| level_skills | party_member_level_skills | `0x2ae4a7` | `int[100][160]` | `skill` |
+| level_ultimate_level | party_member_level_ultimate_levels | `0x2b2327` | `int[100][40]` | |
+| flags | party_member_flags | `0x3ae0` | `int[100]` | |
+| level | party_member_levels | `0x3ba8` | `int[100]` | |
+| experience | party_member_experience | `0x3c0c` | `int[100]` | |
+| ultimate_level | party_member_ultimate_levels | `0x3c70` | `int[100]` | |
+| picture_set | party_member_picture_sets | `0x3d38` | `int[100]` | |
+| skill_lines | party_member_skill_lines | `0x3d9c` | `int[100][4]` | |
 
 ### ultimate[100]
 
@@ -247,20 +247,20 @@ Built by: `boot`.
 
 COINIT 奥義 keyed by 奥義 id; the numeric fields have a column for each of the nine levels (1 to 9).
 
-| field | global | address | type |
-|---|---|---|---|
-| name | ultimate_names | `GS 0xe30c` | `string[100]` |
-| level_lines | ultimate_level_lines | `GS 0xe370` | `string[100][30]` |
-| append_number | ultimate_append_numbers | `0x31c72a` | `int[100]` |
-| sort_key | ultimate_sort_keys | `0x31c78e` | `int[100]` |
-| in_book | ultimate_book_flags | `0x31c7f2` | `int[100]` |
-| gauge_gain | ultimate_gauge_gains | `0x31c8ba` | `int[100][10]` |
-| amount | ultimate_amounts | `0x31cca2` | `int[100][10]` |
-| picture_x | ultimate_picture_x | `0x31d08a` | `int[100][10]` |
-| picture_y | ultimate_picture_y | `0x31d472` | `int[100][10]` |
-| picture | ultimate_pictures | `0x31d85a` | `int[100][10]` |
-| picture_2 | ultimate_pictures_2 | `0x31dc42` | `int[100][10]` |
-| movie | ultimate_movies | `0x31e02a` | `int[100][10]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | ultimate_names | `GS 0xe30c` | `string[100]` | |
+| level_lines | ultimate_level_lines | `GS 0xe370` | `string[100][30]` | |
+| append_number | ultimate_append_numbers | `0x31c72a` | `int[100]` | |
+| sort_key | ultimate_sort_keys | `0x31c78e` | `int[100]` | |
+| in_book | ultimate_book_flags | `0x31c7f2` | `int[100]` | |
+| gauge_gain | ultimate_gauge_gains | `0x31c8ba` | `int[100][10]` | |
+| amount | ultimate_amounts | `0x31cca2` | `int[100][10]` | |
+| picture_x | ultimate_picture_x | `0x31d08a` | `int[100][10]` | |
+| picture_y | ultimate_picture_y | `0x31d472` | `int[100][10]` | |
+| picture | ultimate_pictures | `0x31d85a` | `int[100][10]` | pictures |
+| picture_2 | ultimate_pictures_2 | `0x31dc42` | `int[100][10]` | pictures |
+| movie | ultimate_movies | `0x31e02a` | `int[100][10]` | |
 
 ### condition[32]
 
@@ -284,19 +284,19 @@ Built by: `boot`.
 
 DUINIT battles keyed by battle id (battle_id): each side's leader and deck, the opponent's 奥義, the rule, music and pictures.
 
-| field | global | address | type |
-|---|---|---|---|
-| uses_player_deck | battle_uses_player_deck_flags | `0x36d67e` | `int[1000]` |
-| leader_card | battle_leader_cards | `0x36da66` | `int[1000][4]` |
-| deck | battle_decks | `0x36ea06` | `int[1000][2]` |
-| opponent_ultimate | battle_opponent_ultimates | `0x36f1d6` | `int[1000]` |
-| opponent_ultimate_level | battle_opponent_ultimate_levels | `0x36f5be` | `int[1000]` |
-| opponent_ultimate_picture | battle_opponent_ultimate_pictures | `0x36f9a6` | `int[1000]` |
-| opponent_ultimate_picture_x | battle_opponent_ultimate_picture_x | `0x36fd8e` | `int[1000]` |
-| opponent_ultimate_picture_y | battle_opponent_ultimate_picture_y | `0x370176` | `int[1000]` |
-| rule | battle_rules | `0x37055e` | `int[1000]` |
-| music | battle_music | `0x370946` | `int[1000]` |
-| background | battle_backgrounds | `0x371116` | `int[1000][2]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| uses_player_deck | battle_uses_player_deck_flags | `0x36d67e` | `int[1000]` | |
+| leader_card | battle_leader_cards | `0x36da66` | `int[1000][4]` | |
+| deck | battle_decks | `0x36ea06` | `int[1000][2]` | `deck` |
+| opponent_ultimate | battle_opponent_ultimates | `0x36f1d6` | `int[1000]` | `ultimate` |
+| opponent_ultimate_level | battle_opponent_ultimate_levels | `0x36f5be` | `int[1000]` | |
+| opponent_ultimate_picture | battle_opponent_ultimate_pictures | `0x36f9a6` | `int[1000]` | |
+| opponent_ultimate_picture_x | battle_opponent_ultimate_picture_x | `0x36fd8e` | `int[1000]` | |
+| opponent_ultimate_picture_y | battle_opponent_ultimate_picture_y | `0x370176` | `int[1000]` | |
+| rule | battle_rules | `0x37055e` | `int[1000]` | `battle_rule` |
+| music | battle_music | `0x370946` | `int[1000]` | |
+| background | battle_backgrounds | `0x371116` | `int[1000][2]` | |
 
 ### battle_rule[100]
 
@@ -326,30 +326,30 @@ Built by: `boot`.
 
 ALINIT recipes keyed by recipe id: what each makes, from which ingredients, and the conditions ALCHEMY offers it under.
 
-| field | global | address | type |
-|---|---|---|---|
-| item | recipe_items | `0x372ba6` | `int[2000]` |
-| card_row | recipe_card_rows | `0x373376` | `int[2000]` |
-| card_slot | recipe_card_slots | `0x373b46` | `int[2000]` |
-| points | recipe_points | `0x374316` | `int[2000]` |
-| places | recipe_places | `0x374ae6` | `int[2000]` |
-| least_chapter | recipe_least_chapters | `0x3752b6` | `int[2000]` |
-| least_day | recipe_least_days | `0x375a86` | `int[2000]` |
-| weekdays | recipe_weekdays | `0x376256` | `int[2000]` |
-| time_slots | recipe_time_slots | `0x376a26` | `int[2000]` |
-| least_rank | recipe_least_ranks | `0x3771f6` | `int[2000]` |
-| party_character | recipe_party_characters | `0x3779c6` | `int[2000]` |
-| party_character_level | recipe_party_character_levels | `0x378196` | `int[2000]` |
-| skill | recipe_skills | `0x378966` | `int[2000]` |
-| required_item | recipe_required_items | `0x379136` | `int[2000]` |
-| required_card_row | recipe_required_card_rows | `0x379906` | `int[2000]` |
-| required_card_slot | recipe_required_card_slots | `0x37a0d6` | `int[2000]` |
-| scenes_played | recipe_scenes_played | `0x37a8a6` | `int[2000][5]` |
-| scenes_not_played | recipe_scenes_not_played | `0x37cfb6` | `int[2000][5]` |
-| ingredient_item | recipe_ingredient_items | `0x37f6c6` | `int[2000][4]` |
-| ingredient_card_row | recipe_ingredient_card_rows | `0x381606` | `int[2000][4]` |
-| ingredient_card_slot | recipe_ingredient_card_slots | `0x383546` | `int[2000][4]` |
-| ingredient_count | recipe_ingredient_counts | `0x385486` | `int[2000][4]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| item | recipe_items | `0x372ba6` | `int[2000]` | `item` |
+| card_row | recipe_card_rows | `0x373376` | `int[2000]` | `card` (× 30 + card_slot) |
+| card_slot | recipe_card_slots | `0x373b46` | `int[2000]` | |
+| points | recipe_points | `0x374316` | `int[2000]` | |
+| places | recipe_places | `0x374ae6` | `int[2000]` | |
+| least_chapter | recipe_least_chapters | `0x3752b6` | `int[2000]` | |
+| least_day | recipe_least_days | `0x375a86` | `int[2000]` | |
+| weekdays | recipe_weekdays | `0x376256` | `int[2000]` | |
+| time_slots | recipe_time_slots | `0x376a26` | `int[2000]` | |
+| least_rank | recipe_least_ranks | `0x3771f6` | `int[2000]` | |
+| party_character | recipe_party_characters | `0x3779c6` | `int[2000]` | `character` |
+| party_character_level | recipe_party_character_levels | `0x378196` | `int[2000]` | |
+| skill | recipe_skills | `0x378966` | `int[2000]` | `skill` |
+| required_item | recipe_required_items | `0x379136` | `int[2000]` | `item` |
+| required_card_row | recipe_required_card_rows | `0x379906` | `int[2000]` | `card` (× 30 + required_card_slot) |
+| required_card_slot | recipe_required_card_slots | `0x37a0d6` | `int[2000]` | |
+| scenes_played | recipe_scenes_played | `0x37a8a6` | `int[2000][5]` | |
+| scenes_not_played | recipe_scenes_not_played | `0x37cfb6` | `int[2000][5]` | |
+| ingredient_item | recipe_ingredient_items | `0x37f6c6` | `int[2000][4]` | `item` |
+| ingredient_card_row | recipe_ingredient_card_rows | `0x381606` | `int[2000][4]` | `card` (× 30 + ingredient_card_slot) |
+| ingredient_card_slot | recipe_ingredient_card_slots | `0x383546` | `int[2000][4]` | |
+| ingredient_count | recipe_ingredient_counts | `0x385486` | `int[2000][4]` | |
 
 ### shop_entry[1000]
 
@@ -357,22 +357,22 @@ Built by: `boot`.
 
 SHINIT shop entries keyed by entry id: what each sells, in which shops, and the conditions SHOPP lists it under.
 
-| field | global | address | type |
-|---|---|---|---|
-| item | shop_entry_items | `0x3873c6` | `int[1000]` |
-| card_row | shop_entry_card_rows | `0x3877ae` | `int[1000]` |
-| card_slot | shop_entry_card_slots | `0x387b96` | `int[1000]` |
-| shops | shop_entry_shops | `0x387f7e` | `int[1000]` |
-| least_chapter | shop_entry_least_chapters | `0x388366` | `int[1000]` |
-| least_day | shop_entry_least_days | `0x38874e` | `int[1000]` |
-| weekdays | shop_entry_weekdays | `0x388b36` | `int[1000]` |
-| time_slots | shop_entry_time_slots | `0x388f1e` | `int[1000]` |
-| least_rank | shop_entry_least_ranks | `0x389306` | `int[1000]` |
-| party_character | shop_entry_party_characters | `0x3896ee` | `int[1000]` |
-| party_character_level | shop_entry_party_character_levels | `0x389ad6` | `int[1000]` |
-| skill | shop_entry_skills | `0x389ebe` | `int[1000]` |
-| scenes_played | shop_entry_scenes_played | `0x38a2a6` | `int[1000][2]` |
-| scenes_not_played | shop_entry_scenes_not_played | `0x38aa76` | `int[1000][2]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| item | shop_entry_items | `0x3873c6` | `int[1000]` | `item` |
+| card_row | shop_entry_card_rows | `0x3877ae` | `int[1000]` | `card` (× 30 + card_slot) |
+| card_slot | shop_entry_card_slots | `0x387b96` | `int[1000]` | |
+| shops | shop_entry_shops | `0x387f7e` | `int[1000]` | |
+| least_chapter | shop_entry_least_chapters | `0x388366` | `int[1000]` | |
+| least_day | shop_entry_least_days | `0x38874e` | `int[1000]` | |
+| weekdays | shop_entry_weekdays | `0x388b36` | `int[1000]` | |
+| time_slots | shop_entry_time_slots | `0x388f1e` | `int[1000]` | |
+| least_rank | shop_entry_least_ranks | `0x389306` | `int[1000]` | |
+| party_character | shop_entry_party_characters | `0x3896ee` | `int[1000]` | `character` |
+| party_character_level | shop_entry_party_character_levels | `0x389ad6` | `int[1000]` | |
+| skill | shop_entry_skills | `0x389ebe` | `int[1000]` | `skill` |
+| scenes_played | shop_entry_scenes_played | `0x38a2a6` | `int[1000][2]` | |
+| scenes_not_played | shop_entry_scenes_not_played | `0x38aa76` | `int[1000][2]` | |
 
 ### opponent[1000]
 
@@ -380,24 +380,24 @@ Built by: `boot`.
 
 ARINIT arena opponents keyed by opponent id (current_opponent_id), with their saved state.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | opponent_names | `GS 0x1268e` | `string[1000]` |
-| battle | opponent_battles | `0x38b246` | `int[1000]` |
-| arena | opponent_arenas | `0x38b62e` | `int[1000]` |
-| sort_key | opponent_sort_keys | `0x38ba16` | `int[1000]` |
-| reward_item | opponent_reward_items | `0x38bdfe` | `int[1000]` |
-| reward_card_row | opponent_reward_card_rows | `0x38c1e6` | `int[1000]` |
-| reward_card_slot | opponent_reward_card_slots | `0x38c5ce` | `int[1000]` |
-| reward_count | opponent_reward_counts | `0x38c9b6` | `int[1000]` |
-| scenes | opponent_scenes | `0x38d186` | `int[1000][3]` |
-| places | opponent_places | `0x38dd3e` | `int[1000]` |
-| required_opponent | opponent_required_opponents | `0x38e126` | `int[1000]` |
-| weekdays | opponent_weekdays | `0x38ecde` | `int[1000]` |
-| scenes_played | opponent_scenes_played | `0x39044e` | `int[1000][2]` |
-| scenes_not_played | opponent_scenes_not_played | `0x390c1e` | `int[1000][2]` |
-| tournament_group | opponent_tournament_groups | `0x3913ee` | `int[1000]` |
-| state | opponent_states | `0x17f36` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | opponent_names | `GS 0x1268e` | `string[1000]` | |
+| battle | opponent_battles | `0x38b246` | `int[1000]` | `battle` |
+| arena | opponent_arenas | `0x38b62e` | `int[1000]` | |
+| sort_key | opponent_sort_keys | `0x38ba16` | `int[1000]` | |
+| reward_item | opponent_reward_items | `0x38bdfe` | `int[1000]` | `item` |
+| reward_card_row | opponent_reward_card_rows | `0x38c1e6` | `int[1000]` | `card` (× 30 + reward_card_slot) |
+| reward_card_slot | opponent_reward_card_slots | `0x38c5ce` | `int[1000]` | |
+| reward_count | opponent_reward_counts | `0x38c9b6` | `int[1000]` | |
+| scenes | opponent_scenes | `0x38d186` | `int[1000][3]` | |
+| places | opponent_places | `0x38dd3e` | `int[1000]` | |
+| required_opponent | opponent_required_opponents | `0x38e126` | `int[1000]` | `opponent` |
+| weekdays | opponent_weekdays | `0x38ecde` | `int[1000]` | |
+| scenes_played | opponent_scenes_played | `0x39044e` | `int[1000][2]` | |
+| scenes_not_played | opponent_scenes_not_played | `0x390c1e` | `int[1000][2]` | |
+| tournament_group | opponent_tournament_groups | `0x3913ee` | `int[1000]` | |
+| state | opponent_states | `0x17f36` | `int[1000]` | |
 
 ### goal[1000]
 
@@ -405,26 +405,26 @@ Built by: `boot`.
 
 FAINIT goals keyed by goal id, opened and closed by which scenes have been played, with their saved state.
 
-| field | global | address | type |
-|---|---|---|---|
-| title | goal_titles | `GS 0x29e4` | `string[1000]` |
-| title_2 | goal_titles_2 | `GS 0x2dcc` | `string[1000]` |
-| lines | goal_lines | `GS 0x31b4` | `string[1000][4]` |
-| sort_key | goal_sort_keys | `0x260701` | `int[1000]` |
-| least_chapter | goal_least_chapters | `0x260ae9` | `int[1000]` |
-| open_scenes_played | goal_open_scenes_played | `0x260ed1` | `int[1000][3]` |
-| open_scenes_not_played | goal_open_scenes_not_played | `0x261a89` | `int[1000][3]` |
-| bit2_scenes_played | goal_bit2_scenes_played | `0x262641` | `int[1000][3]` |
-| bit2_scenes_not_played | goal_bit2_scenes_not_played | `0x2631f9` | `int[1000][3]` |
-| bit1_scenes_played | goal_bit1_scenes_played | `0x263db1` | `int[1000][3]` |
-| bit1_scenes_not_played | goal_bit1_scenes_not_played | `0x264969` | `int[1000][3]` |
-| kind | goal_kinds | `0x265521` | `int[1000]` |
-| reward_item | goal_reward_items | `0x265909` | `int[1000]` |
-| reward_card_row | goal_reward_card_rows | `0x265cf1` | `int[1000]` |
-| reward_card_slot | goal_reward_card_slots | `0x2660d9` | `int[1000]` |
-| reward_count | goal_reward_counts | `0x2664c1` | `int[1000]` |
-| reward_money | goal_reward_money | `0x2668a9` | `int[1000]` |
-| state | goal_states | `0x18498` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| title | goal_titles | `GS 0x29e4` | `string[1000]` | |
+| title_2 | goal_titles_2 | `GS 0x2dcc` | `string[1000]` | |
+| lines | goal_lines | `GS 0x31b4` | `string[1000][4]` | |
+| sort_key | goal_sort_keys | `0x260701` | `int[1000]` | |
+| least_chapter | goal_least_chapters | `0x260ae9` | `int[1000]` | |
+| open_scenes_played | goal_open_scenes_played | `0x260ed1` | `int[1000][3]` | |
+| open_scenes_not_played | goal_open_scenes_not_played | `0x261a89` | `int[1000][3]` | |
+| bit2_scenes_played | goal_bit2_scenes_played | `0x262641` | `int[1000][3]` | |
+| bit2_scenes_not_played | goal_bit2_scenes_not_played | `0x2631f9` | `int[1000][3]` | |
+| bit1_scenes_played | goal_bit1_scenes_played | `0x263db1` | `int[1000][3]` | |
+| bit1_scenes_not_played | goal_bit1_scenes_not_played | `0x264969` | `int[1000][3]` | |
+| kind | goal_kinds | `0x265521` | `int[1000]` | |
+| reward_item | goal_reward_items | `0x265909` | `int[1000]` | `item` |
+| reward_card_row | goal_reward_card_rows | `0x265cf1` | `int[1000]` | `card` (× 30 + reward_card_slot) |
+| reward_card_slot | goal_reward_card_slots | `0x2660d9` | `int[1000]` | |
+| reward_count | goal_reward_counts | `0x2664c1` | `int[1000]` | |
+| reward_money | goal_reward_money | `0x2668a9` | `int[1000]` | |
+| state | goal_states | `0x18498` | `int[1000]` | |
 
 ### area_map[300]
 
@@ -432,15 +432,15 @@ Built by: `boot`.
 
 AMINIT areas keyed by area id (current_area_id): name, place, map pictures, music, unit scale, and a battle's background and rule.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | area_names | `GS 0x11e28` | `string[300]` |
-| place | area_places | `0x32fbc5` | `int[300]` |
-| map_pictures | area_map_pictures | `0x32fcf1` | `int[300][6]` |
-| music | area_music | `0x3303f9` | `int[300][2]` |
-| unit_scale | area_unit_scales | `0x330651` | `int[300][2]` |
-| battle_background | area_battle_backgrounds | `0x3308a9` | `int[300][2]` |
-| battle_rule | area_battle_rules | `0x330b01` | `int[300]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | area_names | `GS 0x11e28` | `string[300]` | |
+| place | area_places | `0x32fbc5` | `int[300]` | `area_map` |
+| map_pictures | area_map_pictures | `0x32fcf1` | `int[300][6]` | |
+| music | area_music | `0x3303f9` | `int[300][2]` | |
+| unit_scale | area_unit_scales | `0x330651` | `int[300][2]` | |
+| battle_background | area_battle_backgrounds | `0x3308a9` | `int[300][2]` | |
+| battle_rule | area_battle_rules | `0x330b01` | `int[300]` | `battle_rule` |
 
 ### unit_routine[1000]
 
@@ -490,14 +490,14 @@ Built by: `boot`.
 
 CIINIT character profiles keyed by profile id.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | profile_names | `GS 0x6864` | `string[200]` |
-| lines | profile_lines | `GS 0x692c` | `string[200][16]` |
-| sort_key | profile_sort_keys | `0x29c45b` | `int[200]` |
-| character_id | profile_character_ids | `0x29c523` | `int[200]` |
-| picture | profile_pictures | `0x29c9d3` | `int[200]` |
-| script | profile_scripts | `0x29ca9b` | `int[200]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | profile_names | `GS 0x6864` | `string[200]` | |
+| lines | profile_lines | `GS 0x692c` | `string[200][16]` | |
+| sort_key | profile_sort_keys | `0x29c45b` | `int[200]` | |
+| character_id | profile_character_ids | `0x29c523` | `int[200]` | `character` |
+| picture | profile_pictures | `0x29c9d3` | `int[200]` | pictures |
+| script | profile_scripts | `0x29ca9b` | `int[200]` | |
 
 ### glossary[1000]
 
@@ -505,15 +505,15 @@ Built by: `boot`.
 
 VIINIT glossary entries keyed by entry id.
 
-| field | global | address | type |
-|---|---|---|---|
-| title | glossary_titles | `GS 0x647c` | `string[1000]` |
-| sort_key | glossary_sort_keys | `0x29a51a` | `int[1000]` |
-| scenes | glossary_scenes | `0x29a902` | `int[1000][3]` |
-| picture_x | glossary_picture_x | `0x29b4ba` | `int[1000]` |
-| picture_y | glossary_picture_y | `0x29b8a2` | `int[1000]` |
-| picture | glossary_pictures | `0x29bc8a` | `int[1000]` |
-| script | glossary_scripts | `0x29c072` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| title | glossary_titles | `GS 0x647c` | `string[1000]` | |
+| sort_key | glossary_sort_keys | `0x29a51a` | `int[1000]` | |
+| scenes | glossary_scenes | `0x29a902` | `int[1000][3]` | |
+| picture_x | glossary_picture_x | `0x29b4ba` | `int[1000]` | |
+| picture_y | glossary_picture_y | `0x29b8a2` | `int[1000]` | |
+| picture | glossary_pictures | `0x29bc8a` | `int[1000]` | pictures |
+| script | glossary_scripts | `0x29c072` | `int[1000]` | |
 
 ### tip[1000]
 
@@ -521,15 +521,15 @@ Built by: `boot`.
 
 TIINIT entries keyed by entry id (日常モード …).
 
-| field | global | address | type |
-|---|---|---|---|
-| title | tip_titles | `GS 0x75ac` | `string[1000]` |
-| sort_key | tip_sort_keys | `0x29cb64` | `int[1000]` |
-| scenes | tip_scenes | `0x29cf4c` | `int[1000][3]` |
-| picture_x | tip_picture_x | `0x29db04` | `int[1000]` |
-| picture_y | tip_picture_y | `0x29deec` | `int[1000]` |
-| picture | tip_pictures | `0x29e2d4` | `int[1000]` |
-| script | tip_scripts | `0x29e6bc` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| title | tip_titles | `GS 0x75ac` | `string[1000]` | |
+| sort_key | tip_sort_keys | `0x29cb64` | `int[1000]` | |
+| scenes | tip_scenes | `0x29cf4c` | `int[1000][3]` | |
+| picture_x | tip_picture_x | `0x29db04` | `int[1000]` | |
+| picture_y | tip_picture_y | `0x29deec` | `int[1000]` | |
+| picture | tip_pictures | `0x29e2d4` | `int[1000]` | pictures |
+| script | tip_scripts | `0x29e6bc` | `int[1000]` | |
 
 ### cg[3000]
 
@@ -667,10 +667,10 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x2b338f` | card_append_numbers | high | investigation | CDINIT: the append (1 to 4) that added the card; unset for the base data's. |
 | `0x2b4aff` | card_sort_keys | high | investigation | CDINIT: a sort number; the card lists (the book, the deck builder, the shop) are in its order. |
 | `0x2b626f` | card_requires_party_flags | high | investigation | CDINIT: 1 on 300 cards that may be in a deck only while their row's character (card_row_character_ids) is in the party (CHECKCARD). |
-| `0x2b79df` | card_rarities | high | investigation | CDINIT: 1 to 5, C, UC, R, SR, EU (INIT2 sets the names in 0x12a77 + rarity - 1); the card panel draws one of five marks for it. |
+| `0x2b79df` | card_rarities | high | investigation | CDINIT: 1 to 5, C, UC, R, SR, EU (INIT2 sets the names in 0x12a77 + rarity - 1); the card panel draws one of five marks for it. Names: `card_rarity_names`, element 0 naming 1. |
 | `0x2b914f` | card_book_flags | high | investigation | CDINIT: 1 on the 903 cards the card book (INFOCD) lists. |
 | `0x2ba8bf` | card_copyable_flags | high | investigation | CDINIT: 1 on the 229 cards the skills 複製 and 捕縛 can win from an opponent (DECKBUILD marks them). |
-| `0x2bc02f` | card_race_flags | high | investigation | CDINIT: 種族, one bit a race (bits 0 to 6: 無機, 人間, 怪物, 天使, 悪魔, 魔神, 英雄). The card panel prints race_names for each bit set on its 種族 row. |
+| `0x2bc02f` | card_race_flags | high | investigation | CDINIT: 種族, one bit a race (bits 0 to 6: 無機, 人間, 怪物, 天使, 悪魔, 魔神, 英雄). The card panel prints race_names for each bit set on its 種族 row. Bits: bit k stands for `race_names` value k. |
 | `0x2bd79f` | card_costs | high | investigation | CDINIT: コスト, 1 to 8 (the card panel's row of that name shows card_current_costs). |
 | `0x2bef0f` | card_control | high | investigation | CDINIT: 支配力, 1 to 3 (the card panel's row of that name shows card_current_control). |
 | `0x2c067f` | card_attack | high | investigation | CDINIT: 攻撃力, 1 to 28 (the card panel's row of that name shows card_current_attack). |
@@ -693,7 +693,7 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x31b3a0` | talent_append_numbers | high | investigation | TAINIT: the append that added the talent. |
 | `0x31b788` | talent_sort_keys | high | investigation | TAINIT: a sort number; the talent book (INFOTA) lists in its order. |
 | `0x31bb70` | talent_book_flags | high | investigation | TAINIT: 1 for every talent: the talent book lists those that have it. |
-| `0x31bf58` | talent_timings | high | investigation | TAINIT: when the talent acts, 1 to 9: 特殊, 移動, 登場, 行動, 攻撃, 退却, 前衛エリア, 後衛エリア, 全エリア (the word its description opens with). |
+| `0x31bf58` | talent_timings | high | investigation | TAINIT: when the talent acts, 1 to 9: 特殊, 移動, 登場, 行動, 攻撃, 退却, 前衛エリア, 後衛エリア, 全エリア (the word its description opens with). Values: 1 Special, 2 Move, 3 Deploy, 4 Act, 5 Attack, 6 Retreat, 7 Front area, 8 Rear area, 9 All areas. |
 | `0x31c72a` | ultimate_append_numbers | high | investigation | COINIT: the append that added the 奥義; it picks the 奥義's scripts in ultimate_script_ids. |
 | `0x31c78e` | ultimate_sort_keys | high | investigation | COINIT: a sort number; the 奥義 book (INFOCO) lists in its order. |
 | `0x31c7f2` | ultimate_book_flags | high | investigation | COINIT: 1 for every 奥義: the 奥義 book lists those that have it. |
@@ -706,13 +706,13 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x31e02a` | ultimate_movies | high | investigation | COINIT, by level: the movie COUP plays for the 奥義. |
 | `0x31e412` | skill_sort_keys | high | investigation | SKINIT: a sort number; the skill book (INFOSK) lists in its order. |
 | `0x31e7fa` | skill_book_flags | high | investigation | SKINIT: 1 for every skill: the skill book lists those that have it. |
-| `0x31ebe2` | skill_kinds | high | investigation | SKINIT: where the skill works: 1 outside battle, 2 in battle, 3 on the battlefield. COUNTSKILL counts a kind-3 skill only for the three role characters (party_leader_id, party_ultimate_character_id, map_agent_character_id). |
+| `0x31ebe2` | skill_kinds | high | investigation | SKINIT: where the skill works: 1 outside battle, 2 in battle, 3 on the battlefield. COUNTSKILL counts a kind-3 skill only for the three role characters (party_leader_id, party_ultimate_character_id, map_agent_character_id). Values: 1 Outside battle, 2 In battle, 3 On the battlefield. |
 | `0x31efca` | skill_amounts | high | investigation | SKINIT: the number the skill's text gives (交渉術Ⅰ: 5 for ５％ＯＦＦ); COUNTSKILL and the battle scripts read it. |
 | `0x31f79a` | item_append_numbers | high | investigation | ITINIT: the append that added the item. |
 | `0x31ff6a` | item_sort_keys | high | investigation | ITINIT: a sort number; the item lists (ITEM, the book, the shops, SELITEM) are in its order. |
-| `0x32073a` | item_kinds | high | investigation | ITINIT: 1 to 5, 重要, 消費, 売却, 素材, 装備 (INIT2 sets the names in 0x12a84 + kind - 1). A card carries a 装備 item; SELITEM offers 消費 items in battle. |
+| `0x32073a` | item_kinds | high | investigation | ITINIT: 1 to 5, 重要, 消費, 売却, 素材, 装備 (INIT2 sets the names in 0x12a84 + kind - 1). A card carries a 装備 item; SELITEM offers 消費 items in battle. Names: `item_kind_names`, element 0 naming 1. |
 | `0x320f0a` | item_no_carry_over_flags | high | investigation | ITINIT: 1 on 59 of the 62 重要 items: the ones GAMESTART does not carry over into a new game when it carries the items over. |
-| `0x3216da` | item_rarities | med | investigation | ITINIT: 1 to 5. The card panel draws it with the marks it draws card_rarities with. |
+| `0x3216da` | item_rarities | med | investigation | ITINIT: 1 to 5. The card panel draws it with the marks it draws card_rarities with. Names: `card_rarity_names`, element 0 naming 1. |
 | `0x321eaa` | item_book_flags | high | investigation | ITINIT: 1 for every item: the item book (INFOIT) lists those that have it. |
 | `0x32267a` | item_required_slots | high | investigation | ITINIT: the least card_current_slots a card may have to carry the item. |
 | `0x322e4a` | item_cost_bonuses | high | investigation | ITINIT: what the item adds to the コスト of the card that carries it (the card panel, CHECKCARD). |
@@ -725,8 +725,8 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x3264fa` | item_talent_ids | high | investigation | ITINIT: a talent (a TAINIT id) the item gives the card that carries it. |
 | `0x326cca` | item_card_rows | high | investigation | ITINIT: where set, the one card row whose cards can carry the item (INIT2 takes an item off a card that fails). |
 | `0x32749a` | item_card_slots | high | investigation | ITINIT: where set, the one slot of a row whose card can carry the item. |
-| `0x327c6a` | item_required_races | high | investigation | ITINIT: bits of card_race_flags of which a card must have one to carry the item. |
-| `0x32843a` | item_excluded_races | high | investigation | ITINIT: bits of card_race_flags a card must not have to carry the item. |
+| `0x327c6a` | item_required_races | high | investigation | ITINIT: bits of card_race_flags of which a card must have one to carry the item. Bits: bit k stands for `race_names` value k. |
+| `0x32843a` | item_excluded_races | high | investigation | ITINIT: bits of card_race_flags a card must not have to carry the item. Bits: bit k stands for `race_names` value k. |
 | `0x328c0a` | item_required_costs | high | investigation | ITINIT: the least card_current_costs a card may have to carry the item. |
 | `0x3293da` | item_required_control | high | investigation | ITINIT: the least card_current_control a card may have to carry the item. |
 | `0x329baa` | item_required_attack | high | investigation | ITINIT: the least card_current_attack a card may have to carry the item. |
@@ -737,7 +737,7 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x32d25a` | item_effect_styles | high | investigation | ITINIT: how SELITEM plays the 消費 item's effect movie: 1 on the target cell, 2 in the middle at 512 × 512, 3 at a fixed place. |
 | `0x32da2a` | item_effect_draw_modes | high | investigation | ITINIT: the gfx_draw_color mode the effect movie is drawn in (1, additive, on all 31). |
 | `0x32e1fa` | item_effect_movies | high | investigation | ITINIT: the effect movies; style 1 takes the target column's. |
-| `0x32f96a` | condition_kinds | high | investigation | ILINIT: 1 for a helpful condition (再生, 必中 …), 2 for a harmful one (操血, 封印 …). |
+| `0x32f96a` | condition_kinds | high | investigation | ILINIT: 1 for a helpful condition (再生, 必中 …), 2 for a harmful one (操血, 封印 …). Values: 1 Helpful, 2 Harmful. |
 | `0x32f9ca` | condition_attack_changes | high | investigation | ILINIT: what the condition adds to a card's 攻撃力 in battle while it holds (攻１ to 攻４: 1 to 4; 操血: -1). |
 | `0x32f9ea` | condition_hp_changes | med | investigation | ILINIT: what the condition adds to a card's ＨＰ or ＬＰ in battle while it holds (操血: -1). |
 | `0x32fa2a` | condition_turn_hp_changes | med | investigation | ILINIT: a change each turn (強酸 -1, 再生 +1); PHASECONTROLLER adds 再生's to a card's ＨＰ at the start of a turn. |
@@ -841,7 +841,7 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x38a2a6` | shop_entry_scenes_played | high | investigation | SHINIT: scenes (each id + 1) that must all have been played. |
 | `0x38aa76` | shop_entry_scenes_not_played | high | investigation | SHINIT: scenes none of which may have been played. |
 | `0x38b246` | opponent_battles | high | investigation | ARINIT: the battle (a DUINIT id) the opponent is fought in. |
-| `0x38b62e` | opponent_arenas | high | investigation | ARINIT: the arena the opponent fights in, 1 to 9. |
+| `0x38b62e` | opponent_arenas | high | investigation | ARINIT: the arena the opponent fights in, 1 to 9. Names: `arena_names`, element 0 naming 0. |
 | `0x38ba16` | opponent_sort_keys | high | investigation | ARINIT: a sort number; ARENA lists the opponents in its order. |
 | `0x38bdfe` | opponent_reward_items | high | investigation | ARINIT: the reward when it is an item. |
 | `0x38c1e6` | opponent_reward_card_rows | high | investigation | ARINIT: the reward when it is a card: its row. |
@@ -918,7 +918,6 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x9ba7` | — | low | auto-shape | array |
 | `0x9c6f` | — | low | auto-shape | array |
 | `0x9d37` | — | low | auto-shape | array |
-| `GS 0x1265c` | — | low | auto-shape | array |
 | `0x1614f` | — | low | auto-shape | array |
 | `0x17988` | — | low | auto-shape | array |
 | `0x17992` | — | low | auto-shape | array |
@@ -1088,6 +1087,9 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x3fb90` | adv_face_id | med | investigation | A page's face id before set_page_face (a row of CFINIT); other library subs pass a picture id in the same cell. |
 | `0x3fb91` | adv_voice_id | high | investigation | The page's voice clip: the page's voice block sets it, clears it when the speaker's voice setting mutes it, and plays it. |
 | `0x260700` | current_goal_id | high | investigation | The goal GETFATE makes current: the open kind-1 goal latest in the sort order. |
+| `0x29a519` | glossary_selected_id | high | investigation | Set by INFOVI@0xdde to the entry the player picks, before it runs the entry's script (glossary_scripts): VIMES and $1$VIMES show the entry's text by it. |
+| `0x29c45a` | profile_selected_id | high | investigation | Set by INFOCH@0xe4f to the profile the player picks, before it runs the profile's script (profile_scripts): CIMES and $1$CIMES show the profile's text by it. |
+| `0x29cb63` | tip_selected_id | high | investigation | Set by INFOTI@0xddc to the entry the player picks, before it runs the entry's script (tip_scripts): TIMES shows the entry's text by it. |
 | `0x29eaa4` | character_arg_id | high | investigation | The character UNITECH, LEAVECH, CALCCC and the panels work on; a caller sets it before running them. |
 | `0x43f662` | item_arg_id | high | investigation | The item ADDITEM and the card panel work on. |
 | `0x43f663` | item_arg_count | med | investigation | How many ADDITEM adds (or takes, when negative). |
@@ -1138,8 +1140,11 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `GS 0x11f54` | area_point_names | high | investigation | MPINIT, for the area in play: a point's name (出現地点, 西蒼川商業区 …). |
 | `GS 0x1201c` | deck_names | high | investigation | DEINIT: a deck's name. |
 | `GS 0x12404` | battle_rule_lines | high | investigation | REINIT: six lines of text; the first is the heading ◆特殊勝敗条件・編成制限◆. |
+| `GS 0x1265c` | arena_names | high | investigation | Set by ARINIT: the names of the nine arenas (対戦台, 連戦台, 大会戦 …), element k naming arena k (opponent_arenas); ARENA draws the one in play. |
 | `GS 0x1268e` | opponent_names | high | investigation | ARINIT: the opponent's name. |
+| `GS 0x12a77` | card_rarity_names | high | investigation | Set by INIT2: the names of the five rarities, C, UC, R, SR and EU; element k names rarity k + 1 (card_rarities, item_rarities). |
 | `GS 0x12a7c` | race_names | high | investigation | Set by INIT2: the names of the seven races of card_race_flags, by bit; the eighth string is バトル. |
+| `GS 0x12a84` | item_kind_names | high | investigation | Set by INIT2: the names of the five item kinds, 重要, 消費, 売却, 素材 and 装備; element k names kind k + 1 (item_kinds). |
 | `GS 0xd2` | — | med | auto-shape | string-table (written by DEBUGADV) |
 | `GS 0xd3` | — | med | auto-shape | string-table (written by DEBUGADV) |
 | `GS 0xde` | — | med | auto-shape | string-table (written by CONFIG2) |
@@ -10225,7 +10230,6 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `GS 0x129b6` | — | med | auto-shape | string-table (written by ARINIT) |
 | `GS 0x129b7` | — | med | auto-shape | string-table (written by ARINIT) |
 | `GS 0x129b8` | — | med | auto-shape | string-table (written by ARINIT) |
-| `GS 0x12a77` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a78` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a79` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a7a` | — | med | auto-shape | string-table (written by INIT2) |
@@ -10237,7 +10241,6 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `GS 0x12a81` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a82` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a83` | — | med | auto-shape | string-table (written by INIT2) |
-| `GS 0x12a84` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a85` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a86` | — | med | auto-shape | string-table (written by INIT2) |
 | `GS 0x12a87` | — | med | auto-shape | string-table (written by INIT2) |
@@ -10371,7 +10374,6 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x298d59` | — | med | auto-shape | record-table[stride 2] |
 | `0x298d81` | — | med | auto-shape | record-table[stride 2] |
 | `0x298da9` | — | med | auto-shape | record-table[stride 6] |
-| `0x29c45a` | — | low | auto-shape | index/counter? |
 | `0x29c5eb` | — | med | auto-shape | record-table[stride 3] |
 | `0x29d727` | — | low | auto-shape | chinit-field? |
 | `0x29e5ba` | — | low | auto-shape | chinit-field? |

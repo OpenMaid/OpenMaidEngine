@@ -223,6 +223,7 @@ address = "0x2b79df"
 name = "card_rarities"
 category = "data-table"
 type = "int[6000]"
+values_from = { global = "card_rarity_names", first = 1 }
 usage = "CDINIT: 1 to 5, C, UC, R, SR, EU (INIT2 sets the names in 0x12a77 + rarity - 1); the card panel draws one of five marks for it."
 source = "investigation"
 confidence = "high"
@@ -232,7 +233,17 @@ address = "0x2bc02f"
 name = "card_race_flags"
 category = "data-table"
 type = "int[6000]"
+bits_of = "race_names"
 usage = "CDINIT: 種族, one bit a race (bits 0 to 6: 無機, 人間, 怪物, 天使, 悪魔, 魔神, 英雄). The card panel prints race_names for each bit set on its 種族 row."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12a77"
+name = "card_rarity_names"
+category = "string-table"
+type = "string[5]"
+usage = "Set by INIT2: the names of the five rarities, C, UC, R, SR and EU; element k names rarity k + 1 (card_rarities, item_rarities)."
 source = "investigation"
 confidence = "high"
 
@@ -242,6 +253,15 @@ name = "race_names"
 category = "string-table"
 type = "string[8]"
 usage = "Set by INIT2: the names of the seven races of card_race_flags, by bit; the eighth string is バトル."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12a84"
+name = "item_kind_names"
+category = "string-table"
+type = "string[5]"
+usage = "Set by INIT2: the names of the five item kinds, 重要, 消費, 売却, 素材 and 装備; element k names kind k + 1 (item_kinds)."
 source = "investigation"
 confidence = "high"
 
@@ -617,6 +637,7 @@ address = "0x3216da"
 name = "item_rarities"
 category = "data-table"
 type = "int[2000]"
+values_from = { global = "card_rarity_names", first = 1 }
 usage = "ITINIT: 1 to 5. The card panel draws it with the marks it draws card_rarities with."
 source = "investigation"
 confidence = "med"
@@ -690,6 +711,7 @@ address = "0x327c6a"
 name = "item_required_races"
 category = "data-table"
 type = "int[2000]"
+bits_of = "race_names"
 usage = "ITINIT: bits of card_race_flags of which a card must have one to carry the item."
 source = "investigation"
 confidence = "high"
@@ -699,6 +721,7 @@ address = "0x32843a"
 name = "item_excluded_races"
 category = "data-table"
 type = "int[2000]"
+bits_of = "race_names"
 usage = "ITINIT: bits of card_race_flags a card must not have to carry the item."
 source = "investigation"
 confidence = "high"
@@ -1337,6 +1360,7 @@ address = "0x31bf58"
 name = "talent_timings"
 category = "data-table"
 type = "int[1000]"
+values = { "1" = "Special", "2" = "Move", "3" = "Deploy", "4" = "Act", "5" = "Attack", "6" = "Retreat", "7" = "Front area", "8" = "Rear area", "9" = "All areas" }
 usage = "TAINIT: when the talent acts, 1 to 9: 特殊, 移動, 登場, 行動, 攻撃, 退却, 前衛エリア, 後衛エリア, 全エリア (the word its description opens with)."
 source = "investigation"
 confidence = "high"
@@ -1454,6 +1478,7 @@ address = "0x31ebe2"
 name = "skill_kinds"
 category = "data-table"
 type = "int[1000]"
+values = { "1" = "Outside battle", "2" = "In battle", "3" = "On the battlefield" }
 usage = "SKINIT: where the skill works: 1 outside battle, 2 in battle, 3 on the battlefield. COUNTSKILL counts a kind-3 skill only for the three role characters (party_leader_id, party_ultimate_character_id, map_agent_character_id)."
 source = "investigation"
 confidence = "high"
@@ -1472,6 +1497,7 @@ address = "0x32f96a"
 name = "condition_kinds"
 category = "data-table"
 type = "int[32]"
+values = { "1" = "Helpful", "2" = "Harmful" }
 usage = "ILINIT: 1 for a helpful condition (再生, 必中 …), 2 for a harmful one (操血, 封印 …)."
 source = "investigation"
 confidence = "high"
@@ -1538,6 +1564,7 @@ address = "0x32073a"
 name = "item_kinds"
 category = "data-table"
 type = "int[2000]"
+values_from = { global = "item_kind_names", first = 1 }
 usage = "ITINIT: 1 to 5, 重要, 消費, 売却, 素材, 装備 (INIT2 sets the names in 0x12a84 + kind - 1). A card carries a 装備 item; SELITEM offers 消費 items in battle."
 source = "investigation"
 confidence = "high"
@@ -2454,6 +2481,15 @@ source = "investigation"
 confidence = "high"
 
 [[global]]
+address = "0x1265c"
+name = "arena_names"
+category = "string-table"
+type = "string[10]"
+usage = "Set by ARINIT: the names of the nine arenas (対戦台, 連戦台, 大会戦 …), element k naming arena k (opponent_arenas); ARENA draws the one in play."
+source = "investigation"
+confidence = "high"
+
+[[global]]
 address = "0x1268e"
 name = "opponent_names"
 category = "string-table"
@@ -2476,6 +2512,7 @@ address = "0x38b62e"
 name = "opponent_arenas"
 category = "data-table"
 type = "int[1000]"
+values_from = { global = "arena_names", first = 0 }
 usage = "ARINIT: the arena the opponent fights in, 1 to 9."
 source = "investigation"
 confidence = "high"
@@ -3059,6 +3096,16 @@ source = "investigation"
 confidence = "high"
 
 [[global]]
+address = "0x29c45a"
+name = "profile_selected_id"
+category = "index-pointer"
+type = "int"
+value_domain = "CIINIT profile id"
+usage = "Set by INFOCH@0xe4f to the profile the player picks, before it runs the profile's script (profile_scripts): CIMES and $1$CIMES show the profile's text by it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
 address = "0x29c45b"
 name = "profile_sort_keys"
 category = "data-table"
@@ -3091,6 +3138,16 @@ name = "profile_scripts"
 category = "data-table"
 type = "int[200]"
 usage = "CIINIT: a script INFOCH runs for the profile (CIMES, or $1$CIMES on three)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x29a519"
+name = "glossary_selected_id"
+category = "index-pointer"
+type = "int"
+value_domain = "VIINIT entry id"
+usage = "Set by INFOVI@0xdde to the entry the player picks, before it runs the entry's script (glossary_scripts): VIMES and $1$VIMES show the entry's text by it."
 source = "investigation"
 confidence = "high"
 
@@ -3154,6 +3211,16 @@ name = "tip_titles"
 category = "string-table"
 type = "string[1000]"
 usage = "TIINIT: the entry's title (日常モード, 拠点アイコン・サムネイル …)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x29cb63"
+name = "tip_selected_id"
+category = "index-pointer"
+type = "int"
+value_domain = "TIINIT entry id"
+usage = "Set by INFOTI@0xddc to the entry the player picks, before it runs the entry's script (tip_scripts): TIMES shows the entry's text by it."
 source = "investigation"
 confidence = "high"
 
@@ -3379,6 +3446,12 @@ unit_picture_2 = "character_unit_pictures_2"
 unit_extra_picture = "character_unit_extra_pictures"
 menu_picture = "character_menu_pictures"
 
+[table.refs]
+ultimate_id = "ultimate"
+voice_character_id = "character"
+picture = "picture"
+book_picture = "picture"
+
 [[table]]
 name = "card"
 records = 6000
@@ -3426,6 +3499,11 @@ recipe_icon = "card_recipe_icons"
 attack_effect = "card_attack_effects"
 voice_clips = "card_voice_clips"
 obtained = "card_obtained_flags"
+
+[table.refs]
+talent_id = "talent"
+picture = "picture"
+leader_picture = "picture"
 
 [[table]]
 name = "talent"
@@ -3497,6 +3575,11 @@ effect_draw_mode = "item_effect_draw_modes"
 effect_movie = "item_effect_movies"
 obtained = "item_obtained_flags"
 
+[table.refs]
+talent_id = "talent"
+condition_id = "condition"
+picture = "picture"
+
 [[table]]
 name = "area_point"
 records = 200
@@ -3558,6 +3641,12 @@ drop_item = "deck_drop_items"
 drop_card_row = "deck_drop_card_rows"
 drop_card_slot = "deck_drop_card_slots"
 
+[table.refs]
+card_row = { table = "card", times = 30, plus = "card_slot" }
+drop_item = "item"
+drop_card_row = { table = "card", times = 30, plus = "drop_card_slot" }
+cpu_profile = "cpu_profile"
+
 [[table]]
 name = "party_member"
 records = 100
@@ -3578,6 +3667,11 @@ ultimate_level = "party_member_ultimate_levels"
 picture_set = "party_member_picture_sets"
 skill_lines = "party_member_skill_lines"
 
+[table.refs]
+level_card_row = { table = "card", times = 30, plus = "level_card_slot" }
+level_item = "item"
+level_skills = "skill"
+
 [[table]]
 name = "ultimate"
 records = 100
@@ -3597,6 +3691,10 @@ picture_y = "ultimate_picture_y"
 picture = "ultimate_pictures"
 picture_2 = "ultimate_pictures_2"
 movie = "ultimate_movies"
+
+[table.refs]
+picture = "picture"
+picture_2 = "picture"
 
 [[table]]
 name = "condition"
@@ -3631,6 +3729,11 @@ opponent_ultimate_picture_y = "battle_opponent_ultimate_picture_y"
 rule = "battle_rules"
 music = "battle_music"
 background = "battle_backgrounds"
+
+[table.refs]
+deck = "deck"
+opponent_ultimate = "ultimate"
+rule = "battle_rule"
 
 [[table]]
 name = "battle_rule"
@@ -3683,6 +3786,16 @@ ingredient_card_row = "recipe_ingredient_card_rows"
 ingredient_card_slot = "recipe_ingredient_card_slots"
 ingredient_count = "recipe_ingredient_counts"
 
+[table.refs]
+item = "item"
+card_row = { table = "card", times = 30, plus = "card_slot" }
+party_character = "character"
+skill = "skill"
+required_item = "item"
+required_card_row = { table = "card", times = 30, plus = "required_card_slot" }
+ingredient_item = "item"
+ingredient_card_row = { table = "card", times = 30, plus = "ingredient_card_slot" }
+
 [[table]]
 name = "shop_entry"
 records = 1000
@@ -3704,6 +3817,12 @@ party_character_level = "shop_entry_party_character_levels"
 skill = "shop_entry_skills"
 scenes_played = "shop_entry_scenes_played"
 scenes_not_played = "shop_entry_scenes_not_played"
+
+[table.refs]
+item = "item"
+card_row = { table = "card", times = 30, plus = "card_slot" }
+party_character = "character"
+skill = "skill"
 
 [[table]]
 name = "opponent"
@@ -3728,6 +3847,12 @@ scenes_played = "opponent_scenes_played"
 scenes_not_played = "opponent_scenes_not_played"
 tournament_group = "opponent_tournament_groups"
 state = "opponent_states"
+
+[table.refs]
+battle = "battle"
+reward_item = "item"
+reward_card_row = { table = "card", times = 30, plus = "reward_card_slot" }
+required_opponent = "opponent"
 
 [[table]]
 name = "goal"
@@ -3755,6 +3880,10 @@ reward_count = "goal_reward_counts"
 reward_money = "goal_reward_money"
 state = "goal_states"
 
+[table.refs]
+reward_item = "item"
+reward_card_row = { table = "card", times = 30, plus = "reward_card_slot" }
+
 [[table]]
 name = "area_map"
 records = 300
@@ -3769,6 +3898,10 @@ music = "area_music"
 unit_scale = "area_unit_scales"
 battle_background = "area_battle_backgrounds"
 battle_rule = "area_battle_rules"
+
+[table.refs]
+place = "area_map"
+battle_rule = "battle_rule"
 
 [[table]]
 name = "unit_routine"
@@ -3823,6 +3956,10 @@ character_id = "profile_character_ids"
 picture = "profile_pictures"
 script = "profile_scripts"
 
+[table.refs]
+character_id = "character"
+picture = "picture"
+
 [[table]]
 name = "glossary"
 records = 1000
@@ -3838,6 +3975,9 @@ picture_y = "glossary_picture_y"
 picture = "glossary_pictures"
 script = "glossary_scripts"
 
+[table.refs]
+picture = "picture"
+
 [[table]]
 name = "tip"
 records = 1000
@@ -3852,6 +3992,9 @@ picture_x = "tip_picture_x"
 picture_y = "tip_picture_y"
 picture = "tip_pictures"
 script = "tip_scripts"
+
+[table.refs]
+picture = "picture"
 
 [[table]]
 name = "cg"

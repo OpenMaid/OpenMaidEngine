@@ -719,6 +719,11 @@ writes. `RECEIPT` shows the current entry's reward.
 | `G[0x29e6bc]` | 1 |  | 75 | 20615..20615, 1 distinct 20615×75 | a script `INFOTI` runs for the entry: `TIMES` for all |
 | `GS[0x75ac]` | 1 |  | 75 | 日常モード / 拠点アイコン・サムネイル / プレイヤーアイコン | the entry's title (日常モード, 拠点アイコン・サムネイル …) |
 
+An entry's script learns which entry to show from a cell its screen sets before running it: `INFOVI` sets
+`G[0x29a519]` to the glossary entry's id and runs `VIMES`, `INFOCH` sets `G[0x29c45a]` to the profile's and runs
+`CIMES`, and `INFOTI` sets `G[0x29cb63]` to the tip's and runs `TIMES`. The project site's export seeds them to read
+each entry's text (`vm-map/entities-arterial.toml`); all 303 entries give text.
+
 `CGINIT`: leader `G[0x2283f1]` (two cells an id), capacity 3000, 1577 entries. An entry carries three numbers:
 a section (1 to 9), a group in it (1 to 57), and its place in the group (1 to 35). 224 groups have a picture
 of their own (191 in the base data).

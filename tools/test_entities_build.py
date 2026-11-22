@@ -283,6 +283,11 @@ extra = 1
                        'excluded_builders = ["HEROMES"]\ntext_scripts = ["HEROMES"]\n')
     check("builders must name at least one script" in output, "the lint wants a builder")
     check("text script HEROMES is also an excluded builder" in output, "a text script may not be an excluded builder")
+    output = errors_of('[export]\nboot = { script = "INIT2", read_at = "demo.boot.data_ready" }\nbuilders = ["*INIT"]\n'
+                       'text_scripts = ["HEROMES"]\nderived = ["SKILLINIT", "HEROMES", "count*"]\n')
+    check("derived script SKILLINIT is a builder" in output, "a derived script may not be a builder")
+    check("derived script HEROMES is also a text script" in output, "a derived script may not be a text script")
+    check("derived: 'count*' must be a script name" in output, "a derived script is a plain name")
     check("needs an [export] table" in errors_of('[[kind]]\nid = "x"\n'), "the lint wants an [export] table")
 
 
@@ -413,6 +418,32 @@ fields = ["art"]
     for needle in ("title weapon.1 is a reference, which the kind must publish: list weapon under fields",
                    "title art.face is an integer field the registry's [table.refs] does not mark as referring to a table",
                    "kind 'hero': title weapon.1 refers to table weapon, which no kind shows"):
+        check(needle in output, f"the lint flags {needle!r}")
+    # A list of references names an entity by the first that names a record (export plan §5).
+    by_weapons = GOOD.replace('title = "name"\ntext = ["bio"]', 'title = ["weapon.0", "weapon.1"]\ntext = ["bio"]')
+    code, output, written = run(by_weapons, write=True)
+    check(code == 0, f"a list of references may be a title ({output.strip()})")
+    kinds = json.loads(written or "{}").get("kinds", [])
+    check(bool(kinds) and kinds[0].get("title") == ["weapon.0", "weapon.1"], "a title list is in the JSON as written")
+    output = errors_of(EXPORT + '''
+[[kind]]
+id = "hero"
+table = "hero"
+exists = "name"
+title = ["weapon.0"]
+fields = ["weapon", "class", "art"]
+
+[[kind]]
+id = "hero_twice"
+table = "hero"
+exists = "name"
+title = ["weapon.0", "weapon.0", "class", "art.face"]
+fields = ["weapon", "class", "art"]
+''')
+    for needle in ("kind 'hero': a title list names two or more references",
+                   "kind 'hero_twice': title weapon.0 is named twice",
+                   "title class is no reference; each title of a list is a reference",
+                   "title art.face is no reference; each title of a list is a reference"):
         check(needle in output, f"the lint flags {needle!r}")
 
 
@@ -763,6 +794,7 @@ def main():
     test_kind_errors()
     test_description_errors()
     test_group_errors()
+    test_titles()
     test_loader_and_relation_errors()
     test_design_pass_features()
     test_the_repository_declarations()

@@ -43,13 +43,16 @@ public class GameDataExportTests
     // The game's names of the item categories (export plan §5), which ITINIT writes: element k names category k + 1.
     private const int CategoryNames = 980;
 
-    private static RegistryView Registry(bool formats = false) => new(
+    private static RegistryView Registry(bool formats = false, RefKey? skillKey = null, bool bitNames = false) => new(
         [
             new TableLayout("item", 4,
                 [("name", "item_names"), ("short_description", "item_short_descriptions"), ("category", "item_category"),
                  ("price", "item_prices"), ("icon", "item_icon"), ("handler_script_id", "item_handler"),
                  ("granted_skill", "item_granted_skill")],
-                new Dictionary<string, string> { ["granted_skill"] = "skill", ["icon"] = "picture" }),
+                new Dictionary<string, string> { ["granted_skill"] = "skill", ["icon"] = "picture" })
+            {
+                RefKeys = skillKey is null ? new Dictionary<string, RefKey>() : new Dictionary<string, RefKey> { ["granted_skill"] = skillKey },
+            },
             new TableLayout("skill", 3, [("name", "skill_names"), ("category", "skill_category")],
                             new Dictionary<string, string>()),
             // The loot table of the scope `field` (export plan §4.2): a loader builds it for one item at a time.
@@ -78,7 +81,10 @@ public class GameDataExportTests
                 ColumnsOf = formats ? "skill" : null,
             },
             Array("item_icon", GlobalBank.Integer, ItemIcon, 4),
-            Array("item_handler", GlobalBank.Integer, ItemHandler, 4),
+            Array("item_handler", GlobalBank.Integer, ItemHandler, 4) with
+            {
+                Format = bitNames ? new ValueFormat { BitsOf = "category_names" } : null,
+            },
             Array("item_granted_skill", GlobalBank.Integer, ItemSkill, 4),
             Array("skill_names", GlobalBank.String, SkillNames, 3),
             Array("skill_category", GlobalBank.Integer, SkillCategory, 3),
@@ -103,7 +109,8 @@ public class GameDataExportTests
     private const string Declarations = """
         {"profile": "testgame", "source_sha256": "0123abcd",
          "export": {"boot": {"script": "BOOT", "read_at": "testgame.boot.ready"},
-                    "builders": ["BOOT", "*INIT"], "excluded_builders": ["CGINIT"], "text_scripts": ["ITMES"],
+                    "builders": ["BOOT", "*INIT"], "excluded_builders": ["CGINIT"], "derived": ["COUNTUP"],
+                    "text_scripts": ["ITMES"],
                     "explicit_pictures": ["ICON07*", "NOPE*"]},
          "kinds": [
           {"id": "item", "aliases": [], "table": "item", "exists": "name", "skip": {}, "title": "name",
@@ -136,6 +143,7 @@ public class GameDataExportTests
         StringWithoutOrigin = 4,     // a builder cuts item 1's name into item 3's short description (no origin)
         HandlerIsNoTextScript = 8,   // item 2's handler is OTHER, a scene
         LoaderScriptWrites = 16,     // LOOT itself writes loot record 2's second count, and skill 2's side
+        DerivedScriptWrites = 32,    // COUNTUP, a derived script, writes item 1's category
     }
 
     private sealed class Pictures : IPictureSource
@@ -186,6 +194,8 @@ public class GameDataExportTests
                 (OpCallScript, [I(10)]), (OpExit, []),
             ], "【", "】", "鋭", "するど", "い"),
             [10] = Asm("OTHER.BIN", [(OpShowText, [I(0), S(0)]), (OpExit, [])], "他の台詞"),
+            // A derived script: item 1's category, and a count of its own that no global names.
+            [22] = Asm("COUNTUP.BIN", [(OpMov, [G(ItemCategory + 1), I(7)]), (OpMov, [G(5400), I(1)]), (OpExit, [])]),
             // The bonus loader's script (export plan §5): the level is the key, the stats key 1's row of the rule state,
             // and the title a string of its own.
             [20] = Asm("RULES.BIN",
@@ -217,6 +227,7 @@ public class GameDataExportTests
         if (faults.HasFlag(Faults.SceneWritesTheTable)) calls.AddRange([(OpCallScript, [I(4)]), (OpCallScript, [I(5)])]);
         if (faults.HasFlag(Faults.ExcludedBuilderWrites)) calls.Add((OpCallScript, [I(6)]));
         if (faults.HasFlag(Faults.StringWithoutOrigin)) calls.Add((OpCallScript, [I(7)]));
+        if (faults.HasFlag(Faults.DerivedScriptWrites)) calls.Add((OpCallScript, [I(22)]));
         calls.Add((OpExit, []));
         Script boot = Asm("BOOT.BIN", calls);
         var byName = byId.Values.Append(boot).ToDictionary(script => ScriptNames.Normalized(script.Name), StringComparer.Ordinal);
@@ -391,6 +402,7 @@ public class GameDataExportTests
                 return command.ExecuteScalar()?.ToString();
             }
             Assert.Equal("granted_skill", Scalar("SELECT title_field FROM kind WHERE id = 'item'"));
+            Assert.Equal("[]", Scalar("SELECT title_fallbacks FROM kind WHERE id = 'item'"));
             Assert.Equal("", Scalar("SELECT ifnull(title_field, '') FROM kind WHERE id = 'skill'"));
             // The reference is a published value, not a text field.
             Assert.Equal("1|0", Scalar("SELECT published || '|' || text FROM field WHERE kind = 'item' AND name = 'granted_skill'"));
@@ -400,6 +412,19 @@ public class GameDataExportTests
             SqliteConnection.ClearAllPools();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public void ATitleMayBeSeveralReferencesInTurn()
+    {
+        // A recipe makes an item or a card: the first reference that names a record names it (export plan §5).
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["title"] = new JsonArray("granted_skill", "made_card", "made_unit");
+        KindDeclaration item = ExportDeclarations.Parse(declarations.ToJsonString()).Kinds[0];
+
+        Assert.Equal("granted_skill", item.Title);
+        Assert.Equal(["made_card", "made_unit"], item.TitleFallbacks);
+        Assert.Empty(ExportDeclarations.Parse(Declarations).Kinds[0].TitleFallbacks);
     }
 
     [Fact]
@@ -457,6 +482,42 @@ public class GameDataExportTests
         Refusal refusal = Assert.Single(result.Report.Refusals);
         Assert.Equal(("item", 3, "icon"), (refusal.Kind, refusal.Id, refusal.Field));
         Assert.Contains("CGINIT.BIN", refusal.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ATwoFieldReferenceNamesTheRecordItsTwoValuesMake()
+    {
+        // The skill is granted_skill × 2 + category (export plan §5): item 1 (skill 1, category 2) names skill 4 and
+        // item 2 (skill 2, category 3) skill 7, which no record has; item 3's -1 names none.
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = Registry(skillKey: new RefKey(2, "category")),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 4)], sword.Refs);
+        Assert.Equal([1], Values(sword, "granted_skill"));
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 7)], Entity(result, "item", 2).Refs);
+        Assert.Empty(Entity(result, "item", 3).Refs);
+        Assert.Equal(2, result.Report.MissingRefs[("item", "granted_skill", "skill")]);
+    }
+
+    [Fact]
+    public void ADerivedScriptsWriteIsWithheldWithoutARefusal()
+    {
+        ExportResult result = GameDataExporter.Run(Game(Faults.DerivedScriptWrites));
+
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal([null], Values(sword, "category"));
+        Assert.Empty(result.Report.Refusals);
+        Assert.Equal(0, result.Report.ExitCode);
+        Assert.Contains(new ExportModderCell("category", 0, GlobalBank.Integer, ItemCategory + 1, null, "COUNTUP.BIN"),
+                        sword.Cells);
+        // Its unnamed count is play state, not an array the registry has yet to name.
+        Assert.Empty(result.Report.UnnamedCells);
     }
 
     [Fact]
@@ -571,6 +632,25 @@ public class GameDataExportTests
             => x is not null && y is not null && x.Name == y.Name && x.Fields.SequenceEqual(y.Fields);
 
         public int GetHashCode(GroupDeclaration group) => group.Name.GetHashCode(StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AMasksBitsTakeTheNamesOfAListOfStrings()
+    {
+        // bits_of a list of strings (export plan §5): element k names bit k, as Arterial's race names do its races.
+        ExportInputs game = Game();
+        string declarations = Declarations.Replace("\"fields\": [\"category\", \"price\", \"price.sell\", \"granted_skill\"]",
+                                                   "\"fields\": [\"category\", \"handler_script_id\"]", StringComparison.Ordinal);
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = Registry(bitNames: true),
+            Declarations = ExportDeclarations.Parse(declarations), Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Empty(result.Report.Refusals);
+        ExportKind item = result.Kinds.Single(kind => kind.Declaration.Id == "item");
+        Assert.Equal([new ExportValueName("handler_script_id", 1, "ja", "武器"), new ExportValueName("handler_script_id", 2, "ja", "防具")],
+                     item.ValueNames.OrderBy(name => name.Value));
     }
 
     [Fact]
@@ -716,6 +796,13 @@ public class GameDataExportTests
         Assert.False(rule.Allows("SETSTUDIOORN.BIN"));
         Assert.False(rule.Allows("SC0100.BIN"));
         Assert.Equal("ITINIT", ScriptNames.Base("$3$itinit.bin"));
+
+        var derived = new BuilderRule(["*INIT"], [], ["COUNTSKILL"]);
+        Assert.True(derived.Derives("$1$COUNTSKILL.BIN"));
+        Assert.False(derived.Derives("ITINIT.BIN"));
+        Assert.False(derived.Derives(null));
+        Assert.True(derived.With(["DROPSET"]).Derives("COUNTSKILL.BIN"));
+        Assert.False(rule.Derives("COUNTSKILL.BIN"));
     }
 
     [Fact]

@@ -112,6 +112,9 @@ public sealed class ExportEntity(int id)
     public List<(string Field, long?[] Values)> Values { get; } = [];
     public List<ExportText> Texts { get; } = [];
     public List<ExportRef> Refs { get; } = [];
+    /// <summary>The records its published two-field references name (export plan §5), by field; null for an element
+    /// either cell of which is withheld.</summary>
+    public Dictionary<string, long?[]> KeyedRefs { get; } = new(StringComparer.Ordinal);
     public List<(string Name, ExportPicture Picture)> Pictures { get; } = [];
     public List<ExportModderCell> Cells { get; } = [];
     /// <summary>The rows its loaders built (export plan §4.2), by table and record.</summary>
@@ -133,6 +136,9 @@ public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(st
 {
     /// <summary>The part of the table it is in (export plan §5), or null for the table's own rows.</summary>
     public string? Part { get; init; }
+
+    /// <summary>The records its published two-field references name (export plan §5), by field.</summary>
+    public IReadOnlyDictionary<string, long?[]> KeyedRefs { get; init; } = new Dictionary<string, long?[]>();
 }
 
 /// <summary>A table a loader publishes under its key kind (export plan §4.2), with the layouts the writer needs.

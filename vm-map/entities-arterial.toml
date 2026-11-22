@@ -1,0 +1,415 @@
+# Arterial's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals-arterial.toml (its tables, their
+# [table.refs], its globals), vm-map/patch-points-arterial.toml and the profile's saved prefix, and writes
+# build/games/arterial/entities.json for the exporter. The tables are described in docs/arterial-data-tables.md.
+#
+# The conventions are Kamidori's (vm-map/entities-kamidori.toml): scripts named without the `$n$` prefix and `.BIN`;
+# the scenes that gate a record left to the modder data; a field published when it means something to a player; and a
+# note only where the label and value leave a reader guessing.
+#
+# A card is a row and a slot (row × 30 + slot), and every table that names one names it by two fields: the registry's
+# [table.refs] joins them ({ table = "card", times = 30, plus = "…_slot" }), so a recipe, a deck or a reward links to
+# its card.
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after every layer (docs/arterial-data-tables.md, "How the
+# data gets into memory").
+boot = { script = "INIT2", read_at = "arterial.boot.data_ready" }
+builders = ["INIT2", "*INIT", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery and the H-scene replays.
+excluded_builders = ["CGINIT", "SPINIT"]
+# INIT2 runs COUNTSKILL, which counts the skills of the party (none, at the boot) into party_skill_counts: play state,
+# withheld without a refusal.
+derived = ["COUNTSKILL"]
+# The information screens whose shown text is data: the glossary, the character profiles and the tips.
+text_scripts = ["VIMES", "CIMES", "TIMES"]
+# The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
+# declarations publish (2026-11-22): only card art, none of the other kinds'. The bath cards (CD0..VA), the 精気吸収
+# cards and the nude monsters and angels, each with the twin that shares its art in the other frame. Suggestive but
+# covered art (CD127AA, CD127CA, CD127KA, CD088AA, the glossary's VI013) is not on the list.
+explicit_pictures = [
+    "CD002VA", "CD003VA", "CD004VA", "CD005VA", "CD006VA", "CD007VA", "CD008VA", "CD009VA", "CD041VA",
+    "CD002KA", "CD003JA", "CD004JA", "CD005KA", "CD006BA", "CD006NA", "CD007KA", "CD008KA", "CD009JA", "CD041KA",
+    "CD041ZA", "CD041LA", "CD054CA", "CD054DA", "CD095EA", "CD095FA",
+    "CD052PA", "CD052QA", "CD053AA", "CD053BA", "CD090RA", "CD090SA", "CD092IA", "CD092JA", "CD092KA",
+    "CD092QA", "CD092RA", "CD121JA", "CD121KA", "CD121LA", "CD121NA",
+    "CD123CA", "CD123DA", "CD123EA", "CD123FA", "CD123IA", "CD123JA", "CD123KA", "CD123LA", "CD123PA", "CD123QA",
+    "CD124NA", "CD124OA", "CD124PA", "CD124QA", "CD124RA", "CD124SA", "CD127IA", "CD127JA",
+    "CD151EA", "CD151FA", "CD151GA", "CD151HA", "CD151IA", "CD151JA", "CD151NA", "CD151OA", "CD151RA", "CD151SA",
+    "CD152GA", "CD152HA", "CD167AA", "CD167BA",
+]
+
+[[kind]]
+id = "card"
+table = "card"
+about = "Every card: its rarity, races and numbers at level 1, the talents it carries, its price, and its flavour text."
+exists = "name"
+title = "name"
+text = ["flavor"]
+fields = ["rarity", "race_flags", "cost", "control", "slots", "attack", "hp", "leader_lp", "talent_id", "price"]
+filters = ["rarity", "race_flags", "cost", "control"]
+# A card is named for its character, so one name has many cards: its rarity, cost and attack tell them apart.
+qualifiers = ["rarity", "cost", "attack"]
+pictures = { art = "picture.0" }
+
+[kind.labels]
+race_flags = "Races"
+control = "Control"
+leader_lp = "Leader LP"
+talent_id = "Talents"
+
+[kind.notes]
+leader_lp = "A leader card has LP in the place of HP."
+slots = "How many items the card can carry; it grows with the card's level, to 3."
+price = "Buy is what a shop charges for it, sell what the game pays for each copy over 99."
+
+[kind.referenced_as]
+talent_id = "Cards with it"
+
+[[kind]]
+id = "talent"
+table = "talent"
+about = "The abilities a card carries: when each acts, and what it does."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = ["timing"]
+filters = ["timing"]
+
+[kind.notes]
+timing = "When the talent acts: the word its description opens with."
+
+[[kind]]
+id = "skill"
+table = "skill"
+about = "The party's skills: where each works, and the number its text gives."
+exists = "name"
+title = "name"
+text = ["text"]
+fields = ["kind", "amount"]
+filters = ["kind"]
+
+[kind.labels]
+kind = "Works"
+
+[[kind]]
+id = "item"
+table = "item"
+about = "Every item: its kind and rarity, what a card must have to carry it and what it adds, and its price."
+exists = "name"
+title = "name"
+text = ["text"]
+fields = [
+    "kind", "rarity", "price",
+    "required_slots", "required_races", "excluded_races", "required_cost", "required_control", "required_attack",
+    "required_hp", "required_leader_lp",
+    "cost_bonus", "control_bonus", "attack_bonus", "hp_bonus", "leader_lp_bonus", "talent_id", "condition_id",
+]
+filters = ["kind", "rarity"]
+qualifiers = ["kind"]
+pictures = { icon = "picture.1" }
+
+[kind.labels]
+talent_id = "Talent"
+condition_id = "Condition"
+required_races = "Races required"
+excluded_races = "Races barred"
+leader_lp_bonus = "Leader LP bonus"
+required_leader_lp = "Least leader LP"
+required_slots = "Least slots"
+required_cost = "Least cost"
+required_control = "Least control"
+required_attack = "Least attack"
+required_hp = "Least HP"
+
+[kind.notes]
+kind = "A card carries an equipment (装備) item; a consumable (消費) one is used in battle."
+talent_id = "The talent the item gives the card that carries it."
+condition_id = "The condition the consumable item gives its target in battle."
+required_races = "The card must be of one of these races."
+
+[kind.referenced_as]
+talent_id = "Items that give it"
+condition_id = "Items that inflict it"
+
+[[kind]]
+id = "condition"
+table = "condition"
+about = "The conditions a card can be under in battle, and what each does to its numbers."
+exists = "name"
+title = "name"
+fields = ["kind", "attack_change", "hp_change", "turn_hp_change"]
+filters = ["kind"]
+
+[kind.labels]
+turn_hp_change = "HP each turn"
+
+[[kind]]
+id = "ultimate"
+table = "ultimate"
+about = "The 奥義, a character's special move: how fast its gauge fills and its number at each of its nine levels."
+exists = "name"
+title = "name"
+text = ["level_lines"]
+fields = ["gauge_gain", "amount"]
+pictures = { art = "picture.1" }
+
+[[kind.group]]
+name = "levels"
+fields = ["gauge_gain", "amount"]
+
+[kind.labels]
+gauge_gain = "Gauge each turn"
+level_lines = "Text by level"
+
+[kind.notes]
+levels = "Row n is level n: how much the gauge fills each turn, and the number the level's text gives."
+
+[kind.text_blocks.level_lines]
+level_1 = [3, 5]
+level_2 = [6, 8]
+level_3 = [9, 11]
+level_4 = [12, 14]
+level_5 = [15, 17]
+level_6 = [18, 20]
+level_7 = [21, 23]
+level_8 = [24, 26]
+level_9 = [27, 29]
+
+[[kind]]
+id = "character"
+table = "character"
+about = "Everyone who speaks a line: the name plate's names, and a party character's 奥義 and pictures."
+exists = "name.name"
+title = "name.name"
+fields = ["ultimate_id"]
+pictures = { portrait = "picture.0" }
+
+[kind.labels]
+ultimate_id = "奥義"
+
+[kind.referenced_as]
+ultimate_id = "Characters with it"
+
+[[kind]]
+id = "character_profile"
+table = "profile"
+about = "The character profiles of the in-game book."
+exists = "name"
+title = "name"
+text = ["lines"]
+fields = ["character_id"]
+pictures = { portrait = "picture" }
+
+[kind.labels]
+character_id = "Character"
+
+[kind.referenced_as]
+character_id = "Profiles"
+
+[[kind.description]]
+name = "biography"
+script = { field = "script" }                   # CIMES or $1$CIMES, as INFOCH calls it
+seed = { profile_selected_id = "key" }
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary"
+about = "The glossary (【用語】): the world's terms and what each means."
+exists = "title"
+title = "title"
+pictures = { picture = "picture" }
+
+[[kind.description]]
+name = "description"
+script = { field = "script" }                   # VIMES or $1$VIMES, as INFOVI calls it
+seed = { glossary_selected_id = "key" }
+
+[[kind]]
+id = "tip"
+table = "tip"
+about = "The game's guide to its own systems (日常モード, 拠点アイコン …)."
+exists = "title"
+title = "title"
+pictures = { picture = "picture" }
+
+[[kind.description]]
+name = "description"
+script = { field = "script" }                   # TIMES, as INFOTI calls it
+seed = { tip_selected_id = "key" }
+
+[[kind]]
+id = "recipe"
+table = "recipe"
+about = "The alchemy recipes: what each makes from which ingredients, the points it earns, and what it asks of the party."
+exists = "points"
+# Named by what it makes: an item, or else a card.
+title = ["item", "card_row"]
+fields = [
+    "item", "card_row", "ingredient_item", "ingredient_card_row", "ingredient_count", "points", "least_rank",
+    "party_character", "party_character_level", "skill", "required_item", "required_card_row",
+]
+
+[[kind.group]]
+name = "ingredients"
+fields = ["ingredient_item", "ingredient_card_row", "ingredient_count"]
+
+[kind.labels]
+item = "Makes item"
+card_row = "Makes card"
+ingredient_item = "Item"
+ingredient_card_row = "Card"
+ingredient_count = "Count"
+party_character = "Party member"
+party_character_level = "Least level"
+skill = "Party skill"
+required_item = "Item obtained"
+required_card_row = "Card obtained"
+
+[kind.notes]
+points = "The points it earns each time it is made, which raise the alchemy rank."
+least_rank = "The alchemy rank it needs."
+party_character = "A character who must be in the party, at least at the level beside it."
+
+[kind.referenced_as]
+item = "Made by recipes"
+card_row = "Made by recipes"
+ingredient_item = "Ingredient of recipes"
+ingredient_card_row = "Ingredient of recipes"
+
+[[kind]]
+id = "shop_entry"
+table = "shop_entry"
+about = "What the shops sell: an item or a card, from which chapter and rank, and what it asks of the party."
+# Every entry is sold in a shop (a bit of shops, which have no names in the game's data, so it is not published).
+exists = "shops"
+title = ["item", "card_row"]
+fields = ["item", "card_row", "least_chapter", "least_rank", "party_character", "party_character_level", "skill"]
+# The shops sell some items and cards from more than one entry, each from its own chapter or rank.
+qualifiers = ["least_chapter", "least_rank"]
+
+[kind.labels]
+item = "Sells item"
+card_row = "Sells card"
+party_character = "Party member"
+party_character_level = "Least level"
+skill = "Party skill"
+
+[kind.notes]
+party_character = "A character who must be in the party, at least at the level beside it."
+
+[kind.referenced_as]
+item = "Sold in shops"
+card_row = "Sold in shops"
+
+[[kind]]
+id = "deck"
+table = "deck"
+about = "The opponents' decks: their cards, and what a win over them drops."
+exists = "name"
+title = "name"
+fields = ["card_row", "card_copies", "drop_weight", "drop_item", "drop_card_row"]
+
+[[kind.group]]
+name = "cards"
+fields = ["card_row", "card_copies"]
+
+[[kind.group]]
+name = "drops"
+fields = ["drop_weight", "drop_item", "drop_card_row"]
+
+[kind.labels]
+card_row = "Card"
+card_copies = "Copies"
+drop_weight = "Weight"
+drop_item = "Item"
+drop_card_row = "Card"
+
+[kind.notes]
+drops = "What a win drops: one drop for each hundred of the weights' sum, each drawn by weight."
+
+[kind.referenced_as]
+card_row = "In decks"
+drop_item = "Dropped by decks"
+drop_card_row = "Dropped by decks"
+
+[[kind]]
+id = "battle"
+table = "battle"
+about = "The battles of the story and the arenas: each side's deck, the rule, and the opponent's 奥義."
+exists = "deck.side_1"
+title = "deck.side_1"
+fields = ["deck", "rule", "opponent_ultimate", "opponent_ultimate_level"]
+
+[kind.labels]
+deck = "Decks"
+opponent_ultimate = "Opponent's 奥義"
+opponent_ultimate_level = "Its level"
+
+[kind.referenced_as]
+deck = "Battles"
+rule = "Battles"
+opponent_ultimate = "Used in battles"
+
+[[kind]]
+id = "battle_rule"
+table = "battle_rule"
+about = "A battle's special rules: what wins and loses, the turn limit, the hand and deck sizes, and the deck's limits."
+exists = "turn_limit"
+title = "text.1"
+text = ["text"]
+fields = ["outcomes", "turn_limit", "hand_size", "deck_size", "cost_range", "control_range", "attack_range",
+          "hp_range"]
+
+[kind.notes]
+outcomes = "What each event does to the battle: 1 wins it, 2 loses it."
+turn_limit = "99 is none."
+
+[[kind]]
+id = "opponent"
+table = "opponent"
+about = "The arena opponents: where each fights, its battle, the reward, and the opponent to beat first."
+exists = "name"
+title = "name"
+fields = ["arena", "battle", "reward_item", "reward_card_row", "reward_count", "required_opponent"]
+filters = ["arena"]
+
+[kind.labels]
+reward_item = "Reward item"
+reward_card_row = "Reward card"
+required_opponent = "Beat first"
+
+[kind.referenced_as]
+battle = "Arena opponents"
+reward_item = "Arena rewards"
+reward_card_row = "Arena rewards"
+required_opponent = "Opens"
+
+[[kind]]
+id = "goal"
+table = "goal"
+about = "The goals the game opens and closes as the story goes, and their rewards."
+exists = "title"
+title = "title"
+text = ["lines"]
+fields = ["kind", "reward_item", "reward_card_row", "reward_count", "reward_money"]
+
+[kind.labels]
+reward_item = "Reward item"
+reward_card_row = "Reward card"
+
+[kind.referenced_as]
+reward_item = "Goal rewards"
+reward_card_row = "Goal rewards"
+
+[[kind]]
+id = "area"
+table = "area_map"
+about = "The areas of the map, the place each belongs to, and the rule of a battle in it."
+exists = "name"
+title = "name"
+fields = ["place", "battle_rule"]
+
+[kind.referenced_as]
+place = "Areas in it"
+battle_rule = "Areas"

@@ -19,6 +19,7 @@ dot by its name (`graphic.face_CA_AA`), or by its number where it has no name.""
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -48,7 +49,7 @@ KEY = "key"
 STEP = "step"
 EVERY = "*"
 
-EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
+EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about"}
 # A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
@@ -174,6 +175,13 @@ def resolve_field(game: Game, table: dict, ref, where: str, errors: list[str]) -
 def unknown_keys(entry: dict, allowed: set[str], where: str, errors: list[str]) -> None:
     for key in sorted(set(entry) - allowed):
         errors.append(f"{where}: unknown key {key!r}")
+
+
+def refs_of(table: dict) -> dict:
+    """A registry table's references, field = the table its values name (or `picture`), a two-field reference's
+    included."""
+    refs = table.get("refs")
+    return globals_build.split_refs(refs)[0] if isinstance(refs, dict) else {}
 
 
 def check_scripts(value, where: str, errors: list[str], patterns: bool) -> list[str]:
@@ -315,6 +323,14 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
                               patterns=False):
         if name in excluded:
             errors.append(f"{source}: [export] text script {name} is also an excluded builder")
+    # A derived script works out play state from the tables during the boot (Arterial's COUNTSKILL): its writes are
+    # withheld without a refusal, so it may be neither a builder nor a text script.
+    builders = export.get("builders") if isinstance(export.get("builders"), list) else []
+    for name in check_scripts(export.get("derived", []), f"{source}: [export] derived", errors, patterns=False):
+        if any(isinstance(b, str) and fnmatch.fnmatchcase(name, b) for b in builders) and name not in excluded:
+            errors.append(f"{source}: [export] derived script {name} is a builder")
+        if name in (export.get("text_scripts") or []):
+            errors.append(f"{source}: [export] derived script {name} is also a text script")
     text_scripts = set(export.get("text_scripts") or [])
     check_picture_patterns(export.get("explicit_pictures", []), f"{source}: [export] explicit_pictures", errors)
 
@@ -330,10 +346,13 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
     for kind in kinds:
         table = game.tables.get(kind.get("table")) if isinstance(kind, dict) else None
         title = kind.get("title") if table else None
-        target = (table.get("refs") or {}).get(title.partition(".")[0]) if isinstance(title, str) else None
-        if target and target != globals_build.REF_PICTURE and target not in declared:
-            errors.append(f"{source}: kind {kind.get('id')!r}: title {title} refers to table {target}, which no kind "
-                          f"shows, so it has no title to take")
+        for one_title in [title] if isinstance(title, str) else title if isinstance(title, list) else []:
+            if not isinstance(one_title, str):
+                continue
+            target = refs_of(table).get(one_title.partition(".")[0])
+            if target and target != globals_build.REF_PICTURE and target not in declared:
+                errors.append(f"{source}: kind {kind.get('id')!r}: title {one_title} refers to table {target}, which no "
+                              f"kind shows, so it has no title to take")
 
     relation_ids: set[str] = set()
     kind_tables = {kind.get("id"): kind.get("table") for kind in kinds if isinstance(kind, dict)}
@@ -396,13 +415,31 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
 
     one(kind.get("exists"), "exists", None)
     # The title (game data export plan §4.1): a string field, a reference field whose target's title the entity takes
-    # (a recipe is named by the item it makes), or none, and the site names an entity by its kind and id.
-    if "title" in kind:
+    # (a recipe is named by the item it makes), or none, and the site names an entity by its kind and id. A list of
+    # references (plan §5) names it by the first that names a record: an Arterial recipe makes an item or a card.
+    if isinstance(kind.get("title"), list):
+        titles = kind["title"]
+        if len(titles) < 2 or not all(isinstance(t, str) for t in titles):
+            errors.append(f"{where}: a title list names two or more references; one is written as a string")
+        for name in sorted({t for t in titles if isinstance(t, str) and titles.count(t) > 1}):
+            errors.append(f"{where}: title {name} is named twice")
+        for title in (t for t in titles if isinstance(t, str)):
+            field = one(title, "title", None)
+            base = title.partition(".")[0]
+            target = refs_of(table).get(base)
+            if field is not None and (field.kind != "integer" or target is None
+                                      or target == globals_build.REF_PICTURE):
+                errors.append(f"{where}: title {title} is no reference; each title of a list is a reference")
+            elif field is not None and base not in kind.get("fields", []):
+                errors.append(f"{where}: title {title} is a reference, which the kind must publish: list {base} under "
+                              f"fields")
+            published(title, "title", field)
+    elif "title" in kind:
         title = kind["title"]
         field = one(title, "title", None)
         if field is not None and field.kind == "integer":
             base = str(title).partition(".")[0]
-            target = (table.get("refs") or {}).get(base)
+            target = refs_of(table).get(base)
             if target is None or target == globals_build.REF_PICTURE:
                 errors.append(f"{where}: title {title} is an integer field the registry's [table.refs] does not mark as "
                               f"referring to a table; a title is a string field or a reference")
@@ -437,7 +474,7 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             one(ref, "filter", None)
 
     pictures = kind.get("pictures", {})
-    refs = table.get("refs") or {}
+    refs = refs_of(table)
     if not isinstance(pictures, dict):
         errors.append(f"{where}: pictures must be a table of name = field")
         pictures = {}
@@ -719,7 +756,7 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
             owner, declared, name = table, None, key
             published = fields
             own_text = []
-        target = (owner.get("refs") or {}).get(name)
+        target = refs_of(owner).get(name)
         if name not in published:
             errors.append(f"{rwhere}: {key!r} is not a published field" + (f" of table {short}" if dot else ""))
             continue
@@ -1052,6 +1089,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
         "profile": profile_id,
         "export": {"boot": export["boot"], "builders": export["builders"],
                    "excluded_builders": export.get("excluded_builders", []),
+                   "derived": export.get("derived", []),
                    "text_scripts": export.get("text_scripts", []),
                    "explicit_pictures": export.get("explicit_pictures", [])},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
