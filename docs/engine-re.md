@@ -1417,8 +1417,8 @@ handler clears every global bank, once per bank set (two when `set:EnableMemFlip
 
 SYS4433's `op_0x9_reset_scene_and_reload_root_sys4433@0x423b50` does the same. Engine configuration and the shared
 profile are untouched; SYSTEM4 re-authors what it needs when it runs again. A Kamidori game over shows the effect.
-FIELD sets `G[0x428c]=1`, SC5300 ends in op `0x9`, and `INIT2@0x274` draws the map objects and unit sprites
-(DRAWOBJ/DRAWCHALL) whenever `G[0x428c]` is nonzero. A Frida read of native at TITLE after a turn-limit game over
+FIELD sets `G[0x428c]=1` (`party_on_field` in `vm-map/globals-kamidori.toml`), SC5300 ends in op `0x9`, and
+`INIT2@0x274` draws the map objects and unit sprites (DRAWOBJ/DRAWCHALL) whenever `G[0x428c]` is nonzero. A Frida read of native at TITLE after a turn-limit game over
 found `G[0x428c]` and SC5300's `G[0x19c1]`/`G[0xfd435]` back at zero, and the title clean.
 
 The port mirrors that boundary: an `0x9` request propagates through every nested `call-script` frame without

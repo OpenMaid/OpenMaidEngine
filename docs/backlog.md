@@ -336,7 +336,7 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   run. FIELD runs the loader chains, and reaches the point `kamidori.stage.after_loader` (`FIELD@0x527`), only when
   `field_map_continue_mode` is not 1 (`FIELD@0x4c9`). In ordinary play on a floor the mode is 1 (`FIELD@0x144d`).
   FIELD's own save command sets it to 2 around `SAVE.BIN` (`FIELD@0x28cb`..`0x28d8`), so a save made with it loads
-  with 2 and the event is raised. At a load INIT2 runs the stage loaders itself when `G[0x428c]` is set
+  with 2 and the event is raised. At a load INIT2 runs the stage loaders itself when `party_on_field` (`G[0x428c]`) is set
   (`INIT2@0x274`..`0x2b0`; FIELD sets it on entering a floor, `FIELD@0x1fd`), and raises no event. So a save made on
   a floor by any other route would load with the mode at 1: INIT2 has written the stage's tables, FIELD does not
   write them again, and a handler that rewrites them (`../oms/examples/mods/example.random-enemies`) has not run.

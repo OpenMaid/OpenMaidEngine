@@ -36,15 +36,15 @@ public sealed partial class DataPatchWorkspaceTests
         return session;
     }
 
-    /// <param name="onFloor">Kamidori: start as if the floor had been entered already (<c>G[0x428c]</c> set, unnamed in
-    /// the registry), so FIELD skips the arrival scenes it would leave for first (<c>FIELD@0x1ef</c> to <c>0x304</c>),
-    /// which a booted session's story state reaches at some floors.</param>
+    /// <param name="onFloor">Kamidori: start as if the party were out on the field already (<c>party_on_field</c> set),
+    /// so FIELD skips the arrival scenes it would leave for first (<c>FIELD@0x1ef</c> to <c>0x304</c>), which a booted
+    /// session's story state reaches at some floors.</param>
     private GameSession AtStageStart(GateGame game, ModLinkResult? linked, int stage, out string? halt, bool onFloor = false)
     {
         GameSession session = game.Boot(linked is null ? null : Native(linked, LuaErrorPolicy.Halt));
         session.Seed(Cell(game.Profile, "current_stage_id", 0), stage);
         session.Seed(Cell(game.Profile, "field_map_continue_mode", 0), 0);
-        if (onFloor) session.Seed(0x428c, 1);
+        if (onFloor) session.Seed(Cell(game.Profile, "party_on_field", 0), 1);
         SceneResult field = session.RunScene(game.Scripts.RequireByName("FIELD.BIN"), game.Table, new HeadlessWaits(),
                                              provider: game.Scripts, build: game.Build,
                                              scripting: linked is null ? null : Native(linked, LuaErrorPolicy.Halt));

@@ -14,8 +14,8 @@ namespace Ome.Engine.Tests;
 using Script = Ome.Engine.Model.Script;
 
 /// <summary>The game data exporter (game data export spec §5.5, §5.7, §6, §7) on a synthetic game: a boot whose
-/// builders fill an item and a skill table, an append layer, a description script, and one variant per refusal.
-/// </summary>
+/// builders fill an item and a skill table, an append layer, a description script, a loader that builds each item's
+/// loot table, and one variant per refusal.</summary>
 public class GameDataExportTests
 {
     private static readonly OpcodeTable Table = OpcodeTableJson.Load(Paths.OpcodesJson);
@@ -33,7 +33,7 @@ public class GameDataExportTests
     // addresses, in two banks.
     private const int ItemNames = 100, ItemShorts = 200, SkillNames = 1500, Scratch = 900;
     private const int ItemCategory = 1000, ItemPrices = 1100, ItemIcon = 1200, ItemHandler = 1300, ItemSkill = 1400,
-                      SkillCategory = 1500, CurrentItem = 5000;
+                      SkillCategory = 1500, CurrentItem = 5000, LootSkill = 1600, LootCount = 1700;
 
     private static RegistryView Registry() => new(
         [
@@ -44,6 +44,9 @@ public class GameDataExportTests
                 new Dictionary<string, string> { ["granted_skill"] = "skill", ["icon"] = "picture" }),
             new TableLayout("skill", 3, [("name", "skill_names"), ("category", "skill_category")],
                             new Dictionary<string, string>()),
+            // The loot table of the scope `field` (export plan §4.2): a loader builds it for one item at a time.
+            new TableLayout("field_loot", 3, [("skill_id", "loot_skill_ids"), ("count", "loot_counts")],
+                            new Dictionary<string, string> { ["skill_id"] = "skill" }),
         ],
         [
             Array("item_names", GlobalBank.String, ItemNames, 4),
@@ -57,6 +60,8 @@ public class GameDataExportTests
             Array("skill_names", GlobalBank.String, SkillNames, 3),
             Array("skill_category", GlobalBank.Integer, SkillCategory, 3),
             new ArrayLayout("current_item_id", GlobalBank.Integer, CurrentItem, [], new Dictionary<int, string>()),
+            Array("loot_skill_ids", GlobalBank.Integer, LootSkill, 3),
+            new ArrayLayout("loot_counts", GlobalBank.Integer, LootCount, [3, 2], new Dictionary<int, string>()),
         ]);
 
     private static ArrayLayout Array(string name, GlobalBank bank, int address, int records)
@@ -78,6 +83,17 @@ public class GameDataExportTests
          "loaders": [], "script_relations": []}
         """;
 
+    // A loader for each item but item 3 (category 4): LOOT, no builder, calls DROPSET, the loader's own builder, and the
+    // loot table is read at the point after it.
+    private const string Loader = """
+        "loaders": [{"scope": "field", "keys": "item", "skip": {"category": 4}, "script": "LOOT",
+                     "seed": {"current_item_id": "key"}, "read_at": "testgame.loot.ready", "builders": ["DROPSET"],
+                     "tables": {"loot": {"table": "field_loot", "exists": "skill_id", "fields": ["skill_id", "count"]}}}]
+        """;
+
+    private static string WithLoader(string loader = Loader)
+        => Declarations.Replace("\"loaders\": []", loader.Trim(), StringComparison.Ordinal);
+
     [Flags]
     private enum Faults
     {
@@ -86,6 +102,7 @@ public class GameDataExportTests
         ExcludedBuilderWrites = 2,   // CGINIT writes item 3's icon
         StringWithoutOrigin = 4,     // a builder cuts item 1's name into item 3's short description (no origin)
         HandlerIsNoTextScript = 8,   // item 2's handler is OTHER, a scene
+        LoaderScriptWrites = 16,     // LOOT itself writes loot record 2's second count
     }
 
     private sealed class Pictures : IPictureSource
@@ -130,7 +147,19 @@ public class GameDataExportTests
                 (OpCallScript, [I(10)]), (OpExit, []),
             ], "【", "】", "鋭", "するど", "い"),
             [10] = Asm("OTHER.BIN", [(OpShowText, [I(0), S(0)]), (OpExit, [])], "他の台詞"),
+            // Loot record 1 grants the skill numbered as the item; record 2 skill 1, five of it.
+            [11] = Asm("DROPSET.BIN",
+            [
+                (OpMov, [G(LootSkill + 1), G(CurrentItem)]), (OpMov, [G(LootCount + 2), I(3)]),
+                (OpMov, [G(LootCount + 3), I(4)]), (OpMov, [G(LootSkill + 2), I(1)]), (OpMov, [G(LootCount + 4), I(5)]),
+                (OpExit, []),
+            ]),
         };
+        var loot = new List<(int, Operand[])> { (OpCallScript, [I(11)]) };
+        if (faults.HasFlag(Faults.LoaderScriptWrites)) loot.Add((OpMov, [G(LootCount + 5), I(6)]));
+        // The point: what LOOT writes after it is never read.
+        loot.AddRange([(OpMov, [G(LootSkill + 1), I(99)]), (OpExit, [])]);
+        byId[12] = Asm("LOOT.BIN", loot);
         var calls = new List<(int, Operand[])> { (OpCallScript, [I(1)]), (OpCallScript, [I(2)]), (OpCallScript, [I(3)]) };
         if (faults.HasFlag(Faults.SceneWritesTheTable)) calls.AddRange([(OpCallScript, [I(4)]), (OpCallScript, [I(5)])]);
         if (faults.HasFlag(Faults.ExcludedBuilderWrites)) calls.Add((OpCallScript, [I(6)]));
@@ -145,7 +174,10 @@ public class GameDataExportTests
             Scripts = new ScriptMap(byId),
             ScriptByName = name => byName.GetValueOrDefault(ScriptNames.Normalized(name)),
             BootStop = new RunStop("BOOT", boot.Instructions[^1].Offset),
-            Declarations = ExportDeclarations.Parse(Declarations),
+            StopOf = point => point == "testgame.loot.ready"
+                ? new RunStop("LOOT", byId[12].Instructions[^2].Offset)
+                : throw new ExportFailure($"{point} has no site"),
+            Declarations = ExportDeclarations.Parse(faults.HasFlag(Faults.LoaderScriptWrites) ? WithLoader() : Declarations),
             Registry = Registry(),
             Pictures = new Pictures(),
             BuildInfo = [("revision", "abcdef012345"), ("title", "テスト")],
@@ -483,11 +515,122 @@ public class GameDataExportTests
     }
 
     [Fact]
-    public void DeclarationsWithLoadersAreRefusedUntilTheyAreExported()
+    public void DeclarationsWithScriptRelationsAreRefusedUntilTheyAreExported()
     {
-        string withLoader = Declarations.Replace("\"loaders\": []", "\"loaders\": [{\"scope\": \"stage\"}]", StringComparison.Ordinal);
-        var error = Assert.Throws<InvalidDataException>(() => ExportDeclarations.Parse(withLoader));
-        Assert.Contains("loaders", error.Message, StringComparison.Ordinal);
+        string withRelation = Declarations.Replace("\"script_relations\": []", "\"script_relations\": [{\"id\": \"given_in\"}]",
+                                                   StringComparison.Ordinal);
+        var error = Assert.Throws<InvalidDataException>(() => ExportDeclarations.Parse(withRelation));
+        Assert.Contains("script_relations", error.Message, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------------------------------------------- loaders (§6.3)
+
+    private static ExportInputs WithDeclarations(ExportInputs game, string declarations, Func<string, RunStop>? stopOf = null)
+        => new()
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = stopOf ?? game.StopOf,
+            Declarations = ExportDeclarations.Parse(declarations), Registry = game.Registry, Pictures = game.Pictures,
+            BuildInfo = game.BuildInfo,
+        };
+
+    private static long?[] Loaded(ExportEntity entity, string table, int record, string field)
+        => entity.Loaded.Single(row => row.Table == table && row.Record == record).Values.Single(value => value.Field == field).Values;
+
+    [Fact]
+    public void ALoaderBuildsATableForEachKeyAndReadsItAtItsPoint()
+    {
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), WithLoader()));
+        Assert.Equal(2, result.Report.LoaderRuns);                                     // item 3 is skipped
+        Assert.Empty(result.Report.LoaderHalts);
+        Assert.Empty(result.Report.Refusals);                                          // DROPSET is the loader's builder
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal([1, 2], sword.Loaded.Select(row => row.Record));                  // record 0 and 3 do not exist
+        Assert.Equal([1], Loaded(sword, "loot", 1, "skill_id"));                       // the seed, not LOOT's later 99
+        Assert.Equal([3, 4], Loaded(sword, "loot", 1, "count"));
+        Assert.Equal([5, 0], Loaded(sword, "loot", 2, "count"));
+        Assert.Equal([2], Loaded(Entity(result, "item", 2), "loot", 1, "skill_id"));
+        Assert.Empty(Entity(result, "item", 3).Loaded);
+        // A loaded reference is the key entity's: <table>.<field>, its index the record times the width.
+        Assert.Contains(new ExportRef("loot.skill_id", 1, "skill", 1), sword.Refs);
+        Assert.Contains(new ExportRef("loot.skill_id", 2, "skill", 1), sword.Refs);
+        Assert.Equal(1, result.Report.MissingRefs[("item", "loot.skill_id", "skill")]);  // item 2's skill 2
+        ExportLoadedTable table = result.Kinds.Single(kind => kind.Declaration.Id == "item").Loaded.Single();
+        Assert.Equal(("loot", "field_loot", "field"), (table.Declaration.Name, table.Table.Name, table.Scope));
+    }
+
+    [Fact]
+    public void ALoaderScriptsOwnWriteIsRefused()
+    {
+        ExportResult result = GameDataExporter.Run(Game(Faults.LoaderScriptWrites));
+        var refused = result.Report.Refusals.Where(refusal => refusal.Field == "loot.count").ToList();
+        Assert.Equal([1, 2], refused.Select(refusal => refusal.Id));                 // one in each item's run
+        Assert.All(refused, refusal => Assert.Equal(("item", 2 * 2 + 1, LootCount + 5),
+                                                    (refusal.Kind, refusal.Index, refusal.Address)));
+        Assert.Equal([5, null], Loaded(Entity(result, "item", 1), "loot", 2, "count"));
+    }
+
+    [Fact]
+    public void ALoaderThatDoesNotReachItsPointIsReportedAndTheExportGoesOn()
+    {
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(WithDeclarations(game, WithLoader(),
+                                                                    _ => new RunStop("LOOT", 0x7777)));
+        Assert.Equal(2, result.Report.LoaderHalts.Count);
+        Assert.All(result.Report.LoaderHalts, halt => Assert.Equal("exit", halt.Halt));
+        Assert.Empty(Entity(result, "item", 1).Loaded);
+        Assert.Equal("剣", Text(Entity(result, "item", 1), "name"));
+    }
+
+    [Fact]
+    public void ALoadedTableMayNotTakeTheNameOfAKeyField()
+    {
+        string clash = WithLoader().Replace("\"loot\": {", "\"category\": {", StringComparison.Ordinal);
+        var failure = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(WithDeclarations(Game(), clash)));
+        Assert.Contains("category", failure.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheDatabaseHoldsTheLoadedTablesAndTheirRowsChangeTheKeysHash()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        string plain = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(GameDataExporter.Run(WithDeclarations(Game(), WithLoader())), root, "abcdef012345", Manifest);
+            ExportWriter.Write(GameDataExporter.Run(Game()), plain, "abcdef012345", Manifest);
+            string? Scalar(string folder, string sql)
+            {
+                using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+                {
+                    DataSource = Path.Combine(folder, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+                }.ToString());
+                connection.Open();
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+
+            Assert.Equal("field_loot|field|3|4", Scalar(root, "SELECT table_name || '|' || scope || '|' || records || '|' || rows "
+                                                             + "FROM loaded WHERE kind = 'item' AND name = 'loot'"));
+            Assert.Equal("skill|skill|1", Scalar(root, "SELECT ref_table || '|' || ref_kind || '|' || published FROM loaded_field "
+                                                       + "WHERE kind = 'item' AND loaded = 'loot' AND name = 'skill_id'"));
+            Assert.Equal("int[2]", Scalar(root, "SELECT type FROM loaded_field WHERE loaded = 'loot' AND name = 'count'"));
+            Assert.Equal("[3,4]", Scalar(root, "SELECT count FROM \"item.loot\" WHERE id = 1 AND record = 1"));
+            Assert.Equal("2", Scalar(root, "SELECT skill_id FROM \"item.loot\" WHERE id = 2 AND record = 1"));
+            Assert.Equal("2", Scalar(root, "SELECT idx FROM ref WHERE field = 'loot.skill_id' AND from_id = 1 ORDER BY idx DESC"));
+            Assert.NotEqual(Scalar(plain, "SELECT content_hash FROM item WHERE id = 1"),
+                            Scalar(root, "SELECT content_hash FROM item WHERE id = 1"));
+            // An entity without loaded rows keeps the hash it has in an export without loaders.
+            Assert.Equal(Scalar(plain, "SELECT content_hash FROM item WHERE id = 3"),
+                         Scalar(root, "SELECT content_hash FROM item WHERE id = 3"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            foreach (string folder in new[] { root, plain })
+                if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
     }
 
     [Fact]

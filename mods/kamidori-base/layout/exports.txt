@@ -342,6 +342,7 @@ objective_seen_flags
 objective_sort_keys
 objective_texts
 party_cost_capacity
+party_on_field
 player_evaluation_points
 player_money
 protagonist_craftsman_rank

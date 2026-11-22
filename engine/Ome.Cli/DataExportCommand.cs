@@ -60,6 +60,7 @@ internal static class DataExportCommand
                                                                      ? name
                                                                      : name + ".BIN"),
                 BootStop = bootStop,
+                StopOf = point => ReadAt(gameId, point, catalog, store),
                 Declarations = declarations,
                 Registry = RegistryView.Load(Paths.GlobalsJson(gameId)),
                 Pictures = new CatalogPictures(new ResourceMap(catalog, store, Console.Error.WriteLine, allowBmpAsAgf)),
@@ -100,8 +101,8 @@ internal static class DataExportCommand
         return result.Report.ExitCode;
     }
 
-    /// <summary>The boot stop: the site of the declarations' <c>read_at</c> point in the installed script's revision.
-    /// </summary>
+    /// <summary>A stop at a patch point: its site in the installed script's revision (the boot's <c>read_at</c>, a
+    /// loader's).</summary>
     private static RunStop ReadAt(string gameId, string readAt, Sys4AssetCatalog catalog, Sys4AssetStore store)
     {
         OmsPatchPoints points = OmsPatchPoints.Load(Paths.PatchPointsJson(gameId));
@@ -201,6 +202,11 @@ internal static class DataExportCommand
         Console.WriteLine($"  descriptions: {report.DescriptionRuns} runs, {report.EmptyDescriptions} empty, "
                           + $"{report.DroppedPieces} pieces of other scripts dropped, {report.DescriptionHalts.Count} halts, "
                           + $"{report.MissingScripts.Count} missing scripts");
+        if (report.LoaderRuns > 0)
+        {
+            int rows = result.Kinds.SelectMany(kind => kind.Entities).Sum(entity => entity.Loaded.Count);
+            Console.WriteLine($"  loaders: {report.LoaderRuns} runs, {report.LoaderHalts.Count} halts, {rows} rows");
+        }
         Section("refused", report.Refusals.Count, report.Refusals.Select(refusal =>
             $"{refusal.Kind} {refusal.Id} {refusal.Field}[{refusal.Index}] ({BankLetter(refusal.Bank)}:0x{refusal.Address:x}): {refusal.Reason}"));
         Section("missing references", report.MissingRefs.Values.Sum(), report.MissingRefs.Select(pair =>
@@ -214,6 +220,8 @@ internal static class DataExportCommand
         if (explicitFiles > 0) Console.WriteLine($"  explicit pictures: {explicitFiles} files, blurred on the site");
         Section("explicit_pictures entries that match no picture", report.UnmatchedExplicitPictures.Count,
                 report.UnmatchedExplicitPictures);
+        Section("loader halts", report.LoaderHalts.Count, report.LoaderHalts.Select(halt =>
+            $"{halt.Scope} for {halt.Kind} {halt.Id}: {halt.Halt}"));
         Section("description halts", report.DescriptionHalts.Count, report.DescriptionHalts.Select(halt =>
             $"{halt.Kind} {halt.Id} {halt.Description}: {halt.Halt}"));
         Section("missing description scripts", report.MissingScripts.Count, report.MissingScripts.Select(missing =>

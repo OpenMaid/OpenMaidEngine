@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/globals-kamidori.toml by tools/globals_build.py --build -->
 # Global Variable Reference — kamidori (generated)
 
-8303 globals (632 curated, 7671 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
+8304 globals (633 curated, 7671 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
 
 ## Tables
 
@@ -8625,6 +8625,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 |---|---|---|---|---|
 | `0x2c84` | voice_suppressed | high | investigation | Scene scripts/BTL/FIELD/HISTORY play a voice only when 0x2c84[slot]==0; CONFIG4 toggles, INITCONFIG/LOADCONFIG persist. |
 | `0x360e` | world_map_zoom_mode | med | investigation | ALLMAP@0x1d2 picks the scale 0x32/0x64; ALLMAP@0xbd3 toggles it from the two zoom buttons. |
+| `0x428c` | party_on_field | high | investigation | FIELD sets it when it arrives and it is 0, and only then runs the arrival block (FIELD@0x1ef to 0x304: the stage's visit flags, the world area's travel days, the arrival scenes through SCJUMP), so a later floor of the same outing skips it. Cleared on every way off the field: FIELD's exits to the town, the workshop and the map (FIELD@0xcb05, 0xcb36, 0xcb54), and TOWN, STUDIO and ALLMAP on entry (TOWN@0x30, STUDIO@0x39f, ALLMAP@0x13a). Scenes test it to send the party home (SC0110@0x4ad7); INIT2 rebuilds the field at a load when it is set (INIT2@0x274); INFO3 runs the floor's loaders again when it is set (INFO3@0xcdc). The game data export seeds it with 1 to run a stage's loaders without the arrival. |
 | `0x4f9a5` | map_terrain_dirty_flags | med | investigation | SETLAND@0xf4, DELLAND@0xd1 and RESETLAND@0x120 set bit 0 after editing current_floor_terrain_grid. |
 | `0x4f9a6` | map_overlay_mode_flags | med | investigation | DRAWMAP@0xa/0x49e gates the per-tile owner tint; DRAWMINIMAP@0x185 (bit1, owner colours) and @0x217 (bit2, element colours from terrain_element_ids). |
 | `0x537f8` | arena_battle_active | med | investigation | ARENA@0x7e4 sets 1 before ORGANIZE; ALLMAP@0x13f and FIELD@0x6a5 test/reset it (arena battles skip exploration state). |

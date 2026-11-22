@@ -21,17 +21,20 @@ public sealed record ExportDeclarations(
     /// extension, a <c>*</c> matching any run of characters (<c>[export] explicit_pictures</c>).</summary>
     public IReadOnlyList<string> ExplicitPictures { get; init; } = [];
 
+    /// <summary>The loaders (spec §6.3, export plan §4.2): the scripts the export runs once for each key entity, and the
+    /// tables of their scope it publishes under that entity.</summary>
+    public IReadOnlyList<LoaderDeclaration> Loaders { get; init; } = [];
+
     public static ExportDeclarations Load(string path) => Parse(File.ReadAllText(path), path);
 
     public static ExportDeclarations Parse(string json, string source = "entities.json")
     {
         using JsonDocument document = JsonDocument.Parse(json);
         JsonElement root = document.RootElement;
-        // Loaders (milestone 3) and script relations (milestone 6) are not exported yet; declarations that have them
-        // are refused rather than half exported.
-        foreach (string later in new[] { "loaders", "script_relations" })
-            if (root.TryGetProperty(later, out JsonElement list) && list.GetArrayLength() > 0)
-                throw new InvalidDataException($"{source}: {later} are declared, which this exporter does not export yet");
+        // Script relations (milestone 6) are not exported yet; declarations that have them are refused rather than
+        // half exported.
+        if (root.TryGetProperty("script_relations", out JsonElement relations) && relations.GetArrayLength() > 0)
+            throw new InvalidDataException($"{source}: script_relations are declared, which this exporter does not export yet");
         JsonElement export = root.GetProperty("export");
         JsonElement boot = export.GetProperty("boot");
         return new ExportDeclarations(
@@ -45,6 +48,9 @@ public sealed record ExportDeclarations(
             root.GetProperty("kinds").EnumerateArray().Select(KindDeclaration.Parse).ToList())
         {
             ExplicitPictures = Strings(export, "explicit_pictures"),
+            Loaders = root.TryGetProperty("loaders", out JsonElement loaders)
+                ? loaders.EnumerateArray().Select(LoaderDeclaration.Parse).ToList()
+                : [],
         };
     }
 
@@ -113,6 +119,43 @@ public sealed record DescriptionDeclaration(
                 : []);
     }
 }
+
+/// <summary>A loader (spec §6.3): for each entity of the kind <see cref="Keys"/> not skipped, <see cref="Script"/> run
+/// from the booted session with the seeds to the <see cref="ReadAt"/> point, then the published tables of
+/// <see cref="Scope"/> read (export plan §4.2).</summary>
+public sealed record LoaderDeclaration(
+    string Scope,
+    string Keys,
+    IReadOnlyList<(string Field, long Value)> Skip,
+    string Script,
+    IReadOnlyList<(string Global, SeedValue Value)> Seed,
+    string ReadAt,
+    IReadOnlyList<string> Builders,
+    IReadOnlyList<LoadedTableDeclaration> Tables)
+{
+    internal static LoaderDeclaration Parse(JsonElement loader)
+        => new(
+            loader.GetProperty("scope").GetString()!,
+            loader.GetProperty("keys").GetString()!,
+            loader.TryGetProperty("skip", out JsonElement skip)
+                ? skip.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetInt64())).ToList()
+                : [],
+            loader.GetProperty("script").GetString()!,
+            loader.TryGetProperty("seed", out JsonElement seed)
+                ? seed.EnumerateObject().Select(pair => (pair.Name, SeedValue.Parse(pair.Value))).ToList()
+                : [],
+            loader.GetProperty("read_at").GetString()!,
+            ExportDeclarations.Strings(loader, "builders"),
+            loader.TryGetProperty("tables", out JsonElement tables)
+                ? tables.EnumerateObject().Select(pair => new LoadedTableDeclaration(
+                    pair.Name, pair.Value.GetProperty("table").GetString()!, pair.Value.GetProperty("exists").GetString()!,
+                    ExportDeclarations.Strings(pair.Value, "fields"))).ToList()
+                : []);
+}
+
+/// <summary>A table a loader publishes (export plan §4.2): its short name in the scope, its registry table, which of its
+/// records exist, and its published fields.</summary>
+public sealed record LoadedTableDeclaration(string Name, string Table, string Exists, IReadOnlyList<string> Fields);
 
 /// <summary>A seed's value: the record's id (<c>"key"</c>) or a number.</summary>
 public readonly record struct SeedValue(bool IsKey, long Value)

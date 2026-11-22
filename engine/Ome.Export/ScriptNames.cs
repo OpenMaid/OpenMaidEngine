@@ -29,6 +29,9 @@ public sealed class BuilderRule(IReadOnlyList<string> builders, IReadOnlyList<st
 {
     private readonly HashSet<string> _excluded = new(excluded, StringComparer.Ordinal);
 
+    /// <summary>This rule with more builders: a loader's own (spec §6.3).</summary>
+    public BuilderRule With(IReadOnlyList<string> more) => more.Count == 0 ? this : new([.. builders, .. more], excluded);
+
     public bool Allows(string script)
     {
         string name = ScriptNames.Base(script);

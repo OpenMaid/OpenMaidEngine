@@ -35,6 +35,9 @@ REGISTRY = "".join([
     g("0x400", "weapon_prices", "int[3]"),
     g("0x40", "weapon_names", "string[3]"),
     g("0x410", "foe_hero_ids", "int[5]"),
+    g("0x420", "foe_levels", "int[5][2]"),
+    g("0x50", "foe_names", "string[5]"),
+    g("0x440", "trap_damage", "int[5]"),
 ]) + '''
 [[table]]
 name = "hero"
@@ -66,8 +69,17 @@ records = 5
 built_by = "stage"
 [table.fields]
 hero = "foe_hero_ids"
+levels = "foe_levels"
+name = "foe_names"
 [table.refs]
 hero = "hero"
+
+[[table]]
+name = "trap"
+records = 5
+built_by = "stage"
+[table.fields]
+damage = "trap_damage"
 
 [[scope]]
 name = "stage"
@@ -75,6 +87,7 @@ first = 1
 last = 9
 [scope.tables]
 foe = "foe"
+art = "trap"
 '''
 
 POINTS = '''
@@ -138,6 +151,11 @@ script = "FIELD"
 seed = { current_hero_id = "key" }
 read_at = "demo.stage.loaded"
 builders = ["FOEINIT"]
+skip = { class = 9 }
+
+[loader.tables.foe]
+exists = "hero"
+fields = ["hero", "levels"]
 
 [[script_relation]]
 id = "given_in"
@@ -183,6 +201,9 @@ def test_good_declarations():
     check(weapon.get("text") == [] and weapon.get("pictures") == {} and weapon.get("descriptions") == [],
           "an optional list or table is present and empty")
     check(data.get("loaders", [{}])[0].get("builders") == ["FOEINIT"], "a loader keeps its own builders")
+    check(data.get("loaders", [{}])[0].get("tables") == {"foe": {"table": "foe", "exists": "hero",
+                                                               "fields": ["hero", "levels"]}},
+          "a loader's published table names its registry table beside its short name")
     check(data.get("script_relations", [{}])[0].get("count") is None, "a relation without a count has count null")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
@@ -329,6 +350,21 @@ keys = "monster"
 script = "field"
 read_at = "demo.stage.unloaded"
 
+[[loader]]
+scope = "stage"
+keys = "hero"
+script = "FIELD"
+read_at = "demo.stage.loaded"
+skip = { kind = 1 }
+[loader.tables.foe]
+exists = "levels"
+fields = ["hero", "name", "speed"]
+colour = 1
+[loader.tables.art]
+exists = "damage"
+[loader.tables.boss]
+exists = "hero"
+
 [[script_relation]]
 id = "given_in"
 call = "ADDWEAPON"
@@ -347,7 +383,12 @@ count = "current_hero_id"
                    "script: 'field' must be", "reads at 'demo.stage.unloaded'",
                    "kind 'weapon' is not the id of a kind", "key 'current_monster_id' is not a global",
                    "relation given_in is defined twice", "negative must be a lowercase identifier",
-                   "key hero_names is not an integer global"):
+                   "key hero_names is not an integer global",
+                   "skip: 'kind' is not a field of table hero", "table 'foe': unknown key 'colour'",
+                   "exists levels is a row of cells", "fields name is a string field",
+                   "fields: 'speed' is not a field of table foe",
+                   "table 'art' has the name of a field of the key kind's table hero",
+                   "table 'boss' is not a table of scope stage (its tables: art, foe)"):
         check(needle in output, f"the lint flags {needle!r}")
 
 

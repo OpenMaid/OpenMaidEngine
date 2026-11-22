@@ -116,6 +116,13 @@ public static class ExportWriter
             "CREATE TABLE snippet (kind TEXT NOT NULL, id INTEGER NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, id))",
             "CREATE TABLE script_use (kind TEXT NOT NULL, script TEXT NOT NULL, reads INTEGER NOT NULL, writes INTEGER NOT NULL, "
             + "PRIMARY KEY (kind, script))",
+            // A loader's published tables (export plan §4.2): each listed, its fields as `field` lists a kind's, and its
+            // rows in a table named <kind>.<name>.
+            "CREATE TABLE loaded (kind TEXT NOT NULL, name TEXT NOT NULL, table_name TEXT NOT NULL, scope TEXT NOT NULL, "
+            + "records INTEGER NOT NULL, rows INTEGER NOT NULL, PRIMARY KEY (kind, name))",
+            "CREATE TABLE loaded_field (kind TEXT NOT NULL, loaded TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, "
+            + "published INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, bank TEXT, address INTEGER, width INTEGER, "
+            + "column_index INTEGER, columns TEXT, PRIMARY KEY (kind, loaded, name))",
         ];
         foreach (string sql in fixedTables) Execute(connection, sql);
         foreach (ExportKind kind in result.Kinds)
@@ -124,8 +131,20 @@ public static class ExportWriter
             columns.AddRange(kind.Published.Select(field => Quote(field.Name) + (field.IsArray ? " TEXT" : " INTEGER")));
             columns.Add("content_hash TEXT NOT NULL");
             Execute(connection, $"CREATE TABLE {Quote(kind.Declaration.Id)} ({string.Join(", ", columns)})");
+            foreach (ExportLoadedTable table in kind.Loaded)
+            {
+                var loaded = new List<string> { "id INTEGER NOT NULL", "record INTEGER NOT NULL" };
+                loaded.AddRange(table.Published.Select(field => Quote(field.Name) + (field.IsArray ? " TEXT" : " INTEGER")));
+                loaded.Add("PRIMARY KEY (id, record)");
+                Execute(connection, $"CREATE TABLE {Quote(LoadedTableName(kind, table))} ({string.Join(", ", loaded)})");
+            }
         }
     }
+
+    /// <summary>The SQL table a loaded table's rows go in: <c>stage.enemy</c>. A kind id has no dot, so no kind's table
+    /// takes the name.</summary>
+    public static string LoadedTableName(ExportKind kind, ExportLoadedTable table)
+        => $"{kind.Declaration.Id}.{table.Declaration.Name}";
 
     /// <summary>Inserts rows through one prepared command.</summary>
     private sealed class Inserter : IDisposable
@@ -200,6 +219,44 @@ public static class ExportWriter
             foreach (ExportModderCell cell in entity.Cells)
                 cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
         }
+        WriteLoaded(connection, kind, kinds);
+    }
+
+    /// <summary>A kind's loaded tables (export plan §4.2): one <c>loaded</c> row each, a <c>loaded_field</c> row per field
+    /// of its registry table, and its rows by key entity and record.</summary>
+    private static void WriteLoaded(SqliteConnection connection, ExportKind kind, IReadOnlyList<ExportKind> kinds)
+    {
+        string id = kind.Declaration.Id;
+        foreach (ExportLoadedTable table in kind.Loaded)
+        {
+            string name = table.Declaration.Name;
+            var rows = kind.Entities.SelectMany(entity => entity.Loaded.Where(row => row.Table == name)
+                                                    .Select(row => (entity.Id, Row: row))).ToList();
+            using (var insert = new Inserter(connection, "loaded", "kind", "name", "table_name", "scope", "records", "rows"))
+                insert.Row(id, name, table.Table.Name, table.Scope, table.Table.Records, rows.Count);
+            using (var insert = new Inserter(connection, "loaded_field", "kind", "loaded", "name", "type", "published",
+                                             "ref_table", "ref_kind", "bank", "address", "width", "column_index", "columns"))
+                foreach (FieldLayout field in table.TableFields)
+                {
+                    string? refTable = table.Table.Refs.GetValueOrDefault(field.Field);
+                    string? refKind = refTable == null || refTable == "picture"
+                        ? null
+                        : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
+                    insert.Row(id, name, field.Name, field.TypeName,
+                               table.Published.Any(published => published.Name == field.Name) ? 1 : 0, refTable, refKind,
+                               BankName(field.Array.Bank), field.Array.Address, field.Array.Width, field.Column,
+                               ColumnNames(field));
+                }
+            string[] columns = ["id", "record", .. table.Published.Select(field => field.Name)];
+            using var values = new Inserter(connection, LoadedTableName(kind, table), columns);
+            foreach ((int entity, ExportLoadedRow row) in rows)
+            {
+                var cells = new List<object?> { entity, row.Record };
+                foreach ((FieldLayout field, (string _, long?[] elements)) in table.Published.Zip(row.Values))
+                    cells.Add(field.IsArray ? JsonSerializer.Serialize(elements) : elements[0]);
+                values.Row([.. cells]);
+            }
+        }
     }
 
     /// <summary>A record array's element names, as a JSON array with null for an element the registry does not name
@@ -249,8 +306,9 @@ public static class ExportWriter
                        null);
     }
 
-    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references, and its pictures'
-    /// hashes and explicit marks, in the export's order.</summary>
+    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references, its pictures'
+    /// hashes and explicit marks, and the rows its loaders built (written only when it has some), in the export's order.
+    /// </summary>
     public static string ContentHash(ExportEntity entity)
     {
         var buffer = new MemoryStream();
@@ -302,6 +360,27 @@ public static class ExportWriter
             json.WriteEndArray();
             json.WriteStartArray("relations");
             json.WriteEndArray();
+            if (entity.Loaded.Count > 0)
+            {
+                json.WriteStartArray("loaded");
+                foreach (ExportLoadedRow row in entity.Loaded)
+                {
+                    json.WriteStartArray();
+                    json.WriteStringValue(row.Table);
+                    json.WriteNumberValue(row.Record);
+                    foreach ((string field, long?[] elements) in row.Values)
+                    {
+                        json.WriteStartArray();
+                        json.WriteStringValue(field);
+                        foreach (long? element in elements)
+                            if (element is { } number) json.WriteNumberValue(number);
+                            else json.WriteNullValue();
+                        json.WriteEndArray();
+                    }
+                    json.WriteEndArray();
+                }
+                json.WriteEndArray();
+            }
             json.WriteEndObject();
         }
         return Sha256Of(buffer.ToArray());

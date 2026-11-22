@@ -9,7 +9,7 @@ a fragment compiles only against a revision its point lists.
 
 Script: `INIT2.BIN`
 
-The instruction after op 0x143 (INIT2@0x20c). Every layer has written its data: the 28 base *INIT scripts, then each mounted append's $n$AUTORUN and its $n$*INIT layers. The boot has not used the tables yet. INIT2 goes on to fill each unset text colour setting from voice_setting_default_text_colors, to rebuild the field when a save made on a floor is loaded (G[0x428c]: the stage loaders, then SETMAPTEX, whose READICON reads unit_graphic_asset_ids and item_costume_graphic_asset_ids), and to set up the studio's ornaments. None of it writes a record table, so that work reads an edit made here. The tables lie above the saved prefix (0xfd40f): a load zeroes them, the prologue builds them again, and control reaches here again while the load restores.
+The instruction after op 0x143 (INIT2@0x20c). Every layer has written its data: the 28 base *INIT scripts, then each mounted append's $n$AUTORUN and its $n$*INIT layers. The boot has not used the tables yet. INIT2 goes on to fill each unset text colour setting from voice_setting_default_text_colors, to rebuild the field when a save made on a floor is loaded (party_on_field: the stage loaders, then SETMAPTEX, whose READICON reads unit_graphic_asset_ids and item_costume_graphic_asset_ids), and to set up the studio's ornaments. None of it writes a record table, so that work reads an edit made here. The tables lie above the saved prefix (0xfd40f): a load zeroes them, the prologue builds them again, and control reaches here again while the load restores.
 
 | Revision | Site |
 |---|---|
@@ -53,7 +53,7 @@ The floor ends and every layer's close handler has run (stage_close_handler_scri
 
 Script: `INFO3.BIN`
 
-INFO's third tab (INFO3, アイテム情報, which FIELD opens from its menu) has run, for its 獲得地点 view of the selected item, every stage's loaders to find the floors whose dig points yield it (INFO3@0xb88 to 0xc12), and then, on a floor (G[0x428c] set), put current_stage_id back and run that stage's loaders again (INFO3@0xcdc to 0xd1a): the floor's enemy slots, objects and rules hold the stage as authored, and the units on the field are where they were. Off a floor control does not reach here (INFO3@0xcdc jumps past it), and the loop leaves current_stage_id at 1000. current_stage_id is the floor's stage.
+INFO's third tab (INFO3, アイテム情報, which FIELD opens from its menu) has run, for its 獲得地点 view of the selected item, every stage's loaders to find the floors whose dig points yield it (INFO3@0xb88 to 0xc12), and then, on a floor (party_on_field set), put current_stage_id back and run that stage's loaders again (INFO3@0xcdc to 0xd1a): the floor's enemy slots, objects and rules hold the stage as authored, and the units on the field are where they were. Off a floor control does not reach here (INFO3@0xcdc jumps past it), and the loop leaves current_stage_id at 1000. current_stage_id is the floor's stage.
 
 | Revision | Site |
 |---|---|

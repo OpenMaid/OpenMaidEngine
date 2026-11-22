@@ -3846,6 +3846,16 @@ source = "investigation"
 confidence = "high"
 
 [[global]]
+address = "0x428c"
+name = "party_on_field"
+category = "ui-toggle"
+type = "int"
+value_domain = "1 while the party is out on the field, from its arrival on a floor until it leaves; 0 otherwise"
+usage = "FIELD sets it when it arrives and it is 0, and only then runs the arrival block (FIELD@0x1ef to 0x304: the stage's visit flags, the world area's travel days, the arrival scenes through SCJUMP), so a later floor of the same outing skips it. Cleared on every way off the field: FIELD's exits to the town, the workshop and the map (FIELD@0xcb05, 0xcb36, 0xcb54), and TOWN, STUDIO and ALLMAP on entry (TOWN@0x30, STUDIO@0x39f, ALLMAP@0x13a). Scenes test it to send the party home (SC0110@0x4ad7); INIT2 rebuilds the field at a load when it is set (INIT2@0x274); INFO3 runs the floor's loaders again when it is set (INFO3@0xcdc). The game data export seeds it with 1 to run a stage's loaders without the arrival."
+source = "investigation"
+confidence = "high"
+
+[[global]]
 address = "0x428e"
 name = "current_labyrinth_id"
 category = "index-pointer"

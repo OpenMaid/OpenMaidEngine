@@ -9,15 +9,16 @@ namespace Ome.Export;
 
 /// <summary>
 /// Reads a game's data through the engine (game data export spec §6): the boot with its writes recorded, each kind's
-/// records, the run-time check of what may be published (§5.5), the descriptions (§5.7), the references (§5.3) and the
-/// pictures (§6.5). <see cref="ExportWriter"/> writes the result.
+/// records, the run-time check of what may be published (§5.5), the descriptions (§5.7), the loaders (§6.3), the
+/// references (§5.3) and the pictures (§6.5). <see cref="ExportWriter"/> writes the result.
 /// </summary>
 public static class GameDataExporter
 {
     /// <summary>The export's own tables (spec §7.2), which a kind's table may not share a name with.</summary>
     public static readonly IReadOnlySet<string> FixedTables = new HashSet<string>(StringComparer.Ordinal)
     {
-        "build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use",
+        "build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use", "loaded",
+        "loaded_field",
     };
 
     public static ExportResult Run(ExportInputs inputs)
@@ -35,6 +36,7 @@ public static class GameDataExporter
                 throw new ExportFailure($"kind {kind.Id} has the name of one of the export's own tables");
             kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, report));
         }
+        foreach (LoaderDeclaration loader in declarations.Loaders) Load(inputs, boot, loader, kinds, rule, report);
         LinkReferences(kinds, report);
         report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
         return new ExportResult(declarations, kinds, report, inputs.BuildInfo);
@@ -177,6 +179,84 @@ public static class GameDataExporter
         return rule.Allows(store.Origin.Script) ? null : $"a string stored at {store.Origin}, which is in no builder";
     }
 
+    // ------------------------------------------------------------------------------------------------- loaders (§6.3)
+
+    /// <summary>Runs <paramref name="loader"/> once for each entity of its key kind (export plan §4.2): from a copy of
+    /// the booted session, with its seeds, to its point; then reads its published tables' records that exist, each
+    /// shown cell checked as a kind's are (§5.5), with the loader's own builders beside the export's.</summary>
+    private static void Load(ExportInputs inputs, GameSession boot, LoaderDeclaration loader, IReadOnlyList<ExportKind> kinds,
+                             BuilderRule exportRule, ExportReport report)
+    {
+        string where = $"loader {loader.Scope}";
+        ExportKind keys = kinds.FirstOrDefault(kind => kind.Declaration.Id == loader.Keys)
+                          ?? throw new ExportFailure($"{where}: its keys {loader.Keys} is no kind");
+        if (inputs.StopOf is null) throw new ExportFailure($"{where} reads at {loader.ReadAt}, and no patch point is resolved");
+        RunStop stop = inputs.StopOf(loader.ReadAt);
+        Script script = inputs.ScriptByName(loader.Script)
+                        ?? throw new ExportFailure($"{where} runs {loader.Script}, which the install lacks");
+        if (ScriptNames.Normalized(script.Name) != stop.Script)
+            throw new ExportFailure($"{where} reads at {loader.ReadAt}, which lies in {stop.Script}, not in {loader.Script}");
+        RegistryView registry = inputs.Registry;
+        BuilderRule rule = exportRule.With(loader.Builders);
+        var skips = loader.Skip.Select(skip => (Field: registry.Resolve(keys.Table, skip.Field), skip.Value)).ToList();
+        var tables = new List<ExportLoadedTable>();
+        foreach (LoadedTableDeclaration declared in loader.Tables)
+        {
+            if (keys.Table.Fields.Any(field => field.Field == declared.Name))
+                throw new ExportFailure($"{where}: table {declared.Name} has the name of a field of {keys.Table.Name}");
+            TableLayout table = registry.Table(declared.Table);
+            var loaded = new ExportLoadedTable(declared, loader.Scope, table, registry.FieldsOf(table),
+                                               declared.Fields.Select(field => registry.Resolve(table, field)).ToList(),
+                                               registry.Resolve(table, declared.Exists));
+            if (loaded.Published.Any(field => field.IsString))
+                throw new ExportFailure($"{where}: table {declared.Name} publishes a string, which a loaded table does not");
+            tables.Add(loaded);
+        }
+        keys.Loaded.AddRange(tables);
+
+        foreach (ExportEntity entity in keys.Entities)
+        {
+            if (skips.Any(skip => Read(boot, skip.Field, entity.Id, 0).Number == skip.Value)) continue;
+            GameSession run = boot.CopyState();
+            foreach ((string global, SeedValue value) in loader.Seed)
+                run.Seed(registry.IntegerGlobal(global), value.For(entity.Id));
+            var options = new VmOptions(MaxSteps: inputs.LoaderMaxSteps)
+            {
+                ProfileId = inputs.GameId, RecordsWrites = true, StopAt = stop,
+            };
+            SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
+                                              build: inputs.Build);
+            report.LoaderRuns++;
+            if (result.Halt != stop.HaltReason)
+            {
+                report.LoaderHalts.Add((loader.Scope, keys.Declaration.Id, entity.Id, result.Halt ?? ""));
+                continue;
+            }
+            foreach (ExportLoadedTable table in tables)
+                for (int record = 0; record < table.Table.Records; record++)
+                {
+                    if (Read(run, table.Exists, record, 0).IsDefault) continue;
+                    var values = new List<(string Field, long?[] Values)>();
+                    foreach (FieldLayout field in table.Published)
+                    {
+                        var elements = new long?[field.Elements];
+                        for (int element = 0; element < field.Elements; element++)
+                        {
+                            ExportCell cell = Read(run, field, record, element);
+                            if (RefusalOf(run, cell, rule) is { } reason)
+                                report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id,
+                                                                $"{table.Declaration.Name}.{field.Name}",
+                                                                record * field.Elements + element, cell.Bank, cell.Address,
+                                                                reason));
+                            else elements[element] = cell.Number;
+                        }
+                        values.Add((field.Name, elements));
+                    }
+                    entity.Loaded.Add(new ExportLoadedRow(table.Declaration.Name, record, values));
+                }
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------- descriptions (§5.7)
 
     private static void Describe(ExportInputs inputs, GameSession boot, KindDeclaration kind, ExportEntity entity,
@@ -279,32 +359,47 @@ public static class GameDataExporter
         foreach (ExportKind kind in kinds) kindOfTable.TryAdd(kind.Table.Name, kind.Declaration.Id);
         var ids = kinds.ToDictionary(kind => kind.Declaration.Id, kind => kind.Entities.Select(entity => entity.Id).ToHashSet(),
                                      StringComparer.Ordinal);
+        void Link(ExportKind kind, ExportEntity entity, string table, string name, int first, long?[] values)
+        {
+            for (int element = 0; element < values.Length; element++)
+            {
+                // 0 is none, and so is a negative value: no record has a negative id, and the games write -1 for none
+                // too (Kamidori's stage_required_party_unit_ids; export plan §5).
+                if (values[element] is not { } id || id <= 0) continue;
+                if (!kindOfTable.TryGetValue(table, out string? toKind))
+                {
+                    var unpublished = (kind.Declaration.Id, name, table);
+                    report.UnpublishedRefs[unpublished] = report.UnpublishedRefs.GetValueOrDefault(unpublished) + 1;
+                    continue;
+                }
+                entity.Refs.Add(new ExportRef(name, first + element, toKind, id));
+                if (id is < int.MinValue or > int.MaxValue || !ids[toKind].Contains((int)id))
+                {
+                    var missing = (kind.Declaration.Id, name, toKind);
+                    report.MissingRefs[missing] = report.MissingRefs.GetValueOrDefault(missing) + 1;
+                }
+            }
+        }
         foreach (ExportKind kind in kinds)
+        {
             foreach (FieldLayout field in kind.Published)
             {
                 if (!kind.Table.Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
                 foreach (ExportEntity entity in kind.Entities)
-                {
-                    long?[] values = entity.Values.First(value => value.Field == field.Name).Values;
-                    for (int element = 0; element < values.Length; element++)
-                    {
-                        // 0 is none, and so is a negative value: no record has a negative id, and the games write -1
-                        // for none too (Kamidori's stage_required_party_unit_ids; export plan §5).
-                        if (values[element] is not { } id || id <= 0) continue;
-                        if (!kindOfTable.TryGetValue(target, out string? toKind))
-                        {
-                            var unpublished = (kind.Declaration.Id, field.Name, target);
-                            report.UnpublishedRefs[unpublished] = report.UnpublishedRefs.GetValueOrDefault(unpublished) + 1;
-                            continue;
-                        }
-                        entity.Refs.Add(new ExportRef(field.Name, element, toKind, id));
-                        if (id is < int.MinValue or > int.MaxValue || !ids[toKind].Contains((int)id))
-                        {
-                            var missing = (kind.Declaration.Id, field.Name, toKind);
-                            report.MissingRefs[missing] = report.MissingRefs.GetValueOrDefault(missing) + 1;
-                        }
-                    }
-                }
+                    Link(kind, entity, target, field.Name, 0, entity.Values.First(value => value.Field == field.Name).Values);
             }
+            // A loaded table's references are the key entity's (export plan §4.2): its field written <table>.<field>,
+            // its index the record times the field's width plus the element.
+            foreach (ExportLoadedTable table in kind.Loaded)
+                foreach (FieldLayout field in table.Published)
+                {
+                    if (!table.Table.Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
+                    string name = $"{table.Declaration.Name}.{field.Name}";
+                    foreach (ExportEntity entity in kind.Entities)
+                        foreach (ExportLoadedRow row in entity.Loaded.Where(row => row.Table == table.Declaration.Name))
+                            Link(kind, entity, target, name, row.Record * field.Elements,
+                                 row.Values.First(value => value.Field == field.Name).Values);
+                }
+        }
     }
 }

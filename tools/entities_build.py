@@ -39,14 +39,16 @@ SCRIPT_PATTERN = re.compile(r"[A-Z0-9_*]*[A-Z0-9_][A-Z0-9_*]*")
 RESERVED_KINDS = {"tooltips"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
-EXPORT_TABLES = {"build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use"}
+EXPORT_TABLES = {"build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use",
+                 "loaded", "loaded_field"}
 KEY = "key"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
              "description"}
 DESCRIPTION_KEYS = {"name", "script", "seed"}
-LOADER_KEYS = {"scope", "keys", "skip", "script", "seed", "read_at", "builders"}
+LOADER_KEYS = {"scope", "keys", "skip", "script", "seed", "read_at", "builders", "tables"}
+LOADED_TABLE_KEYS = {"exists", "fields"}
 RELATION_KEYS = {"id", "negative", "call", "kind", "key", "count", "exclude"}
 
 
@@ -250,8 +252,9 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
                           f"shows, so it has no title to take")
 
     relation_ids: set[str] = set()
+    kind_tables = {kind.get("id"): kind.get("table") for kind in kinds if isinstance(kind, dict)}
     for loader in data.get("loader", []):
-        lint_loader(game, loader, source, ids, errors)
+        lint_loader(game, loader, source, ids, kind_tables, errors)
     for relation in data.get("script_relation", []):
         lint_relation(game, relation, source, ids, relation_ids, errors)
     return errors
@@ -379,14 +382,21 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         check_seed(game, description.get("seed"), dwhere, errors)
 
 
-def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], errors: list[str]) -> None:
+def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind_tables: dict, errors: list[str]) -> None:
     where = f"{source}: loader {loader.get('scope')!r}"
     unknown_keys(loader, LOADER_KEYS, where, errors)
-    if loader.get("scope") not in game.scopes:
+    scope = game.scopes.get(loader.get("scope"))
+    if scope is None:
         errors.append(f"{where}: scope {loader.get('scope')!r} is not a [[scope]] of the registry")
     keys = loader.get("keys")
+    key_table = None
     if not isinstance(keys, str) or not ids.get(keys, "").startswith("the id"):
         errors.append(f"{where}: keys {keys!r} is not the id of a kind")
+    else:
+        key_table = game.tables.get(kind_tables.get(keys))
+    if key_table is not None:
+        check_skip(game, key_table, loader.get("skip"), where, errors)
+    lint_loaded_tables(game, loader.get("tables", {}), scope, key_table, where, errors)
     check_scripts([loader.get("script")] if isinstance(loader.get("script"), str) else loader.get("script"),
                   f"{where}: script", errors, patterns=False)
     if loader.get("read_at") not in game.points:
@@ -394,6 +404,48 @@ def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], erro
     check_seed(game, loader.get("seed"), where, errors)
     if "builders" in loader:
         check_scripts(loader["builders"], f"{where}: builders", errors, patterns=True)
+
+
+def lint_loaded_tables(game: Game, tables, scope: dict | None, key_table: dict | None, where: str,
+                       errors: list[str]) -> None:
+    """A loader's published tables (game data export plan §4.2): each a table of its scope, by its short name, with
+    `exists` and `fields` as a kind has them; the rows go under the key kind's entities."""
+    if not isinstance(tables, dict):
+        errors.append(f"{where}: tables must be a table of short name = {{ exists, fields }}")
+        return
+    shorts = (scope or {}).get("tables") or {}
+    key_fields = set((key_table or {}).get("fields") or {})
+    for short, entry in tables.items():
+        twhere = f"{where}: table {short!r}"
+        if not isinstance(entry, dict):
+            errors.append(f"{twhere} must be a table of exists and fields")
+            continue
+        unknown_keys(entry, LOADED_TABLE_KEYS, twhere, errors)
+        table = game.tables.get(shorts.get(short))
+        if table is None:
+            if scope is not None:
+                errors.append(f"{twhere} is not a table of scope {scope['name']} (its tables: "
+                              f"{', '.join(sorted(shorts)) or 'none'})")
+            continue
+        if short in key_fields:
+            errors.append(f"{twhere} has the name of a field of the key kind's table {key_table['name']}: the export "
+                          f"writes a loaded field as <table>.<field>, which would read as that field's column")
+        exists = resolve_field(game, table, entry.get("exists"), f"{twhere}: exists", errors)
+        if exists is not None and not exists.single:
+            errors.append(f"{twhere}: exists {entry.get('exists')} is a row of cells; name one column of it")
+        fields = entry.get("fields", [])
+        if not isinstance(fields, list):
+            errors.append(f"{twhere}: fields must be a list of fields")
+            continue
+        for ref in fields:
+            field = resolve_field(game, table, ref, f"{twhere}: fields", errors)
+            if field is None:
+                continue
+            if field.kind == "string":
+                errors.append(f"{twhere}: fields {ref} is a string field; a loaded table's text is not published")
+            if field.state:
+                errors.append(f"{twhere}: fields {ref} is saved state ({field.global_name} lies below the saved "
+                              f"prefix), so no loader publishes it")
 
 
 def lint_relation(game: Game, relation: dict, source: str, ids: dict[str, str], relation_ids: set[str],
@@ -428,8 +480,9 @@ def lint_relation(game: Game, relation: dict, source: str, ids: dict[str, str], 
         check_scripts(relation["exclude"], f"{where}: exclude", errors, patterns=True)
 
 
-def render(profile_id: str, data: dict, source_bytes: bytes, source: str) -> str:
-    """The JSON the exporter reads: the declarations as written, with each optional list or table present."""
+def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes: dict) -> str:
+    """The JSON the exporter reads: the declarations as written, with each optional list or table present, and each
+    loaded table's registry table beside its short name."""
     export = data["export"]
     document = {
         "note": "DO NOT EDIT -- generated by tools/entities_build.py --build",
@@ -445,7 +498,10 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str) -> str
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
                    "descriptions": k.get("description", [])} for k in data.get("kind", [])],
         "loaders": [{"scope": l["scope"], "keys": l["keys"], "skip": l.get("skip", {}), "script": l["script"],
-                     "seed": l.get("seed", {}), "read_at": l["read_at"], "builders": l.get("builders", [])}
+                     "seed": l.get("seed", {}), "read_at": l["read_at"], "builders": l.get("builders", []),
+                     "tables": {short: {"table": scopes[l["scope"]]["tables"][short], "exists": entry["exists"],
+                                        "fields": entry.get("fields", [])}
+                                for short, entry in (l.get("tables") or {}).items()}}
                     for l in data.get("loader", [])],
         "script_relations": [{"id": r["id"], "negative": r.get("negative"), "call": r["call"], "kind": r["kind"],
                               "key": r["key"], "count": r.get("count"), "exclude": r.get("exclude", [])}
@@ -478,7 +534,7 @@ def run(profile_id: str, write: bool, source: Path | None = None, registry: Path
         return 0
     output = output or entities_output(profile_id)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(render(profile_id, data, raw, shown), encoding="utf-8", newline="\n")
+    output.write_text(render(profile_id, data, raw, shown, game.scopes), encoding="utf-8", newline="\n")
     print(f"build: {shown}: {kinds} kinds -> {base_mod_build._shown(output)}")
     return 0
 

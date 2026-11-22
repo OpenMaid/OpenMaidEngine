@@ -202,3 +202,20 @@ fields = ["sort_key", "unlock_scenes"]
 name = "explanation"
 script = { field = "message_script_id" }        # VIMES, as INFO8 calls it
 seed = { current_vocabulary_id = "key" }
+
+# The stage loaders (export plan §4.2): FIELD runs a stage's loaders (STINIT and its layers' $n$STINIT) just before
+# kamidori.stage.after_loader. party_on_field 1 skips the arrival block, whose scenes can leave FIELD first
+# (FIELD@0x1ef to 0x304); the 38 event-entry stages have no map.
+[[loader]]
+scope = "stage"
+keys = "stage"
+skip = { event_entry_flag = 1 }
+script = "FIELD"
+seed = { current_stage_id = "key", field_map_continue_mode = 0, party_on_field = 1 }
+read_at = "kamidori.stage.after_loader"
+
+[loader.tables.enemy]
+exists = "unit_id"
+fields = ["unit_id", "min_level", "max_level", "auto_level_scale_divisor", "faction_id", "difficulty_mask",
+          "first_visit_only", "random_selection_weight", "spawn_tile_x", "spawn_tile_y", "spawn_object_slot",
+          "movement_routine_set_ids", "battle_routine_set_ids", "required_story_flags", "forbidden_story_flags"]

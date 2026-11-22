@@ -5,8 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0, 1 and 2 built (2026-11-21; milestone 2 in §4.1). §4 gets each later milestone's section
-before it starts.
+**Status:** milestones 0, 1, 2 and 3 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2). §4 gets each
+later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
 
@@ -217,6 +217,83 @@ want"). It comes first because the spec orders it, and milestone 5's script inde
 Found by milestone 1 for a later one: `manifest.json` keeps the command line as given, local paths included
 (`--output`, `--game-root`). Milestone 5, which publishes a bundle, decides what of the manifest goes in it.
 
+### 4.2 Milestone 3: the stage enemies
+
+Started 2026-11-21. The user left the choice between this and milestone 5 to me ("move onto milestone 3 or
+milestone 5, your choice"). It comes first because the spec orders it and it completes the stage pages milestone 2
+added; milestone 5's script index serves milestone 4 too.
+
+**What the code says** (read: the disassembly, the registry, the data patches' stage tests):
+
+- **`G[0x428c]` is 1 while the party is out on the field.** FIELD sets it on arriving when it is 0, and only then runs
+  the arrival block (`FIELD@0x1ef` to `0x304`): the stage's visit flags, the world area's travel days, and the
+  arrival scenes through SCJUMP, which can leave FIELD before its loaders. Every way off the field clears it: FIELD's
+  exits to the town, the workshop and the map (`FIELD@0xcb05`, `0xcb36`, `0xcb54`), and TOWN, STUDIO and ALLMAP on
+  entry (`TOWN@0x30`, `STUDIO@0x39f`, `ALLMAP@0x13a`). Scenes test it to send the party home (`SC0110@0x4ad7`), and
+  INIT2 rebuilds the field at a load when it is set (`INIT2@0x274`). The registry names it `party_on_field`; the
+  spec's `field_floor_entered` stood for it.
+- **FIELD runs the stage loaders just before the point.** It calls each `stage_loader_script_ids` script (STINIT and
+  its layers' `$n$STINIT`, `FIELD@0x50c` to `0x521`); `kamidori.stage.after_loader` is the next instruction
+  (`FIELD@0x527`). STINIT zeroes all 30 slots of each `stage_enemy` array and writes the stage's, so every cell's
+  writer is a builder the export already has (`*INIT`).
+- **Keys:** the stage kind's 209 stages, less the 38 event-entry ones (`event_entry_flag` 1), which have no map.
+
+**The plan:**
+
+- **The registry** names `party_on_field` (`0x428c`). The data patches' stage test and the patch points' notes use
+  the name.
+- **A loader publishes its tables** under its key kind, which the spec does not say. The `[[loader]]` entry gains
+  `[loader.tables.<short name>]` for each table of its scope it publishes, with `exists` and `fields` as a kind has.
+  `entities_build.py` lints them against the scope's table (no strings: a loaded table's text waits for a need) and
+  refuses a short name that is also a field of the key kind's table.
+- **The exporter** runs each loader for each key entity: a copy of the booted session, the seeds, the script with a
+  stop at the `read_at` site (the CLI resolves it as it does the boot's), the writer check on every cell of the
+  tables' records that exist, with the export's builders and the loader's own. A run that ends before the point is
+  reported with its key, and the export goes on (spec §6.3).
+- **The export format** (spec §7.2 has no place for it):
+  - `loaded(kind, name, table_name, scope, records)`: one row per published loaded table;
+  - `loaded_field(kind, loaded, name, type, published, ref_table, ref_kind, bank, address, width, column_index,
+    columns)`: as `field`, for each field of a loaded table;
+  - `"<kind>.<name>"(id, record, …)`: the rows, by the key entity's id and the table's record, a column per
+    published field as a kind's table has them (`stage.enemy`);
+  - references in `ref`, from the key entity, with the field written `<name>.<field>` and `idx` the record times the
+    field's width plus the element, so a unit's page lists the stages it appears on;
+  - the rows in the key entity's content hash.
+
+  The cells and writers of a loaded table, and its data file snippet, wait for milestone 4 (the modder data in
+  full).
+- **The declarations:** one loader, the stage scope's `enemy` table, every field published, `exists = "unit_id"`;
+  seeds `current_stage_id`, `field_map_continue_mode` 0 and `party_on_field` 1; `read_at` the after-loader point.
+- **The site** shows a stage's enemies as a table on its page, with each unit linked.
+- **Checks:** the exporter's tests on a synthetic loader; the export of the clean install with no refusal and no
+  halted run; the enemies against `build/games/kamidori/data/STINIT.json` and its layers'; the site built from it.
+
+**Built** (2026-11-21), as planned, with these details:
+
+- **The declarations:** `tables` in `LOADER_KEYS`, and each `[loader.tables.<short name>]` linted as planned; a
+  loader's `skip` is now checked against the key kind's table too. `entities.json` writes each loaded table with its
+  registry table beside the short name (`{"enemy": {"table": "stage_enemy", "exists": …, "fields": […]}}`), since the
+  exporter's registry view reads no scopes. `loaded` and `loaded_field` join the export's reserved table names.
+- **The exporter:** `ExportDeclarations` parses loaders (script relations are still refused); `ExportInputs.StopOf`
+  resolves a loader's point, and the CLI gives it the boot's resolver. A loader's script must be the one its point
+  lies in. The runs record writes and stop at the site, with `LoaderMaxSteps` (50,000,000) as their bound. A record
+  exists when its `exists` cell is not default. A refused element is null in its row, as a kind's is.
+- **The format:** as planned, and `loaded` has a `rows` column too. The format version stays 1: none has been
+  released. An entity without loaded rows keeps the content hash it had before.
+- **The site** (`ome-site`, `feature/kamidori-more-kinds`): a stage page has an Enemies table, one row per record,
+  the reference columns first; a column at 0 in every row is named under it. A unit's page lists the stages under
+  "Stages: enemy unit".
+
+**Results:**
+
+- **The export of the clean install:** 171 loader runs, none halted, no refusal, no missing reference; 2,459 enemy
+  rows, linked to 341 distinct units. The loaders add 1.5 s (17.8 s in all).
+- **Against the extractor:** every field of every row of the 171 stages equals `STINIT.json`'s enemies with the
+  layers' records laid over them slot by slot. A layer's record for a stage the base has edits it, not replaces it:
+  one enemy slot (seven stages, in APPEND02 and APPEND03) or the objects only (stage 91). Its other records are
+  stages of their own.
+- **The site** builds 3,566 pages; every enemy's unit links to its page.
+
 ## 5. What changed since the spec
 
 - **The kind ids a site path takes** (spec §5.2's comment): `docs` and `api` are reserved for game ids, the first path
@@ -261,3 +338,9 @@ Found by milestone 1 for a later one: `manifest.json` keeps the command line as 
     "capacity"]`). The site's milestone 2 needs it to label a record's arrays and to write a modder's name for one
     element (`unit[1].stats.max_hp`). Values with a meaning per number (a race, a category) have no names in the
     registry, so the export still gives them as numbers.
+- **A loader publishes its tables** (milestone 3, §4.2). Spec §6.3 runs loaders but does not say where their output
+  goes. The `[[loader]]` entry names the tables of its scope it publishes, with `exists` and `fields` as a kind has
+  them, and the export gives them three things spec §7.2 lacks: the `loaded` and `loaded_field` tables, a
+  `"<kind>.<name>"` table of rows (`stage.enemy`), and references from the key entity with the field written
+  `<name>.<field>`. A loaded table has no text yet, and its cells, writers and data file snippet wait for milestone 4.
+- **The spec's `field_floor_entered` is `party_on_field`** (`0x428c`, milestone 3): the registry's name for it.

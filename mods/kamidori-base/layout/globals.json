@@ -341,6 +341,7 @@
   {"name": "objective_sort_keys", "bank": "G", "address": "0x3cac75", "dims": [2000]},
   {"name": "objective_texts", "bank": "GS", "address": "0xc91b", "dims": [2000]},
   {"name": "party_cost_capacity", "bank": "G", "address": "0x7ea3b", "dims": []},
+  {"name": "party_on_field", "bank": "G", "address": "0x428c", "dims": []},
   {"name": "player_evaluation_points", "bank": "G", "address": "0x7ea3a", "dims": []},
   {"name": "player_money", "bank": "G", "address": "0x7ea39", "dims": []},
   {"name": "protagonist_craftsman_rank", "bank": "G", "address": "0x7ea49", "dims": []},

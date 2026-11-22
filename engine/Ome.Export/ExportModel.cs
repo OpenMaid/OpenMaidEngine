@@ -38,11 +38,15 @@ public sealed class ExportInputs
     public required Func<string, Script?> ScriptByName { get; init; }
     /// <summary>The site of the declarations' <c>read_at</c> patch point in this install.</summary>
     public required RunStop BootStop { get; init; }
+    /// <summary>The site of a patch point in this install, by its name, for a loader's <c>read_at</c> (spec §6.3); it
+    /// throws <see cref="ExportFailure"/> for a point with no site. Null when the caller resolves none.</summary>
+    public Func<string, RunStop>? StopOf { get; init; }
     public required ExportDeclarations Declarations { get; init; }
     public required RegistryView Registry { get; init; }
     public IPictureSource? Pictures { get; init; }
     public long BootMaxSteps { get; init; } = 200_000_000;
     public long DescriptionMaxSteps { get; init; } = 5_000_000;
+    public long LoaderMaxSteps { get; init; } = 50_000_000;
     /// <summary>The <c>build_info</c> rows the caller knows (spec §7.2): the revision, the fingerprint, OME's version.
     /// </summary>
     public IReadOnlyList<(string Key, string Value)> BuildInfo { get; init; } = [];
@@ -79,13 +83,29 @@ public sealed class ExportEntity(int id)
     public List<ExportRef> Refs { get; } = [];
     public List<(string Name, ExportPicture Picture)> Pictures { get; } = [];
     public List<ExportModderCell> Cells { get; } = [];
+    /// <summary>The rows its loaders built (export plan §4.2), by table and record.</summary>
+    public List<ExportLoadedRow> Loaded { get; } = [];
 }
+
+/// <summary>One record of a loaded table: its published fields' values, in the declaration's order; null for a refused
+/// element.</summary>
+public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(string Field, long?[] Values)> Values);
+
+/// <summary>A table a loader publishes under its key kind (export plan §4.2), with the layouts the writer needs.
+/// </summary>
+public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, string Scope, TableLayout Table,
+                                       IReadOnlyList<FieldLayout> TableFields, IReadOnlyList<FieldLayout> Published,
+                                       FieldLayout Exists);
 
 /// <summary>One kind's entities, with the layouts the writer needs: every field of the table, the published ones,
 /// and every field or column the declaration names.</summary>
 public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, IReadOnlyList<FieldLayout> TableFields,
                                 IReadOnlyList<FieldLayout> Published, IReadOnlyList<FieldLayout> Declared,
-                                IReadOnlyList<ExportEntity> Entities);
+                                IReadOnlyList<ExportEntity> Entities)
+{
+    /// <summary>The tables loaders publish under this kind's entities (export plan §4.2).</summary>
+    public List<ExportLoadedTable> Loaded { get; } = [];
+}
 
 /// <summary>What the export found worth a look (spec §6.1): refused values end the command with exit code 1, the rest
 /// is reported.</summary>
@@ -109,6 +129,11 @@ public sealed class ExportReport
     public int EmptyDescriptions { get; internal set; }
     /// <summary>Description runs that did not end at their script's exit, with their halt.</summary>
     public List<(string Kind, int Id, string Description, string Halt)> DescriptionHalts { get; } = [];
+    /// <summary>Loader runs (spec §6.3): one for each key entity not skipped.</summary>
+    public int LoaderRuns { get; internal set; }
+    /// <summary>Loader runs that ended before their point, with their key and halt; their entity has no loaded rows.
+    /// </summary>
+    public List<(string Scope, string Kind, int Id, string Halt)> LoaderHalts { get; } = [];
     /// <summary>Records whose description field names no script.</summary>
     public List<(string Kind, int Id, string Description, long ScriptId)> MissingScripts { get; } = [];
 }
