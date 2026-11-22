@@ -844,3 +844,25 @@ authors.
     test. 42 rows on 18 stages are allies; STINIT gives faction 3 the player's group on 14 stages. The `loaded_part` table holds a table's
     parts, and the table's rows gain a `part` column; a data file and the modder panel still treat the table as one.
     A refusal of a cell of the rule's global is reported, field `<table>.<part>:<global>`, and decides nothing.
+- **Names and links that read apart** (the usability review's findings 7 and 8, which the user approved on 2026-11-22).
+  Neither is in spec §5 or §7.2. Both are declarations, which the lint checks and
+  `tools/test_entities_build.py` and the exporter's tests cover, and neither enters the content hash:
+  - **Qualifiers.** A kind's `qualifiers` lists at most three of its shown fields or texts, one cell a record, that
+    tell apart its entities with one name, in order. The `qualifier` table holds them (kind, position, field). The site
+    adds those whose text differs among the entities that share a name in a language, until each reads apart, and the
+    id where none does; a name is told apart only in the languages it is shared in. Kamidori qualifies seven kinds: a
+    unit by class title, starting level and level cap, a stage by labyrinth and floor, an objective by chapter, an item
+    by category, a skill by its short description, a quest by its requester and a character profile by its epithet.
+    198 units, 50 stages, 48 items and 43 objectives read apart that way; 50 units and 25 objectives differ in nothing
+    published and take their id (22 pairs of townsfolk units among them).
+  - **How a reference reads on its target's page.** A kind's `referenced_as` keys a published reference field, or a
+    loaded table's (`table.field`), to the heading of the list of entities whose field names the target ("Dropped by",
+    "Enemy on stages"), or to `{ heading, details, parts }`: `details`, at most four, are shown beside each referring
+    entity (a field of the kind or a text, one cell a record; the element of the reference's group beside it, as wide
+    as the reference, a drop's chance; or a field or text of the reference's loaded table, one cell a row, an enemy's
+    levels), and `parts` heads the rows of each of the loaded table's parts ("Ally on stages"). The `referenced_as`
+    table holds them (kind, field, part, heading, details as a JSON array), part `''` for the table's own rows. Kamidori
+    heads each of its 24 references, from the registry's usages: a garden's product (CHECKREWARD), a craft's mutation
+    (ALCHEMY), a recipe's grown item and prerequisite (CHECKRECIPE), a skill's bundle (CALCREVISE), a condition's
+    immunity (ADDILLSUB), a stage's prerequisite labyrinth (CHECKSTAGE). Three quantity and floor fields gained labels
+    for their columns.

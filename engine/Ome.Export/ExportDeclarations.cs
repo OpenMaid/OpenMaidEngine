@@ -104,6 +104,13 @@ public sealed record KindDeclaration(
     /// draws them.</summary>
     public IReadOnlyList<(string Field, IReadOnlyList<TextBlockDeclaration> Blocks)> TextBlocks { get; init; } = [];
 
+    /// <summary>The fields that tell apart entities of the kind with one name (export plan §5), in order: the site adds
+    /// those that differ to a repeated name ("Wilfred Dion (Novice Alchemist)").</summary>
+    public IReadOnlyList<string> Qualifiers { get; init; } = [];
+
+    /// <summary>How the kind's references read on their targets' pages (export plan §5), by the referring field.</summary>
+    public IReadOnlyList<ReferenceHeadingDeclaration> ReferencedAs { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -146,8 +153,20 @@ public sealed record KindDeclaration(
                     .EnumerateArray().Select(block => new TextBlockDeclaration(block.GetProperty("name").GetString()!,
                         block.GetProperty("first").GetInt32(), block.GetProperty("last").GetInt32())).ToList())).ToList()
                 : [],
+            Qualifiers = ExportDeclarations.Strings(kind, "qualifiers"),
+            ReferencedAs = kind.TryGetProperty("referenced_as", out JsonElement referenced)
+                ? referenced.EnumerateArray().Select(entry => new ReferenceHeadingDeclaration(
+                    entry.GetProperty("field").GetString()!, entry.GetProperty("heading").GetString()!,
+                    ExportDeclarations.Strings(entry, "details"), ExportDeclarations.Pairs(entry, "parts"))).ToList()
+                : [],
         };
 }
+
+/// <summary>How a reference reads on its target's page (export plan §5): the heading of the list of entities whose
+/// <see cref="Field"/> names the target ("Dropped by"), the fields shown beside each of them (a drop's chance), and a
+/// loaded table's part's own heading ("Ally on stages"). A loaded table's field is written <c>table.field</c>.</summary>
+public sealed record ReferenceHeadingDeclaration(string Field, string Heading, IReadOnlyList<string> Details,
+                                                 IReadOnlyList<(string Part, string Heading)> Parts);
 
 /// <summary>A block of a text field's row of lines (export plan §5): lines <see cref="First"/> to <see cref="Last"/>,
 /// which the game draws together (a quest's clear condition).</summary>

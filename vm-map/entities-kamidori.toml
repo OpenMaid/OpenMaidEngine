@@ -17,6 +17,12 @@
 #
 # A field is published when it means something to a player (the usability review, 2026-11-22): sort keys, catalog
 # switches, variant and group ids, routines, spawn places and weights are the game's machinery, left to the modder data.
+#
+# Qualifiers tell apart the entities of a kind that share a name (the review's finding 7): a unit's versions by class
+# title, then level range; a stage by labyrinth and floor; an objective by chapter. The site adds only those that
+# differ within the group, and the id where none does (22 pairs of townsfolk units differ in nothing published).
+# `referenced_as` says how a reference reads on its target's page (finding 8): the heading of the list of entities
+# whose field names it, and the fields shown beside each (a drop's chance, a stage's labyrinth and floor).
 
 [export]
 # The tables as the game plays with them: INIT2's exit, after every layer (spec §14, answer 2).
@@ -51,6 +57,7 @@ fields = [
     "furniture_mutation_bonus", "furniture_knowledge_bonus", "furniture_staff_count_bonus", "furniture_garden_bonus",
 ]
 filters = ["category", "rank", "attack_element"]
+qualifiers = ["category"]
 pictures = { icon = "icon_asset_id", furniture = "furniture_sprite_asset_id" }
 
 [kind.notes]
@@ -71,6 +78,11 @@ growth_enabled = "Grows with use"
 sex_restriction_mask = "Usable by"
 character_whitelist = "Characters"
 
+[kind.referenced_as]
+granted_skill_id = "Granted by items"
+character_whitelist = "Restricted items it may use"
+garden_product_item_id = { heading = "Produced in the garden by", details = ["garden_production_period"] }
+
 [[kind.description]]
 name = "description"
 script = { field = "handler_script_id" }        # ITMES or a `$n$ITMES`, as SHOP calls it
@@ -90,6 +102,7 @@ fields = [
     "habitat_area",
 ]
 filters = ["race", "sex"]
+qualifiers = ["initial_class_title", "starting_level", "level_cap"]
 
 [[kind.group]]
 name = "stat_table"
@@ -110,6 +123,15 @@ habitat_area = "The world areas the bestiary lists as where it lives."
 bestiary_listed = "In the bestiary"
 initial_affinity_tenths = "Initial affinity"
 equippable_category_mask = "Equips"
+
+[kind.referenced_as]
+skill = "Units that have it"
+drop_item = { heading = "Dropped by", details = ["drop_chance"] }
+default_attack_item_id = "Default attack of"
+default_costume_item_id = "Default costume of"
+initial_equipment = "Initial equipment of"
+habitat_area = "Units that live here"
+"title_change.skill_slot_replacements" = { heading = "Gained with a title", details = ["title_change.title"] }
 
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
 # from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
@@ -136,6 +158,7 @@ fields = [
     "resource_deltas", "proc_chance_percent",
 ]
 filters = ["category"]
+qualifiers = ["short_description"]
 pictures = { icon = "icon_asset_id" }
 
 [kind.notes]
@@ -149,6 +172,9 @@ max_range_encoded = "Max range"
 attack_element_encoded = "Attack element"
 required_weapon_category_mask = "Weapons"
 proc_chance_percent = "Proc chance"
+
+[kind.referenced_as]
+bundled_skill_ids = "Part of"
 
 [[kind.description]]
 name = "description"
@@ -170,6 +196,7 @@ fields = [
     "reward_item_quantities", "prerequisite_quest_id",
 ]
 filters = ["difficulty_stars"]
+qualifiers = ["requester_name"]
 pictures = { requester = "requester_icon_asset_id" }
 
 [[kind.group]]
@@ -178,6 +205,13 @@ fields = ["reward_item_ids", "reward_item_quantities"]
 
 [kind.notes]
 deadline_days = "The days allowed to finish it."
+
+[kind.labels]
+reward_item_ids = "Item"
+reward_item_quantities = "Quantity"
+
+[kind.referenced_as]
+reward_item_ids = { heading = "Rewarded by quests", details = ["reward_item_quantities"] }
 
 # INFO2@0x1171 draws lines 0 to 4 as one block, 5 and 6 under 達成条件 and 7 and 8 under 失敗条件
 # (quest_description_lines in the registry). The English package fills lines 0 to 4 as one paragraph.
@@ -215,6 +249,15 @@ unlock_grown_item_id = "Equipment that must be fully grown first."
 
 [kind.labels]
 quest_marker = "Quest invention"
+ingredient_item_ids = "Item"
+ingredient_quantities = "Quantity"
+
+[kind.referenced_as]
+output_item_id = "Made by recipe"
+ingredient_item_ids = { heading = "Ingredient in", details = ["ingredient_quantities"] }
+mutation_item_id = { heading = "Crafts that may mutate into it", details = ["mutation_chance"] }
+unlock_grown_item_id = "Growing it fully unlocks"
+unlock_prerequisite_recipe_id = "Must be learned before"
 
 [[kind]]
 id = "condition"
@@ -256,6 +299,9 @@ susceptibility_group = "Resisted as"
 can_affect_bosses = "Affects bosses"
 cleared_by_recover = "Cleared by recovery"
 
+[kind.referenced_as]
+immunity_skill_id = "Gives immunity to"
+
 [[kind]]
 id = "stage"
 table = "stage_catalog"
@@ -268,6 +314,7 @@ fields = [
     "objective_item_rewards", "objective_evaluation_rewards", "objective_bonus_point_rewards",
 ]
 filters = ["labyrinth_id", "boss_flag"]
+qualifiers = ["labyrinth_id", "floor_number"]
 
 # A row for each goal of the stage, labelled by the goal's text as the stage's loader writes it (reward.condition_text
 # below; the user, 2026-11-22).
@@ -287,8 +334,18 @@ objective_rewards = "What each goal of the stage gives, by the goal as the game 
 
 [kind.labels]
 labyrinth_id = "Labyrinth"
+floor_number = "Floor"
+prerequisite_floor_number = "Prerequisite floor"
 boss_flag = "Boss stage"
 event_entry_flag = "Event stage"
+
+[kind.referenced_as]
+labyrinth_id = { heading = "Stages", details = ["floor_number"] }
+prerequisite_labyrinth_id = { heading = "Stages that need one here cleared", details = ["prerequisite_floor_number"] }
+objective_item_rewards = { heading = "Stage reward", details = ["labyrinth_id", "floor_number"] }
+required_party_unit_ids = { heading = "Must join the sortie on", details = ["labyrinth_id", "floor_number"] }
+"enemy.unit_id" = { heading = "Enemy on stages", details = ["labyrinth_id", "floor_number", "enemy.min_level",
+                    "enemy.max_level"], parts = { ally = "Ally on stages" } }
 
 # The dig tables are not published (the user, 2026-11-22): a table is reached only through a floor's dig points, the
 # map objects of a stage, which no loader publishes yet, so its page could not say where it is dug. They go with the
@@ -316,6 +373,8 @@ exists = "name"
 title = "name"
 text = ["epithet", "race_text", "sex_text"]
 fields = ["unit_id"]
+qualifiers = ["epithet"]
+referenced_as = { unit_id = "Character profile" }
 # The portrait is the standing art the profile screen shows (CS…AAA); the user chose to publish it (plan §4.1).
 pictures = { portrait = "portrait_asset_id" }
 
@@ -330,6 +389,7 @@ table = "objective"
 exists = "text"
 title = "text"
 text = ["chapter_label"]
+qualifiers = ["chapter_label"]
 
 [[kind.description]]
 name = "message"

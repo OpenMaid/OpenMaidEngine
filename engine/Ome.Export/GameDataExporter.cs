@@ -24,7 +24,7 @@ public static class GameDataExporter
     public static readonly IReadOnlySet<string> FixedTables = new HashSet<string>(StringComparer.Ordinal)
     {
         "build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref", "relation",
-        "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part", "label", "value_format",
+        "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part", "label", "value_format", "qualifier", "referenced_as",
         "value_name",
     };
 

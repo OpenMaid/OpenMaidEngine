@@ -157,6 +157,14 @@ public static class ExportWriter
             // What a shown field's value means (export plan §5): OME's word, lang '', or the game's name in a language.
             "CREATE TABLE value_name (kind TEXT NOT NULL, field TEXT NOT NULL, value INTEGER NOT NULL, lang TEXT NOT NULL, "
             + "text TEXT NOT NULL, PRIMARY KEY (kind, field, value, lang))",
+            // The fields that tell apart a kind's entities with one name (export plan §5), in order.
+            "CREATE TABLE qualifier (kind TEXT NOT NULL, position INTEGER NOT NULL, field TEXT NOT NULL, "
+            + "PRIMARY KEY (kind, position))",
+            // How a reference reads on its target's page (export plan §5): the heading of the list of the kind's
+            // entities whose field names it, and the fields shown beside each (a JSON array). A loaded table's field
+            // is written table.field; part is '' for the table's own rows, else a part's name.
+            "CREATE TABLE referenced_as (kind TEXT NOT NULL, field TEXT NOT NULL, part TEXT NOT NULL, heading TEXT NOT NULL, "
+            + "details TEXT NOT NULL, PRIMARY KEY (kind, field, part))",
         ];
         foreach (string sql in fixedTables) Execute(connection, sql);
         foreach (ExportKind kind in result.Kinds)
@@ -419,9 +427,20 @@ public static class ExportWriter
                 if (format != null)
                     formats.Row(declaration.Id, name, format.Scale, format.Offset, format.Unit, format.BitsOf != null ? 1 : 0);
         }
-        using var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text");
-        foreach (ExportValueName name in kind.ValueNames)
-            names.Row(declaration.Id, name.Field, name.Value, name.Language, name.Text);
+        using (var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text"))
+            foreach (ExportValueName name in kind.ValueNames)
+                names.Row(declaration.Id, name.Field, name.Value, name.Language, name.Text);
+        using (var qualifiers = new Inserter(connection, "qualifier", "kind", "position", "field"))
+            for (int position = 0; position < declaration.Qualifiers.Count; position++)
+                qualifiers.Row(declaration.Id, position, declaration.Qualifiers[position]);
+        using var headings = new Inserter(connection, "referenced_as", "kind", "field", "part", "heading", "details");
+        foreach (ReferenceHeadingDeclaration entry in declaration.ReferencedAs)
+        {
+            string details = JsonSerializer.Serialize(entry.Details);
+            headings.Row(declaration.Id, entry.Field, "", entry.Heading, details);
+            foreach ((string part, string heading) in entry.Parts)
+                headings.Row(declaration.Id, entry.Field, part, heading, details);
+        }
     }
 
     /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, its text in each language, references,

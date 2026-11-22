@@ -576,8 +576,13 @@ public class GameDataExportTests
         // The value facets (export plan §5): item_category's values are named by the game's table, element k naming
         // value k + 1, and 0 has OME's word; a price is shown halved, in gold. A label names the category for a reader.
         ExportInputs game = Game();
+        // Qualifiers and reference headings (export plan §5) go to the database as the declarations give them.
         string declarations = Declarations.Replace("\"filters\": [\"category\"],",
-                                                   "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"},",
+                                                   "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"}, "
+                                                   + "\"qualifiers\": [\"category\", \"short_description\"], "
+                                                   + "\"referenced_as\": [{\"field\": \"granted_skill\", "
+                                                   + "\"heading\": \"Granted by\", \"details\": [\"price\"], "
+                                                   + "\"parts\": {}}],",
                                                    StringComparison.Ordinal);
         ExportResult result = GameDataExporter.Run(new ExportInputs
         {
@@ -617,6 +622,10 @@ public class GameDataExportTests
                 + "(SELECT * FROM value_format WHERE kind = 'item' AND scale IS NOT NULL ORDER BY field)"));
             Assert.Equal("0:", Scalar("SELECT bits || ':' || ifnull(scale, '') FROM value_format WHERE field = 'category'"));
             Assert.Equal("Kind", Scalar("SELECT text FROM label WHERE kind = 'item' AND name = 'category'"));
+            Assert.Equal("0:category,1:short_description", Scalar(
+                "SELECT group_concat(position || ':' || field, ',') FROM (SELECT * FROM qualifier ORDER BY position)"));
+            Assert.Equal("item:granted_skill::Granted by:[\"price\"]", Scalar(
+                "SELECT kind || ':' || field || ':' || part || ':' || heading || ':' || details FROM referenced_as"));
         }
         finally
         {

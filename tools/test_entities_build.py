@@ -521,6 +521,7 @@ exists = "name"
 title = "name"
 text = ["bio"]
 fields = ["class", "weapon", "weapon_level"]
+qualifiers = ["class"]
 
 [[kind.group]]
 name = "arms"
@@ -547,6 +548,16 @@ arms = "Arms"
 [kind.text_blocks.bio]
 summary = [0, 0]
 detail = [1, 1]
+
+[kind.referenced_as]
+weapon = { heading = "Wielded by", details = ["weapon_level", "class"] }
+"foe.hero" = { heading = "Fought on", details = ["class", "foe.name"], parts = { friend = "Fought beside" } }
+
+[[kind]]
+id = "weapon"
+table = "weapon"
+exists = "name"
+title = "name"
 
 [[loader]]
 scope = "stage"
@@ -604,6 +615,11 @@ def test_design_pass_features():
           "the JSON keeps a kind's and a loaded table's labels")
     check(foe.get("parts") == [{"name": "friend", "field": "hero", "global": "foe_side_groups", "same_as": 1,
                                 "note": "On the hero's side."}], "a loaded table keeps its parts")
+    check(hero.get("qualifiers") == ["class"], "the JSON keeps a kind's qualifiers")
+    check(hero.get("referenced_as") == [
+        {"field": "weapon", "heading": "Wielded by", "details": ["weapon_level", "class"], "parts": {}},
+        {"field": "foe.hero", "heading": "Fought on", "details": ["class", "foe.name"],
+         "parts": {"friend": "Fought beside"}}], "the JSON keeps each reference's heading, details and parts")
     stepped = loaders[1] if len(loaders) > 1 else {}
     check(stepped.get("scope") is None and stepped.get("steps") == 5 and stepped.get("key_range") == [0, 3],
           "a loader with no scope keeps its steps and key range")
@@ -645,6 +661,39 @@ def test_design_pass_features():
                    "text_blocks bio: block name 'Summary' must be a lowercase identifier",
                    "text_blocks bio: block detail must be [first, last], lines of the row's 0 to 1",
                    "table foe is a table of scope stage, which a loader with that scope reads"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+    output = errors_of(FEATURES.replace('qualifiers = ["class"]', 'qualifiers = ["class", "nobody", "weapon", "class"]')
+                       .replace('weapon = { heading = "Wielded by", details = ["weapon_level", "class"] }',
+                                'weapon = { heading = "Wielded by", details = ["bio", "level"], extra = 1, '
+                                'parts = { friend = "x" } }\n'
+                                'class = "Classed"\nhandler = "' + "x" * 41 + '"')
+                       .replace('"foe.hero" = { heading = "Fought on", details = ["class", "foe.name"], '
+                                'parts = { friend = "Fought beside" } }',
+                                '"foe.hero" = { heading = "Fought on", details = ["trap.damage", "weapon", '
+                                '"foe.levels"], parts = { enemy = "Against" } }\n"foe.levels" = "Levels"\n'
+                                '"loot.hero" = "Looted"'))
+    for needle in ("qualifiers list 4 fields; a name takes at most 3",
+                   "qualifier 'nobody' is not one of the kind's fields or text",
+                   "qualifier weapon is a row of cells; name one column of it",
+                   "qualifier class is listed twice",
+                   "referenced_as weapon: unknown key 'extra'",
+                   "referenced_as weapon: part 'friend': only a loaded table's rows are in parts",
+                   "referenced_as weapon: detail 'bio' is a row of cells outside the reference's group",
+                   "referenced_as weapon: detail 'level' is not one of the kind's fields or text",
+                   "referenced_as class: class is not a reference to a table ([table.refs])",
+                   "referenced_as handler: 'handler' is not a published field",
+                   "referenced_as foe.hero: detail 'trap.damage' names another table",
+                   "referenced_as foe.hero: detail 'weapon' is a row of cells outside the reference's group",
+                   "referenced_as foe.hero: detail 'foe.levels' is not a published field or text of table foe",
+                   "referenced_as foe.hero: part 'enemy' is not a part of table foe",
+                   "referenced_as foe.levels: 'foe.levels' is not a published field of table foe",
+                   "referenced_as loot.hero: 'loot' is no table the kind's loaders publish"):
+        check(needle in output, f"the lint flags {needle!r}")
+    output = errors_of(FEATURES.replace('"foe.hero" = { heading = "Fought on"', '"foe.hero" = { heading = "' + "y" * 41 + '"')
+                       .replace('[[kind]]\nid = "weapon"\ntable = "weapon"\nexists = "name"\ntitle = "name"\n', ''))
+    for needle in ("referenced_as foe.hero: heading must be a line of at most 40 characters",
+                   "referenced_as weapon: weapon refers to table weapon, which no kind shows"):
         check(needle in output, f"the lint flags {needle!r}")
 
     output = errors_of(FEATURES.replace('text = ["bio"]\nfields = ["class"', 'text = ["bio", "name"]\nfields = ["class"')

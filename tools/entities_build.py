@@ -40,6 +40,7 @@ RESERVED_KINDS = {"tooltips"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
 EXPORT_TABLES = {"build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref",
+                 "qualifier", "referenced_as",
                  "relation", "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part",
                  "label", "value_format", "value_name"}
 KEY = "key"
@@ -48,7 +49,10 @@ EVERY = "*"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
-             "description", "group", "notes", "labels", "text_blocks"}
+             "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as"}
+REFERENCED_AS_KEYS = {"heading", "details", "parts"}
+QUALIFIER_LIMIT = 3
+DETAIL_LIMIT = 4
 DESCRIPTION_KEYS = {"name", "script", "seed"}
 GROUP_KEYS = {"name", "fields", "labels"}
 SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
@@ -333,11 +337,15 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
     loaded_by_kind: dict[str, dict] = {}
     for loader in data.get("loader", []):
         lint_loader(game, loader, source, ids, kind_tables, errors, loaded_by_kind)
-    # A group's labels name a loaded table's text, so they are checked once every loader has been.
+    # A group's labels and a reference's heading may name a loaded table's fields, so they are checked once every
+    # loader has been.
+    shown_tables = {kind.get("table") for kind in kinds if isinstance(kind, dict)}
     for kind in kinds:
         if isinstance(kind, dict):
             check_group_labels(game, kind, loaded_by_kind.get(kind.get("id"), {}),
                                f"{source}: kind {kind.get('id')!r}", errors)
+            check_referenced_as(game, kind, loaded_by_kind.get(kind.get("id"), {}), shown_tables,
+                                f"{source}: kind {kind.get('id')!r}", errors)
     for relation in data.get("script_relation", []):
         lint_relation(game, relation, source, ids, relation_ids, errors)
     return errors
@@ -536,6 +544,20 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         check_note(note, f"{where}: note {key}", errors)
     # A label (export plan §5): a reader's name for a shown field, grouped or not, or a group.
     check_labels(kind.get("labels", {}), shown_fields | group_names, where, errors)
+    # Qualifiers (export plan §5): the shown fields, one cell a record, that tell apart entities with one name.
+    qualifiers = kind.get("qualifiers", [])
+    if not isinstance(qualifiers, list):
+        errors.append(f"{where}: qualifiers must list the kind's fields or text")
+        qualifiers = []
+    elif len(qualifiers) > QUALIFIER_LIMIT:
+        errors.append(f"{where}: qualifiers list {len(qualifiers)} fields; a name takes at most {QUALIFIER_LIMIT}")
+    for ref in qualifiers:
+        if not isinstance(ref, str) or ref not in shown_fields:
+            errors.append(f"{where}: qualifier {ref!r} is not one of the kind's fields or text")
+        elif qualifiers.count(ref) > 1:
+            errors.append(f"{where}: qualifier {ref} is listed twice")
+        else:
+            one(ref, "qualifier", None)
 
 
 def check_text_blocks(game: Game, table: dict, kind: dict, where: str, errors: list[str]) -> None:
@@ -646,6 +668,111 @@ def check_group_labels(game: Game, kind: dict, loaded: dict[str, dict], where: s
         if widths and loaded_table["records"] < min(widths):
             errors.append(f"{gwhere}: table {short} has {loaded_table['records']} records, fewer than the group's "
                           f"{min(widths)} rows")
+
+
+def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, dict]], shown_tables: set,
+                        where: str, errors: list[str]) -> None:
+    """How the kind's references read on their targets' pages (export plan §5): `referenced_as` keys a published
+    reference field of the kind, or of a table its loaders publish (`table.field`), whose target a kind shows, to its
+    heading, or to `{ heading, details, parts }`. A detail is shown beside each referring entity: a field of the kind
+    or a text, one cell a record; a field of the reference's group as wide as it (a drop's chance beside the drop); or
+    for a loaded table's field, a field or text of the same table, one cell a row. `parts` gives a heading to each of
+    the loaded table's parts that its rows read under (a stage's allies)."""
+    table = game.tables.get(kind.get("table"))
+    entries = kind.get("referenced_as", {})
+    if table is None:
+        return
+    if not isinstance(entries, dict):
+        errors.append(f"{where}: referenced_as must be a table of field = heading or {{ heading, details, parts }}")
+        return
+    fields = kind.get("fields", []) if isinstance(kind.get("fields"), list) else []
+    text = kind.get("text", []) if isinstance(kind.get("text"), list) else []
+    groups = {ref: group.get("fields") for group in kind.get("group", []) if isinstance(group, dict)
+              for ref in (group.get("fields") or []) if isinstance(group.get("fields"), list)}
+
+    def one_cell(owner: dict, ref: str) -> bool:
+        field = resolve_field(game, owner, ref, where, [])
+        return field is not None and field.single
+
+    for key, entry in entries.items():
+        rwhere = f"{where}: referenced_as {key}"
+        short, dot, name = key.partition(".")
+        if dot:
+            found = loaded.get(short)
+            if found is None:
+                errors.append(f"{rwhere}: {short!r} is no table the kind's loaders publish")
+                continue
+            owner, declared = found
+            published = declared.get("fields") or []
+            own_text = declared.get("text") or []
+        else:
+            owner, declared, name = table, None, key
+            published = fields
+            own_text = []
+        target = (owner.get("refs") or {}).get(name)
+        if name not in published:
+            errors.append(f"{rwhere}: {key!r} is not a published field" + (f" of table {short}" if dot else ""))
+            continue
+        if target is None or target == globals_build.REF_PICTURE:
+            errors.append(f"{rwhere}: {key} is not a reference to a table ([table.refs])")
+            continue
+        if target not in shown_tables:
+            errors.append(f"{rwhere}: {key} refers to table {target}, which no kind shows")
+        if isinstance(entry, str):
+            entry = {"heading": entry}
+        if not isinstance(entry, dict) or "heading" not in entry:
+            errors.append(f"{rwhere} must be a heading or {{ heading, details, parts }}")
+            continue
+        unknown_keys(entry, REFERENCED_AS_KEYS, rwhere, errors)
+        check_heading(entry["heading"], f"{rwhere}: heading", errors)
+        details = entry.get("details", [])
+        if not isinstance(details, list) or len(details) > DETAIL_LIMIT:
+            errors.append(f"{rwhere}: details must list at most {DETAIL_LIMIT} fields")
+            details = []
+        width = resolve_field(game, owner, name, rwhere, [])
+        for detail in details:
+            dwhere = f"{rwhere}: detail {detail!r}"
+            if not isinstance(detail, str) or details.count(detail) > 1 or detail == key:
+                errors.append(f"{dwhere} must name another field, once")
+                continue
+            dshort, ddot, dname = detail.partition(".")
+            if ddot and dot and dshort == short:
+                # A field or text of the same loaded table, one cell a row.
+                if dname not in published and dname not in own_text:
+                    errors.append(f"{dwhere} is not a published field or text of table {short}")
+                elif not one_cell(owner, dname):
+                    errors.append(f"{dwhere} is a row of cells; a detail is one cell of the referring row")
+            elif ddot:
+                errors.append(f"{dwhere} names another table; a detail is a field of the kind or of the reference's "
+                              f"own table")
+            elif detail not in fields and detail not in text:
+                errors.append(f"{dwhere} is not one of the kind's fields or text")
+            elif one_cell(table, detail):
+                pass
+            elif not dot and groups.get(detail) is not None and groups.get(detail) is groups.get(name):
+                field = resolve_field(game, table, detail, dwhere, [])
+                if width is not None and field is not None and field.width != width.width:
+                    errors.append(f"{dwhere} is {field.width} wide and {key} {width.width}: a detail of the reference's "
+                                  f"group is as wide as the reference, element for element")
+            else:
+                errors.append(f"{dwhere} is a row of cells outside the reference's group; a detail is one cell of the "
+                              f"referring entity, or an element of its group beside the reference")
+        parts = entry.get("parts", {})
+        names = {part.get("name") for part in (declared or {}).get("parts", []) if isinstance(part, dict)}
+        if not isinstance(parts, dict):
+            errors.append(f"{rwhere}: parts must be a table of part = heading")
+            parts = {}
+        for part, heading in parts.items():
+            if not dot:
+                errors.append(f"{rwhere}: part {part!r}: only a loaded table's rows are in parts")
+            elif part not in names:
+                errors.append(f"{rwhere}: part {part!r} is not a part of table {short}")
+            check_heading(heading, f"{rwhere}: part {part}", errors)
+
+
+def check_heading(heading, where: str, errors: list[str]) -> None:
+    if not isinstance(heading, str) or not heading.strip() or "\n" in heading or len(heading) > LABEL_LIMIT:
+        errors.append(f"{where} must be a line of at most {LABEL_LIMIT} characters")
 
 
 def loader_name(loader: dict) -> str:
@@ -924,6 +1051,12 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels")}
                               for g in k.get("group", [])],
                    "notes": k.get("notes", {}), "labels": k.get("labels", {}),
+                   "qualifiers": k.get("qualifiers", []),
+                   "referenced_as": [
+                       {"field": field, "heading": entry if isinstance(entry, str) else entry["heading"],
+                        "details": [] if isinstance(entry, str) else entry.get("details", []),
+                        "parts": {} if isinstance(entry, str) else entry.get("parts", {})}
+                       for field, entry in k.get("referenced_as", {}).items()],
                    "text_blocks": {ref: [{"name": name, "first": run[0], "last": run[1]} for name, run in runs.items()]
                                    for ref, runs in k.get("text_blocks", {}).items()}}
                   for k in data.get("kind", [])],
