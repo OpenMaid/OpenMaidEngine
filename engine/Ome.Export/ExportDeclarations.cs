@@ -63,7 +63,9 @@ public sealed record ExportDeclarations(
             : [];
 }
 
-/// <summary>One kind (spec §5.2): a registry table, which of its records are entities, and what is published.</summary>
+/// <summary>One kind (spec §5.2): a registry table, which of its records are entities, and what is published. Its
+/// <see cref="Groups"/> (export plan §5) are published rows of cells of one width, which the site shows as one
+/// table.</summary>
 public sealed record KindDeclaration(
     string Id,
     IReadOnlyList<string> Aliases,
@@ -77,6 +79,8 @@ public sealed record KindDeclaration(
     IReadOnlyList<(string Name, string Field)> Pictures,
     IReadOnlyList<DescriptionDeclaration> Descriptions)
 {
+    public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -97,8 +101,17 @@ public sealed record KindDeclaration(
                 : [],
             kind.TryGetProperty("descriptions", out JsonElement descriptions)
                 ? descriptions.EnumerateArray().Select(DescriptionDeclaration.Parse).ToList()
-                : []);
+                : [])
+        {
+            Groups = kind.TryGetProperty("groups", out JsonElement groups)
+                ? groups.EnumerateArray().Select(group => new GroupDeclaration(
+                    group.GetProperty("name").GetString()!, ExportDeclarations.Strings(group, "fields"))).ToList()
+                : [],
+        };
 }
+
+/// <summary>A group of a kind's published fields (export plan §5), in its order: rows of cells of one width.</summary>
+public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields);
 
 /// <summary>A description (spec §5.7): text a script shows for a record, run with its seeds.</summary>
 /// <param name="ScriptField">The field holding the packed id of the script the game calls for the record, or null.</param>

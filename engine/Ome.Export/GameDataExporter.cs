@@ -23,8 +23,8 @@ public static class GameDataExporter
     /// <summary>The export's own tables (spec §7.2), which a kind's table may not share a name with.</summary>
     public static readonly IReadOnlySet<string> FixedTables = new HashSet<string>(StringComparer.Ordinal)
     {
-        "build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use", "loaded",
-        "loaded_field",
+        "build_info", "kind", "field", "field_group", "text", "ref", "relation", "picture", "cell", "snippet",
+        "script_use", "loaded", "loaded_field",
     };
 
     public static ExportResult Run(ExportInputs inputs)

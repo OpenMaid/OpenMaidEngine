@@ -102,6 +102,9 @@ public static class ExportWriter
             "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
             + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
             + "address INTEGER, width INTEGER, column_index INTEGER, columns TEXT, PRIMARY KEY (kind, name))",
+            // A kind's groups (export plan §5): its fields shown as one table, a row for each element, in order.
+            "CREATE TABLE field_group (kind TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, "
+            + "field TEXT NOT NULL, PRIMARY KEY (kind, name, position))",
             "CREATE TABLE text (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
             "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
@@ -344,6 +347,10 @@ public static class ExportWriter
         foreach (DescriptionDeclaration description in declaration.Descriptions)
             insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null,
                        null);
+        using var groups = new Inserter(connection, "field_group", "kind", "name", "position", "field");
+        foreach (GroupDeclaration group in declaration.Groups)
+            for (int position = 0; position < group.Fields.Count; position++)
+                groups.Row(declaration.Id, group.Name, position, group.Fields[position]);
     }
 
     /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, its text in each language, references,

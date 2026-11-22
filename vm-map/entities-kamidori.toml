@@ -5,6 +5,10 @@
 #
 # Scripts are named without the `$n$` prefix of an update or append and without `.BIN`. Fields are named as the record
 # map names them, a column by its name after a dot. A field left out of a kind is still in the modder data.
+#
+# The story flags and scene numbers that gate a record (a quest's appear flags, a recipe's unlock flags, a glossary
+# entry's scenes) are left out: their numbers mean nothing to a reader, so they are modder data only (the user,
+# 2026-11-22). A group shows published rows of cells of one width as one table, a row for each element.
 
 [export]
 # The tables as the game plays with them: INIT2's exit, after every layer (spec §14, answer 2).
@@ -61,6 +65,14 @@ fields = [
 ]
 filters = ["race", "sex", "boss_class"]
 
+[[kind.group]]
+name = "stat_table"
+fields = ["stats", "stat_growth", "initial_stat_caps"]
+
+[[kind.group]]
+name = "drops"
+fields = ["drop_item", "drop_chance"]
+
 # The user's choice (spec §5.4): the face, the bestiary sprite and the battle sprites. The registry names the columns
 # from file prefixes. Milestone 1 looked at each column's pictures (2026-11-21): face is the party list's face plate
 # with the name (47 units); sprite the map's four-frame walking sheet; battle_1 the battle art (AAA); battle_2 and
@@ -106,11 +118,14 @@ title = "name"
 text = ["description_lines", "requester_name", "category_label"]
 fields = [
     "sort_key", "difficulty_stars", "deadline_days", "reward_money", "reputation_reward", "reward_item_ids",
-    "reward_item_quantities", "prerequisite_quest_id", "appear_required_flags", "appear_blocking_flags", "clear_flags",
-    "failure_trigger_flags", "failure_result_flag",
+    "reward_item_quantities", "prerequisite_quest_id",
 ]
 filters = ["difficulty_stars"]
 pictures = { requester = "requester_icon_asset_id" }
+
+[[kind.group]]
+name = "reward_items"
+fields = ["reward_item_ids", "reward_item_quantities"]
 
 [[kind]]
 id = "recipe"
@@ -121,12 +136,15 @@ title = "output_item_id"
 text = ["unlock_text"]
 fields = [
     "output_item_id", "ingredient_item_ids", "ingredient_quantities", "evaluation_reward", "mutation_chance",
-    "mutation_item_id", "mutation_required_flags", "mutation_forbidden_flag", "quest_marker", "required_synthesis_rank",
-    "unlock_craftsman_rank", "unlock_synthesis_rank", "unlock_shop_level", "unlock_workshop_level",
-    "unlock_quarters_level", "unlock_room4_level", "unlock_knowledge", "unlock_sense", "unlock_grown_item_id",
-    "unlock_prerequisite_recipe_id", "unlock_story_flags", "visible_required_flags", "visible_forbidden_flags",
+    "mutation_item_id", "quest_marker", "required_synthesis_rank", "unlock_craftsman_rank", "unlock_synthesis_rank",
+    "unlock_shop_level", "unlock_workshop_level", "unlock_quarters_level", "unlock_room4_level", "unlock_knowledge",
+    "unlock_sense", "unlock_grown_item_id", "unlock_prerequisite_recipe_id",
 ]
 filters = ["unlock_craftsman_rank", "unlock_synthesis_rank"]
+
+[[kind.group]]
+name = "ingredients"
+fields = ["ingredient_item_ids", "ingredient_quantities"]
 
 [[kind]]
 id = "condition"
@@ -150,18 +168,26 @@ title = "name"
 # The select screen's backdrop (select_background_asset_id) is not published: it is a whole background.
 fields = [
     "labyrinth_id", "floor_number", "sort_key", "recommended_level", "boss_flag", "event_entry_flag",
-    "prerequisite_labyrinth_id", "prerequisite_floor_number", "required_party_unit_ids", "required_story_flags",
-    "forbidden_story_flags", "objective_money_rewards", "objective_item_rewards", "objective_evaluation_rewards",
-    "objective_bonus_point_rewards",
+    "prerequisite_labyrinth_id", "prerequisite_floor_number", "required_party_unit_ids", "objective_money_rewards",
+    "objective_item_rewards", "objective_evaluation_rewards", "objective_bonus_point_rewards",
 ]
 filters = ["labyrinth_id", "boss_flag"]
+
+[[kind.group]]
+name = "objective_rewards"
+fields = ["objective_money_rewards", "objective_item_rewards", "objective_evaluation_rewards",
+          "objective_bonus_point_rewards"]
 
 [[kind]]
 id = "dig_table"
 table = "dig_table"
 # Every written table sets its first slot. A dig table has no name, so it has no title.
 exists = "item_ids.0"
-fields = ["roll_thresholds", "item_ids", "required_story_flags", "forbidden_story_flags"]
+fields = ["item_ids", "roll_thresholds"]
+
+[[kind.group]]
+name = "slots"
+fields = ["item_ids", "roll_thresholds"]
 
 [[kind]]
 id = "character_profile"
@@ -169,7 +195,7 @@ table = "character_profile"
 exists = "name"
 title = "name"
 text = ["epithet", "race_text", "sex_text"]
-fields = ["sort_key", "unit_id", "unlock_flags"]
+fields = ["sort_key", "unit_id"]
 # The portrait is the standing art the profile screen shows (CS…AAA); the user chose to publish it (plan §4.1).
 pictures = { portrait = "portrait_asset_id" }
 
@@ -184,7 +210,7 @@ table = "objective"
 exists = "text"
 title = "text"
 text = ["chapter_label"]
-fields = ["sort_key", "required_flags", "forbidden_flags", "complete_flags", "incomplete_override_flags"]
+fields = ["sort_key"]
 
 [[kind.description]]
 name = "message"
@@ -196,7 +222,7 @@ id = "glossary_entry"
 table = "glossary_entry"
 exists = "name"
 title = "name"
-fields = ["sort_key", "unlock_scenes"]
+fields = ["sort_key"]
 
 [[kind.description]]
 name = "explanation"
@@ -218,7 +244,7 @@ read_at = "kamidori.stage.after_loader"
 exists = "unit_id"
 fields = ["unit_id", "min_level", "max_level", "auto_level_scale_divisor", "faction_id", "difficulty_mask",
           "first_visit_only", "random_selection_weight", "spawn_tile_x", "spawn_tile_y", "spawn_object_slot",
-          "movement_routine_set_ids", "battle_routine_set_ids", "required_story_flags", "forbidden_story_flags"]
+          "movement_routine_set_ids", "battle_routine_set_ids"]
 
 # The script relations (spec §6.7, export plan §4.5): where a scene sets a script's arguments to constants and calls it.
 # ADDITEM gives or takes an item by the sign of its count (docs/kamidori-data-tables.md, Giving and taking).

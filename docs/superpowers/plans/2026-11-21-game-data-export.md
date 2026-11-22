@@ -753,3 +753,14 @@ authors.
   credit can name it; it is JSON in `build_info`, and `languages` is the source language first, comma-separated.
 - **The content hash's text entries carry their language** (spec §7.3 says the entity's text), so a page changes
   when its translation does.
+- **A kind may group its fields** (the site's design pass, 2026-11-22; spec §5.2 has none). `[[kind.group]]` names two
+  or more published rows of cells of one width, which the site shows as one table with a row for each element: a
+  recipe's ingredient items beside their quantities, a unit's stats beside their growth and caps. The export gives
+  them in a `field_group` table (kind, name, position, field), which spec §7.2 lacks; the content hash leaves them out,
+  since they arrange the page and change no value, and the declarations' hash in `build_info` covers them. Kamidori
+  declares six: a recipe's ingredients, a quest's reward items, a unit's stats and its drops, a stage's objective
+  rewards and a dig table's slots.
+- **Kamidori publishes no story flags or scene numbers** (the user, 2026-11-22, on the built site: "the numbers shown
+  dont really mean anything, so those would be better as modder mode things"). The flags that gate a quest, a recipe,
+  a stage, a dig table, a character profile, an objective and a stage's enemies, and a glossary entry's unlock scenes,
+  are left out of `fields`, so the site's modder panel alone lists them, with the cells a script wrote.

@@ -39,14 +39,15 @@ SCRIPT_PATTERN = re.compile(r"[A-Z0-9_*]*[A-Z0-9_][A-Z0-9_*]*")
 RESERVED_KINDS = {"tooltips"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
-EXPORT_TABLES = {"build_info", "kind", "field", "text", "ref", "relation", "picture", "cell", "snippet", "script_use",
-                 "loaded", "loaded_field"}
+EXPORT_TABLES = {"build_info", "kind", "field", "field_group", "text", "ref", "relation", "picture", "cell", "snippet",
+                 "script_use", "loaded", "loaded_field"}
 KEY = "key"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
-             "description"}
+             "description", "group"}
 DESCRIPTION_KEYS = {"name", "script", "seed"}
+GROUP_KEYS = {"name", "fields"}
 LOADER_KEYS = {"scope", "keys", "skip", "script", "seed", "read_at", "builders", "tables"}
 LOADED_TABLE_KEYS = {"exists", "fields"}
 RELATION_KEYS = {"id", "negative", "call", "kind", "key", "count", "where", "exclude"}
@@ -106,6 +107,7 @@ class Field:
         dims = globals_build.dims_of(type_) or [records]
         self.single = len(dims) == 1 or column is not None
         width = dims[1] if len(dims) == 2 else 1
+        self.width = 1 if self.single else width
         end = globals_build._parse_addr(entry["address"]) + records * width
         prefix = (prefixes or {}).get(bank(type_))
         self.state = prefix is not None and end <= prefix
@@ -385,6 +387,51 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             errors.append(f"{dwhere}: script {script['name']} is not one of [export] text_scripts")
         check_seed(game, description.get("seed"), dwhere, errors)
 
+    # A group (game data export plan §5): published rows of cells of one width, which the site shows as one table with
+    # a row for each element, as a recipe's ingredients beside their quantities.
+    groups = kind.get("group", [])
+    if not isinstance(groups, list):
+        errors.append(f"{where}: group must be an array of tables ([[kind.group]])")
+        groups = []
+    published_fields = fields if isinstance(fields, list) else []
+    grouped: dict[str, str] = {}
+    for group in groups:
+        if not isinstance(group, dict):
+            errors.append(f"{where}: each group must be a table")
+            continue
+        gname = group.get("name")
+        gwhere = f"{where}: group {gname!r}"
+        unknown_keys(group, GROUP_KEYS, gwhere, errors)
+        if not isinstance(gname, str) or not IDENTIFIER.fullmatch(gname):
+            errors.append(f"{gwhere}: name must be a lowercase identifier")
+        elif gname in names:
+            errors.append(f"{gwhere}: {gname} is also a field of table {table['name']}, a description or another group")
+        else:
+            names.add(gname)
+        members = group.get("fields")
+        if not isinstance(members, list) or len(members) < 2 or not all(isinstance(m, str) for m in members):
+            errors.append(f"{gwhere}: fields must list at least two of the kind's fields")
+            continue
+        widths: dict[str, int] = {}
+        for ref in members:
+            if ref not in published_fields:
+                errors.append(f"{gwhere}: {ref!r} is not one of the kind's fields")
+                continue
+            if ref in grouped:
+                errors.append(f"{gwhere}: {ref} is also in group {grouped[ref]!r}")
+                continue
+            grouped[ref] = gname
+            field = resolve_field(game, table, ref, f"{gwhere}: fields", errors)
+            if field is None:
+                continue
+            if field.single:
+                errors.append(f"{gwhere}: {ref} has one cell for each record; a group's fields are rows of cells")
+            else:
+                widths[ref] = field.width
+        if len(set(widths.values())) > 1:
+            shown = ", ".join(f"{ref} {width}" for ref, width in widths.items())
+            errors.append(f"{gwhere}: its fields differ in width ({shown}); each must have one element for each row")
+
 
 def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind_tables: dict, errors: list[str]) -> None:
     where = f"{source}: loader {loader.get('scope')!r}"
@@ -511,7 +558,9 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
                    "skip": k.get("skip", {}), "title": k.get("title"), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
-                   "descriptions": k.get("description", [])} for k in data.get("kind", [])],
+                   "descriptions": k.get("description", []),
+                   "groups": [{"name": g["name"], "fields": g["fields"]} for g in k.get("group", [])]}
+                  for k in data.get("kind", [])],
         "loaders": [{"scope": l["scope"], "keys": l["keys"], "skip": l.get("skip", {}), "script": l["script"],
                      "seed": l.get("seed", {}), "read_at": l["read_at"], "builders": l.get("builders", []),
                      "tables": {short: {"table": scopes[l["scope"]]["tables"][short], "exists": entry["exists"],

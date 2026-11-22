@@ -478,6 +478,58 @@ public class GameDataExportTests
     }
 
     [Fact]
+    public void TheDatabaseHoldsAKindsGroupsInTheirOrder()
+    {
+        // A group (export plan §5). The lint checks that its fields are rows of cells of one width; the writer writes the
+        // declaration as it is given, so this one need not be.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["groups"] = JsonNode.Parse("""[{"name": "prices", "fields": ["price", "category"]}]""");
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = game.Registry,
+            Declarations = ExportDeclarations.Parse(declarations.ToJsonString()), Pictures = game.Pictures,
+            BuildInfo = game.BuildInfo,
+        });
+        Assert.Equal([new GroupDeclaration("prices", ["price", "category"])],
+                     result.Kinds[0].Declaration.Groups, new GroupComparer());
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("prices:0:price,prices:1:category", Scalar(
+                "SELECT group_concat(name || ':' || position || ':' || field, ',') FROM "
+                + "(SELECT * FROM field_group WHERE kind = 'item' ORDER BY name, position)"));
+            Assert.Equal("0", Scalar("SELECT count(*) FROM field_group WHERE kind = 'skill'"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private sealed class GroupComparer : IEqualityComparer<GroupDeclaration>
+    {
+        public bool Equals(GroupDeclaration? x, GroupDeclaration? y)
+            => x is not null && y is not null && x.Name == y.Name && x.Fields.SequenceEqual(y.Fields);
+
+        public int GetHashCode(GroupDeclaration group) => group.Name.GetHashCode(StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TheDatabaseHoldsTheTablesTheSiteReads()
     {
         string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));

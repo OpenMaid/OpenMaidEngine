@@ -30,6 +30,7 @@ REGISTRY = "".join([
     g("0x310", "hero_weapon_ids", "int[4][2]"),
     g("0x320", "hero_art_ids", "int[4][3]", {"0": "face", "2": "map"}),
     g("0x340", "hero_handler_ids", "int[4]"),
+    g("0x350", "hero_weapon_levels", "int[4][2]"),
     g("0x10", "hero_names", "string[4]"),
     g("0x20", "hero_bios", "string[4][2]"),
     g("0x400", "weapon_prices", "int[3]"),
@@ -49,6 +50,7 @@ built_by = "boot"
 level = "hero_levels"
 class = "hero_classes"
 weapon = "hero_weapon_ids"
+weapon_level = "hero_weapon_levels"
 art = "hero_art_ids"
 handler = "hero_handler_ids"
 name = "hero_names"
@@ -127,9 +129,13 @@ table = "hero"
 exists = "name"
 title = "name"
 text = ["bio"]
-fields = ["class", "weapon"]
+fields = ["class", "weapon", "weapon_level"]
 filters = ["class"]
 pictures = { face = "art.face", other = "art.1" }
+
+[[kind.group]]
+name = "arms"
+fields = ["weapon", "weapon_level"]
 
 [[kind.description]]
 name = "story"
@@ -218,6 +224,8 @@ def test_good_declarations():
           "a relation keeps its where")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
+    check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"]}], "the JSON keeps a kind's groups")
+    check(weapon.get("groups") == [], "a kind without groups has an empty list")
     code, _, written_again = run(GOOD, write=True)
     same = {k: v for k, v in json.loads(written_again or "{}").items() if k != "generated_from"}
     check(same == {k: v for k, v in data.items() if k != "generated_from"},
@@ -291,6 +299,48 @@ table = "hero"
             "kind 'heroes': tooltips is also the id of kind 'tooltips'",
             "table 'monster' is not a [[table]] of the registry"):
         check(needle in output, f"the lint flags {needle!r}")
+
+
+def test_group_errors():
+    """A group (export plan §5): two or more published rows of cells of one width, each in one group."""
+    kind = GOOD.split("[[kind.group]]")[0].split("[[kind]]")[1]
+    output = errors_of(EXPORT + "[[kind]]" + kind.replace('fields = ["class", "weapon", "weapon_level"]',
+                                                         'fields = ["class", "weapon", "weapon_level", "art", "art.map"]') + '''
+[[kind.group]]
+name = "arms"
+fields = ["weapon", "art"]
+size = 2
+
+[[kind.group]]
+name = "class"
+fields = ["weapon_level", "level"]
+
+[[kind.group]]
+name = "arms"
+fields = ["class", "art.map"]
+
+[[kind.group]]
+name = "Lone"
+fields = ["weapon"]
+''')
+    for needle in (
+            "group 'arms': its fields differ in width (weapon 2, art 3)", "group 'arms': unknown key 'size'",
+            "group 'class': class is also a field of table hero", "group 'class': 'level' is not one of the kind's fields",
+            "group 'arms': arms is also a field of table hero, a description or another group",
+            "group 'arms': class has one cell for each record", "group 'arms': art.map has one cell for each record",
+            "group 'Lone': name must be a lowercase identifier",
+            "group 'Lone': fields must list at least two of the kind's fields"):
+        check(needle in output, f"the lint flags {needle!r}")
+    output = errors_of(EXPORT + "[[kind]]" + kind + '''
+[[kind.group]]
+name = "first"
+fields = ["weapon", "weapon_level"]
+
+[[kind.group]]
+name = "second"
+fields = ["weapon_level", "weapon"]
+''')
+    check("group 'second': weapon_level is also in group 'first'" in output, "a field is in one group only")
 
 
 def test_titles():
@@ -439,6 +489,7 @@ def main():
     test_export_errors()
     test_kind_errors()
     test_description_errors()
+    test_group_errors()
     test_loader_and_relation_errors()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
