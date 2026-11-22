@@ -636,9 +636,9 @@ authors.
   entry, resolved run by run, so only its item's name translates (`【基本攻撃：Anti-Air Bow】`). 54 more English
   descriptions hold Japanese because the converted install's own text does, often garbled (`BAS: 】手`), which the
   importer carries as it is. The export reads in about 37 s, from 22 s.
-- **The package's manifest names no authors,** and neither the converted install nor the repository names the
-  translators, so the export's `language_packages` gives an empty list; the site's credit names the package until the
-  user gives their names.
+- **The package's manifest named no authors,** and neither the converted install nor the repository names the
+  translators. The user named the translator, Aroduc (2026-11-22), who is now in the local package's `authors`, so
+  the export's `language_packages` and the site's credit name them.
 - **Tests:** two on the synthetic game with English and French catalogs (each lookup rule with its rows and report,
   a message presented as one sentence, the same message resolved run by run, a miss with no row; the database's text
   in each language, `build_info` and the content hashes), beside the earlier ones; 57 pass with the session and script
