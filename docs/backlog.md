@@ -529,6 +529,10 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   CALCARM sums them. What a node costs in materials is not in the registry yet. Done when a `costume` kind (or the
   costume items' pages) shows each costume's board: its nodes, what each gives and what it costs, read through a
   loader that runs COINIT for each costume.
+- **A unit's boss marker** (the site's second design review, P13, 2026-11-22). A stage's enemy table cannot mark its
+  boss: a stage names none, and the game marks a boss by its unit, `unit_boss_class` (DRAWCHSTATE draws a boss
+  marker when it is not 0; its values, -1 to 4, are a first reading). Done when the registry reads its values, the
+  unit kind publishes it, and a stage's enemies mark the boss (site plan §13).
 - **What Arterial's declarations cannot say yet** (the second game's test of the export, 2026-11-22; export plan §5,
   "A second game: Arterial"):
   - **A table keyed by another table's records.** `party_member` is kept for each character, by its `CHINIT` id: the

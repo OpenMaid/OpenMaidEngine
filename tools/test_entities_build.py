@@ -631,6 +631,28 @@ fields = ["level", "stats"]
 '''
 
 
+def test_column_references():
+    """A row of cells whose columns are a table's records (`columns_ref`) may be headed as a reference is."""
+    global REGISTRY
+    saved = REGISTRY
+    trait_global = 'name = "hero_trait_ids"\ncategory = "data-table"\ntype = "int[4][4]"\n'
+    published = FEATURES.replace('fields = ["class", "weapon", "weapon_level"]\n',
+                                 'fields = ["class", "weapon", "weapon_level", "trait"]\n', 1)
+    headed = published.replace('[kind.referenced_as]\n', '[kind.referenced_as]\ntrait = "Trait of"\n')
+    try:
+        REGISTRY = REGISTRY.replace(trait_global, trait_global + 'columns_ref = "weapon"\n')
+        code, output, written = run(headed, write=True)
+        check(code == 0, f"a row of cells whose columns are records takes a heading ({output.strip()})")
+        entries = json.loads(written or "{}").get("kinds", [{}])[0].get("referenced_as", [])
+        check({"field": "trait", "heading": "Trait of", "details": [], "parts": {}} in entries,
+              "the JSON keeps a column reference's heading")
+    finally:
+        REGISTRY = saved
+    output = errors_of(headed)
+    check("referenced_as trait: trait is not a reference to a table ([table.refs]) nor a row of cells whose columns "
+          "are a table's records (columns_ref)" in output, "the lint flags a heading on a row of plain cells")
+
+
 def test_design_pass_features():
     code, output, written = run(FEATURES, write=True)
     check(code == 0, f"notes, a sheet picture, group labels, a literal and a stepped loader lint clean ({output.strip()})")
@@ -721,7 +743,7 @@ def test_design_pass_features():
                    "referenced_as weapon: part 'friend': only a loaded table's rows are in parts",
                    "referenced_as weapon: detail 'bio' is a row of cells outside the reference's group",
                    "referenced_as weapon: detail 'level' is not one of the kind's fields or text",
-                   "referenced_as class: class is not a reference to a table ([table.refs])",
+                   "referenced_as class: class is not a reference to a table ([table.refs]) nor a row of cells",
                    "referenced_as handler: 'handler' is not a published field",
                    "referenced_as foe.hero: detail 'trap.damage' names another table",
                    "referenced_as foe.hero: detail 'weapon' is a row of cells outside the reference's group",
@@ -797,6 +819,7 @@ def main():
     test_titles()
     test_loader_and_relation_errors()
     test_design_pass_features()
+    test_column_references()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0

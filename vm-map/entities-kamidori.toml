@@ -79,11 +79,15 @@ cursed_flag = "Cursed"
 growth_enabled = "Grows with use"
 sex_restriction_mask = "Usable by"
 character_whitelist = "Characters"
+garden_production_period = "Garden points per product"
 
 [kind.referenced_as]
 granted_skill_id = "Granted by items"
 character_whitelist = "Restricted items it may use"
 garden_product_item_id = { heading = "Produced in the garden by", details = ["garden_production_period"] }
+# A row of cells by condition (columns_ref): each condition whose cell is not 0 lists the item (site plan §13, C2).
+condition_level_deltas = "Changed by items"
+equipped_condition_levels = "Given while equipped"
 
 [[kind.description]]
 name = "description"
@@ -126,6 +130,7 @@ habitat_area = "The world areas the bestiary lists as where it lives."
 bestiary_listed = "In the bestiary"
 initial_affinity_tenths = "Initial affinity"
 equippable_category_mask = "Equips"
+display_name = "Short name"
 
 [kind.referenced_as]
 skill = "Units that have it"
@@ -179,6 +184,7 @@ proc_chance_percent = "Proc chance"
 
 [kind.referenced_as]
 bundled_skill_ids = "Part of"
+condition_levels = "Inflicted by skills"
 
 [[kind.description]]
 name = "description"
@@ -214,6 +220,7 @@ deadline_days = "The days allowed to finish it."
 [kind.labels]
 reward_item_ids = "Item"
 reward_item_quantities = "Quantity"
+category_label = "Category"
 
 [kind.referenced_as]
 reward_item_ids = { heading = "Rewarded by quests", details = ["reward_item_quantities"] }
@@ -349,7 +356,7 @@ event_entry_flag = "Event stage"
 
 [kind.referenced_as]
 labyrinth_id = { heading = "Stages", details = ["floor_number"] }
-prerequisite_labyrinth_id = { heading = "Stages that need one here cleared", details = ["prerequisite_floor_number"] }
+prerequisite_labyrinth_id = { heading = "Stages unlocked by a floor here", details = ["prerequisite_floor_number"] }
 objective_item_rewards = { heading = "Stage reward", details = ["labyrinth_id", "floor_number"] }
 required_party_unit_ids = { heading = "Must join the sortie on", details = ["labyrinth_id", "floor_number"] }
 "enemy.unit_id" = { heading = "Enemy on stages", details = ["labyrinth_id", "floor_number", "enemy.min_level",
@@ -385,6 +392,7 @@ text = ["epithet", "race_text", "sex_text"]
 fields = ["unit_id"]
 qualifiers = ["epithet"]
 referenced_as = { unit_id = "Character profile" }
+labels = { race_text = "Race", sex_text = "Sex" }
 # The portrait is the standing art the profile screen shows (CS…AAA); the user chose to publish it (plan §4.1).
 pictures = { portrait = "portrait_asset_id" }
 

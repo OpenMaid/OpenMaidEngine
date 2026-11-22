@@ -724,7 +724,9 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
     heading, or to `{ heading, details, parts }`. A detail is shown beside each referring entity: a field of the kind
     or a text, one cell a record; a field of the reference's group as wide as it (a drop's chance beside the drop); or
     for a loaded table's field, a field or text of the same table, one cell a row. `parts` gives a heading to each of
-    the loaded table's parts that its rows read under (a stage's allies)."""
+    the loaded table's parts that its rows read under (a stage's allies). A row of cells of the kind whose columns are
+    a table's records (`columns_ref`: a skill's condition levels, by condition) refers to the record of each column whose
+    cell is not 0, and may be keyed as a reference is (site plan §13, C2)."""
     table = game.tables.get(kind.get("table"))
     entries = kind.get("referenced_as", {})
     if table is None:
@@ -760,8 +762,13 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
         if name not in published:
             errors.append(f"{rwhere}: {key!r} is not a published field" + (f" of table {short}" if dot else ""))
             continue
+        if target is None and not dot:
+            columns = resolve_field(game, owner, name, rwhere, [])
+            if columns is not None and not columns.single:
+                target = game.globals.get(columns.global_name, {}).get("columns_ref")
         if target is None or target == globals_build.REF_PICTURE:
-            errors.append(f"{rwhere}: {key} is not a reference to a table ([table.refs])")
+            errors.append(f"{rwhere}: {key} is not a reference to a table ([table.refs]) nor a row of cells whose "
+                          f"columns are a table's records (columns_ref)")
             continue
         if target not in shown_tables:
             errors.append(f"{rwhere}: {key} refers to table {target}, which no kind shows")

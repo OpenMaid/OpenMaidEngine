@@ -157,9 +157,10 @@ public static class ExportWriter
             // A reader's name for a field or group (export plan §5), a loaded table's field's written table.field.
             "CREATE TABLE label (kind TEXT NOT NULL, name TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, name))",
             // How a shown field's number reads (export plan §5): the stored value times scale, plus offset, in unit;
-            // bits is 1 for a mask, whose value names are its bits'. A loaded table's field is written table.field.
+            // bits is 1 for a mask, whose value names are its bits'; none is the stored value that means none, if one
+            // does (a quest's deadline of 0). A loaded table's field is written table.field.
             "CREATE TABLE value_format (kind TEXT NOT NULL, field TEXT NOT NULL, scale REAL, offset INTEGER, unit TEXT, "
-            + "bits INTEGER NOT NULL, PRIMARY KEY (kind, field))",
+            + "bits INTEGER NOT NULL, none INTEGER, PRIMARY KEY (kind, field))",
             // What a shown field's value means (export plan §5): OME's word, lang '', or the game's name in a language.
             "CREATE TABLE value_name (kind TEXT NOT NULL, field TEXT NOT NULL, value INTEGER NOT NULL, lang TEXT NOT NULL, "
             + "text TEXT NOT NULL, PRIMARY KEY (kind, field, value, lang))",
@@ -437,14 +438,15 @@ public static class ExportWriter
                 foreach ((string name, string label) in table.Declaration.Labels)
                     labels.Row(declaration.Id, $"{table.Declaration.Name}.{name}", label);
         }
-        using (var formats = new Inserter(connection, "value_format", "kind", "field", "scale", "offset", "unit", "bits"))
+        using (var formats = new Inserter(connection, "value_format", "kind", "field", "scale", "offset", "unit", "bits", "none"))
         {
             var shown = kind.Published.Select(field => (field.Name, field.Array.Format))
                 .Concat(kind.Loaded.SelectMany(table => table.Published.Select(
                     field => ($"{table.Declaration.Name}.{field.Name}", field.Array.Format))));
             foreach ((string name, ValueFormat? format) in shown)
                 if (format != null)
-                    formats.Row(declaration.Id, name, format.Scale, format.Offset, format.Unit, format.BitsOf != null ? 1 : 0);
+                    formats.Row(declaration.Id, name, format.Scale, format.Offset, format.Unit, format.BitsOf != null ? 1 : 0,
+                                format.None);
         }
         using (var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text"))
             foreach (ExportValueName name in kind.ValueNames)

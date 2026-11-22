@@ -25,7 +25,8 @@ public sealed record ArrayLayout(string Name, GlobalBank Bank, int Address, IRea
 
 /// <summary>A global's value facets (export plan §5; <c>tools/globals_build.py</c>): OME's words for some values, the
 /// game's table of names (element k of the string global names value first + k), the global whose values a mask's
-/// bits stand for, and how a number is shown: the stored value times the scale, plus the offset, in the unit.</summary>
+/// bits stand for, and how a number is shown: the stored value times the scale, plus the offset, in the unit; and the
+/// stored value that means none, which a reader is not shown as a number (a quest's deadline of 0).</summary>
 public sealed record ValueFormat
 {
     public IReadOnlyDictionary<long, string> Words { get; init; } = new Dictionary<long, string>();
@@ -34,6 +35,7 @@ public sealed record ValueFormat
     public double? Scale { get; init; }
     public long? Offset { get; init; }
     public string? Unit { get; init; }
+    public long? None { get; init; }
 
     /// <summary>Whether a value may have a word or a name: its own, or its bits'.</summary>
     public bool Names => Words.Count > 0 || NamesFrom is not null || BitsOf is not null;
@@ -61,8 +63,12 @@ public sealed record ValueFormat
             Unit = entry.TryGetProperty("unit", out JsonElement unit) && unit.ValueKind == JsonValueKind.String
                 ? unit.GetString()
                 : null,
+            None = entry.TryGetProperty("none", out JsonElement none) && none.ValueKind == JsonValueKind.Number
+                ? none.GetInt64()
+                : null,
         };
         return format.Names || format.Scale is not null || format.Offset is not null || format.Unit is not null
+               || format.None is not null
             ? format
             : null;
     }

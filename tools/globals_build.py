@@ -24,8 +24,9 @@ A global's value facets say what its values mean to a reader (game data export p
 some values, `values_from` names the game's own table of names (`{ global, first }`: the string global's element k names
 value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global (or for element k of a
 list of strings, the game's names of the bits: Arterial's races), and `scale`, `offset` and
-`unit` say how a number is shown (the stored value times scale, plus offset, in unit). The JSON and the reference doc
-carry them; the game data export publishes them.
+`unit` say how a number is shown (the stored value times scale, plus offset, in unit), and `none` the stored value
+that means none (a quest's deadline of 0: it has none), which a reader is not shown as a number. The JSON and the
+reference doc carry them; the game data export publishes them.
 An array's column facets name its columns for a reader where `columns` gives OME's words: `columns_from` names the
 game's own table of names (`{ global, first }`: the string global's element k names column first + k, as an element's
 names its resistances), and `columns_ref` the table whose record k column k is (an item's condition levels, by
@@ -411,7 +412,7 @@ def lint_table_aliases(tables: list[dict], globals_by_name: dict) -> list[str]:
 
 
 # A global's value facets (game data export plan §5), as the JSON carries them.
-VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit")
+VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit", "none")
 # An array's column facets, as the JSON carries them.
 COLUMN_FACETS = ("columns_from", "columns_ref")
 # A word for a value or a unit is a reader's: one line, short.
@@ -423,8 +424,9 @@ def lint_values(entries: dict) -> list[str]:
     """The value facets: `values` keys whole numbers and words one short line; `values_from` a one-dimensional string
     global and a whole first value; `bits_of` an integer global's mask over a global whose values have words or names,
     or over a list of strings whose element k names bit k;
-    `scale` a positive number other than 1, `offset` a whole number other than 0, `unit` a short word. Facets are for
-    integer globals; a mask's bits name values, so it has no words, names, scale or offset of its own."""
+    `scale` a positive number other than 1, `offset` a whole number other than 0, `unit` a short word, `none` a whole
+    number that `values` gives no word to. Facets are for integer globals; a mask's bits name values, so it has no
+    words, names, scale, offset or none of its own."""
     errors: list[str] = []
     by_name = {e["name"]: e for e in entries.values() if e.get("name")}
     for key, e in sorted(entries.items(), key=lambda item: str(item[0])):
@@ -471,7 +473,7 @@ def lint_values(entries: dict) -> list[str]:
             elif "values" not in target and "values_from" not in target:
                 errors.append(f"{tag}: bits_of {bits}, whose values have no words or names, and which is no list "
                               f"of strings")
-            clash = [facet for facet in ("values", "values_from", "scale", "offset") if facet in e]
+            clash = [facet for facet in ("values", "values_from", "scale", "offset", "none") if facet in e]
             if clash:
                 errors.append(f"{tag}: a mask's bits name values, so it takes no {', '.join(clash)}")
         scale = e.get("scale")
@@ -484,6 +486,12 @@ def lint_values(entries: dict) -> list[str]:
         unit = e.get("unit")
         if unit is not None and (not isinstance(unit, str) or not unit.strip() or len(unit) > UNIT_LIMIT):
             errors.append(f"{tag}: unit must be a word of at most {UNIT_LIMIT} characters")
+        none = e.get("none")
+        if none is not None:
+            if isinstance(none, bool) or not isinstance(none, int):
+                errors.append(f"{tag}: none must be a whole number, the stored value that means none")
+            elif isinstance(values, dict) and str(none) in values:
+                errors.append(f"{tag}: values gives a word to {none}, which none says means none; give one")
     return errors
 
 
@@ -546,6 +554,8 @@ def value_facets_line(e: dict) -> str:
         shown = "the value" + (f" × {e['scale']:g}" if "scale" in e else "") \
             + (f" {'+' if e['offset'] > 0 else '−'} {abs(e['offset'])}" if "offset" in e else "")
         parts.append(f"Shown as {shown}" + (f", in {e['unit']}" if "unit" in e else "") + ".")
+    if "none" in e:
+        parts.append(f"{e['none']} means none.")
     return " ".join(parts)
 
 

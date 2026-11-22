@@ -883,6 +883,22 @@ authors.
   - **About.** A kind's `about` is one line, at most 160 characters, that says what its entities are; the site shows it
     on the kind's card and its list. The `kind` table has an `about` column, null for none. Kamidori says each of its
     eleven kinds from its fields and its table's usage.
+- **The second design review** (2026-11-22; the user: "start by taking on the reviewer feedback. I'll leave it to your
+  discretion which items you think have merit"; site plan §13 keeps every finding and what was decided). Three of its
+  findings took OME's declarations or registry, none of them in spec §5 or §7.2:
+  - **A heading for a row of cells by another kind's records.** `referenced_as` may key a published row of cells whose
+    global's `columns_ref` makes column k record k of a table (C2): the site lists the referring entity on the page of
+    each record whose cell is not 0, the cell beside it. Kamidori heads three: a skill's condition levels ("Inflicted
+    by skills"), an item's condition level deltas ("Changed by items") and its equipped condition levels ("Given while
+    equipped"), so a condition's page lists what gives it.
+  - **The value that means none** (C3). The registry's value facet `none` is the stored value that means none; the
+    export's `value_format` publishes it, and a list shows such a cell empty, as a page leaves it out. Kamidori's quest
+    deadline (INFO2 draws なし for 0) and quest reward money take `none = 0`; the item prices do not, since nothing
+    shows that a buy price of 0 means the shops do not sell the item.
+  - **Labels for what read as storage names** (P3): a unit's short name, a quest's category, a profile's race and sex,
+    an item's garden points per product (now in `points`, the unit CHECKREWARD divides by), and "Stages unlocked by a
+    floor here".
+
 - **A second game: Arterial** (2026-11-22; the user: "I'd like to make sure what we've done is generalizable to the
   other games without a bunch of hardcoding"). `vm-map/entities-arterial.toml` declares 18 kinds from the registry's
   tables: cards, talents, skills, items, conditions, 奥義, characters, character profiles, glossary entries, tips,
