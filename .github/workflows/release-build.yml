@@ -315,12 +315,58 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  # The reference bundle (game data export spec §8.3) builds from the repository alone, on every run, so a commit that
+  # breaks it fails before it is tagged. A tag's bundle is named for the tag; another run's for `git describe`.
+  reference-bundle:
+    name: Reference bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The tags, for `git describe` on a branch.
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          architecture: x64
+
+      - name: Build the reference bundle
+        env:
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$RELEASE_REF_TYPE" = tag ]; then
+            python -X utf8 tools/reference_bundle.py --output build/reference-bundle --version "$RELEASE_TAG"
+          else
+            python -X utf8 tools/reference_bundle.py --output build/reference-bundle
+          fi
+          cd build/reference-bundle
+          for bundle in OME-reference-*.zip; do
+            sha256sum "$bundle" > "$bundle.sha256"
+          done
+
+      - name: Upload the reference bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: OME-reference-${{ github.sha }}
+          path: build/reference-bundle/*
+          if-no-files-found: error
+          retention-days: 30
+
   publish-release:
     name: Publish tagged GitHub release
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - linux-release
       - windows-release
+      - reference-bundle
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -350,6 +396,12 @@ jobs:
           name: OME-windows-x64-${{ github.sha }}
           path: build/release-assets/windows
 
+      - name: Download the reference bundle
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: OME-reference-${{ github.sha }}
+          path: build/release-assets/reference
+
       - name: Create or resume GitHub release
         # Context values reach the script as environment variables, never as text spliced into it.
         env:
@@ -364,4 +416,5 @@ jobs:
             --target "$RELEASE_TARGET" \
             --linux-artifact-directory build/release-assets/linux \
             --windows-artifact-directory build/release-assets/windows \
+            --reference-artifact-directory build/release-assets/reference \
             --output-directory build/release-assets/prepared

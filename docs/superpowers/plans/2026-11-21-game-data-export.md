@@ -5,7 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0 to 4 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3).
+**Status:** milestones 0 to 5 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3,
+milestone 5 in §4.4).
 §4 gets each later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
@@ -392,6 +393,84 @@ panel the site shows half of; milestone 3's loaded tables have no cells yet (§4
   are the units' runtime state, which no builder writes.
 - **The site** builds 3,566 pages with 133,708 links.
 
+### 4.4 Milestone 5: the reference bundle
+
+Started 2026-11-21 at the user's word ("let's do milestone 5"). Milestone 4 built the script index (§4.3); this one
+adds the notes it lacks, packs what the site's reference section reads, and publishes it with each release. Its plan
+was written with the build, not before it.
+
+**What the code says:**
+
+- **Each input has a builder already:** `opcodes_build.emit_json` gives `opcodes.json` from `vm-map/opcodes.toml`;
+  `globals_build` gives a game's `globals.json`, but `--build-json` merges the auto map when the workspace has one, and
+  its meta names the registry of the process's `--game`; each base mod commits `layout/globals.json`,
+  `layout/points.json`, `events/*.toml` and `shapes/tables.schema.json`; the profile manifests hold each game's titles,
+  engine build, support levels and store site.
+- **The release publishes three fixed names** (`publish_github_release.py`'s expected assets), from the artifacts of
+  the `linux-release` and `windows-release` jobs, which the tag-gated `publish-release` job downloads, checks and
+  promotes. OME has no version file: a version is a `v*` tag, and `git describe` names the commits between.
+- **Arterial had no committed script index** (milestone 4 committed Kamidori's and Himegari's), so its bundle would
+  have had no script pages.
+
+**The plan:**
+
+- **The notes,** `vm-map/scripts-<game>.toml` (spec §8.2): a `[[script]]` for each script with a `name` (without
+  `.BIN`), a `summary`, the `source` the fact comes from (a doc of this repository or a patch point), and optional
+  `[script.arguments]`, each a named global the script reads as its caller's input and what it means. They are drawn
+  only from what `docs/kamidori-data-tables.md`, `docs/arterial-data-tables.md`, `docs/scjump-progression.md`,
+  `docs/script-inventory.md` and the patch points establish; `script-inventory.md`'s lists by subsystem are inferred
+  from the names, so they give no note.
+- **`tools/reference_bundle.py`** builds `OME-reference-<version>.zip` from the repository: `bundle.json`,
+  `games.json`, `opcodes.json`, `docs/modding/**` as git tracks them, and under `games/<game>/` the curated
+  `globals.json`, the base mod's files and `scripts.json`, the committed index with each note merged in and each
+  layer's script (`$n$NAME`) linked to the base script it writes over (`layer_of`). `--version` names it; by default
+  `git describe --tags --always --dirty`. The zip's entries carry one fixed time, so one commit's bundle has the same
+  bytes wherever it is built.
+- **`globals_build.curated_json(registry)`** gives the bundle's `globals.json`: the registry linted and merged with no
+  auto map, its meta naming that registry.
+- **The core gate `reference-bundle-check`** (`reference_bundle.py --check`) refuses a note whose script the committed
+  index lacks, and an argument that is not a named global the script reads; then it builds the bundle in memory, so a
+  registry that does not lint or a missing base mod file fails it too.
+- **The release:** a `reference-bundle` job on every run of the release workflow, with no `if:`, so a commit that
+  breaks the bundle fails before it is tagged. On a tag it passes the tag as the version. It uploads the zip and its
+  `sha256sum`. `publish-release` needs it and downloads it; the publisher expects four assets, named for the tag,
+  checks the zip against its checksum and its `bundle.json` (the tag, the tagged commit, a clean checkout, every
+  file's hash, no file unlisted), and writes its line into `RELEASE-SHA256SUMS`.
+- **Arterial's index** is built and committed as the others are, which adds its workspace `script-index-check`.
+- **Checks:** the notes' form and their check against an index; the merge; the zip's round trip, its same bytes on a
+  second build, and each refusal of `verify_archive`; the repository's own bundle; the publisher's refusal of a bundle
+  of another tag or commit, from a dirty checkout, or changed after its hashes; the workflow's new job.
+
+**Built** (2026-11-21), as planned, with these details:
+
+- **The notes:** 47 for Kamidori (INIT2 and the three AUTORUNs, the 28 boot tables, the tables run on demand, FIELD,
+  SELSTAGE, INFO3 and ADDEXP), 39 for Arterial (INIT2 and the four AUTORUNs, the 29 boot tables, the four tables run
+  on demand and SETMAPDATA) and 10 for Himegari (SYSTEM4, SCJUMP, SCINIT and the message scripts). Each summary was
+  checked against its source, and ADDEXP's slot argument against its disassembly (ADDEXP@0x0 reads
+  `battle_unit_unit_ids` by `current_battle_slot`). A note's name matches an index key without case and without
+  `.BIN`.
+- **`games.json`** gives each game its `id`, `title` and catalog `titles`, `engine_build`, `script_revisions`,
+  `support`, the store `site` from its launcher entry, its base mod's `id` and `version`, and whether it has a
+  `script_index`.
+- **`scripts.json`** keeps the index's fields as they are and adds `layer_of` and `note` (`summary`, `source`,
+  `arguments` when it has some); its `index_format` names the index's format.
+- **The publisher** imports `reference_bundle` for `verify_archive` and `archive_name`, so the builder and the release
+  check one format. The release's description names the bundle. `_require_exact_assets` checks the verified set
+  rather than a constant, since the reference asset's name changes with each tag.
+- **The release job** builds with `fetch-depth: 0`, for `git describe` on a branch; values reach its script through
+  `env:`, as the workflow tests require.
+
+**Results:**
+
+- **The bundle** of this branch has 44 files, 7.5 MB unpacked and 0.99 MB zipped, and builds in about half a second.
+  Two builds of one version give the same bytes.
+- **The script pages it gives:** Kamidori 732 scripts, 47 with a note, 149 layers linked to their base; Himegari 520,
+  10, 32; Arterial 693, 39, 178.
+- **Arterial's index:** 693 scripts, its seven patch points found in five scripts (BTL, INIT2, READYEND, RESULT,
+  SETMAPDATA), about 3 s.
+- **The release path** runs only on a tag, so the workflow's new job and the fourth asset are first exercised by CI on
+  the push after this one.
+
 ## 5. What changed since the spec
 
 - **The kind ids a site path takes** (spec §5.2's comment): `docs` and `api` are reserved for game ids, the first path
@@ -459,3 +538,17 @@ panel the site shows half of; milestone 3's loaded tables have no cells yet (§4
 - **The arrays no field names are not published** (spec §6.6 and §13's milestone 4). Measured on Kamidori (§4.3), they
   would show nothing: every integer cell the builders write lies in a named global. The export reports such cells
   for each kind instead, so a game that has them shows them, and the site's list can be built when one does.
+- **The bundle's globals never merge the auto map** (milestone 5, §4.4). Spec §8.1 names `globals_build.py
+  --build-json`, which merges it when the workspace has one; the bundle uses `curated_json`, so a local build and
+  CI's give the same file, as spec §8.1's "the globals the auto map infers … are not in it" intends.
+- **A note says where its fact comes from** (`source`), and the core gate checks its arguments too: each must be a
+  named global the script reads. Spec §8.2 checks only that a note names an indexed script.
+- **`scripts.json` links a layer's script to its base** (`layer_of`), so a note on `ITINIT` serves `$1$ITINIT` to
+  `$3$ITINIT` on the site; spec §8.2 does not have it.
+- **`games.json` holds more than the support levels** (spec §8.1): the titles, the engine build and script
+  revisions, the store site and the base mod's version, which site §6 shows.
+- **The reference asset's name carries the tag** (`OME-reference-v0.10.0.zip`), as spec §8.1's
+  `OME-reference-<version>.zip` says; the publisher's expected assets are therefore computed from the tag. The
+  publisher checks the bundle's `bundle.json` against the tag and the tagged commit, which spec §8.3 does not ask.
+- **Arterial has a committed script index too** (milestone 5): spec §8.2 builds one for each game, and milestone 4
+  had committed two.

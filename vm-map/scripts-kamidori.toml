@@ -1,0 +1,286 @@
+# What Kamidori's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-kamidori.json, into the
+# reference bundle's games/kamidori/scripts.json.
+#
+# Each [[script]] names a script as the index has it, without `.BIN` (`ITINIT`, `$1$AUTORUN`), and gives:
+#   summary    what the script does, in a sentence or two;
+#   source     where the fact is established (a doc of this repository, a patch point);
+#   arguments  optional: each global the script reads as an input its caller sets, and what it means. A global
+#              here must be a name of vm-map/globals-kamidori.toml that the index shows the script using.
+# The core gate `reference-bundle-check` refuses a note whose script the index lacks, or an argument the script
+# does not use. A layer's script ($n$NAME) gets the base script's note on the site through the bundle's
+# `layer_of`; give it its own note only where it does something else.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it calls the 28 base table scripts (SCINIT first, BTANINIT2 last), then op \
+0x143 runs each mounted append's $n$AUTORUN, whose fragments write over the base tables. After that it fills each \
+unset text colour, rebuilds the field when a save made on a floor is loaded, and sets up the studio's ornaments."""
+source = "docs/kamidori-data-tables.md (How the data gets into memory); the patch points kamidori.boot.data_layered and kamidori.boot.data_ready"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The first append's record zero, which INIT2 runs through op 0x143: it calls the append's $1$ fragment of \
+each of the 28 boot tables, in INIT2's order."""
+source = "docs/kamidori-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$2$AUTORUN"
+summary = """The second append's record zero, which INIT2 runs through op 0x143: it calls the append's $2$ fragment \
+of each of the 28 boot tables, in INIT2's order."""
+source = "docs/kamidori-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$3$AUTORUN"
+summary = """The third append's record zero, which INIT2 runs through op 0x143: it calls the append's $3$ fragment of \
+each of the 28 boot tables, in INIT2's order."""
+source = "docs/kamidori-data-tables.md (How the data gets into memory)"
+
+# ---------------------------------------------------------------------------------------------- the boot tables
+# Each writes its table's records as constants into the global bank, and each append's fragment of it writes over
+# them (docs/kamidori-data-tables.md, "Table inventory").
+
+[[script]]
+name = "SCINIT"
+summary = "The scene dispatch table: which scene each of the progression's decisions plays. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Scene dispatch)"
+
+[[script]]
+name = "AMINIT2"
+summary = "The world map's areas. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "QUINIT"
+summary = "The quests: their requesters, conditions and rewards. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Quests)"
+
+[[script]]
+name = "ALINIT"
+summary = "The alchemy recipes: each one's ingredients, output and unlock conditions. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Recipes)"
+
+[[script]]
+name = "IMINIT"
+summary = "Equipment growth: how equipment improves. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Equipment growth)"
+
+[[script]]
+name = "BUINIT"
+summary = "The studio's extensions. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Studio extensions)"
+
+[[script]]
+name = "ARINIT"
+summary = "The arena's battles. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "EBINIT"
+summary = "The units and characters: their stats, growth, skills, equipment and pictures. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Unit definitions)"
+
+[[script]]
+name = "CNINIT"
+summary = "The speakers' names and voice families. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Names, voices, profiles)"
+
+[[script]]
+name = "ITINIT"
+summary = "The items: their names, summaries, categories, prices and pictures. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Items)"
+
+[[script]]
+name = "SKINIT"
+summary = "The skills. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Skills)"
+
+[[script]]
+name = "ILINIT"
+summary = "The conditions (poison, paralysis, charm, the drains and the buffs), each at five levels. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Conditions)"
+
+[[script]]
+name = "AFINIT"
+summary = """The species, the affinity scale, susceptibility, the costume-enhancement catalog and the progression \
+constants. Built at boot."""
+source = "docs/kamidori-data-tables.md (Table inventory; Affinity and progression constants)"
+
+[[script]]
+name = "LAINIT"
+summary = "The dungeon terrain types. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Terrain)"
+
+[[script]]
+name = "OBINIT"
+summary = "The map object types. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Map objects)"
+
+[[script]]
+name = "RTINIT"
+summary = "The enemies' AI routines. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Enemy AI routines)"
+
+[[script]]
+name = "STINIT2"
+summary = """The stage catalog: each stage's name, labyrinth and floor, entry conditions, recommended level and \
+objective rewards. Built at boot; STINIT loads a stage's own tables when it is played."""
+source = "docs/kamidori-data-tables.md (Table inventory; Stage catalog and per-stage loader)"
+
+[[script]]
+name = "HAINIT"
+summary = "The dungeon halls' art. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Map objects and hall art)"
+
+[[script]]
+name = "DIINIT"
+summary = "The gathering drop tables: what a dig point yields. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "CDINIT2"
+summary = "The field cards. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "CGINIT"
+summary = "The CG gallery. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "SPINIT"
+summary = "The H-scene replays. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "CVINIT"
+summary = "The voice settings. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "FAINIT"
+summary = "The chapter objectives. Built at boot; FAMES holds their text."
+source = "docs/kamidori-data-tables.md (Table inventory; Chapter objectives)"
+
+[[script]]
+name = "CIINIT"
+summary = "The character profiles. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory; Names, voices, profiles)"
+
+[[script]]
+name = "VIINIT"
+summary = "The glossary. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "EUINIT"
+summary = "The gallery's character roster. Built at boot."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "BTANINIT2"
+summary = "The battle animations' timelines. Built at boot, the last of INIT2's tables."
+source = "docs/kamidori-data-tables.md (Table inventory; Battle animations)"
+
+# ---------------------------------------------------------------------------------------------- tables on demand
+
+[[script]]
+name = "STINIT"
+summary = """The per-stage loader: it writes the tables of the stage in current_stage_id (its enemy and ally slots, \
+objects and rules), which FIELD, SELSTAGE's preview and INFO3 run before they read them. It is reached through \
+stage_loader_script_ids, each layer's loader in turn, not by a constant call."""
+source = "docs/kamidori-data-tables.md (Stage catalog and per-stage loader); the patch point kamidori.stage.after_loader"
+[script.arguments]
+current_stage_id = "the stage whose tables it writes"
+
+[[script]]
+name = "MPINIT"
+summary = """The dungeon floor maps: it writes the map of the floor current_labyrinth_id and current_floor_no select \
+into the 53×53 floor_terrain_template, with the floor's size. Labyrinth -1 holds the battle maps outside the \
+dungeons."""
+source = "docs/kamidori-data-tables.md (How a dungeon floor is stored)"
+[script.arguments]
+current_labyrinth_id = "the labyrinth of the floor to load"
+current_floor_no = "the floor to load"
+
+[[script]]
+name = "CCINIT"
+summary = """The class-change rules: CALCCC calls it, and each layer's, through its hook array. A rule that matches \
+the character and its level sets its bit, takes its title when its priority wins, and adds its deltas."""
+source = "docs/kamidori-data-tables.md (Class changes)"
+[script.arguments]
+current_character_id = "the character whose rules it tests"
+
+[[script]]
+name = "AMINIT"
+summary = "The world areas' state, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "BTANINIT"
+summary = "The dispatch of battle effects, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "CDINIT"
+summary = "The lists the field cards are drawn from, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "COINIT"
+summary = "The costume enhancement boards, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "CSINIT"
+summary = "Which sprite a costume puts in place of a character's, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "EVINIT"
+summary = "Which event CG stands in for another, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory)"
+
+[[script]]
+name = "SHINIT"
+summary = "The shops' catalogues, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory; Shop catalogue and town sites)"
+
+[[script]]
+name = "SIINIT"
+summary = "The town's sites, a hook table run on demand."
+source = "docs/kamidori-data-tables.md (Table inventory; Shop catalogue and town sites)"
+
+# ---------------------------------------------------------------------------------------------- the game
+
+[[script]]
+name = "FIELD"
+summary = """The dungeon floor: it runs every layer's map and stage loaders, places the floor's enemies and objects, \
+and runs each layer's ready handlers, a round's handlers at the start of each player turn after the first, and the \
+close handlers when the floor ends."""
+source = "the patch points kamidori.stage.after_loader, after_ready_handlers, after_round_handlers and after_close_handlers"
+
+[[script]]
+name = "SELSTAGE"
+summary = """The stage list, the world map's choice of a floor: it puts the stage under its cursor in \
+current_stage_id and runs that stage's loaders for its preview, which shows the enemy slots whose gates pass. \
+Nothing is placed."""
+source = "the patch point kamidori.stage.after_list_preview"
+
+[[script]]
+name = "INFO3"
+summary = """INFO's third tab, アイテム情報, which FIELD opens from its menu. For an item's 獲得地点 view it runs every \
+stage's loaders to find the floors whose dig points yield it, then, on a floor, runs that floor's loaders again."""
+source = "the patch point kamidori.stage.after_info_reload"
+
+[[script]]
+name = "ADDEXP"
+summary = """Awards experience to one character: the amount its caller passes (COMMITBTL after a battle, or FIELD), \
+times the costume bonus, over 100. A character at its level cap, or an amount of 0 or less, gains none. Weapon \
+experience is decided after."""
+source = "the patch point kamidori.experience.after_calculation"
+[script.arguments]
+current_battle_slot = "the battle slot whose unit gains the experience (ADDEXP@0x0 reads battle_unit_unit_ids by it)"
+shared_scratch_value = "the experience its caller awards"

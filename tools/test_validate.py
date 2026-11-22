@@ -166,6 +166,7 @@ class GatePlanTests(unittest.TestCase):
         self.assertIn("patch-points-reference-himegari", by_key)
         self.assertEqual("--check", by_key["engine-ctx-check"].command[-1])
         self.assertEqual("--check", by_key["launcher-icon-check"].command[-1])   # no Pillow needed
+        self.assertEqual("--check", by_key["reference-bundle-check"].command[-1])   # the committed indexes only
         self.assertNotIn("globals-check", by_key)                # merges the workspace auto map
 
     def test_workspace_checks_the_selected_global_reference_before_rebuilding_it(self) -> None:
@@ -236,7 +237,7 @@ class GatePlanTests(unittest.TestCase):
         self.assertIn("oms-canonical-rebuild", keys)
         self.assertIn("oms-idiomatic-rebuild", keys)   # oms/arterial/adv.oms
         self.assertIn("globals-check", keys)           # vm-map/globals-arterial.toml
-        self.assertNotIn("script-index-check", keys)   # no docs/script-index-arterial.json
+        self.assertIn("script-index-check", keys)      # docs/script-index-arterial.json
         self.assertNotIn("globals-check", {gate.key for gate in unregistered})
         installed = next(gate for gate in plan if gate.key == "engine-workspace-tests")
         self.assertIn("Category=Workspace&Profile=arterial", installed.command)

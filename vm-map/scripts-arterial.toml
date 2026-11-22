@@ -1,0 +1,238 @@
+# What Arterial's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-arterial.json, into the
+# reference bundle's games/arterial/scripts.json. The format is vm-map/scripts-kamidori.toml's. Every note here
+# comes from docs/arterial-data-tables.md.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it calls the 29 base table scripts (SCINIT first, MUINIT last), then op 0x143 \
+runs each mounted append's $n$AUTORUN, whose fragments add records and rewrite cells of earlier ones. It also fills \
+the slot arrays that pick a record's script by the append that added it, with the base scripts in slot 0."""
+source = "docs/arterial-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The first append's record zero, which INIT2 runs through op 0x143: it calls the append's $1$ fragment of \
+each of the 29 boot tables, fills the append's slots of the slot arrays, and sets bit 1 of the append mask."""
+source = "docs/arterial-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$2$AUTORUN"
+summary = """The second append's record zero, which INIT2 runs through op 0x143: it calls the append's $2$ fragment \
+of each of the 29 boot tables (almost all of them empty stubs), fills the append's slots of the slot arrays, and \
+sets bit 2 of the append mask."""
+source = "docs/arterial-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$3$AUTORUN"
+summary = """The third append's record zero, which INIT2 runs through op 0x143: it calls the append's $3$ fragment of \
+each of the 29 boot tables, fills the append's slots of the slot arrays, and sets bit 3 of the append mask."""
+source = "docs/arterial-data-tables.md (How the data gets into memory)"
+
+[[script]]
+name = "$4$AUTORUN"
+summary = """The fourth append's record zero, which INIT2 runs through op 0x143: it calls the append's $4$ fragment \
+of each of the 29 boot tables, fills the append's slots of the slot arrays, and sets bit 4 of the append mask."""
+source = "docs/arterial-data-tables.md (How the data gets into memory)"
+
+# ---------------------------------------------------------------------------------------------- the boot tables
+# Each writes its table's records as constants into the global bank, and each append's fragment of it writes over
+# them (docs/arterial-data-tables.md, "Table inventory").
+
+[[script]]
+name = "SCINIT"
+summary = "The scenes: the script each scene id plays. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; SCINIT)"
+
+[[script]]
+name = "CHINIT"
+summary = "The characters, as speakers: their names by form, voices and pictures. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; CHINIT)"
+
+[[script]]
+name = "CFINIT"
+summary = "The faces: each character's face pictures. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; CFINIT)"
+
+[[script]]
+name = "CCINIT"
+summary = """The party characters: the skill lines each starts with, and the cards, skills and 奥義 level of each of \
+their levels. Built at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; CCINIT)"
+
+[[script]]
+name = "CDINIT"
+summary = "The cards: 30 slots for each of 200 rows. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; CDINIT)"
+
+[[script]]
+name = "TAINIT"
+summary = "The talents, a card's abilities, by name and description. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; TAINIT, COINIT, SKINIT, ILINIT)"
+
+[[script]]
+name = "COINIT"
+summary = "The 奥義: 30 of them, each with nine levels. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; TAINIT, COINIT, SKINIT, ILINIT)"
+
+[[script]]
+name = "SKINIT"
+summary = "The skills (飛行, 転移, 錬金Ⅰ and the rest). Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; TAINIT, COINIT, SKINIT, ILINIT)"
+
+[[script]]
+name = "ITINIT"
+summary = "The items. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; ITINIT)"
+
+[[script]]
+name = "IMINIT"
+summary = "Card growth: what each of up to eight level steps adds to four of a card's numbers. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; A card's numbers in play and IMINIT)"
+
+[[script]]
+name = "ILINIT"
+summary = "The conditions (操血, 封印, 幻覚 and the rest). Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; TAINIT, COINIT, SKINIT, ILINIT)"
+
+[[script]]
+name = "RFINIT"
+summary = """The constants: the ranks' points, a character's experience for each level, battle experience and the \
+random conditions. Built at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; RFINIT, DUINIT, RTINIT)"
+
+[[script]]
+name = "AMINIT"
+summary = "The areas (歪秤世界, 天慶市 and the rest). Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; AMINIT)"
+
+[[script]]
+name = "DEINIT"
+summary = "The decks: a name and up to 20 cards each. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; DEINIT, ALINIT, SHINIT, REINIT)"
+
+[[script]]
+name = "DUINIT"
+summary = """The battles: each side's leader and deck, the opponent's 奥義, the rule, the music and the pictures. Built \
+at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; RFINIT, DUINIT, RTINIT)"
+
+[[script]]
+name = "REINIT"
+summary = """The battle rules: what wins and what loses, the turn limit, the hand and deck sizes, and the deck's \
+limits. Built at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; DEINIT, ALINIT, SHINIT, REINIT)"
+
+[[script]]
+name = "ALINIT"
+summary = "The recipes: what each makes, from which ingredients, and when ALCHEMY offers it. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; DEINIT, ALINIT, SHINIT, REINIT)"
+
+[[script]]
+name = "SHINIT"
+summary = "The shops' entries: an item or a card each, and when SHOPP lists it. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; DEINIT, ALINIT, SHINIT, REINIT)"
+
+[[script]]
+name = "ARINIT"
+summary = """The arena opponents (their battle, arena, conditions, scenes and reward) and the ten arenas (対戦台, \
+連戦台 and the rest). Built at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; ARINIT and FAINIT)"
+
+[[script]]
+name = "RTINIT"
+summary = "The map units' routines, step by step, and the CPU's battle profiles. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; RFINIT, DUINIT, RTINIT)"
+
+[[script]]
+name = "FAINIT"
+summary = """The goals: each one's text, the scenes that open and close it, its kind and its reward. Built at \
+boot."""
+source = "docs/arterial-data-tables.md (Table inventory; ARINIT and FAINIT)"
+
+[[script]]
+name = "CVINIT"
+summary = "The voice settings, one for each voiced character. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; CVINIT and CIINIT)"
+
+[[script]]
+name = "CIINIT"
+summary = "The character profiles. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; CVINIT and CIINIT)"
+
+[[script]]
+name = "VIINIT"
+summary = "The glossary (【用語】): an entry is listed once a scene of it has been seen. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+[[script]]
+name = "TIINIT"
+summary = """A second list of titled entries (日常モード and the rest), each listed once a scene of it has been seen. \
+Built at boot."""
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+[[script]]
+name = "EUINIT"
+summary = "The pictures CGMODE and HMODE show, two for each record. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+[[script]]
+name = "CGINIT"
+summary = """1,577 entries of two resource ids, in sections and groups; by its name, the CG gallery. Built at \
+boot."""
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+[[script]]
+name = "SPINIT"
+summary = "65 pairs of resource ids. Built at boot."
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+[[script]]
+name = "MUINIT"
+summary = "The music list. Built at boot, the last of INIT2's tables."
+source = "docs/arterial-data-tables.md (Table inventory; Registries)"
+
+# ---------------------------------------------------------------------------------------------- tables on demand
+
+[[script]]
+name = "BGINIT"
+summary = """Picture substitution: for the picture id in adv_face_id and the time of day in time_slot (0 to 4), it \
+leaves another picture id in adv_face_id. Run on demand."""
+source = "docs/arterial-data-tables.md (On-demand tables)"
+[script.arguments]
+adv_face_id = "the picture id to substitute; the script leaves its substitute there"
+time_slot = "the time of day, 0 to 4, that picks the substitute"
+
+[[script]]
+name = "MPINIT"
+summary = """The points of the area in play: their names, kinds and positions, and where a point leads. It clears \
+its arrays and fills them from the branch for current_area_id; SETMAPDATA runs it, then each append's."""
+source = "docs/arterial-data-tables.md (On-demand tables)"
+[script.arguments]
+current_area_id = "the area in play, an AMINIT id"
+
+[[script]]
+name = "ROINIT"
+summary = """The routes between the area's points. It clears its arrays and fills them from the branch for \
+current_area_id; SETMAPDATA runs it, then each append's."""
+source = "docs/arterial-data-tables.md (On-demand tables)"
+[script.arguments]
+current_area_id = "the area in play, an AMINIT id"
+
+[[script]]
+name = "UNINIT"
+summary = """The units on the area in play: a card each, and nineteen more arrays. It clears its arrays and fills \
+them from the branch for current_area_id; SETMAPDATA runs it, then each append's."""
+source = "docs/arterial-data-tables.md (On-demand tables)"
+[script.arguments]
+current_area_id = "the area in play, an AMINIT id"
+
+# ---------------------------------------------------------------------------------------------- the game
+
+[[script]]
+name = "SETMAPDATA"
+summary = """Loads the area in play: it runs the slot arrays of MPINIT, ROINIT and UNINIT, slots 0 to 31, so the base \
+table and then each append's fill the area's points, routes and units."""
+source = "docs/arterial-data-tables.md (How the data gets into memory; On-demand tables)"

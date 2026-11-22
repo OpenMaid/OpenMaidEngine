@@ -1,0 +1,66 @@
+# What Himegari's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-himegari.json, into the
+# reference bundle's games/himegari/scripts.json. The format is vm-map/scripts-kamidori.toml's. A note states what
+# a doc of this repository establishes; docs/script-inventory.md's lists by subsystem are inferred from the names,
+# so they give no note here.
+
+[[script]]
+name = "SYSTEM4"
+summary = """The boot's root, the frame a scene returns to. On the normal path it looks up the scene for the \
+progression's decision (scjump_decision_out) in the scene table SCINIT writes, falls back to SC0000 when that is \
+zero, and calls it (SYSTEM4@0x477)."""
+source = "docs/scjump-progression.md (The decision→scene boundary and SCINIT registry)"
+
+[[script]]
+name = "SCJUMP"
+summary = """The progression state machine: it decides what comes next in the story. A switch on chapter_mode \
+picks a block for each of the nine chapters, a tree of tests on the stage, the faction, the battle's outcome, story \
+flags and a random roll, and each of its 1,755 decision sites writes its decision to scjump_decision_out."""
+source = "docs/scjump-progression.md (Mechanism)"
+[script.arguments]
+chapter_mode = "the chapter whose block decides"
+current_stage_id = "the stage just played"
+battle_outcome_flags = "how the battle ended: the target defeated, the actor defeated, or both alive"
+
+[[script]]
+name = "SCINIT"
+summary = """The scene table: for each progression decision, the scene SYSTEM4 plays and its chapter, in two \
+arrays indexed by the decision. 2,179 writes leave 1,209 decisions with a scene."""
+source = "docs/scjump-progression.md (The decision→scene boundary and SCINIT registry)"
+
+[[script]]
+name = "MES"
+summary = """The generic message box: it shows the lines its caller has put in the line buffers, with an optional \
+annotation that SBUNKI uses too."""
+source = "docs/script-inventory.md (Message/string tables); docs/name-resolution.md"
+
+[[script]]
+name = "INFOMES"
+summary = """Holds no text: it walks a 32 by 4 registry of handlers, the first that answers winning, whose row zero \
+sends the character, enemy and glossary tabs to CIMES, EIMES and VIMES."""
+source = "docs/script-inventory.md (Message/string tables)"
+
+[[script]]
+name = "ITMES"
+summary = "The items' text: a message record for each of ITINIT's 287 items."
+source = "docs/script-inventory.md (Message/string tables)"
+
+[[script]]
+name = "SKMES"
+summary = "The skills' text: a message record for each of SKINIT's 131 skills."
+source = "docs/script-inventory.md (Message/string tables)"
+
+[[script]]
+name = "VIMES"
+summary = "The glossary's text: a title and a description of several lines for each of VIINIT's 65 topics."
+source = "docs/script-inventory.md (Message/string tables)"
+
+[[script]]
+name = "EIMES"
+summary = "The enemy commentary: a summary and a strategy for each of 192 of EBINIT's enemies."
+source = "docs/script-inventory.md (Message/string tables)"
+
+[[script]]
+name = "CIMES"
+summary = "The character biographies: one for each of CIINIT's 24 profiles."
+source = "docs/script-inventory.md (Message/string tables)"

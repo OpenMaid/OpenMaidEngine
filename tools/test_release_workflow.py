@@ -63,7 +63,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         cls.linux_engine = job(cls.text, "linux-engine", "windows-engine")
         cls.windows_engine = job(cls.text, "windows-engine", "linux-release")
         cls.linux = job(cls.text, "linux-release", "windows-release")
-        cls.windows = job(cls.text, "windows-release", "publish-release")
+        cls.windows = job(cls.text, "windows-release", "reference-bundle")
+        cls.reference = job(cls.text, "reference-bundle", "publish-release")
         cls.publish = job(cls.text, "publish-release", None)
         cls.export_presets = EXPORT_PRESETS.read_text(encoding="utf-8")
         cls.godot_project = GODOT_PROJECT.read_text(encoding="utf-8")
@@ -271,7 +272,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("if: startsWith(github.ref, 'refs/tags/v')", self.publish)
         self.assertRegex(
             self.publish,
-            r"(?m)^    needs:\n      - linux-release\n      - windows-release$",
+            r"(?m)^    needs:\n      - linux-release\n      - windows-release\n      - reference-bundle$",
         )
         self.assertRegex(self.publish, r"(?m)^    permissions:\n(?:      #.*\n)*      contents: write$")
         self.assertIn("GITHUB_TOKEN: ${{ github.token }}", self.publish)
@@ -287,8 +288,27 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("path: build/release-assets/windows", self.publish)
         self.assertIn("--linux-artifact-directory build/release-assets/linux", self.publish)
         self.assertIn("--windows-artifact-directory build/release-assets/windows", self.publish)
+        self.assertIn("OME-reference-${{ github.sha }}", self.publish)
+        self.assertIn("path: build/release-assets/reference", self.publish)
+        self.assertIn("--reference-artifact-directory build/release-assets/reference", self.publish)
         self.assertIn("--output-directory build/release-assets/prepared", self.publish)
         self.assertNotIn("--asset", self.publish)
+
+    def test_the_reference_bundle_builds_on_every_run_and_a_tags_is_named_for_it(self) -> None:
+        # Game data export spec §8.3: no `if:`, so a branch push builds it too and a broken bundle fails before a tag.
+        self.assertNotRegex(self.reference, r"(?m)^    if:")
+        self.assertIn("runs-on: ubuntu-24.04", self.reference)
+        self.assertNotIn("contents: write", self.reference)
+        self.assertNotIn("GITHUB_TOKEN", self.reference)
+        self.assertIn("fetch-depth: 0", self.reference)              # git describe needs the tags
+        self.assertIn("RELEASE_REF_TYPE: ${{ github.ref_type }}", self.reference)
+        self.assertIn("RELEASE_TAG: ${{ github.ref_name }}", self.reference)
+        script = next(script for script in run_scripts(self.reference) if "reference_bundle.py" in script)
+        self.assertIn('--output build/reference-bundle --version "$RELEASE_TAG"', script)
+        self.assertIn('sha256sum "$bundle" > "$bundle.sha256"', script)
+        self.assertIn("name: OME-reference-${{ github.sha }}", self.reference)
+        self.assertIn("path: build/reference-bundle/*", self.reference)
+        self.assertIn("if-no-files-found: error", self.reference)
 
     def test_no_run_script_interpolates_an_expression(self) -> None:
         # An expression in run: is spliced into the shell text before it runs; values go through env: instead.

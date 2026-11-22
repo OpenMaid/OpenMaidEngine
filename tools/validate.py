@@ -63,6 +63,7 @@ CORE_TESTS = (
     "test_patch_points.py",
     "test_base_mod_build.py",
     "test_entities_build.py",
+    "test_reference_bundle.py",
     "test_launcher_icon_build.py",
     "test_paths.py",
     "test_revision_diff.py",
@@ -247,6 +248,11 @@ def build_gate_plan(
             "launcher-icon-check",
             "The launcher's icon against the OME icon",
             _python_tool("launcher_icon_build.py", "--check"),
+        ),
+        Gate(
+            "reference-bundle-check",
+            "Script notes against the committed script indexes; the reference bundle builds",
+            _python_tool("reference_bundle.py", "--check"),
         ),
     ]
     gates.extend(

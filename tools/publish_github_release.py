@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate paired platform artifacts and promote three assets to a GitHub release."""
+"""Validate paired platform artifacts and the reference bundle, and promote four assets to a GitHub release."""
 from __future__ import annotations
 
 import argparse
@@ -19,6 +19,7 @@ from typing import Any, Callable, Protocol
 
 import package_linux_x64
 import publish_launcher
+import reference_bundle
 import verify_windows_native
 
 
@@ -42,7 +43,21 @@ WINDOWS_ARTIFACT_FILES = frozenset({
     "SHA256SUMS",
     "WINDOWS-VERIFICATION.json",
 })
-EXPECTED_RELEASE_ASSETS = frozenset({LINUX_ARCHIVE, WINDOWS_ARCHIVE, RELEASE_CHECKSUMS})
+
+
+def reference_archive(tag: str) -> str:
+    """The reference bundle's asset (game data export spec §8.3), named for the release's tag."""
+    return reference_bundle.archive_name(tag)
+
+
+def reference_artifact_files(tag: str) -> frozenset[str]:
+    return frozenset({reference_archive(tag), f"{reference_archive(tag)}.sha256"})
+
+
+def expected_release_assets(tag: str) -> frozenset[str]:
+    return frozenset({LINUX_ARCHIVE, WINDOWS_ARCHIVE, reference_archive(tag), RELEASE_CHECKSUMS})
+
+
 LINUX_PACKAGE_ROOT = "OME-linux-x64"
 WINDOWS_PACKAGE_ROOT = "OME-windows-x64"
 # The lines an accepted Linux smoke log holds: the engine's, the launcher's check and the hand-over (plan §9.4).
@@ -395,17 +410,28 @@ def prepare_release_assets(
     target: str,
     linux_directory: Path,
     windows_directory: Path,
+    reference_directory: Path,
     output_directory: Path,
 ) -> list[Path]:
     _validate_tag_target(tag, target)
     linux = _artifact_files(linux_directory, LINUX_ARTIFACT_FILES, "Linux")
     windows = _artifact_files(windows_directory, WINDOWS_ARTIFACT_FILES, "Windows")
+    reference_name = reference_archive(tag)
+    reference = _artifact_files(reference_directory, reference_artifact_files(tag), "Reference bundle")
     linux_hash = _validate_external_checksum(
         linux[LINUX_ARCHIVE], linux[f"{LINUX_ARCHIVE}.sha256"], "Linux"
     )
     windows_hash = _validate_external_checksum(
         windows[WINDOWS_ARCHIVE], windows[f"{WINDOWS_ARCHIVE}.sha256"], "Windows"
     )
+    reference_hash = _validate_external_checksum(
+        reference[reference_name], reference[f"{reference_name}.sha256"], "Reference bundle"
+    )
+    # Its bundle.json names this tag and commit, from a clean checkout, and every file matches its hash.
+    try:
+        reference_bundle.verify_archive(reference[reference_name], version=tag, commit=target, require_clean=True)
+    except reference_bundle.BundleError as error:
+        raise ValueError(f"the reference bundle is not accepted: {error}") from error
 
     linux_build_info = linux["BUILD-INFO.json"].read_bytes()
     windows_build_info = windows["BUILD-INFO.json"].read_bytes()
@@ -461,10 +487,11 @@ def prepare_release_assets(
     output_directory = output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
     checksum_path = output_directory / RELEASE_CHECKSUMS
-    content = f"{linux_hash}  {LINUX_ARCHIVE}\n{windows_hash}  {WINDOWS_ARCHIVE}\n"
+    content = (f"{linux_hash}  {LINUX_ARCHIVE}\n{windows_hash}  {WINDOWS_ARCHIVE}\n"
+               f"{reference_hash}  {reference_name}\n")
     with checksum_path.open("w", encoding="ascii", newline="\n") as stream:
         stream.write(content)
-    return [linux[LINUX_ARCHIVE], windows[WINDOWS_ARCHIVE], checksum_path]
+    return [linux[LINUX_ARCHIVE], windows[WINDOWS_ARCHIVE], reference[reference_name], checksum_path]
 
 
 def _validate_release(release: dict[str, Any], tag: str, title: str, *, draft: bool) -> int:
@@ -515,10 +542,10 @@ def _asset_id(asset: dict[str, Any], name: str) -> int:
 def _require_exact_assets(
     assets: list[dict[str, Any]], sizes: dict[str, int], digests: dict[str, str], label: str
 ) -> None:
-    """Exactly the expected assets, uploaded, each of the verified size and, where GitHub reports a digest, of the
+    """Exactly the verified assets, uploaded, each of the verified size and, where GitHub reports a digest, of the
     verified content."""
     indexed = _asset_index(assets)
-    if set(indexed) != EXPECTED_RELEASE_ASSETS:
+    if set(indexed) != set(sizes):
         raise RuntimeError(f"{label} does not hold exactly the verified assets: {sorted(indexed)}")
     for name, size in sizes.items():
         asset = indexed[name]
@@ -552,12 +579,14 @@ def promote_release(
     target: str,
     linux_directory: Path,
     windows_directory: Path,
+    reference_directory: Path,
     output_directory: Path,
 ) -> dict[str, Any]:
     assets = prepare_release_assets(
-        tag, target, linux_directory, windows_directory, output_directory
+        tag, target, linux_directory, windows_directory, reference_directory, output_directory
     )
-    if {asset.name for asset in assets} != EXPECTED_RELEASE_ASSETS:
+    expected = expected_release_assets(tag)
+    if {asset.name for asset in assets} != expected:
         raise RuntimeError("prepared release asset set is invalid")
     # target_commitish is not trustworthy on GitHub (it can name a branch), so check the tag itself.
     tag_commit = api.tag_commit(tag)
@@ -590,6 +619,10 @@ def promote_release(
                 "no display, and the engine's hand-over to the launcher. The Windows archive "
                 "passed structural AMD64 PE, payload, ABI export, and FFmpeg import verification without "
                 "executing the EXE. Each archive contains its detailed build metadata and payload ledger.\n\n"
+                "`" + reference_archive(tag) + "` is the reference bundle: the modding guides and the registries "
+                "(opcodes, and each game's globals, record tables, patch points, events, data shape and script "
+                "index) that the project site's reference is built from. Its `bundle.json` names this commit and "
+                "the hash of every file in it.\n\n"
                 + ffmpeg_release_notice()
             ),
             "draft": True,
@@ -598,7 +631,7 @@ def promote_release(
     release_id = _validate_release(release, tag, title, draft=True)
 
     existing_assets = _asset_index(api.list_assets(release_id))
-    unexpected = sorted(set(existing_assets) - EXPECTED_RELEASE_ASSETS)
+    unexpected = sorted(set(existing_assets) - expected)
     if unexpected:
         raise ValueError("GitHub release has unexpected assets: " + ", ".join(unexpected))
 
@@ -641,6 +674,7 @@ def main(arguments: list[str] | None = None) -> int:
     parser.add_argument("--target", required=True)
     parser.add_argument("--linux-artifact-directory", required=True, type=Path)
     parser.add_argument("--windows-artifact-directory", required=True, type=Path)
+    parser.add_argument("--reference-artifact-directory", required=True, type=Path)
     parser.add_argument("--output-directory", required=True, type=Path)
     args = parser.parse_args(arguments)
 
@@ -653,6 +687,7 @@ def main(arguments: list[str] | None = None) -> int:
         args.target,
         args.linux_artifact_directory,
         args.windows_artifact_directory,
+        args.reference_artifact_directory,
         args.output_directory,
     )
     print(f"GitHub release ready: {release.get('html_url', args.tag)}")

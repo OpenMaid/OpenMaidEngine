@@ -259,6 +259,10 @@ This step is static and can start once P1 is reached.
   below it is kept by a save, a table above it is rebuilt at boot.
 - Name what is understood in `vm-map/globals-<id>.toml`, declare the record tables and scopes, and run
   `globals_build.py --game <id> --build`. For each field, say whether the game copies it into saved state.
+- Build the script index (`Ome.Cli script-index --game <id>`) and commit `docs/script-index-<id>.json`; it adds the
+  game's workspace gate `script-index-check`, and it gives the project site's reference a page for each script. Write
+  what the data document establishes about a script (a table's builder, a loader and the globals its caller sets)
+  in `vm-map/scripts-<id>.toml`, and run `reference_bundle.py --check`.
 - **Facts go to:** `docs/<id>-data-tables.md` (layouts and how the data is stored), the registry, and the generated
   `docs/global-reference-<id>.md`. Each new document gets a row in `AGENTS.md`'s map.
 - **Done when** M2's gate passes.
@@ -318,7 +322,7 @@ does not replace the sweep. What each method can settle:
 | Identity and build | `engine/Ome.Engine/Profiles/<id>.json`, `engine/Ome.Engine.Vm/EngineBuilds.cs`; the install is `games/<id>/`, outside the repository |
 | Opcodes | `vm-map/opcodes.toml` (`profile_ids`, `[[observation]]`, `[[abi_layer]]`, evidence), `VirtualMachine.Handlers.cs` and the handlers, `tools/operand_access.py` `ENGINES` |
 | Driving and checks | `tools/drive/<id>.toml`, `tools/drive/scenarios/<id>-*.steps`, `tools/validate.py` (the game's test filter and terminal gate), the game's workspace tests |
-| Data | `vm-map/globals-<id>.toml`, `tools/init_<id>*.py`, `docs/<id>-data-tables.md` |
+| Data | `vm-map/globals-<id>.toml`, `tools/init_<id>*.py`, `docs/<id>-data-tables.md`, `vm-map/scripts-<id>.toml` |
 | Modding | `oms/<id>/adv.oms`, `vm-map/patch-points-<id>.toml`, `mods/<id>-base/`, `docs/modding/games/<id>.md`, examples |
-| Generated | `docs/global-reference-<id>.md`, `docs/patch-point-reference-<id>.md`, `docs/modding/games/README.md`, `docs/opcode-reference.md`, the base mod's `layout/`, record map and shape |
+| Generated | `docs/global-reference-<id>.md`, `docs/patch-point-reference-<id>.md`, `docs/modding/games/README.md`, `docs/opcode-reference.md`, the base mod's `layout/`, record map and shape, `docs/script-index-<id>.json` |
 | References | `engine-re.md`, `sys4-format-notes.md`, `PROJECT-STRUCTURE.md`, `tools-reference.md`, `AGENTS.md`'s map, `backlog.md`, the Ghidra project, the status memory and changelog |

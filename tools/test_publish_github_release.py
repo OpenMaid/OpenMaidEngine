@@ -14,6 +14,7 @@ from typing import Any
 from unittest import mock
 
 import publish_github_release
+import reference_bundle
 import verify_windows_native
 
 
@@ -162,20 +163,34 @@ def write_checksum(directory: Path, archive: Path) -> None:
     )
 
 
+def create_reference(
+    directory: Path, version: str = TAG, commit: str = TARGET, dirty: bool = False
+) -> Path:
+    """A reference bundle of two synthetic files, as the reference-bundle job leaves it: the zip and its checksum."""
+    files = {"games.json": b'{"format": 1, "games": []}\n', "docs/modding/README.md": b"# Modding\n"}
+    archive = reference_bundle.write_archive(
+        files, reference_bundle.manifest_for(files, version, commit, dirty), directory
+    )
+    write_checksum(directory, archive)
+    return archive
+
+
 def create_artifacts(
     root: Path,
     linux_ledger: bytes | None = None,
     windows_ledger: bytes | None = None,
     verification: bytes | None = None,
     smoke_log: str | None = None,
-) -> tuple[Path, Path, Path]:
-    """Both platforms' verified artifacts; a ledger or the Windows report given replaces the accepted one, inside the
-    archive and beside it alike, and a smoke log given replaces the accepted one."""
+) -> tuple[Path, Path, Path, Path]:
+    """Both platforms' verified artifacts and the reference bundle; a ledger or the Windows report given replaces the
+    accepted one, inside the archive and beside it alike, and a smoke log given replaces the accepted one."""
     linux = root / "linux"
     windows = root / "windows"
+    reference = root / "reference"
     prepared = root / "prepared"
     linux.mkdir()
     windows.mkdir()
+    create_reference(reference)
 
     linux_info = build_info("linux-x64")
     linux_ledger = linux_ledger or f"{'0' * 64}  OME\n{'2' * 64}  OME-Launcher\n".encode()
@@ -212,18 +227,18 @@ def create_artifacts(
     (windows / "SHA256SUMS").write_bytes(windows_ledger)
     (windows / "WINDOWS-VERIFICATION.json").write_bytes(verification)
     write_checksum(windows, windows_archive)
-    return linux, windows, prepared
+    return linux, windows, reference, prepared
 
 
 def promote(api: FakeApi, root: Path, upload: Any = None) -> dict[str, Any]:
     root.mkdir(parents=True, exist_ok=True)
-    linux, windows, prepared = create_artifacts(root)
+    linux, windows, reference, prepared = create_artifacts(root)
     return publish_github_release.promote_release(
-        api, upload or api.upload, TAG, TARGET, linux, windows, prepared
+        api, upload or api.upload, TAG, TARGET, linux, windows, reference, prepared
     )
 
 
-def prepared_artifacts(root: Path) -> tuple[tuple[Path, Path, Path], dict[str, tuple[int, str]]]:
+def prepared_artifacts(root: Path) -> tuple[tuple[Path, Path, Path, Path], dict[str, tuple[int, str]]]:
     """Artifacts prepared once, with each release asset's size and digest. The archives embed timestamps, so a
     resumed run that must match a digest promotes these same files."""
     root.mkdir(parents=True, exist_ok=True)
@@ -232,19 +247,18 @@ def prepared_artifacts(root: Path) -> tuple[tuple[Path, Path, Path], dict[str, t
     return directories, {asset.name: (asset.stat().st_size, f"sha256:{sha256(asset)}") for asset in assets}
 
 
-def promote_prepared(api: FakeApi, directories: tuple[Path, Path, Path]) -> dict[str, Any]:
+def promote_prepared(api: FakeApi, directories: tuple[Path, Path, Path, Path]) -> dict[str, Any]:
     return publish_github_release.promote_release(api, api.upload, TAG, TARGET, *directories)
 
 
 def prepared_sizes(root: Path) -> dict[str, int]:
     root.mkdir(parents=True, exist_ok=True)
-    linux, windows, prepared = create_artifacts(root)
-    assets = publish_github_release.prepare_release_assets(TAG, TARGET, linux, windows, prepared)
+    assets = publish_github_release.prepare_release_assets(TAG, TARGET, *create_artifacts(root))
     return {asset.name: asset.stat().st_size for asset in assets}
 
 
 class PublishGithubReleaseTests(unittest.TestCase):
-    def test_creates_draft_uploads_three_verified_assets_then_publishes(self) -> None:
+    def test_creates_draft_uploads_four_verified_assets_then_publishes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             api = FakeApi()
             result = promote(api, Path(temporary))
@@ -256,23 +270,29 @@ class PublishGithubReleaseTests(unittest.TestCase):
             self.assertEqual(TITLE, api.created_payload["name"])
             self.assertIn("Windows archive", api.created_payload["body"])
             body = api.created_payload["body"]
+            self.assertIn("`OME-reference-v0.2.0.zip` is the reference bundle", body)
             manifest = json.loads(publish_github_release.FFMPEG_MANIFEST.read_text(encoding="utf-8"))
             self.assertIn(f"[FFmpeg](https://ffmpeg.org/) {manifest['ffmpeg_version']}", body)
             self.assertIn("LGPL version 2.1 or later", body)
             self.assertIn(manifest["source_url"], body)
             self.assertIn(manifest["source_sha256"], body)
             self.assertEqual(
-                publish_github_release.EXPECTED_RELEASE_ASSETS,
+                {"OME-linux-x64.tar.gz", "OME-windows-x64.zip", "OME-reference-v0.2.0.zip", "RELEASE-SHA256SUMS"},
                 {asset["name"] for asset in api.assets},
             )
+            self.assertEqual(publish_github_release.expected_release_assets(TAG), {asset["name"] for asset in api.assets})
             self.assertEqual("tag_commit", api.events[0])
             self.assertEqual("publish", api.events[-1])
-            self.assertEqual(3, sum(event.startswith("upload:") for event in api.events))
+            self.assertEqual(4, sum(event.startswith("upload:") for event in api.events))
             checksums = (
                 Path(temporary) / "prepared" / publish_github_release.RELEASE_CHECKSUMS
             ).read_text(encoding="ascii")
-            self.assertIn(publish_github_release.LINUX_ARCHIVE, checksums)
-            self.assertIn(publish_github_release.WINDOWS_ARCHIVE, checksums)
+            reference = Path(temporary) / "reference" / "OME-reference-v0.2.0.zip"
+            self.assertEqual(
+                [publish_github_release.LINUX_ARCHIVE, publish_github_release.WINDOWS_ARCHIVE, reference.name],
+                [line.split("  ")[1] for line in checksums.splitlines()],
+            )
+            self.assertIn(f"{sha256(reference)}  {reference.name}\n", checksums)
 
     def test_resumes_draft_and_uploads_only_missing(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -283,7 +303,7 @@ class PublishGithubReleaseTests(unittest.TestCase):
             promote_prepared(api, directories)
             uploads = [event for event in api.events if event.startswith("upload:")]
             self.assertNotIn(f"upload:{publish_github_release.LINUX_ARCHIVE}", uploads)
-            self.assertEqual(2, len(uploads))
+            self.assertEqual(3, len(uploads))
             self.assertEqual([], api.deleted)
             self.assertIsNone(api.created_payload)
             self.assertTrue(api.published)
@@ -299,7 +319,7 @@ class PublishGithubReleaseTests(unittest.TestCase):
             delete_at = api.events.index("delete:100")
             upload_at = api.events.index(f"upload:{publish_github_release.LINUX_ARCHIVE}")
             self.assertLess(delete_at, upload_at)
-            self.assertEqual(3, sum(event.startswith("upload:") for event in api.events))
+            self.assertEqual(4, sum(event.startswith("upload:") for event in api.events))
             self.assertTrue(api.published)
 
     def test_refuses_resumed_asset_of_equal_size_and_other_content(self) -> None:
@@ -392,25 +412,25 @@ class PublishGithubReleaseTests(unittest.TestCase):
 
     def test_refuses_mismatched_archive_commit_and_structural_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            linux, windows, prepared = create_artifacts(Path(temporary))
+            linux, windows, reference, prepared = create_artifacts(Path(temporary))
             (linux / publish_github_release.LINUX_ARCHIVE).write_bytes(b"changed")
             with self.assertRaisesRegex(ValueError, "external SHA-256"):
                 publish_github_release.prepare_release_assets(
-                    TAG, TARGET, linux, windows, prepared
+                    TAG, TARGET, linux, windows, reference, prepared
                 )
 
         with tempfile.TemporaryDirectory() as temporary:
-            linux, windows, prepared = create_artifacts(Path(temporary))
+            linux, windows, reference, prepared = create_artifacts(Path(temporary))
             info = json.loads((windows / "BUILD-INFO.json").read_text(encoding="utf-8"))
             info["source_commit"] = "f" * 40
             (windows / "BUILD-INFO.json").write_bytes(json_bytes(info))
             with self.assertRaisesRegex(ValueError, "does not match"):
                 publish_github_release.prepare_release_assets(
-                    TAG, TARGET, linux, windows, prepared
+                    TAG, TARGET, linux, windows, reference, prepared
                 )
 
         with tempfile.TemporaryDirectory() as temporary:
-            linux, windows, prepared = create_artifacts(Path(temporary))
+            linux, windows, reference, prepared = create_artifacts(Path(temporary))
             report = json.loads(
                 (windows / "WINDOWS-VERIFICATION.json").read_text(encoding="utf-8")
             )
@@ -418,8 +438,46 @@ class PublishGithubReleaseTests(unittest.TestCase):
             (windows / "WINDOWS-VERIFICATION.json").write_bytes(json_bytes(report))
             with self.assertRaisesRegex(ValueError, "not accepted"):
                 publish_github_release.prepare_release_assets(
-                    TAG, TARGET, linux, windows, prepared
+                    TAG, TARGET, linux, windows, reference, prepared
                 )
+
+    def test_refuses_a_reference_bundle_of_another_release_or_not_whole(self) -> None:
+        # Game data export spec §8.3: the bundle names the tag and the tagged commit, was built from a clean checkout,
+        # and every file in it matches its hash; the job's checksum beside it must match too.
+        cases = (
+            ({"version": "v0.1.0"}, "Reference bundle artifact set"),          # named for another tag
+            ({"commit": "f" * 40}, "built from f+, not"),
+            ({"dirty": True}, "a checkout with changes"),
+        )
+        for overrides, message in cases:
+            with self.subTest(message), tempfile.TemporaryDirectory() as temporary:
+                linux, windows, reference, prepared = create_artifacts(Path(temporary))
+                for entry in reference.iterdir():
+                    entry.unlink()
+                create_reference(reference, **overrides)
+                with self.assertRaisesRegex(ValueError, message):
+                    publish_github_release.prepare_release_assets(TAG, TARGET, linux, windows, reference, prepared)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            linux, windows, reference, prepared = create_artifacts(Path(temporary))
+            archive = reference / "OME-reference-v0.2.0.zip"
+            with zipfile.ZipFile(archive) as source:
+                entries = {info.filename: source.read(info) for info in source.infolist()}
+            entries["games.json"] = b'{"format": 1, "games": ["changed"]}\n'
+            with zipfile.ZipFile(archive, "w") as rewritten:
+                for name, data in entries.items():
+                    rewritten.writestr(name, data)
+            with self.assertRaisesRegex(ValueError, "external SHA-256"):
+                publish_github_release.prepare_release_assets(TAG, TARGET, linux, windows, reference, prepared)
+            write_checksum(reference, archive)                      # a consistent checksum does not hide it
+            with self.assertRaisesRegex(ValueError, "games.json does not match its hash"):
+                publish_github_release.prepare_release_assets(TAG, TARGET, linux, windows, reference, prepared)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            linux, windows, reference, prepared = create_artifacts(Path(temporary))
+            (reference / "OME-reference-v0.2.0.zip.sha256").unlink()
+            with self.assertRaisesRegex(ValueError, "unexpected Reference bundle artifact set"):
+                publish_github_release.prepare_release_assets(TAG, TARGET, linux, windows, reference, prepared)
 
     def test_refuses_archives_without_the_launcher(self) -> None:
         # Launcher plan §9.3: both ledgers list the launcher, and the Windows report checked it as a windowed AMD64
