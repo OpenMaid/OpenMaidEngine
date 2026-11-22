@@ -183,7 +183,7 @@ want"). It comes first because the spec orders it, and milestone 5's script inde
 
 - **The export of the clean install** refuses nothing and finds no missing reference. Its counts are the ones above,
   less the 20 placeholder quests: 167 quests. Its descriptions are 2,102 runs, six of them empty, with nothing of
-  another script dropped. It writes 2,270 pictures.
+  another script dropped. It writes 2,307 pictures.
 - **Checked against the Python extractors** (`build/games/kamidori/data/*INIT.json`, the base and the three layers),
   every kind matches. The ids match, and so do:
   - the names, chapter labels and condition level names;
@@ -200,6 +200,9 @@ want"). It comes first because the spec orders it, and milestone 5's script inde
   and glossary are only shown. `docs/modding/games/kamidori.md`, "Data edits", has the sites.
 - **The requester icons**, 101 files for 153 quests, were looked at on one sheet. They are item and place icons and
   small portraits, none explicit, so the list of explicit pictures stays as it was.
+- **The profiles' portraits are published** on the user's word ("We can publish them", 2026-11-21): 37 files for
+  43 profiles, each looked at. None is explicit. `CS011AAA` (土精アト) is revealing but covered, as unit art left
+  unmarked is.
 - **A reference value below 0 is none**, as 0 is. The stages' `required_party_unit_ids` writes -1 for none, which the
   first run counted as four missing units.
 - **The registry's array types:** the eight tables' arrays were written `int[RxC]`, which `globals_build.py` reads as

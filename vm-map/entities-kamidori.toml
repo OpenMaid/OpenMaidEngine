@@ -169,8 +169,9 @@ table = "character_profile"
 exists = "name"
 title = "name"
 text = ["epithet", "race_text", "sex_text"]
-# The portrait (portrait_asset_id, standing art CS…AAA) waits for the user's choice (plan §4.1).
 fields = ["sort_key", "unit_id", "unlock_flags"]
+# The portrait is the standing art the profile screen shows (CS…AAA); the user chose to publish it (plan §4.1).
+pictures = { portrait = "portrait_asset_id" }
 
 [[kind.description]]
 name = "biography"
