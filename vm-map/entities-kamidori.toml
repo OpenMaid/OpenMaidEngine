@@ -219,3 +219,23 @@ exists = "unit_id"
 fields = ["unit_id", "min_level", "max_level", "auto_level_scale_divisor", "faction_id", "difficulty_mask",
           "first_visit_only", "random_selection_weight", "spawn_tile_x", "spawn_tile_y", "spawn_object_slot",
           "movement_routine_set_ids", "battle_routine_set_ids", "required_story_flags", "forbidden_story_flags"]
+
+# The script relations (spec §6.7, export plan §4.5): where a scene sets a script's arguments to constants and calls it.
+# ADDITEM gives or takes an item by the sign of its count (docs/kamidori-data-tables.md, Giving and taking).
+[[script_relation]]
+id = "given_in"
+negative = "taken_in"
+call = "ADDITEM"
+kind = "item"
+key = "current_item_id"
+count = "current_item_count_change"
+exclude = ["DEBUG*"]
+
+# UNITECH joins the units of its lists (Joining the party). Every caller joins one unit, entry 0, which `where` checks.
+[[script_relation]]
+id = "joins_in"
+call = "UNITECH"
+kind = "unit"
+key = "joining_unit_ids"
+where = { joining_unit_count = 1 }
+exclude = ["DEBUG*"]

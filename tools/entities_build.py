@@ -49,7 +49,11 @@ KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "field
 DESCRIPTION_KEYS = {"name", "script", "seed"}
 LOADER_KEYS = {"scope", "keys", "skip", "script", "seed", "read_at", "builders", "tables"}
 LOADED_TABLE_KEYS = {"exists", "fields"}
-RELATION_KEYS = {"id", "negative", "call", "kind", "key", "count", "exclude"}
+RELATION_KEYS = {"id", "negative", "call", "kind", "key", "count", "where", "exclude"}
+# The shapes of a relation's globals (export plan §4.5): its key one integer cell or a list, whose first cell it
+# reads; its count and the globals of its `where` one integer cell each.
+ONE_CELL = re.compile(r"int")
+ONE_LIST = re.compile(r"int(\[\d+\])?")
 
 
 def entities_source(profile_id: str) -> Path:
@@ -467,15 +471,26 @@ def lint_relation(game: Game, relation: dict, source: str, ids: dict[str, str], 
     kind = relation.get("kind")
     if not isinstance(kind, str) or not ids.get(kind, "").startswith("the id"):
         errors.append(f"{where}: kind {kind!r} is not the id of a kind")
-    for key in ("key", "count"):
-        name = relation.get(key)
+    if relation.get("negative") is not None and relation.get("count") is None:
+        errors.append(f"{where}: negative needs a count, whose sign it is")
+    conditions = relation.get("where", {})
+    if not isinstance(conditions, dict) or not all(isinstance(value, int) and not isinstance(value, bool)
+                                                   for value in conditions.values()):
+        errors.append(f"{where}: where must be a table of globals and whole numbers")
+        conditions = {}
+    for key, name, shape in ([("key", relation.get("key"), ONE_LIST), ("count", relation.get("count"), ONE_CELL)]
+                             + [("where", name, ONE_CELL) for name in conditions]):
         if name is None and key == "count":
             continue
         entry = game.globals.get(name) if isinstance(name, str) else None
+        type_ = str(entry.get("type") or "int") if entry is not None else ""
         if entry is None:
             errors.append(f"{where}: {key} {name!r} is not a global the registry names")
-        elif bank(str(entry.get("type") or "int")) != "G":
+        elif bank(type_) != "G":
             errors.append(f"{where}: {key} {name} is not an integer global")
+        elif not shape.fullmatch(type_):
+            errors.append(f"{where}: {key} {name} is {type_}, not "
+                          + ("an integer or a list of them" if shape is ONE_LIST else "one integer"))
     if "exclude" in relation:
         check_scripts(relation["exclude"], f"{where}: exclude", errors, patterns=True)
 
@@ -504,7 +519,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                                 for short, entry in (l.get("tables") or {}).items()}}
                     for l in data.get("loader", [])],
         "script_relations": [{"id": r["id"], "negative": r.get("negative"), "call": r["call"], "kind": r["kind"],
-                              "key": r["key"], "count": r.get("count"), "exclude": r.get("exclude", [])}
+                              "key": r["key"], "count": r.get("count"), "where": r.get("where", {}),
+                              "exclude": r.get("exclude", [])}
                              for r in data.get("script_relation", [])],
     }
     return json.dumps(document, ensure_ascii=False, indent=2) + "\n"

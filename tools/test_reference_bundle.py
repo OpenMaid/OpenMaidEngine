@@ -23,7 +23,8 @@ INDEX = index_of(**{
     "ITINIT.BIN": {"id": 1, "globals": {"item_price": [0, 4, 0]}},
     "$1$ITINIT.BIN": {"id": 2, "globals": {}},
     "$2$ORPHAN.BIN": {"id": 3, "globals": {}},
-    "ADDEXP.BIN": {"id": 4, "globals": {"current_unit_id": [3, 1, 0], "unit_levels": [0, 2, 0]}},
+    "ADDEXP.BIN": {"id": 4, "globals": {"current_unit_id": [3, 1, 0], "unit_levels": [0, 2, 0],
+                                        "unit_bonus": [0, 0, 1]}},
 })
 
 
@@ -58,6 +59,7 @@ class NoteIndexTests(unittest.TestCase):
     def test_a_note_names_an_indexed_script_and_arguments_it_reads(self) -> None:
         notes = [
             rb.Note("addexp", "s", "d", {"current_unit_id": "the unit"}),      # names match without case
+            rb.Note("ADDEXP", "s", "d", {"unit_bonus": "a list it reads an entry of"}),
             rb.Note("MISSING", "s", "d"),
             rb.Note("ADDEXP", "s", "d", {"unit_levels": "written, never read"}),
             rb.Note("ITINIT", "s", "d", {"unknown_global": "x"}),
@@ -65,7 +67,7 @@ class NoteIndexTests(unittest.TestCase):
         problems = rb.note_problems(notes, INDEX, "notes")
         self.assertEqual([
             "notes: MISSING: the committed script index has no such script",
-            "notes: ADDEXP: argument unit_levels is never read by the script",
+            "notes: ADDEXP: argument unit_levels is never read or indexed by the script",
             "notes: ITINIT: argument unknown_global is not a named global the script uses",
         ], problems)
 

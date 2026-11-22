@@ -106,8 +106,10 @@ public static class ExportWriter
             + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
             "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "to_kind TEXT NOT NULL, to_id INTEGER NOT NULL, PRIMARY KEY (from_kind, from_id, field, idx))",
+            // The calls the script relations resolved (spec §6.7, export plan §4.5): the script as the index names it,
+            // the call's offset, and the count as the script sets it, signed (null for a relation with none).
             "CREATE TABLE relation (kind TEXT NOT NULL, id INTEGER NOT NULL, relation TEXT NOT NULL, script TEXT NOT NULL, "
-            + "offset INTEGER NOT NULL, count INTEGER)",
+            + "offset INTEGER NOT NULL, count INTEGER, PRIMARY KEY (kind, id, relation, script, offset))",
             "CREATE TABLE picture (kind TEXT NOT NULL, id INTEGER NOT NULL, name TEXT NOT NULL, file TEXT NOT NULL, "
             + "explicit INTEGER NOT NULL, "
             + "width INTEGER NOT NULL, height INTEGER NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (kind, id, name))",
@@ -204,6 +206,7 @@ public static class ExportWriter
         using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "explicit", "width", "height",
                                           "hash");
         using var cells = new Inserter(connection, "cell", "kind", "id", "field", "idx", "bank", "address", "raw", "writer");
+        using var relations = new Inserter(connection, "relation", "kind", "id", "relation", "script", "offset", "count");
         foreach (ExportEntity entity in kind.Entities)
         {
             var row = new List<object?> { entity.Id };
@@ -220,6 +223,8 @@ public static class ExportWriter
                              picture.Width, picture.Height, picture.Hash);
             foreach (ExportModderCell cell in entity.Cells)
                 cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
+            foreach (ExportRelation relation in entity.Relations)
+                relations.Row(id, entity.Id, relation.Relation, relation.Script, relation.Offset, relation.Count);
         }
         using (var snippets = new Inserter(connection, "snippet", "kind", "id", "text"))
             foreach (ExportEntity entity in kind.Entities)
@@ -367,6 +372,16 @@ public static class ExportWriter
             }
             json.WriteEndArray();
             json.WriteStartArray("relations");
+            foreach (ExportRelation relation in entity.Relations)
+            {
+                json.WriteStartArray();
+                json.WriteStringValue(relation.Relation);
+                json.WriteStringValue(relation.Script);
+                json.WriteNumberValue(relation.Offset);
+                if (relation.Count is { } count) json.WriteNumberValue(count);
+                else json.WriteNullValue();
+                json.WriteEndArray();
+            }
             json.WriteEndArray();
             if (entity.Loaded.Count > 0)
             {

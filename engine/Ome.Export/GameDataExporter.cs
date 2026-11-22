@@ -42,6 +42,7 @@ public static class GameDataExporter
         }
         foreach (LoaderDeclaration loader in declarations.Loaders) Load(inputs, boot, loader, kinds, rule, report);
         LinkReferences(kinds, report);
+        if (declarations.Relations.Count > 0) FindRelations(inputs, kinds, report);
         foreach (ExportKind kind in kinds) WriteSnippets(inputs, kind, report);
         if (inputs.ScriptIndex is { } index)
             foreach (ExportKind kind in kinds)
@@ -66,6 +67,38 @@ public static class GameDataExporter
                                                  && names.NameOf(pair.Key) == null)
             .Select(pair => pair.Key.Address).Order().ToArray();
         if (cells.Length > 0) report.UnnamedCells[kind.Declaration.Id] = cells;
+    }
+
+    /// <summary>Each script relation's calls in every script of the install (spec §6.7, plan §4.5), on the entities
+    /// their keys name; a key no entity has is reported.</summary>
+    private static void FindRelations(ExportInputs inputs, List<ExportKind> kinds, ExportReport report)
+    {
+        ScriptIndex index = inputs.ScriptIndex
+                            ?? throw new ExportFailure("script relations are declared, and the export has no script index "
+                                                       + "to find them in");
+        foreach (RelationDeclaration relation in inputs.Declarations.Relations)
+        {
+            ExportKind kind = kinds.SingleOrDefault(kind => kind.Declaration.Id == relation.Kind)
+                              ?? throw new ExportFailure($"script relation {relation.Id} names kind {relation.Kind}, which "
+                                                         + "is not declared");
+            var entities = kind.Entities.ToDictionary(entity => (long)entity.Id);
+            (RelationScan scan, List<(long Key, ExportRelation Relation)> found) =
+                ScriptRelations.Find(relation, index, inputs.Table, inputs.Registry,
+                                     id => inputs.Scripts.GetById(id)?.Name);
+            foreach ((long key, ExportRelation row) in found)
+                if (entities.TryGetValue(key, out ExportEntity? entity)) entity.Relations.Add(row);
+                else scan.Keyless.Add((row.Script, row.Offset, key));
+            scan.Rows = found.Count - scan.Keyless.Count;
+            report.Relations.Add(scan);
+        }
+        foreach (ExportEntity entity in kinds.SelectMany(kind => kind.Entities))
+        {
+            List<ExportRelation> sorted = [.. entity.Relations.OrderBy(row => row.Relation, StringComparer.Ordinal)
+                                                   .ThenBy(row => row.Script, StringComparer.Ordinal)
+                                                   .ThenBy(row => row.Offset)];
+            entity.Relations.Clear();
+            entity.Relations.AddRange(sorted);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------- the boot (§6.2)

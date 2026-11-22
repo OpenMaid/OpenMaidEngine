@@ -141,4 +141,11 @@ public sealed class RegistryView
         => _arrays.TryGetValue(name, out ArrayLayout? cell) && cell.Bank == GlobalBank.Integer && cell.Dimensions.Count == 0
             ? cell.Address
             : throw new InvalidDataException($"the registry has no integer global {name}");
+
+    /// <summary>The address of a named integer global, or of the first cell of a named list of them (a one-dimensional
+    /// array), as a script relation's key reads it (export plan §4.5).</summary>
+    public int IntegerCell(string name)
+        => _arrays.TryGetValue(name, out ArrayLayout? cell) && cell.Bank == GlobalBank.Integer && cell.Dimensions.Count <= 1
+            ? cell.Address
+            : throw new InvalidDataException($"the registry has no integer global or list of them {name}");
 }

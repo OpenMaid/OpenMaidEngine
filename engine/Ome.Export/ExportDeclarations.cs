@@ -25,16 +25,16 @@ public sealed record ExportDeclarations(
     /// tables of their scope it publishes under that entity.</summary>
     public IReadOnlyList<LoaderDeclaration> Loaders { get; init; } = [];
 
-    public static ExportDeclarations Load(string path) => Parse(File.ReadAllText(path), path);
+    /// <summary>The script relations (spec §6.7, export plan §4.5): the calls of a script whose arguments name an
+    /// entity.</summary>
+    public IReadOnlyList<RelationDeclaration> Relations { get; init; } = [];
 
-    public static ExportDeclarations Parse(string json, string source = "entities.json")
+    public static ExportDeclarations Load(string path) => Parse(File.ReadAllText(path));
+
+    public static ExportDeclarations Parse(string json)
     {
         using JsonDocument document = JsonDocument.Parse(json);
         JsonElement root = document.RootElement;
-        // Script relations (milestone 6) are not exported yet; declarations that have them are refused rather than
-        // half exported.
-        if (root.TryGetProperty("script_relations", out JsonElement relations) && relations.GetArrayLength() > 0)
-            throw new InvalidDataException($"{source}: script_relations are declared, which this exporter does not export yet");
         JsonElement export = root.GetProperty("export");
         JsonElement boot = export.GetProperty("boot");
         return new ExportDeclarations(
@@ -50,6 +50,9 @@ public sealed record ExportDeclarations(
             ExplicitPictures = Strings(export, "explicit_pictures"),
             Loaders = root.TryGetProperty("loaders", out JsonElement loaders)
                 ? loaders.EnumerateArray().Select(LoaderDeclaration.Parse).ToList()
+                : [],
+            Relations = root.TryGetProperty("script_relations", out JsonElement relations)
+                ? relations.EnumerateArray().Select(RelationDeclaration.Parse).ToList()
                 : [],
         };
     }

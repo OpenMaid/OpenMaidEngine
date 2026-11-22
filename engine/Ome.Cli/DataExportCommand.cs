@@ -220,6 +220,15 @@ internal static class DataExportCommand
             int rows = result.Kinds.SelectMany(kind => kind.Entities).Sum(entity => entity.Loaded.Count);
             Console.WriteLine($"  loaders: {report.LoaderRuns} runs, {report.LoaderHalts.Count} halts, {rows} rows");
         }
+        foreach (RelationScan scan in report.Relations)
+        {
+            RelationDeclaration relation = scan.Declaration;
+            string names = relation.Negative is { } negative ? $"{relation.Id}/{negative}" : relation.Id;
+            Console.WriteLine($"  relations {names} ({relation.Call} -> {relation.Kind}): {scan.Calls} calls in {scan.Scripts} "
+                              + $"scripts, {scan.Rows} rows, {scan.Excluded} excluded, {scan.Unresolved.Count} unresolved in "
+                              + $"{scan.Unresolved.Select(call => call.Script).Distinct().Count()} scripts, "
+                              + $"{scan.Keyless.Count} to no entity");
+        }
         int snippets = result.Kinds.SelectMany(kind => kind.Entities).Count(entity => entity.Snippet != null);
         Console.WriteLine($"  snippets: {snippets}, {report.SnippetProblems.Count} problems");
         Section("refused", report.Refusals.Count, report.Refusals.Select(refusal =>
@@ -246,6 +255,13 @@ internal static class DataExportCommand
             $"{halt.Kind} {halt.Id} {halt.Description}: {halt.Halt}"));
         Section("missing description scripts", report.MissingScripts.Count, report.MissingScripts.Select(missing =>
             $"{missing.Kind} {missing.Id} {missing.Description}: 0x{missing.ScriptId:x}"));
+        foreach (RelationScan scan in report.Relations)
+        {
+            Section($"unresolved {scan.Declaration.Id} calls", scan.Unresolved.Count, scan.Unresolved.Select(call =>
+                $"{call.Script}@0x{call.Offset:x}: {call.Reason}"));
+            Section($"{scan.Declaration.Id} calls to no {scan.Declaration.Kind}", scan.Keyless.Count, scan.Keyless.Select(call =>
+                $"{call.Script}@0x{call.Offset:x}: {scan.Declaration.Key} {call.Key}"));
+        }
         Console.WriteLine($"  wrote {files.Database} and {files.Files.Count - 1} pictures to {output} in {total.TotalSeconds:0.0} s");
         if (report.ExitCode != 0)
             Console.WriteLine($"data-export: {report.Refusals.Count} values refused (spec §5.5), {report.SnippetProblems.Count} "

@@ -20,7 +20,7 @@ public class GameDataExportTests
 {
     private static readonly OpcodeTable Table = OpcodeTableJson.Load(Paths.OpcodesJson);
     private const int OpExit = 0x2, OpCallScript = 0x3, OpMov = 0x55, OpSetString = 0x192, OpShowText = 0x6e,
-                      OpFurigana = 0x196, OpEndLine = 0x6f;
+                      OpFurigana = 0x196, OpEndLine = 0x6f, OpSub = 0x51, OpJmp = 0x8c, OpCall = 0x8f, OpRet = 0x5;
     private static readonly int OpLookupArray = Table.ByLabel("lookup-array")!.Value;
     private static readonly int OpSubstring = Table.ByLabel("cp932-substring")!.Value;
 
@@ -28,12 +28,14 @@ public class GameDataExportTests
     private static Operand S(int index) => new(2, index);
     private static Operand G(int cell) => new(3, cell);
     private static Operand GS(int cell) => new(5, cell);
+    private static Operand Local(int slot) => new(9, slot);
 
     // The synthetic registry: item (4 records) and skill (3 records). The skill's names and categories share their
     // addresses, in two banks.
     private const int ItemNames = 100, ItemShorts = 200, SkillNames = 1500, Scratch = 900;
     private const int ItemCategory = 1000, ItemPrices = 1100, ItemIcon = 1200, ItemHandler = 1300, ItemSkill = 1400,
-                      SkillCategory = 1500, CurrentItem = 5000, LootSkill = 1600, LootCount = 1700;
+                      SkillCategory = 1500, CurrentItem = 5000, LootSkill = 1600, LootCount = 1700, CurrentCount = 5001,
+                      JoinSkills = 5100, JoinCount = 5110;
 
     private static RegistryView Registry() => new(
         [
@@ -60,6 +62,10 @@ public class GameDataExportTests
             Array("skill_names", GlobalBank.String, SkillNames, 3),
             Array("skill_category", GlobalBank.Integer, SkillCategory, 3),
             new ArrayLayout("current_item_id", GlobalBank.Integer, CurrentItem, [], new Dictionary<int, string>()),
+            // The script relations' arguments (export plan §4.5): ADDITEM's count, and JOIN's list and its length.
+            new ArrayLayout("current_item_count_change", GlobalBank.Integer, CurrentCount, [], new Dictionary<int, string>()),
+            Array("joining_skill_ids", GlobalBank.Integer, JoinSkills, 2),
+            new ArrayLayout("joining_skill_count", GlobalBank.Integer, JoinCount, [], new Dictionary<int, string>()),
             Array("loot_skill_ids", GlobalBank.Integer, LootSkill, 3),
             new ArrayLayout("loot_counts", GlobalBank.Integer, LootCount, [3, 2], new Dictionary<int, string>()),
         ]);
@@ -155,6 +161,7 @@ public class GameDataExportTests
                 (OpExit, []),
             ]),
         };
+        AddRelationScripts(byId);
         var loot = new List<(int, Operand[])> { (OpCallScript, [I(11)]) };
         if (faults.HasFlag(Faults.LoaderScriptWrites)) loot.Add((OpMov, [G(LootCount + 5), I(6)]));
         // The point: what LOOT writes after it is never read.
@@ -182,6 +189,61 @@ public class GameDataExportTests
             Pictures = new Pictures(),
             BuildInfo = [("revision", "abcdef012345"), ("title", "テスト")],
         };
+    }
+
+    // The script relations' scenes (spec §6.7, §12; plan §4.5), which no run reaches: ADDITEM and JOIN, a scene that
+    // gives two items and one that takes one, one with each call the scan leaves unresolved, an excluded debug scene,
+    // and one that joins a skill alone and then two.
+    private const int AddItem = 13, Join = 18;
+
+    private static void AddRelationScripts(Dictionary<long, Script> byId)
+    {
+        byId[AddItem] = Asm("ADDITEM.BIN", [(OpExit, [])]);
+        byId[14] = Asm("GIFT.BIN",
+        [
+            (OpMov, [G(CurrentItem), I(1)]), (OpMov, [G(CurrentCount), I(3)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(2)]), (OpMov, [G(CurrentCount), I(1)]), (OpCallScript, [I(AddItem)]),
+            (OpExit, []),
+        ]);
+        byId[15] = Asm("$1$TAKE.BIN",
+        [
+            (OpMov, [G(CurrentItem), I(2)]), (OpSub, [G(CurrentCount), I(0), I(5)]), (OpCallScript, [I(AddItem)]),
+            (OpCallScript, [I(AddItem)]),                                     // the first call may have written both
+            (OpExit, []),
+        ]);
+        var odd = new List<(int Op, Operand[] Args)>
+        {
+            (OpMov, [G(CurrentItem), G(Scratch)]), (OpMov, [G(CurrentCount), I(1)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(1)]), (OpMov, [G(CurrentCount), I(0)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(9)]), (OpMov, [G(CurrentCount), I(1)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(1)]), (OpMov, [G(CurrentCount), I(1)]), (OpCall, [I(0)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(1)]), (OpMov, [G(CurrentCount), I(1)]), (OpJmp, [I(0)]), (OpCallScript, [I(AddItem)]),
+            (OpMov, [G(CurrentItem), I(1)]), (OpMov, [G(CurrentCount), I(1)]),
+            (OpLookupArray, [Local(0), G(CurrentItem), I(0)]), (OpCallScript, [I(AddItem)]),
+            (OpExit, []), (OpRet, []),
+        };
+        int[] at = Offsets(odd);
+        odd[11] = (OpCall, [I(at[^1])]);     // the subroutine: the ret
+        odd[15] = (OpJmp, [I(at[16])]);      // the next instruction, which the jump makes a block's start
+        byId[16] = Asm("ODD.BIN", odd);
+        byId[17] = Asm("DEBUGGIVE.BIN",
+            [(OpMov, [G(CurrentItem), I(3)]), (OpMov, [G(CurrentCount), I(1)]), (OpCallScript, [I(AddItem)]), (OpExit, [])]);
+        byId[Join] = Asm("JOIN.BIN", [(OpExit, [])]);
+        byId[19] = Asm("RECRUIT.BIN",
+        [
+            (OpMov, [G(JoinSkills), I(1)]), (OpMov, [G(JoinCount), I(1)]), (OpCallScript, [I(Join)]),
+            (OpMov, [G(JoinSkills), I(2)]), (OpMov, [G(JoinSkills + 1), I(1)]), (OpMov, [G(JoinCount), I(2)]),
+            (OpCallScript, [I(Join)]),
+            (OpExit, []),
+        ]);
+    }
+
+    /// <summary>Each instruction's offset: one dword for the opcode and two for each operand.</summary>
+    private static int[] Offsets(IReadOnlyList<(int Op, Operand[] Args)> code)
+    {
+        var offsets = new int[code.Count];
+        for (int k = 1; k < code.Count; k++) offsets[k] = offsets[k - 1] + 1 + 2 * code[k - 1].Args.Length;
+        return offsets;
     }
 
     private static ExportEntity Entity(ExportResult result, string kind, int id)
@@ -516,13 +578,119 @@ public class GameDataExportTests
         }
     }
 
-    [Fact]
-    public void DeclarationsWithScriptRelationsAreRefusedUntilTheyAreExported()
+    // ------------------------------------------------------------------------------------------------- script relations (§6.7)
+
+    private const string Relations = """
+        "script_relations": [
+         {"id": "given_in", "negative": "taken_in", "call": "ADDITEM", "kind": "item", "key": "current_item_id",
+          "count": "current_item_count_change", "where": {}, "exclude": ["DEBUG*"]},
+         {"id": "joins_in", "negative": null, "call": "JOIN", "kind": "skill", "key": "joining_skill_ids", "count": null,
+          "where": {"joining_skill_count": 1}, "exclude": []}]
+        """;
+
+    private static ExportResult WithRelations()
     {
-        string withRelation = Declarations.Replace("\"script_relations\": []", "\"script_relations\": [{\"id\": \"given_in\"}]",
-                                                   StringComparison.Ordinal);
-        var error = Assert.Throws<InvalidDataException>(() => ExportDeclarations.Parse(withRelation));
-        Assert.Contains("script_relations", error.Message, StringComparison.Ordinal);
+        ExportInputs game = Game();
+        return GameDataExporter.Run(WithDeclarations(
+            game, Declarations.Replace("\"script_relations\": []", Relations.Trim(), StringComparison.Ordinal),
+            index: IndexOf(game)));
+    }
+
+    private static int CallAt(ExportInputs game, string script, int call)
+        => game.ScriptByName(script)!.Instructions.Where(instruction => instruction.Opcode == OpCallScript)
+            .ElementAt(call).Offset;
+
+    [Fact]
+    public void AGivingSceneAndATakingSceneGiveRowsOnTheirItems()
+    {
+        ExportInputs game = Game();
+        ExportResult result = WithRelations();
+        Assert.Equal([new ExportRelation("given_in", "GIFT.BIN", CallAt(game, "GIFT", 0), 3)],
+                     Entity(result, "item", 1).Relations);
+        // The relation of a negative count is the negative one, and its count stays signed.
+        Assert.Equal([new ExportRelation("given_in", "GIFT.BIN", CallAt(game, "GIFT", 1), 1),
+                      new ExportRelation("taken_in", "$1$TAKE.BIN", CallAt(game, "$1$TAKE", 0), -5)],
+                     Entity(result, "item", 2).Relations);
+        Assert.Empty(Entity(result, "item", 3).Relations);                    // DEBUGGIVE's is excluded
+        RelationScan scan = result.Report.Relations[0];
+        Assert.Equal((11, 4, 3, 1), (scan.Calls, scan.Scripts, scan.Rows, scan.Excluded));
+        Assert.Equal([("ODD.BIN", CallAt(game, "ODD", 2), 9L)], scan.Keyless);
+    }
+
+    [Fact]
+    public void ACallWhoseValuesTheBlockDoesNotSetIsUnresolvedWithItsReason()
+    {
+        ExportInputs game = Game();
+        int[] odd = [.. Enumerable.Range(0, 6).Select(call => CallAt(game, "ODD", call))];
+        var unresolved = WithRelations().Report.Relations[0].Unresolved.ToDictionary(call => (call.Script, call.Offset),
+                                                                                    call => call.Reason);
+        Assert.Equal(6, unresolved.Count);
+        int taken = CallAt(game, "$1$TAKE", 0);
+        Assert.Equal($"current_item_id: the call at 0x{taken:x} may write it; current_item_count_change: the call at "
+                     + $"0x{taken:x} may write it", unresolved[("$1$TAKE.BIN", CallAt(game, "$1$TAKE", 1))]);
+        Assert.Equal("current_item_id: computed at 0x0", unresolved[("ODD.BIN", odd[0])]);
+        Assert.Equal("current_item_count_change is 0", unresolved[("ODD.BIN", odd[1])]);
+        int sub = game.ScriptByName("ODD")!.Instructions.Single(instruction => instruction.Opcode == OpCall).Offset;
+        Assert.Equal($"current_item_id: the call at 0x{sub:x} may write it; current_item_count_change: the call at "
+                     + $"0x{sub:x} may write it", unresolved[("ODD.BIN", odd[3])]);
+        Assert.Equal("current_item_id: no write before the call in its block; current_item_count_change: no write before "
+                     + "the call in its block", unresolved[("ODD.BIN", odd[4])]);
+        int lookup = game.ScriptByName("ODD")!.Instructions.Single(instruction => instruction.Opcode == OpLookupArray).Offset;
+        Assert.Equal($"current_item_id: its address is taken at 0x{lookup:x}", unresolved[("ODD.BIN", odd[5])]);
+    }
+
+    [Fact]
+    public void AWhereNotMetLeavesACallUnresolvedAndAListKeyIsItsFirstCell()
+    {
+        ExportInputs game = Game();
+        ExportResult result = WithRelations();
+        Assert.Equal([new ExportRelation("joins_in", "RECRUIT.BIN", CallAt(game, "RECRUIT", 0), null)],
+                     Entity(result, "skill", 1).Relations);
+        RelationScan scan = result.Report.Relations[1];
+        Assert.Equal([("RECRUIT.BIN", CallAt(game, "RECRUIT", 1), "joining_skill_count is 2, not 1")], scan.Unresolved);
+        Assert.Equal((2, 1, 1, 0), (scan.Calls, scan.Scripts, scan.Rows, scan.Excluded));
+    }
+
+    [Fact]
+    public void RelationsNeedTheScriptIndex()
+    {
+        string declarations = Declarations.Replace("\"script_relations\": []", Relations.Trim(), StringComparison.Ordinal);
+        var error = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(WithDeclarations(Game(), declarations)));
+        Assert.Contains("script index", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheDatabaseHoldsTheRelationsAndTheyChangeTheEntitysHash()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportResult result = WithRelations();
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            string connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT kind || ' ' || id || ' ' || relation || ' ' || script || ' ' || ifnull(count, 'null') "
+                                  + "FROM relation ORDER BY kind, id, relation, script, offset";
+            var rows = new List<string>();
+            using (SqliteDataReader reader = command.ExecuteReader())
+                while (reader.Read()) rows.Add(reader.GetString(0));
+            Assert.Equal(["item 1 given_in GIFT.BIN 3", "item 2 given_in GIFT.BIN 1", "item 2 taken_in $1$TAKE.BIN -5",
+                          "skill 1 joins_in RECRUIT.BIN null"], rows);
+            Assert.NotEqual(ExportWriter.ContentHash(Entity(GameDataExporter.Run(Game()), "item", 2)),
+                            ExportWriter.ContentHash(Entity(result, "item", 2)));
+            Assert.Equal(ExportWriter.ContentHash(Entity(GameDataExporter.Run(Game()), "item", 3)),
+                         ExportWriter.ContentHash(Entity(result, "item", 3)));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------- loaders (§6.3)
@@ -541,11 +709,11 @@ public class GameDataExportTests
     /// catalog.</summary>
     private static ScriptIndex IndexOf(ExportInputs game)
         => ScriptIndex.Build(
-            Enumerable.Range(1, 12).Select(id => game.Scripts.GetById(id) is { } script
+            Enumerable.Range(1, 19).Select(id => game.Scripts.GetById(id) is { } script
                                                      ? new IndexedScript(script.Name, id, null, script)
                                                      : null)
                 .OfType<IndexedScript>().Append(new IndexedScript("BOOT.BIN", 0, null, game.ScriptByName("BOOT")!)),
-            Table, (opcode, operand) => Contracts.Access(opcode, operand, Table.AbiId));
+            Table, ScriptReading.Of(Contracts, Table.AbiId));
 
     private static readonly Ome.Script.Abi.OpcodeContracts Contracts = Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson);
 

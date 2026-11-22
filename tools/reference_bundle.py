@@ -138,7 +138,8 @@ def _keys_by_name(scripts: dict) -> dict[str, str]:
 
 
 def note_problems(notes: list[Note], index: dict, label: str) -> list[str]:
-    """A note must name a script the index has, and each of its arguments a named global the script reads."""
+    """A note must name a script the index has, and each of its arguments a named global the script reads, itself or
+    through an index (a list it reads an entry of)."""
     scripts = index.get("scripts", {})
     keys = _keys_by_name(scripts)
     problems = []
@@ -152,8 +153,8 @@ def note_problems(notes: list[Note], index: dict, label: str) -> list[str]:
             counts = uses.get(name)
             if not counts:
                 problems.append(f"{label}: {note.name}: argument {name} is not a named global the script uses")
-            elif not counts[0]:
-                problems.append(f"{label}: {note.name}: argument {name} is never read by the script")
+            elif not counts[0] and not counts[2]:
+                problems.append(f"{label}: {note.name}: argument {name} is never read or indexed by the script")
     return problems
 
 

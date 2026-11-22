@@ -5,8 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0 to 5 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3,
-milestone 5 in §4.4).
+**Status:** milestones 0 to 6 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3,
+milestone 5 in §4.4, milestone 6 in §4.5).
 §4 gets each later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
@@ -476,6 +476,89 @@ was written with the build, not before it.
 - **The release path** runs only on a tag, so the workflow's new job and the fourth asset are first exercised by CI on
   the push after this one.
 
+### 4.5 Milestone 6: script relations
+
+Started 2026-11-21 at the user's word ("Go ahead with the next milestone"). Spec §6.7 gives the declaration and the
+rule; this milestone exports ADDITEM's relations, names the globals UNITECH takes, and exports its relations too.
+
+**What the code says:**
+
+- **The declarations side exists:** `tools/entities_build.py` lints `[[script_relation]]` (unique relation ids,
+  `call` a script, `kind` a kind, `key` and `count` integer globals the registry names, `exclude` patterns) and
+  renders it into `entities.json`; `ExportDeclarations.Parse` refuses a non-empty list. The `relation` table
+  (spec §7.2) is created and left empty, and each entity's content hash has an empty `relations` array.
+- **The scan has its inputs:** the export builds the install's script index (§4.3), which holds every script as the
+  engine reads it; `OpcodeContracts` gives each operand's access and code-target positions (one opcode, `0x140`, has
+  a code address as a value); the opcode table gives each implemented opcode's `leaves`, `calls` among them
+  (call-script, the preloaded slot's call, wait-for-input, the load's restore, `0xfa` and `0x143`). A local `call`
+  (`0x8f`) is a code target of kind `call`, not a `calls` fact. A call-script id resolves through the script
+  provider as the engine resolves it.
+- **ADDITEM** (the registry): `current_item_id` and the signed `current_item_count_change`. A scan of the disassembly
+  (2026-11-21) gives spec §6.7's numbers: 143 calls in 65 scripts, 122 with both from constants (39 give, 83 take),
+  21 computed in 14 scripts; no call has another call between its writes and itself.
+- **UNITECH** joins units to the party. It loops over a count at `0x2d2842` and reads three parallel lists of eight
+  at `0x2d2822` (the unit, an EBINIT id), `0x2d282a` (a mode) and `0x2d2832` (a level), none of them named. Its 55
+  calls, in 29 scripts, all set the count to 1 and the unit and mode of the first entry, and no caller writes the
+  level list: 50 from constants, 3 in DEBUGAM from a local, and 2 in GAMESTART computed.
+
+**The plan:**
+
+- **The registry** names UNITECH's four globals (`joining_unit_ids`, `joining_unit_modes`, `joining_unit_levels`,
+  `joining_unit_count`), with what each mode does as UNITECH shows it; `docs/kamidori-data-tables.md` says how a unit
+  joins and how ADDITEM gives and takes, and `vm-map/scripts-kamidori.toml` gets notes on both scripts.
+- **The declaration gains `where`** (a table of integer globals and values): a call resolves only when the last write
+  of each in its block is that constant. UNITECH's relation needs it: its key is the first entry of the joining list,
+  and only a call whose count is 1 joins that unit alone. The key may be an integer global or a one-dimensional array,
+  which names its first cell; `count` and `where` name single integer cells. `negative` needs a `count`.
+- **The scan** (`ScriptRelations`, in `Ome.Export`): for each script of the index whose base name no `exclude`
+  pattern matches, it walks the instructions and keeps, for each global the relation reads, the last write in the
+  current block. A block starts at each code target (an operand at a code-target position, or a code address, that
+  is an immediate). A write is an integer-global operand whose contract has a `write` kind: `mov G N` gives N, `sub G
+  0 N` gives -N, anything else is computed. An operand that takes the global's address, an opcode whose `leaves`
+  hold `calls`, and a local `call` make each value unknown, since other code may write it. At a call-script whose
+  target's base name is `call`: an unknown key, a `where` not met, a zero count, or a negative count with no
+  `negative` leaves the call unresolved, with the reason; a resolved call whose key no entity of `kind` has is
+  reported apart. Each other call is a row on its entity: the relation (`id` for a positive count or none,
+  `negative` for a negative one), the script's indexed name, the call's offset and the count as the script sets it,
+  signed.
+- **The export:** the `relation` table gets the rows, with a primary key of the entity, the relation, the script and
+  the offset; each entity's content hash lists them. The report gives, for each relation, the calls, the rows, the
+  excluded calls, and the unresolved and keyless calls with their reasons. Declared relations with no script index
+  fail the export.
+- **Kamidori declares two relations:** ADDITEM's `given_in` and `taken_in` on items, and UNITECH's `joins_in` on
+  units (`where = { joining_unit_count = 1 }`), both excluding `DEBUG*`.
+- **The site** labels each relation, gives a taken count as a number taken, lists a script once with its counts,
+  and links it to the script's reference page.
+- **Checks:** a synthetic game with a scene that gives an item and one that takes one (spec §12), and calls the scan
+  leaves unresolved (a computed key, a label between, a call between, a zero count), an excluded script, a key no
+  entity has and a `where` not met; the lint's new rules; the Kamidori export's numbers against the scan above.
+
+**Built** (2026-11-21), as planned, with these details:
+
+- **The index keeps how it read its scripts** (`ScriptReading`: each operand's access, whether it holds a code
+  offset, whether an opcode calls a subroutine), which composition binds to the install's ABI
+  (`ScriptReading.Of(contracts, abiId)`); `ScriptIndex.Build` takes it in place of the access function, and the scan
+  reads it from the index. `RegistryView.IntegerCell` gives a key's cell, a list's first.
+- **The bundle's note check** takes an argument a script reads through an index as read: UNITECH reads its three
+  lists only through `lookup-array`, which the index counts as indexes.
+- **The registry's `character_join_flags`** said bit 1 is set for modes 0 and 2; mode 2 does not write the flags
+  (UNITECH@0x5fe), so it now says mode 0 sets bit 1 and mode 2 leaves them.
+- **The report** gives each relation's calls, scripts, rows and excluded calls in one line, then the unresolved calls
+  and those whose key no entity has, each `script@offset` with its reason.
+
+**Results:**
+
+- **Kamidori:** ADDITEM's 143 calls in 65 scripts give 120 rows (38 given, 82 taken: spec §6.7's 39 and 83, less
+  DEBUGADV's one of each), on 101 items; 6 calls in debug scripts are excluded and 17, in 11 scripts, are unresolved:
+  each sets the item from a local. UNITECH's 55 calls in 29 scripts give 48 rows on 40 units; 5 are excluded and
+  GAMESTART's 2, whose unit is computed, are unresolved. No key names a missing entity. The export still takes about
+  22 s.
+- **Tests:** five on the synthetic game (the rows of a giving and a taking scene, each unresolved case with its
+  reason, a `where` and a list key, the database's rows and the content hash, and the export's failure without an
+  index), and the lint's new errors.
+- **The site** (its plan, §7) lists each entity's relations with links to the scripts' reference pages, and the
+  calls with their offsets in the modder panel.
+
 ## 5. What changed since the spec
 
 - **The kind ids a site path takes** (spec §5.2's comment): `docs` and `api` are reserved for game ids, the first path
@@ -558,3 +641,16 @@ was written with the build, not before it.
   publisher checks the bundle's `bundle.json` against the tag and the tagged commit, which spec §8.3 does not ask.
 - **Arterial has a committed script index too** (milestone 5): spec §8.2 builds one for each game, and milestone 4
   had committed two.
+- **A script relation may have a `where`** (milestone 6, §4.5): globals whose last write in the block must be the
+  given constant, or the call is unresolved. Spec §6.7 has `key` and `count` only; UNITECH's relation needs it, since
+  its key is the first entry of a list and only a count of 1 joins that unit alone. A key may therefore be a
+  one-dimensional list, which names its first cell.
+- **What else leaves a value unknown** (spec §6.7 says only "the last write"): an operand that takes the global's
+  address, an opcode that calls other code and a subroutine call, any of which may write it. A block starts at every
+  code offset an operand names, a code address kept as a value too, not only at the disassembly's labels; on
+  Kamidori this changes no call.
+- **A zero count, and a negative one with no `negative`, leave a call unresolved**, and the lint refuses a `negative`
+  with no `count`. The count is kept signed, as the script sets it, since the relation's name carries the sign.
+- **A call whose key no entity has is reported**, not written, and the report counts the excluded calls. The
+  `relation` table has a primary key (the entity, the relation, the script and the offset), which spec §7.2 does not
+  give.

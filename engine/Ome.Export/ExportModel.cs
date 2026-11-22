@@ -53,7 +53,8 @@ public sealed class ExportInputs
     /// <summary>The base mod's shape of its data kind (<c>mods/&lt;game&gt;-base/shapes/tables.schema.json</c>), which
     /// every snippet is checked against (plan §4.3); null checks only that a snippet reads back.</summary>
     public Ome.Mods.Data.DataShape? Shape { get; init; }
-    /// <summary>The install's script index (plan §4.3), which <c>script_use</c> counts from; null leaves it empty.
+    /// <summary>The install's script index (plan §4.3), which <c>script_use</c> counts from and the script relations
+    /// are found in (plan §4.5); null leaves <c>script_use</c> empty, and fails an export that declares relations.
     /// </summary>
     public ScriptIndex? ScriptIndex { get; init; }
     /// <summary>The registry's names for global cells, which the report's unnamed cells are counted by (plan §4.3);
@@ -97,6 +98,9 @@ public sealed class ExportEntity(int id)
     public List<ExportModderCell> Cells { get; } = [];
     /// <summary>The rows its loaders built (export plan §4.2), by table and record.</summary>
     public List<ExportLoadedRow> Loaded { get; } = [];
+    /// <summary>The calls the script relations resolved to this entity (spec §6.7, plan §4.5), by relation, script and
+    /// offset.</summary>
+    public List<ExportRelation> Relations { get; } = [];
     /// <summary>The snippet's record (spec §6.6, plan §4.3): each published, text and picture field at its value.</summary>
     internal List<KeyValuePair<string, DataValue>> SnippetRecord { get; } = [];
     /// <summary>The snippet's loaded rows: scope, table name, record and the row's fields.</summary>
@@ -164,6 +168,8 @@ public sealed class ExportReport
     public List<(string Scope, string Kind, int Id, string Halt)> LoaderHalts { get; } = [];
     /// <summary>Records whose description field names no script.</summary>
     public List<(string Kind, int Id, string Description, long ScriptId)> MissingScripts { get; } = [];
+    /// <summary>What each script relation's scan found (spec §6.7, plan §4.5), in the declarations' order.</summary>
+    public List<RelationScan> Relations { get; } = [];
 }
 
 /// <summary>An export read from the game, ready to be written.</summary>

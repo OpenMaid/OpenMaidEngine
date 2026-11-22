@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/globals-kamidori.toml by tools/globals_build.py --build -->
 # Global Variable Reference — kamidori (generated)
 
-8304 globals (633 curated, 7671 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
+8305 globals (637 curated, 7668 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
 
 ## Tables
 
@@ -378,6 +378,10 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2d202d` | class_change_stat_cap_deltas | high | investigation | CALCCC@0x00114 adds to character_stat_caps, clamped to the global cap 0x2a2da7[0]. |
 | `0x2d203b` | class_change_skill_slot_replacements | high | investigation | CALCCC@0x00223 overwrites character_skill_list[c][k] when >0. |
 | `0x2d2043` | class_change_skill_learn_flags | high | investigation | CALCCC@0x0026f sets character_learned_skill_flags[c][skill]=1 (and the persistent skill-seen bank 0xf6483 when 0x64201 bit1). |
+| `0x2d2822` | joining_unit_ids | high | investigation | UNITECH's list of the units it adds to the party, beside joining_unit_modes and joining_unit_levels, read for the first joining_unit_count entries (UNITECH@0x0001e sets current_unit_id from it). Every caller writes entry 0 and a count of 1 before call-script UNITECH. |
+| `0x2d282a` | joining_unit_modes | high | investigation | How UNITECH adds each unit (UNITECH@0x0004c). 0: character_join_flags gets bits 0 and 1, and the roster entry's equipment is registered (ADDITEM with a count of 0, UNITECH@0x00511). 1: the join flags get bit 0 only, and nothing is registered. 2: as 0, but the join flags are left as they were and roster_flags bit 8 is set (UNITECH@0x005ac, 0x005fe). |
+| `0x2d2832` | joining_unit_levels | high | investigation | UNITECH@0x00058 reads it. Above the character's level, UNITECH@0x002b6 grows each stat by its growth rate times twice the difference over 100 and sets the level (UNITECH@0x00399). No script writes it. |
+| `0x2d2842` | joining_unit_count | high | investigation | UNITECH@0x00010 loops over that many entries of joining_unit_ids, joining_unit_modes and joining_unit_levels. Every caller sets 1. |
 | `0x2d2847` | current_item_count_change | high | investigation | ADDITEM's second argument, beside current_item_id: ADDITEM@0x00016 adds it to item_inventory_counts[current_item_id], clamps the count at 0 (ADDITEM@0x00024) and pays a count past 999 out as money (ADDITEM@0x00041). About 70 scripts use it, setting it before call-script ADDITEM; ADDSTOCK reads it too. The base mod's give_item helper sets it and puts it back. |
 
 ## counter
@@ -1009,9 +1013,6 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2a3231` | — | low | auto-shape | array |
 | `0x2d242c` | — | low | auto-shape | array |
 | `0x2d243a` | — | low | auto-shape | array |
-| `0x2d2822` | — | low | auto-shape | array |
-| `0x2d282a` | — | low | auto-shape | array |
-| `0x2d2832` | — | low | auto-shape | array |
 | `0x318d48` | — | low | auto-shape | array |
 | `0x319518` | — | low | auto-shape | array |
 | `0x3b2bb0` | — | low | auto-shape | array |

@@ -62,7 +62,7 @@ public sealed class ScriptIndexTests
             (OpExit, []),
         ], "いらっしゃい"),
         Indexed("PAY.BIN", 2, [(OpMov, [G(Prices + 3), G(Prices + 4)]), (OpExit, [])]),
-    ], Table, (opcode, operand) => Contracts.Access(opcode, operand, Table.AbiId));
+    ], Table, ScriptReading.Of(Contracts, Table.AbiId));
 
     [Fact]
     public void EachOperandOfAGlobalBankCountsAsItsContractSays()

@@ -284,3 +284,24 @@ source = "the patch point kamidori.experience.after_calculation"
 [script.arguments]
 current_battle_slot = "the battle slot whose unit gains the experience (ADDEXP@0x0 reads battle_unit_unit_ids by it)"
 shared_scratch_value = "the experience its caller awards"
+
+[[script]]
+name = "ADDITEM"
+summary = """Gives or takes an item: it adds its caller's count to the item's inventory count, keeps the count at 0 or \
+more and sells what passes 999, then sets the flags of the item and of the skills it grants."""
+source = "docs/kamidori-data-tables.md (Giving and taking, under Items)"
+[script.arguments]
+current_item_id = "the item"
+current_item_count_change = "the count to add, negative to take; 0 only sets the flags"
+
+[[script]]
+name = "UNITECH"
+summary = """Adds units to the party: for each entry of its lists, the unit's character is set up on its first join, \
+raised to the entry's level when that is higher, and put in a roster slot, as the entry's mode says. Every caller \
+joins one unit."""
+source = "docs/kamidori-data-tables.md (Joining the party, under Runtime character state)"
+[script.arguments]
+joining_unit_ids = "the units that join"
+joining_unit_modes = "how each joins: 0 a member, 1 with join flag bit 0 only, 2 leaving the join flags"
+joining_unit_levels = "the level each is raised to; 0 leaves it"
+joining_unit_count = "how many entries to read"

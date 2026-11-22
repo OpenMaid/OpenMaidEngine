@@ -237,6 +237,15 @@ The order differs from Himegari's.
 
 **Scalars:** party capacity `0x7ea3b`; protagonist craftsman rank `0x7ea49`.
 
+**Joining the party (UNITECH).** A scene adds units by writing UNITECH's lists and calling it: the units
+(`joining_unit_ids`, `0x2d2822`), a mode for each (`joining_unit_modes`, `0x2d282a`), a level for each
+(`joining_unit_levels`, `0x2d2832`), and how many entries to read (`joining_unit_count`, `0x2d2842`); each list
+holds 8. For each entry UNITECH takes the unit's canonical character, sets it up on its first join (level, stats,
+class title, skills), raises it to the entry's level when that is higher, and puts the unit in the first free or
+matching roster slot. Mode 0 sets join flags bits 0 and 1 and registers the slot's equipment; mode 1 sets bit 0
+only and registers nothing; mode 2 registers as 0 does, leaves the join flags and sets roster flag bit 8. Every
+caller of Kamidori 4.33G joins one unit (a count of 1), and none writes the level list.
+
 **Roster:** unit `0x6383d`, flags `0x63bc1`, equipment `0x63905[3]`, equipped skills `0x63a31[4]`.
 
 **Battle slots:**
@@ -411,6 +420,13 @@ one of the 15,963 cells is classified.
 - One 8-column affinity table replaces separate attack and defense elements.
 - The tuning curves are gone; costume boards, gem sockets and IMINIT growth replace them.
 - New fields: a third price, the cursed flag, and furniture/garden data.
+
+**Giving and taking (ADDITEM).** A scene gives or takes an item by setting `current_item_id` (`0x2d2846`) and
+the signed `current_item_count_change` (`0x2d2847`) and calling ADDITEM, as the base mod's `give_item` does.
+ADDITEM adds the count to the item's inventory count and keeps it at 0 or more; past 999 it keeps 999 and sells
+the rest at the item's sell price (`item_prices` column 1). Then it sets the item's flags in `0x7f9ef` and
+`0x7f21f` (the second kept in the shared profile) and the flags of the skills it grants in `0xf6483`. A count of 0
+only sets the flags: UNITECH calls it so for a joining unit's equipment. Item 0 does nothing.
 
 ### Skills (SKINIT)
 

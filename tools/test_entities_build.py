@@ -38,6 +38,8 @@ REGISTRY = "".join([
     g("0x420", "foe_levels", "int[5][2]"),
     g("0x50", "foe_names", "string[5]"),
     g("0x440", "trap_damage", "int[5]"),
+    g("0x30", "joining_hero_ids", "int[2]"),
+    g("0x32", "joining_hero_count", "int"),
 ]) + '''
 [[table]]
 name = "hero"
@@ -159,11 +161,17 @@ fields = ["hero", "levels"]
 
 [[script_relation]]
 id = "given_in"
-negative = "taken_in"
 call = "ADDWEAPON"
 kind = "weapon"
 key = "current_weapon_id"
 exclude = ["DEBUG*"]
+
+[[script_relation]]
+id = "joins_in"
+call = "JOINHERO"
+kind = "hero"
+key = "joining_hero_ids"
+where = { joining_hero_count = 1 }
 '''
 
 
@@ -205,6 +213,9 @@ def test_good_declarations():
                                                                "fields": ["hero", "levels"]}},
           "a loader's published table names its registry table beside its short name")
     check(data.get("script_relations", [{}])[0].get("count") is None, "a relation without a count has count null")
+    check(data.get("script_relations", [{}])[0].get("where") == {}, "a relation without a where has an empty one")
+    check(data.get("script_relations", [{}, {}])[1].get("where") == {"joining_hero_count": 1},
+          "a relation keeps its where")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
     code, _, written_again = run(GOOD, write=True)
@@ -378,12 +389,32 @@ call = "ADDHERO"
 kind = "hero"
 key = "hero_names"
 count = "current_hero_id"
+
+[[script_relation]]
+id = "found_in"
+negative = "lost_in"
+call = "ADDHERO"
+kind = "hero"
+key = "hero_weapon_ids"
+where = { hero_classes = 1 }
+
+[[script_relation]]
+id = "met_in"
+call = "ADDHERO"
+kind = "hero"
+key = "current_hero_id"
+count = "joining_hero_ids"
+where = { joining_hero_count = "one" }
 ''')
     for needle in ("scope 'dungeon' is not a [[scope]]", "keys 'monster' is not the id of a kind",
                    "script: 'field' must be", "reads at 'demo.stage.unloaded'",
                    "kind 'weapon' is not the id of a kind", "key 'current_monster_id' is not a global",
                    "relation given_in is defined twice", "negative must be a lowercase identifier",
                    "key hero_names is not an integer global",
+                   "script_relation 'found_in': negative needs a count", "where must be a table of globals and whole",
+                   "key hero_weapon_ids is int[4][2], not an integer or a list of them",
+                   "count joining_hero_ids is int[2], not one integer",
+                   "where hero_classes is int[4], not one integer",
                    "skip: 'kind' is not a field of table hero", "table 'foe': unknown key 'colour'",
                    "exists levels is a row of cells", "fields name is a string field",
                    "fields: 'speed' is not a field of table foe",

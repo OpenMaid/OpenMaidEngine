@@ -379,8 +379,10 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │                                       design.md §6): the declarations and the registry view it reads
     │                                       (ExportDeclarations, RegistryView), the builder rule (ScriptNames),
     │                                       the reader (GameDataExporter: the boot, the run-time check, the
-    │                                       descriptions, references and pictures) and the writer of the SQLite
-    │                                       database, its pictures and manifest (ExportWriter); the only project
+    │                                       descriptions, references and pictures), the script index
+    │                                       (ScriptIndex) and the script relations' scan (ScriptRelations), and
+    │                                       the writer of the SQLite database, its pictures and manifest
+    │                                       (ExportWriter); the only project
     │                                       that names SQLite (Microsoft.Data.Sqlite); referenced by Ome.Cli
     │                                       (data-export) and the tests, not shipped
     │   ├── Ome.Engine.Frontend/             platform-neutral frontend support: diagnostics/options, page

@@ -83,7 +83,7 @@ internal static class ScriptIndexCommand
         }
         unreadable = problems;
         OpcodeContracts contracts = OpcodeContracts.Load(Paths.OpcodesJson);
-        return ScriptIndex.Build(scripts, table, (opcode, operand) => contracts.Access(opcode, operand, table.AbiId));
+        return ScriptIndex.Build(scripts, table, ScriptReading.Of(contracts, table.AbiId));
     }
 
     /// <summary>The script a call-script id names, as the engine resolves it; null for none.</summary>

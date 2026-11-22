@@ -298,6 +298,10 @@ item_sort_key
 item_species_restriction_mask
 item_stat_modifiers
 item_usability_flags
+joining_unit_count
+joining_unit_ids
+joining_unit_levels
+joining_unit_modes
 map_neighbor_dx
 map_neighbor_dy
 map_overlay_mode_flags

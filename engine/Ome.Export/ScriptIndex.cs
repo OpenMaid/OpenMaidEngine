@@ -15,6 +15,21 @@ using Script = Ome.Engine.Model.Script;
 /// parsed code.</summary>
 public sealed record IndexedScript(string Name, long PackedId, string? Fingerprint, Script Script);
 
+/// <summary>What reading a script needs to know of each opcode under the install's engine ABI, which composition binds
+/// (engine layering spec §7.6). By opcode and one-based operand: the operand's access kinds
+/// (<see cref="OpcodeContracts.Access"/>), and whether it holds a code offset, a jump's or a call's target or a code
+/// address kept as a value (<see cref="OpcodeContracts.IsCodeTarget"/>, <see cref="OpcodeContracts.IsCodeValue"/>). By
+/// opcode: whether it calls a subroutine of its script (a code target of kind <c>call</c>).</summary>
+public sealed record ScriptReading(Func<int, int, IReadOnlyList<string>?> Access, Func<int, int, bool> IsCodeOffset,
+                                   Func<int, bool> IsLocalCall)
+{
+    /// <summary>The reading <paramref name="contracts"/> give under the engine ABI <paramref name="abiId"/>.</summary>
+    public static ScriptReading Of(OpcodeContracts contracts, string abiId)
+        => new((opcode, operand) => contracts.Access(opcode, operand, abiId),
+               (opcode, operand) => contracts.IsCodeTarget(opcode, operand) || contracts.IsCodeValue(opcode, operand),
+               opcode => contracts.CodeTargetKind(opcode) == "call");
+}
+
 /// <summary>How often a script's operands read, write or index (take as an array's base) one global cell.</summary>
 public sealed record GlobalUse(int Reads, int Writes, int Addresses)
 {
@@ -141,15 +156,21 @@ public sealed class ScriptIndex
 
     public IReadOnlyList<ScriptIndexEntry> Entries { get; }
 
-    private ScriptIndex(IReadOnlyList<ScriptIndexEntry> entries) => Entries = entries;
+    /// <summary>How the index read its scripts, which a scan of their code reads them by too (the script relations,
+    /// export plan §4.5).</summary>
+    public ScriptReading Reading { get; }
+
+    private ScriptIndex(IReadOnlyList<ScriptIndexEntry> entries, ScriptReading reading)
+    {
+        Entries = entries;
+        Reading = reading;
+    }
 
     /// <summary>Reads each script's instructions. An operand counts when its type is a global bank's (3 integer,
     /// 4 float, 5 string): as a read for a <c>read</c> kind of its contract, a write for a <c>write</c> kind, an index for
-    /// <c>address</c>; an operand with no contract is not counted. <paramref name="operandAccess"/> gives an opcode's
-    /// one-based operand's contract (<see cref="OpcodeContracts.Access"/> under the install's ABI, which composition
-    /// binds: engine layering spec §7.6).</summary>
-    public static ScriptIndex Build(IEnumerable<IndexedScript> scripts, OpcodeTable table,
-                                    Func<int, int, IReadOnlyList<string>?> operandAccess)
+    /// <c>address</c>; an operand with no contract is not counted. <paramref name="reading"/> gives an opcode's
+    /// one-based operand's contract under the install's ABI.</summary>
+    public static ScriptIndex Build(IEnumerable<IndexedScript> scripts, OpcodeTable table, ScriptReading reading)
     {
         int? callScript = table.ByLabel("call-script"), preload = table.ByLabel("preload-script-slot");
         var entries = new List<ScriptIndexEntry>();
@@ -178,7 +199,7 @@ public sealed class ScriptIndex
                         5 => GlobalBank.String,
                         _ => null,
                     };
-                    if (bank is null || operandAccess(op, k + 1) is not { } kinds) continue;
+                    if (bank is null || reading.Access(op, k + 1) is not { } kinds) continue;
                     var use = new GlobalUse(kinds.Any(kind => kind.StartsWith("read", StringComparison.Ordinal)) ? 1 : 0,
                                             kinds.Any(kind => kind.StartsWith("write", StringComparison.Ordinal)) ? 1 : 0,
                                             kinds.Contains("address") ? 1 : 0);
@@ -189,7 +210,7 @@ public sealed class ScriptIndex
             }
             entries.Add(entry);
         }
-        return new ScriptIndex(entries);
+        return new ScriptIndex(entries, reading);
     }
 
     /// <summary>The index as <c>docs/script-index-&lt;game&gt;.json</c> holds it: per script, by name, its id,
