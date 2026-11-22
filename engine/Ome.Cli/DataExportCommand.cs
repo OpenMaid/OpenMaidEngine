@@ -63,6 +63,9 @@ internal static class DataExportCommand
                 StopOf = point => ReadAt(gameId, point, catalog, store),
                 Declarations = declarations,
                 Registry = RegistryView.Load(Paths.GlobalsJson(gameId)),
+                Shape = BaseModShape(gameId),
+                ScriptIndex = ScriptIndexCommand.Build(catalog, store, provider, table, out _),
+                Names = GlobalNames.Load(Paths.GlobalsJson(gameId)),
                 Pictures = new CatalogPictures(new ResourceMap(catalog, store, Console.Error.WriteLine, allowBmpAsAgf)),
                 BuildInfo =
                 [
@@ -99,6 +102,16 @@ internal static class DataExportCommand
         ExportFiles files = ExportWriter.Write(result, output, revision, manifest);
         Print(result, output, files, read, clock.Elapsed);
         return result.Report.ExitCode;
+    }
+
+    /// <summary>The game's base mod's shape of its data kind, which every snippet is checked against (export plan
+    /// §4.3); null for a game whose base mod ships none.</summary>
+    private static Ome.Mods.Data.DataShape? BaseModShape(string gameId)
+    {
+        string path = Path.Combine(Paths.Repo, "mods", $"{gameId}-base", "shapes", "tables.schema.json");
+        if (!File.Exists(path)) return null;
+        Ome.Mods.Data.DataShapeRead read = Ome.Mods.Data.DataShape.Read(File.ReadAllText(path));
+        return read.Shape ?? throw new ExportFailure($"{path}: {string.Join("; ", read.Problems)}");
     }
 
     /// <summary>A stop at a patch point: its site in the installed script's revision (the boot's <c>read_at</c>, a
@@ -207,8 +220,15 @@ internal static class DataExportCommand
             int rows = result.Kinds.SelectMany(kind => kind.Entities).Sum(entity => entity.Loaded.Count);
             Console.WriteLine($"  loaders: {report.LoaderRuns} runs, {report.LoaderHalts.Count} halts, {rows} rows");
         }
+        int snippets = result.Kinds.SelectMany(kind => kind.Entities).Count(entity => entity.Snippet != null);
+        Console.WriteLine($"  snippets: {snippets}, {report.SnippetProblems.Count} problems");
         Section("refused", report.Refusals.Count, report.Refusals.Select(refusal =>
             $"{refusal.Kind} {refusal.Id} {refusal.Field}[{refusal.Index}] ({BankLetter(refusal.Bank)}:0x{refusal.Address:x}): {refusal.Reason}"));
+        Section("snippet problems", report.SnippetProblems.Count, report.SnippetProblems.Select(problem =>
+            $"{problem.Kind} {problem.Id}: {problem.Problem}"));
+        Section("unnamed cells the builders wrote", report.UnnamedCells.Values.Sum(cells => cells.Length),
+                report.UnnamedCells.Select(pair => $"{pair.Key}: {pair.Value.Length}, from 0x{pair.Value[0]:x} to "
+                                                   + $"0x{pair.Value[^1]:x}"));
         Section("missing references", report.MissingRefs.Values.Sum(), report.MissingRefs.Select(pair =>
             $"{pair.Key.Kind}.{pair.Key.Field} -> {pair.Key.ToKind}: {pair.Value}"));
         Section("references to unpublished tables", report.UnpublishedRefs.Values.Sum(), report.UnpublishedRefs.Select(pair =>
@@ -227,7 +247,9 @@ internal static class DataExportCommand
         Section("missing description scripts", report.MissingScripts.Count, report.MissingScripts.Select(missing =>
             $"{missing.Kind} {missing.Id} {missing.Description}: 0x{missing.ScriptId:x}"));
         Console.WriteLine($"  wrote {files.Database} and {files.Files.Count - 1} pictures to {output} in {total.TotalSeconds:0.0} s");
-        if (report.ExitCode != 0) Console.WriteLine($"data-export: {report.Refusals.Count} values refused (spec §5.5); exit 1");
+        if (report.ExitCode != 0)
+            Console.WriteLine($"data-export: {report.Refusals.Count} values refused (spec §5.5), {report.SnippetProblems.Count} "
+                              + "snippet problems (plan §4.3); exit 1");
     }
 
     private static void Section(string title, int count, IEnumerable<string> lines)

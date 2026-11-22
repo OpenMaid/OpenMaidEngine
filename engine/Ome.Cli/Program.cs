@@ -10,7 +10,8 @@ using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
 
 const string CommandList = "save-diff, save-info, run-lock, intake, omp, oms-compile, oms-append, oms-patch, oms-rebuild, oms-temps, "
-                          + "oms-roundtrip, oms-decompile, oms-residue, catalog-scan, run, audio, gfx, picture, init-image, data-export, play, "
+                          + "oms-roundtrip, oms-decompile, oms-residue, catalog-scan, run, audio, gfx, picture, init-image, data-export, "
+                          + "script-index, play, "
                           + "sweep, trace";
 if (args.Length == 0)
 {
@@ -81,6 +82,10 @@ var assetStore = new Sys4AssetStore(catalog, gameRoot, assetOptions.LooseRoots.T
 var provider = new Sys4ScriptProvider(
     table, catalog, assetStore);
 Script ScriptByName(string name) => provider.RequireByName(name);
+
+// script-index (game data export spec §8.2) indexes the selected install's scripts.
+if (command == "script-index")
+    return ScriptIndexCommand.Run(args, selectedProfile.Profile.Id, catalog, assetStore, provider, table);
 
 // data-export (game data export spec §6.1) reads the selected install through the engine and writes the export.
 if (command == "data-export")

@@ -6,6 +6,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Ome.Engine\Ome.Engine.csproj" />
     <ProjectReference Include="..\Ome.Engine.Vm\Ome.Engine.Vm.csproj" />
+    <!-- The data file writer and the shape check, for the snippets (export plan §4.3). -->
+    <ProjectReference Include="..\Ome.Mods\Ome.Mods.csproj" />
   </ItemGroup>
 
   <ItemGroup>

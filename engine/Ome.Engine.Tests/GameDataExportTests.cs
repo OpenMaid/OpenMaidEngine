@@ -455,6 +455,8 @@ public class GameDataExportTests
             Assert.Equal("description", Scalar("SELECT type FROM field WHERE name = 'description'"));
             Assert.Equal("0", Scalar("SELECT count(*) FROM relation"));
             Assert.Equal(64, Scalar("SELECT content_hash FROM item WHERE id = 1")!.Length);
+            Assert.StartsWith("[item.1]\nname = \"剣\"", Scalar("SELECT text FROM snippet WHERE kind = 'item' AND id = 1"),
+                              StringComparison.Ordinal);
         }
         finally
         {
@@ -525,14 +527,27 @@ public class GameDataExportTests
 
     // ------------------------------------------------------------------------------------------------- loaders (§6.3)
 
-    private static ExportInputs WithDeclarations(ExportInputs game, string declarations, Func<string, RunStop>? stopOf = null)
+    private static ExportInputs WithDeclarations(ExportInputs game, string declarations, Func<string, RunStop>? stopOf = null,
+                                                 Ome.Mods.Data.DataShape? shape = null, ScriptIndex? index = null)
         => new()
         {
             GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
             ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = stopOf ?? game.StopOf,
             Declarations = ExportDeclarations.Parse(declarations), Registry = game.Registry, Pictures = game.Pictures,
-            BuildInfo = game.BuildInfo,
+            BuildInfo = game.BuildInfo, Shape = shape ?? game.Shape, ScriptIndex = index ?? game.ScriptIndex,
         };
+
+    /// <summary>The script index of every script the synthetic game has, run or not, as the CLI builds it from the
+    /// catalog.</summary>
+    private static ScriptIndex IndexOf(ExportInputs game)
+        => ScriptIndex.Build(
+            Enumerable.Range(1, 12).Select(id => game.Scripts.GetById(id) is { } script
+                                                     ? new IndexedScript(script.Name, id, null, script)
+                                                     : null)
+                .OfType<IndexedScript>().Append(new IndexedScript("BOOT.BIN", 0, null, game.ScriptByName("BOOT")!)),
+            Table, (opcode, operand) => Contracts.Access(opcode, operand, Table.AbiId));
+
+    private static readonly Ome.Script.Abi.OpcodeContracts Contracts = Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson);
 
     private static long?[] Loaded(ExportEntity entity, string table, int record, string field)
         => entity.Loaded.Single(row => row.Table == table && row.Record == record).Values.Single(value => value.Field == field).Values;
@@ -560,6 +575,16 @@ public class GameDataExportTests
     }
 
     [Fact]
+    public void ALoadedTablesCellsAreTheKeysWithTheirWriters()
+    {
+        ExportEntity sword = Entity(GameDataExporter.Run(WithDeclarations(Game(), WithLoader())), "item", 1);
+        ExportModderCell count = Assert.Single(sword.Cells, cell => cell.Field == "loot.count" && cell.Index == 2 * 2);
+        Assert.Equal((LootCount + 2 * 2, "5", "DROPSET.BIN"), (count.Address, count.Raw, count.Writer));
+        Assert.Contains(sword.Cells, cell => cell.Field == "loot.skill_id" && cell.Index == 1 && cell.Raw == "1");
+        Assert.DoesNotContain(sword.Cells, cell => cell.Field == "loot.skill_id" && cell.Index == 0);   // no record 0
+    }
+
+    [Fact]
     public void ALoaderScriptsOwnWriteIsRefused()
     {
         ExportResult result = GameDataExporter.Run(Game(Faults.LoaderScriptWrites));
@@ -568,6 +593,151 @@ public class GameDataExportTests
         Assert.All(refused, refusal => Assert.Equal(("item", 2 * 2 + 1, LootCount + 5),
                                                     (refusal.Kind, refusal.Index, refusal.Address)));
         Assert.Equal([5, null], Loaded(Entity(result, "item", 1), "loot", 2, "count"));
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Contains(sword.Cells, cell => cell.Field == "loot.count" && cell.Index == 5 && cell.Raw == null
+                                             && cell.Writer == "LOOT.BIN");
+        // The snippet leaves the refused element out.
+        Assert.Contains("[field.1.loot.2]\nskill_id = 1\ncount = {0 = 5}\n", sword.Snippet, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------------------------------------------- script_use (§4.3)
+
+    [Fact]
+    public void ScriptUseCountsEveryScriptOfTheInstallThatTouchesAKindsTables()
+    {
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(WithDeclarations(game, WithLoader(), index: IndexOf(game)));
+        var item = result.Kinds.Single(kind => kind.Declaration.Id == "item").ScriptUse
+            .ToDictionary(use => use.Script, use => use.Use);
+        // The builders' writes, the scene's that no run reached, a substring's read and write, ITMES's index of the
+        // names, and the loader scripts' writes to the loaded table, which count for the key kind.
+        Assert.Equal(new GlobalUse(0, 12, 0), item["ITINIT.BIN"]);
+        Assert.Equal(new GlobalUse(0, 4, 0), item["$1$ITINIT.BIN"]);
+        Assert.Equal(new GlobalUse(0, 1, 0), item["SCENE.BIN"]);
+        Assert.Equal(new GlobalUse(1, 1, 0), item["$3$ITINIT.BIN"]);
+        Assert.Equal(new GlobalUse(0, 0, 1), item["ITMES.BIN"]);
+        Assert.Equal(new GlobalUse(0, 5, 0), item["DROPSET.BIN"]);
+        Assert.Equal(new GlobalUse(0, 1, 0), item["LOOT.BIN"]);
+        Assert.DoesNotContain("SKINIT.BIN", item.Keys);
+        Assert.Equal(["SKINIT.BIN"], result.Kinds.Single(kind => kind.Declaration.Id == "skill").ScriptUse
+                                         .Select(use => use.Script));
+        Assert.Empty(GameDataExporter.Run(WithDeclarations(game, WithLoader())).Kinds.SelectMany(kind => kind.ScriptUse));
+    }
+
+    [Fact]
+    public void AnIntegerCellTheBuildersWroteThatNoGlobalNamesIsReported()
+    {
+        // The registry's names without item_icon: its two cells the builders wrote are left.
+        var names = new GlobalNames(
+        [
+            new NamedGlobal("item_category", GlobalBank.Integer, ItemCategory, 4),
+            new NamedGlobal("item_prices", GlobalBank.Integer, ItemPrices, 8),
+            new NamedGlobal("item_handler", GlobalBank.Integer, ItemHandler, 4),
+            new NamedGlobal("item_granted_skill", GlobalBank.Integer, ItemSkill, 4),
+            new NamedGlobal("skill_category", GlobalBank.Integer, SkillCategory, 3),
+        ]);
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = game.StopOf,
+            Declarations = game.Declarations, Registry = game.Registry, Pictures = game.Pictures, Names = names,
+        });
+        Assert.Equal(["item"], result.Report.UnnamedCells.Keys);
+        Assert.Equal([ItemIcon + 1, ItemIcon + 3], result.Report.UnnamedCells["item"]);
+        Assert.Equal(0, result.Report.ExitCode);
+        Assert.Empty(GameDataExporter.Run(game).Report.UnnamedCells);
+    }
+
+    // ------------------------------------------------------------------------------------------------- snippets (§6.6)
+
+    [Fact]
+    public void ASnippetSetsWhatTheSiteShowsOfARecordByTheRecordMapsNames()
+    {
+        ExportResult result = GameDataExporter.Run(Game());
+        // The table's order; a row's columns by name where the registry names them, by number otherwise; the title, the
+        // text and the picture, not the description's script.
+        Assert.Equal("""
+            [item.1]
+            name = "剣"
+            short_description = "よく切れる"
+            category = 2
+            price = {0 = 10, sell = 5}
+            icon = 77
+            granted_skill = 1
+
+            """.ReplaceLineEndings("\n"), Entity(result, "item", 1).Snippet);
+        Assert.Equal("[skill.1]\nname = \"斬撃\"\ncategory = 1\n", Entity(result, "skill", 1).Snippet);
+        Assert.Empty(result.Report.SnippetProblems);
+    }
+
+    [Fact]
+    public void ASnippetCarriesItsLoadedRowsUnderTheirScope()
+    {
+        string? snippet = Entity(GameDataExporter.Run(WithDeclarations(Game(), WithLoader())), "item", 1).Snippet;
+        Assert.EndsWith("""
+            granted_skill = 1
+
+            [field.1.loot.1]
+            skill_id = 1
+            count = {0 = 3, 1 = 4}
+
+            [field.1.loot.2]
+            skill_id = 1
+            count = {0 = 5, 1 = 0}
+
+            """.ReplaceLineEndings("\n"), snippet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ARefusedValueIsLeftOutOfTheSnippet()
+    {
+        ExportResult result = GameDataExporter.Run(Game(Faults.ExcludedBuilderWrites));
+        Assert.DoesNotContain("icon", Entity(result, "item", 3).Snippet, StringComparison.Ordinal);
+    }
+
+    /// <summary>A shape of the synthetic game's data kind with no <c>granted_skill</c>, which every item's snippet sets.
+    /// </summary>
+    private const string ShapeWithoutGrantedSkill = """
+        {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "description": "testgame.tables",
+          "type": "object",
+          "properties": {
+            "item": { "type": "object", "x-ome-decimal-keys": { "minimum": 0, "maximum": 3 },
+                      "additionalProperties": { "$ref": "#/definitions/record.item" } },
+            "skill": { "type": "object" }
+          },
+          "additionalProperties": false,
+          "definitions": {
+            "record.item": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" }, "short_description": { "type": "string" },
+                "category": { "type": "integer" }, "icon": { "type": "integer" },
+                "price": { "type": "object", "properties": { "0": { "type": "integer" }, "sell": { "type": "integer" } },
+                           "additionalProperties": false }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+        """;
+
+    [Fact]
+    public void ASnippetTheShapeRefusesIsReportedAndTheExitCodeIsOne()
+    {
+        Ome.Mods.Data.DataShapeRead shape = Ome.Mods.Data.DataShape.Read(ShapeWithoutGrantedSkill);
+        Assert.True(shape.Shape != null, string.Join("\n", shape.Problems));
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), Declarations, shape: shape.Shape));
+        Assert.Equal([1, 2, 3], result.Report.SnippetProblems.Select(problem => problem.Id));
+        Assert.All(result.Report.SnippetProblems, problem =>
+        {
+            Assert.Equal("item", problem.Kind);
+            Assert.Contains("granted_skill", problem.Problem, StringComparison.Ordinal);
+            Assert.StartsWith($"item/{problem.Id}.toml:", problem.Problem, StringComparison.Ordinal);
+        });
+        Assert.Equal(1, result.Report.ExitCode);
     }
 
     [Fact]
@@ -597,7 +767,8 @@ public class GameDataExportTests
         string plain = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
         try
         {
-            ExportWriter.Write(GameDataExporter.Run(WithDeclarations(Game(), WithLoader())), root, "abcdef012345", Manifest);
+            ExportWriter.Write(GameDataExporter.Run(WithDeclarations(Game(), WithLoader(), index: IndexOf(Game()))), root,
+                               "abcdef012345", Manifest);
             ExportWriter.Write(GameDataExporter.Run(Game()), plain, "abcdef012345", Manifest);
             string? Scalar(string folder, string sql)
             {
@@ -619,6 +790,11 @@ public class GameDataExportTests
             Assert.Equal("[3,4]", Scalar(root, "SELECT count FROM \"item.loot\" WHERE id = 1 AND record = 1"));
             Assert.Equal("2", Scalar(root, "SELECT skill_id FROM \"item.loot\" WHERE id = 2 AND record = 1"));
             Assert.Equal("2", Scalar(root, "SELECT idx FROM ref WHERE field = 'loot.skill_id' AND from_id = 1 ORDER BY idx DESC"));
+            Assert.Equal("1704|DROPSET.BIN|5", Scalar(root, "SELECT address || '|' || writer || '|' || raw FROM cell "
+                                                         + "WHERE kind = 'item' AND id = 1 AND field = 'loot.count' AND idx = 4"));
+            Assert.Equal("0|5|0", Scalar(root, "SELECT reads || '|' || writes || '|' || addresses FROM script_use "
+                                               + "WHERE kind = 'item' AND script = 'DROPSET.BIN'"));
+            Assert.Equal("0", Scalar(plain, "SELECT count(*) FROM script_use"));
             Assert.NotEqual(Scalar(plain, "SELECT content_hash FROM item WHERE id = 1"),
                             Scalar(root, "SELECT content_hash FROM item WHERE id = 1"));
             // An entity without loaded rows keeps the hash it has in an export without loaders.

@@ -2,10 +2,14 @@ using System.Globalization;
 using System.Text;
 using Ome.Engine.Hosting;
 using Ome.Engine.Model;
+using Ome.Engine.Modding;
 using Ome.Engine.Natives;
 using Ome.Engine.Vm;
+using Ome.Mods.Data;
 
 namespace Ome.Export;
+
+using Script = Ome.Engine.Model.Script;
 
 /// <summary>
 /// Reads a game's data through the engine (game data export spec §6): the boot with its writes recorded, each kind's
@@ -38,8 +42,30 @@ public static class GameDataExporter
         }
         foreach (LoaderDeclaration loader in declarations.Loaders) Load(inputs, boot, loader, kinds, rule, report);
         LinkReferences(kinds, report);
+        foreach (ExportKind kind in kinds) WriteSnippets(inputs, kind, report);
+        if (inputs.ScriptIndex is { } index)
+            foreach (ExportKind kind in kinds)
+                kind.ScriptUse.AddRange(index.UsesOf(
+                    [.. kind.TableFields.Concat(kind.Loaded.SelectMany(loaded => loaded.TableFields))
+                        .Select(field => field.Array).Distinct()
+                        .Select(array => (array.Bank, array.Address, array.Address + array.Dimensions[0] * array.Width))])
+                    .OrderBy(use => use.Script, StringComparer.Ordinal));
+        if (inputs.Names is { } names)
+            foreach (ExportKind kind in kinds) CountUnnamed(names, boot, kind, report);
         report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
         return new ExportResult(declarations, kinds, report, inputs.BuildInfo);
+    }
+
+    /// <summary>The integer cells a kind's builders (the writers of its cells) wrote that no global of the registry
+    /// names (spec §6.6, plan §4.3): an array the registry has yet to name. Reported, not published.</summary>
+    private static void CountUnnamed(GlobalNames names, GameSession boot, ExportKind kind, ExportReport report)
+    {
+        var builders = kind.Entities.SelectMany(entity => entity.Cells).Select(cell => cell.Writer).OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+        int[] cells = boot.Writers.Where(pair => pair.Key.Bank == GlobalBank.Integer && builders.Contains(pair.Value)
+                                                 && names.NameOf(pair.Key) == null)
+            .Select(pair => pair.Key.Address).Order().ToArray();
+        if (cells.Length > 0) report.UnnamedCells[kind.Declaration.Id] = cells;
     }
 
     // ------------------------------------------------------------------------------------------------- the boot (§6.2)
@@ -87,6 +113,8 @@ public static class GameDataExporter
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
+        // The snippet sets what the site shows of a record (plan §4.3): its published fields, its text and its pictures.
+        IReadOnlyList<FieldLayout> snippetFields = [.. published, .. textFields, .. pictures.Select(picture => picture.Field)];
         var entities = new List<ExportEntity>();
         for (int record = 0; record < table.Records; record++)
         {
@@ -144,6 +172,11 @@ public static class GameDataExporter
             }
             foreach (DescriptionDeclaration description in kind.Descriptions)
                 Describe(inputs, boot, kind, entity, description, At, table, report);
+            entity.SnippetRecord.AddRange(SnippetEntries(tableFields, snippetFields, (field, column) =>
+            {
+                var (cell, refused) = At(field, column);
+                return refused ? null : field.IsString ? new DataString(cell.Text ?? "") : new DataInteger(cell.Number);
+            }));
             entities.Add(entity);
         }
         var declared = published.Concat(textFields).Concat(pictures.Select(picture => picture.Field))
@@ -236,24 +269,112 @@ public static class GameDataExporter
                 for (int record = 0; record < table.Table.Records; record++)
                 {
                     if (Read(run, table.Exists, record, 0).IsDefault) continue;
+                    string name = table.Declaration.Name;
+                    // Every field's cells, as a kind's (§6.6): an integer's value is shown and checked; a string, which a
+                    // loaded table does not publish, shows its address and writer only. Its cells are the key entity's,
+                    // the field written <table>.<field> and the index the record times the width plus the element.
+                    var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
+                    foreach (FieldLayout field in table.TableFields)
+                        for (int element = 0; element < field.Elements; element++)
+                        {
+                            ExportCell cell = Read(run, field, record, element);
+                            string? reason = field.IsString ? null : RefusalOf(run, cell, rule);
+                            int index = record * field.Elements + element;
+                            if (reason != null)
+                                report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id, $"{name}.{field.Field}", index,
+                                                                cell.Bank, cell.Address, reason));
+                            cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null);
+                            if (cell.Writer != null || !cell.IsDefault)
+                                entity.Cells.Add(new ExportModderCell($"{name}.{field.Field}", index, cell.Bank, cell.Address,
+                                    reason != null || field.IsString ? null : cell.Number.ToString(CultureInfo.InvariantCulture),
+                                    cell.Writer));
+                        }
+                    (ExportCell Cell, bool Refused) At(FieldLayout field, int element)
+                        => cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))];
+
                     var values = new List<(string Field, long?[] Values)>();
                     foreach (FieldLayout field in table.Published)
                     {
                         var elements = new long?[field.Elements];
                         for (int element = 0; element < field.Elements; element++)
                         {
-                            ExportCell cell = Read(run, field, record, element);
-                            if (RefusalOf(run, cell, rule) is { } reason)
-                                report.Refusals.Add(new Refusal(keys.Declaration.Id, entity.Id,
-                                                                $"{table.Declaration.Name}.{field.Name}",
-                                                                record * field.Elements + element, cell.Bank, cell.Address,
-                                                                reason));
-                            else elements[element] = cell.Number;
+                            var (cell, refused) = At(field, element);
+                            elements[element] = refused ? null : cell.Number;
                         }
                         values.Add((field.Name, elements));
                     }
-                    entity.Loaded.Add(new ExportLoadedRow(table.Declaration.Name, record, values));
+                    entity.Loaded.Add(new ExportLoadedRow(name, record, values));
+                    entity.SnippetRows.Add((loader.Scope, name, record,
+                        SnippetEntries(table.TableFields, table.Published, (field, column) =>
+                        {
+                            var (cell, refused) = At(field, column);
+                            return refused ? null : new DataInteger(cell.Number);
+                        })));
                 }
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------- snippets (§6.6)
+
+    /// <summary>A record's entries in a snippet (plan §4.3): each field of <paramref name="tableFields"/> that
+    /// <paramref name="shown"/> covers, once, in the table's order, at its value. A row's columns are written by name
+    /// where the registry names them and by number otherwise, as a data file must; a refused element is left out.
+    /// </summary>
+    private static List<KeyValuePair<string, DataValue>> SnippetEntries(IReadOnlyList<FieldLayout> tableFields,
+        IReadOnlyList<FieldLayout> shown, Func<FieldLayout, int, DataValue?> valueOf)
+    {
+        var entries = new List<KeyValuePair<string, DataValue>>();
+        foreach (FieldLayout whole in tableFields)
+        {
+            var columns = new SortedSet<int>();
+            foreach (FieldLayout field in shown.Where(field => field.Field == whole.Field))
+                if (field.Column is { } column) columns.Add(column);
+                else columns.UnionWith(Enumerable.Range(0, whole.Elements));
+            if (columns.Count == 0) continue;
+            if (whole.Array.Dimensions.Count != 2)
+            {
+                if (valueOf(whole, 0) is { } value) entries.Add(KeyValuePair.Create(whole.Field, value));
+                continue;
+            }
+            var row = new List<KeyValuePair<string, DataValue>>();
+            foreach (int column in columns)
+                if (valueOf(whole, column) is { } value)
+                    row.Add(KeyValuePair.Create(whole.Array.Columns.GetValueOrDefault(column)
+                                                ?? column.ToString(CultureInfo.InvariantCulture), value));
+            if (row.Count > 0) entries.Add(KeyValuePair.Create(whole.Field, (DataValue)new DataTable(row)));
+        }
+        return entries;
+    }
+
+    /// <summary>Each entity's snippet (spec §6.6, plan §4.3): its record under <c>[&lt;table&gt;.&lt;id&gt;]</c> and its
+    /// loaded rows under <c>[&lt;scope&gt;.&lt;id&gt;.&lt;table&gt;.&lt;record&gt;]</c>, written as a data file, read back and
+    /// checked against the base mod's shape.</summary>
+    private static void WriteSnippets(ExportInputs inputs, ExportKind kind, ExportReport report)
+    {
+        foreach (ExportEntity entity in kind.Entities)
+        {
+            string id = entity.Id.ToString(CultureInfo.InvariantCulture);
+            var top = new List<KeyValuePair<string, DataValue>>
+            {
+                KeyValuePair.Create(kind.Table.Name, (DataValue)new DataTable([KeyValuePair.Create(id, (DataValue)new DataTable(entity.SnippetRecord))])),
+            };
+            foreach (IGrouping<string, (string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> scope
+                     in entity.SnippetRows.GroupBy(row => row.Scope))
+            {
+                var tables = scope.GroupBy(row => row.Table).Select(rows => KeyValuePair.Create(rows.Key, (DataValue)new DataTable(
+                    rows.Select(row => KeyValuePair.Create(row.Record.ToString(CultureInfo.InvariantCulture),
+                                                           (DataValue)new DataTable(row.Fields))).ToList()))).ToList();
+                top.Add(KeyValuePair.Create(scope.Key, (DataValue)new DataTable(
+                    [KeyValuePair.Create(id, (DataValue)new DataTable(tables))])));
+            }
+            string text = DataFileWriter.Write(new DataTable(top));
+            string origin = $"{kind.Declaration.Id}/{id}.toml";
+            DataReadResult read = DataDocumentReader.Read(text, origin);
+            IReadOnlyList<DataProblem> problems = !read.Ok ? read.Problems
+                : inputs.Shape is { } shape ? DataShapeCheck.Check(shape, read).Problems : [];
+            foreach (DataProblem problem in problems)
+                report.SnippetProblems.Add((kind.Declaration.Id, entity.Id, problem.Describe(origin)));
+            entity.Snippet = text;
         }
     }
 

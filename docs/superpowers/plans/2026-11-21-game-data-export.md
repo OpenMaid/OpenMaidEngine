@@ -5,8 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0, 1, 2 and 3 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2). §4 gets each
-later milestone's section before it starts.
+**Status:** milestones 0 to 4 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3).
+§4 gets each later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
 
@@ -294,6 +294,104 @@ added; milestone 5's script index serves milestone 4 too.
   stages of their own.
 - **The site** builds 3,566 pages; every enemy's unit links to its page.
 
+### 4.3 Milestone 4: the modder data in full
+
+Started 2026-11-21. The user left the choice between this and milestone 5 to me ("Your call, either is fine"). It
+comes first because it builds the script index, which milestone 5 then only publishes, and it finishes the modder
+panel the site shows half of; milestone 3's loaded tables have no cells yet (§4.2).
+
+**What the code says:**
+
+- **The snippet and `script_use` tables exist and stay empty**; nothing writes a data file yet. `DataValue` (a data
+  file's document) is in `Ome.Engine`, and `Ome.Mods/Data` has the reader and the shape check, which `Ome.Export`
+  does not reference.
+- **The operand contracts are already loaded in C#:** `Ome.Script.Abi.OpcodeContracts` gives each operand's access
+  (`read`, `write`, `address` for an array's base, and their string and float forms), and the opcode table each
+  opcode's `waits`. `Ome.Cli` reads an install's scripts as the engine mounts them (the catalog, its appends, loose
+  files); the Python tools' `paths.scripts()` is the legacy map of extracted files.
+- **The auto map knows few lengths:** of its 7,671 entries for Kamidori, 7,348 are a bare `int` or `string`. An
+  unnamed array's length cannot come from it.
+
+**The plan:**
+
+- **`DataFileWriter`** (`Ome.Mods/Data`, spec §6.6) writes a `DataTable` as TOML: a table that holds values gets a
+  header (`[item.12]`), a table of values only under it is one inline table (`price = { 0 = 10, sell = 5 }`), and a
+  table of tables only gets no header of its own. Keys and values are written as `DataValue` prints them. The tests
+  read its output back with `DataDocumentReader` and compare.
+- **A snippet for each entity:** `[<table>.<id>]` with every published field and text field at its current value, a
+  row's columns by name where the registry names them and by number otherwise, and each loaded table's rows as
+  `[<scope>.<id>.<name>.<record>]`. A refused element is left out. The exporter reads each snippet back and checks it
+  against the base mod's shape (`mods/<game>-base/shapes/tables.schema.json`, given by the CLI); a problem is
+  reported and the export exits 1, as a refusal does. `Ome.Export` references `Ome.Mods`.
+- **The loaded tables' cells** go in `cell` as a kind's do, the field written `<name>.<field>` and `idx` the record
+  times the width plus the element, as their references are (§4.2).
+- **The script index** is built in C#, not Python (spec §8.2 names `tools/script_index.py`): `Ome.Cli script-index
+  --game <game>` writes `docs/script-index-<game>.json`, and `--check` compares. For each script the catalog mounts:
+  its fingerprint, the scripts it calls by a constant id and the count of computed calls, the scripts that call it,
+  the named globals it reads, writes or indexes (`address`) with their counts, the patch points whose site is in it,
+  and the waiting opcodes it uses. An operand is counted when its type is a global bank's (3, 4, 5) and its
+  contract says how; a cell counts for the narrowest named global that holds it. A workspace gate runs `--check`.
+  Renaming or naming a global changes the index, so the registry's update trigger gains it.
+- **`script_use`** comes from the same index, built from the install the export reads: for each kind, each script
+  that reads, writes or indexes a global of its table (a loaded table's count for its key kind). The table gains
+  an `addresses` column, since most table access in the scripts is by index, which says neither read nor write.
+- **Unnamed arrays** (spec §6.6) wait for a measurement: an unnamed integer array whose cell `base + id` the
+  table's builders wrote for the kind's entities, found from the boot's writer record. If it finds what a reverse
+  engineer would want and little noise, it goes in; else it goes to the backlog with the numbers.
+- **The site** shows the snippet, the scripts and the loaded tables' cells in the modder panel.
+- **Checks:** the writer's round trip; the exporter's tests (a snippet with columns by name and by number, a loaded
+  table's rows and cells, a shape problem reported, `script_use`); the script index's tests on synthetic scripts;
+  every Kamidori snippet passing the shape; the index's counts spot-checked against the disassembly.
+
+**Built** (2026-11-21), as planned, with these details:
+
+- **`DataFileWriter`:** a table that holds only tables gets no header of its own, and an empty one keeps its header
+  alone, so the reader gives it back. A table of values only is written inline when its table also holds values
+  (`price = {0 = 10, sell = 5}` under `[item.12]`) and as its own section otherwise (`[stage.51.enemy.3]`). The one
+  thing a read-back table may lose is order: its lines come before its sections.
+- **The snippets:** a kind's record has its published fields, its text fields and its picture fields, in the
+  table's order and each once, whole or by the columns the declaration names. A loaded row has the published fields.
+  The snippet is in `ExportEntity.Snippet` and the `snippet` table. A problem is in `ExportReport.SnippetProblems`,
+  named `<kind>/<id>.toml` with its line, and makes the exit code 1, as a refusal does.
+- **The loaded tables' cells:** every field's, with the integers checked as a kind's are; a string field, which a
+  loaded table cannot publish, gives its address and writer and no value.
+- **The script index:** `engine/Ome.Export/ScriptIndex.cs` (`ScriptIndex`, `GlobalNames`) and
+  `Ome.Cli script-index` (`ScriptIndexCommand`), committed as `docs/script-index-kamidori.json` and
+  `docs/script-index-himegari.json`, with the workspace gate `script-index-check` for each game that has one. Beside
+  the plan it holds the preloads (`preload-script-slot`, op `0x06`, which loads a script into a frame slot that later
+  ops run), the counts of the cells no global names, and each script's instruction count. A use is written
+  `[reads, writes, indexes]` on one line. A global whose registry type gives no length (`int[]`, `int[unit][30]`)
+  holds its cells up to the next named global of its bank; `int[1000x50]` and `int[1000][50]` are both 50,000.
+- **`script_use`:** the CLI builds the index from the install it exports and gives it to the exporter
+  (`ExportInputs.ScriptIndex`); a script counts for a kind when it uses a cell of any array of the kind's table or
+  of its loaded tables, whatever name the cell has.
+- **Unnamed arrays:** measured, and not published (§5). The export reports instead, for each kind, the integer cells
+  its builders wrote that no global names (`ExportReport.UnnamedCells`, `ExportInputs.Names`).
+- **The site** (`ome-site`, `feature/kamidori-more-kinds`): the modder panel shows a loaded table's cells by record,
+  with the record's data file header, and the snippet with a line on how to use it. A kind's page lists the scripts
+  that use its tables in modder mode, and has the modder switch; each entity's panel gives their count and links
+  there.
+
+**Results:**
+
+- **The export of the clean install:** 3,536 snippets, every one read back and passed by `kamidori-base`'s shape;
+  604 `script_use` rows over the eleven kinds (400 scripts for units, 84 for items, 20 for stages); 133,617 cells,
+  71,311 of them the stages' enemies. No refusal, exit 0, in about 22 s.
+- **The script index:** Kamidori has 732 scripts and 2,123,406 instructions. 145 of them make 3,945 computed calls,
+  and 398 have no constant caller. The nine patch points are found in five scripts. Of the operands on a global
+  bank, the named ones are 69,018 reads, 188,617 writes and 110,820 indexes; the unnamed ones are 327,579 reads,
+  372,218 writes and 23,873 indexes. Himegari has 520 scripts and 1,522,942 instructions, with eight patch points in
+  three scripts. Each index takes about 2 s.
+- **Spot check:** `ADDEXP.BIN`'s counts equal its disassembly's operands: `current_character_id` 49 reads and 2
+  writes of its 51, `current_battle_slot` 10 and 1 of 11, `current_unit_id` 3 and 1 of 4, `character_levels` 7
+  indexes.
+- **Unnamed arrays:** the auto map (`global-var-map.json`) has 686 array bases, 138 of them integer bases that no
+  global names. Not one cell at such a base plus an entity's id (times its stride) was written by its kind's
+  builders, once cells of named globals are left out. Every integer cell any kind's builders wrote lies in a named
+  global, most in the table's own fields (items: 16,751 cells; units: 21,463). The four globals of unknown length
+  are the units' runtime state, which no builder writes.
+- **The site** builds 3,566 pages with 133,708 links.
+
 ## 5. What changed since the spec
 
 - **The kind ids a site path takes** (spec §5.2's comment): `docs` and `api` are reserved for game ids, the first path
@@ -342,5 +440,22 @@ added; milestone 5's script index serves milestone 4 too.
   goes. The `[[loader]]` entry names the tables of its scope it publishes, with `exists` and `fields` as a kind has
   them, and the export gives them three things spec §7.2 lacks: the `loaded` and `loaded_field` tables, a
   `"<kind>.<name>"` table of rows (`stage.enemy`), and references from the key entity with the field written
-  `<name>.<field>`. A loaded table has no text yet, and its cells, writers and data file snippet wait for milestone 4.
+  `<name>.<field>`. A loaded table has no text yet; its cells and its rows in the data file snippet came with
+  milestone 4 (§4.3).
 - **The spec's `field_floor_entered` is `party_on_field`** (`0x428c`, milestone 3): the registry's name for it.
+- **The script index is built in C#** (milestone 4, §4.3), by `Ome.Cli script-index`, not `tools/script_index.py`
+  (spec §8.2). The engine already reads an install's scripts as it mounts them, appends and loose files included,
+  and loads the operand contracts and each opcode's `waits`. The exporter builds the same index for `script_use`.
+  Its file holds the preloads and the unnamed cells' counts beside what spec §8.2 lists, and it gives how many reads
+  and writes where the spec names the globals read and written.
+- **`script_use` has an `addresses` column** (spec §7.2 lists `reads` and `writes`): most of a table's use in the
+  scripts is through an index, an operand that is the array's base, which is neither. It counts a kind's loaded
+  tables for the kind, and it is per kind, not per record (spec §6.6 says "the scripts that read or write the
+  record"). An operand names a record's cell only when it writes that record directly; the site lists the scripts on
+  the kind's page.
+- **The snippet sets text and picture fields too** (spec §6.6 says the published fields), since those are what the
+  page shows, and a loaded table's rows under their scope. A snippet the base mod's shape refuses makes the exit code
+  1.
+- **The arrays no field names are not published** (spec §6.6 and §13's milestone 4). Measured on Kamidori (§4.3), they
+  would show nothing: every integer cell the builders write lies in a named global. The export reports such cells
+  for each kind instead, so a game that has them shows them, and the site's list can be built when one does.

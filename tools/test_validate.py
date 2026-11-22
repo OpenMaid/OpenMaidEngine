@@ -190,6 +190,7 @@ class GatePlanTests(unittest.TestCase):
         self.assertIn("catalog-corpus-scan", workspace)
         self.assertIn("engine-workspace-tests", workspace)
         self.assertIn("oms-idiomatic-rebuild", workspace)   # Himegari has source modules in oms/himegari
+        self.assertIn("script-index-check", workspace)      # docs/script-index-himegari.json
         self.assertNotIn("godot-selftest", workspace)
         installed = next(
             gate for gate in validate.build_gate_plan("workspace")
@@ -235,6 +236,7 @@ class GatePlanTests(unittest.TestCase):
         self.assertIn("oms-canonical-rebuild", keys)
         self.assertIn("oms-idiomatic-rebuild", keys)   # oms/arterial/adv.oms
         self.assertIn("globals-check", keys)           # vm-map/globals-arterial.toml
+        self.assertNotIn("script-index-check", keys)   # no docs/script-index-arterial.json
         self.assertNotIn("globals-check", {gate.key for gate in unregistered})
         installed = next(gate for gate in plan if gate.key == "engine-workspace-tests")
         self.assertIn("Category=Workspace&Profile=arterial", installed.command)
@@ -256,6 +258,7 @@ class GatePlanTests(unittest.TestCase):
         keys = {gate.key for gate in plan}
         self.assertIn("catalog-corpus-scan", keys)
         self.assertIn("oms-idiomatic-rebuild", keys)   # oms/kamidori/adv.oms
+        self.assertIn("script-index-check", keys)      # docs/script-index-kamidori.json
         self.assertNotIn("globals-build", keys)
         self.assertNotIn("python-test_extract_init", keys)
         self.assertNotIn("vm0-recover", keys)

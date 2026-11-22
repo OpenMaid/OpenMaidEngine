@@ -409,6 +409,20 @@ def build_gate_plan(
                 "vm0-recover", "Python VM RECOVER", _python_tool("vm0.py", "--test"),
                 environment=profile_environment,
             ))
+        # The script index is built from the install and committed (game data export spec §8.2): naming a global or
+        # adding a patch point changes it, so its check runs after the registry's build.
+        if (REPO / "docs" / f"script-index-{context.profile_id}.json").is_file():
+            gates.append(Gate(
+                "script-index-check",
+                f"Committed script index ({context.profile_id})",
+                (
+                    "dotnet", "run", "--project", "engine/Ome.Cli/Ome.Cli.csproj",
+                    "--no-build", "--", "script-index", "--game", context.profile_id,
+                    "--game-root", str(game_root or context.game_root), "--check",
+                ),
+                300,
+                profile_environment,
+            ))
 
     if "runtime" in phases:
         if godot is None or game_root is None:

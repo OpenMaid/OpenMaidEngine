@@ -1,10 +1,13 @@
 using System.Security.Cryptography;
 using Ome.Engine.Hosting;
 using Ome.Engine.Model;
+using Ome.Engine.Modding;
 using Ome.Engine.Natives;
 using Ome.Engine.Vm;
 
 namespace Ome.Export;
+
+using Script = Ome.Engine.Model.Script;
 
 /// <summary>A decoded picture as the export writes it (game data export spec §6.5): its catalog name without the
 /// extension, its PNG bytes and size.</summary>
@@ -47,6 +50,15 @@ public sealed class ExportInputs
     public long BootMaxSteps { get; init; } = 200_000_000;
     public long DescriptionMaxSteps { get; init; } = 5_000_000;
     public long LoaderMaxSteps { get; init; } = 50_000_000;
+    /// <summary>The base mod's shape of its data kind (<c>mods/&lt;game&gt;-base/shapes/tables.schema.json</c>), which
+    /// every snippet is checked against (plan §4.3); null checks only that a snippet reads back.</summary>
+    public Ome.Mods.Data.DataShape? Shape { get; init; }
+    /// <summary>The install's script index (plan §4.3), which <c>script_use</c> counts from; null leaves it empty.
+    /// </summary>
+    public ScriptIndex? ScriptIndex { get; init; }
+    /// <summary>The registry's names for global cells, which the report's unnamed cells are counted by (plan §4.3);
+    /// null counts none.</summary>
+    public GlobalNames? Names { get; init; }
     /// <summary>The <c>build_info</c> rows the caller knows (spec §7.2): the revision, the fingerprint, OME's version.
     /// </summary>
     public IReadOnlyList<(string Key, string Value)> BuildInfo { get; init; } = [];
@@ -85,6 +97,12 @@ public sealed class ExportEntity(int id)
     public List<ExportModderCell> Cells { get; } = [];
     /// <summary>The rows its loaders built (export plan §4.2), by table and record.</summary>
     public List<ExportLoadedRow> Loaded { get; } = [];
+    /// <summary>The snippet's record (spec §6.6, plan §4.3): each published, text and picture field at its value.</summary>
+    internal List<KeyValuePair<string, DataValue>> SnippetRecord { get; } = [];
+    /// <summary>The snippet's loaded rows: scope, table name, record and the row's fields.</summary>
+    internal List<(string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> SnippetRows { get; } = [];
+    /// <summary>A data file that sets the entity's published fields to their values, ready to edit (spec §6.6).</summary>
+    public string? Snippet { get; internal set; }
 }
 
 /// <summary>One record of a loaded table: its published fields' values, in the declaration's order; null for a refused
@@ -105,6 +123,9 @@ public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, 
 {
     /// <summary>The tables loaders publish under this kind's entities (export plan §4.2).</summary>
     public List<ExportLoadedTable> Loaded { get; } = [];
+    /// <summary>The scripts that read, write or index a cell of its table or of its loaded tables, with their counts
+    /// (plan §4.3), by script name.</summary>
+    public List<(string Script, GlobalUse Use)> ScriptUse { get; } = [];
 }
 
 /// <summary>What the export found worth a look (spec §6.1): refused values end the command with exit code 1, the rest
@@ -114,7 +135,14 @@ public sealed class ExportReport
     public string BootHalt { get; internal set; } = "";
     public List<Refusal> Refusals { get; } = [];
     /// <summary>The command's exit code for this report: 1 when a value was refused, else 0.</summary>
-    public int ExitCode => Refusals.Count > 0 ? 1 : 0;
+    public int ExitCode => Refusals.Count > 0 || SnippetProblems.Count > 0 ? 1 : 0;
+    /// <summary>Problems of the snippets (plan §4.3): one that does not read back or that the base mod's shape refuses,
+    /// each with its kind, id and the problem as the link would print it. Like a refusal, it makes the exit code 1.
+    /// </summary>
+    public List<(string Kind, int Id, string Problem)> SnippetProblems { get; } = [];
+    /// <summary>For each kind, the integer cells its builders wrote that no global names (spec §6.6, plan §4.3), by
+    /// address: arrays the registry has yet to name.</summary>
+    public SortedDictionary<string, int[]> UnnamedCells { get; } = new(StringComparer.Ordinal);
     /// <summary>References whose target exists in no kind: (kind, field, target kind) and how many.</summary>
     public SortedDictionary<(string Kind, string Field, string ToKind), int> MissingRefs { get; } = new();
     /// <summary>Fields whose references name a table no kind publishes, and how many such values.</summary>

@@ -114,8 +114,10 @@ public static class ExportWriter
             "CREATE TABLE cell (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "bank TEXT NOT NULL, address INTEGER NOT NULL, raw TEXT, writer TEXT, PRIMARY KEY (kind, id, field, idx))",
             "CREATE TABLE snippet (kind TEXT NOT NULL, id INTEGER NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, id))",
+            // The scripts whose operands read, write or index (take as an array's base) a cell of the kind's table or
+            // of its loaded tables (export plan §4.3), from the install's script index.
             "CREATE TABLE script_use (kind TEXT NOT NULL, script TEXT NOT NULL, reads INTEGER NOT NULL, writes INTEGER NOT NULL, "
-            + "PRIMARY KEY (kind, script))",
+            + "addresses INTEGER NOT NULL, PRIMARY KEY (kind, script))",
             // A loader's published tables (export plan §4.2): each listed, its fields as `field` lists a kind's, and its
             // rows in a table named <kind>.<name>.
             "CREATE TABLE loaded (kind TEXT NOT NULL, name TEXT NOT NULL, table_name TEXT NOT NULL, scope TEXT NOT NULL, "
@@ -219,6 +221,12 @@ public static class ExportWriter
             foreach (ExportModderCell cell in entity.Cells)
                 cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
         }
+        using (var snippets = new Inserter(connection, "snippet", "kind", "id", "text"))
+            foreach (ExportEntity entity in kind.Entities)
+                if (entity.Snippet != null) snippets.Row(id, entity.Id, entity.Snippet);
+        using (var uses = new Inserter(connection, "script_use", "kind", "script", "reads", "writes", "addresses"))
+            foreach ((string script, GlobalUse use) in kind.ScriptUse)
+                uses.Row(id, script, use.Reads, use.Writes, use.Addresses);
         WriteLoaded(connection, kind, kinds);
     }
 
