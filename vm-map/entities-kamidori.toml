@@ -93,3 +93,111 @@ pictures = { icon = "icon_asset_id" }
 name = "description"
 script = { field = "handler_script_id" }        # SKMES or a `$n$SKMES`, as INFO6 calls it
 seed = { current_skill_id = "key" }
+
+# Game data export milestone 2 (plan §4.1): more of the boot's tables.
+
+[[kind]]
+id = "quest"
+table = "quest"
+exists = "name"
+# The 20 仮 placeholders, which no flag ever posts: their first appear flag is 10000.
+skip = { "appear_required_flags.required_flag_1" = 10000 }
+title = "name"
+text = ["description_lines", "requester_name", "category_label"]
+fields = [
+    "sort_key", "difficulty_stars", "deadline_days", "reward_money", "reputation_reward", "reward_item_ids",
+    "reward_item_quantities", "prerequisite_quest_id", "appear_required_flags", "appear_blocking_flags", "clear_flags",
+    "failure_trigger_flags", "failure_result_flag",
+]
+filters = ["difficulty_stars"]
+pictures = { requester = "requester_icon_asset_id" }
+
+[[kind]]
+id = "recipe"
+table = "recipe"
+exists = "output_item_id"
+# A recipe has no name of its own: the game lists it by the item it makes.
+title = "output_item_id"
+text = ["unlock_text"]
+fields = [
+    "output_item_id", "ingredient_item_ids", "ingredient_quantities", "evaluation_reward", "mutation_chance",
+    "mutation_item_id", "mutation_required_flags", "mutation_forbidden_flag", "quest_marker", "required_synthesis_rank",
+    "unlock_craftsman_rank", "unlock_synthesis_rank", "unlock_shop_level", "unlock_workshop_level",
+    "unlock_quarters_level", "unlock_room4_level", "unlock_knowledge", "unlock_sense", "unlock_grown_item_id",
+    "unlock_prerequisite_recipe_id", "unlock_story_flags", "visible_required_flags", "visible_forbidden_flags",
+]
+filters = ["unlock_craftsman_rank", "unlock_synthesis_rank"]
+
+[[kind]]
+id = "condition"
+table = "condition"
+exists = "level_names.level_1"
+# A condition is named by its levels (猛毒1 to 猛毒5); the first names it.
+title = "level_names.level_1"
+text = ["level_names"]
+# icon_id indexes a sheet of status icons (1 to 16), so it is no picture.
+fields = [
+    "susceptibility_group", "immunity_skill_id", "can_affect_bosses", "cleared_by_recover", "icon_id",
+    "duration_turns", "stat_deltas", "critical_rate_delta", "resource_deltas",
+]
+filters = ["susceptibility_group"]
+
+[[kind]]
+id = "stage"
+table = "stage_catalog"
+exists = "name"
+title = "name"
+# The select screen's backdrop (select_background_asset_id) is not published: it is a whole background.
+fields = [
+    "labyrinth_id", "floor_number", "sort_key", "recommended_level", "boss_flag", "event_entry_flag",
+    "prerequisite_labyrinth_id", "prerequisite_floor_number", "required_party_unit_ids", "required_story_flags",
+    "forbidden_story_flags", "objective_money_rewards", "objective_item_rewards", "objective_evaluation_rewards",
+    "objective_bonus_point_rewards",
+]
+filters = ["labyrinth_id", "boss_flag"]
+
+[[kind]]
+id = "dig_table"
+table = "dig_table"
+# Every written table sets its first slot. A dig table has no name, so it has no title.
+exists = "item_ids.0"
+fields = ["roll_thresholds", "item_ids", "required_story_flags", "forbidden_story_flags"]
+
+[[kind]]
+id = "character_profile"
+table = "character_profile"
+exists = "name"
+title = "name"
+text = ["epithet", "race_text", "sex_text"]
+# The portrait (portrait_asset_id, standing art CS…AAA) waits for the user's choice (plan §4.1).
+fields = ["sort_key", "unit_id", "unlock_flags"]
+
+[[kind.description]]
+name = "biography"
+script = { field = "biography_script_id" }      # CIMES, as INFO7 calls it
+seed = { character_profile_selected_id = "key" }
+
+[[kind]]
+id = "objective"
+table = "objective"
+exists = "text"
+title = "text"
+text = ["chapter_label"]
+fields = ["sort_key", "required_flags", "forbidden_flags", "complete_flags", "incomplete_override_flags"]
+
+[[kind.description]]
+name = "message"
+script = { field = "message_script_id" }        # FAMES, as INFO1 calls it
+seed = { current_objective_id = "key" }
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary_entry"
+exists = "name"
+title = "name"
+fields = ["sort_key", "unlock_scenes"]
+
+[[kind.description]]
+name = "explanation"
+script = { field = "message_script_id" }        # VIMES, as INFO8 calls it
+seed = { current_vocabulary_id = "key" }

@@ -5,7 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0 and 1 built (2026-11-21). §4 gets each later milestone's section before it starts.
+**Status:** milestones 0, 1 and 2 built (2026-11-21; milestone 2 in §4.1). §4 gets each later milestone's section
+before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
 
@@ -120,6 +121,96 @@ As spec §13 orders them: more of Kamidori's tables (2), stage enemies (3, once 
 is named), the modder data in full (4), the reference bundle and the script index (5), script relations (6), and
 Kamidori's English (7). Each gets its section here before it starts.
 
+### 4.1 Milestone 2: more of Kamidori's tables
+
+Started 2026-11-21; the user left the choice between this and milestone 5 to me ("Your call, whichever path you
+want"). It comes first because the spec orders it, and milestone 5's script index belongs to milestone 4 first.
+
+**What the code says** (ran: the boot image, `tools/init_image.py`; read: the registry and the disassembly):
+
+- Every array of the eight tables is already a named global of `vm-map/globals-kamidori.toml`, and every one lies above
+  the saved prefix (integers from `0x140d4c`, strings from `0x24b3`; the prefix ends at `0xfd40e` and `0x321`). So
+  no field of them is saved state, and each becomes editable by data files.
+- **Records**, as the boot leaves them:
+  - 187 quests (20 of them `仮` placeholders, whose first appear flag is 10000);
+  - 492 recipes (485 with their own item's id);
+  - 28 conditions;
+  - 209 stages;
+  - 93 dig tables (each with its first slot set);
+  - 43 character profiles;
+  - 126 chapter objectives;
+  - 163 glossary entries.
+
+  These are the counts of `docs/kamidori-data-tables.md`.
+- **The three message scripts are called as ITMES is:**
+  - INFO8 calls `vocabulary_message_script_ids[current_vocabulary_id]` (`INFO8@0xd95`);
+  - INFO7 calls `character_profile_biography_script_ids[character_profile_selected_id]` (`INFO7@0xe9a`);
+  - INFO1 calls `objective_message_script_ids[current_objective_id]` (`INFO1@0xffa`).
+- **Two registry shapes are wider than the data.**
+  - `vocabulary_unlock_scene_ids` was typed `[2000x3]` from the gap to the next array, but the glossary's other
+    arrays have 1,000 entries and its scripts write rows 1 to 193 only.
+  - `condition_stat_deltas` names nine columns of a 45-cell row: the row holds nine stats for each of five levels.
+
+**The plan:**
+
+- **The registry's eight `[[table]]` entries**, `built_by = "boot"`, with `[table.refs]`:
+  - `quest`: its reward items, prerequisite quest and requester icon (`picture`);
+  - `recipe`: its output, ingredients, mutation and grown item, and prerequisite recipe;
+  - `condition`: its immunity skill;
+  - `stage_catalog`: its required party units, reward items and backdrop (`picture`);
+  - `dig_table`: its items;
+  - `character_profile`: its unit and portrait (`picture`);
+  - `objective`;
+  - `glossary_entry`.
+
+  The stage table is not `stage`: the registry's scope has that name, and the lint refuses a table named like a
+  scope. `vocabulary_unlock_scene_ids` becomes `[1000x3]`, and the condition rows get a column name for each level
+  (`level_1_accuracy` … `level_5_movement`, as Himegari's condition table names them). `kamidori-base` goes to 1.2.0; its layout, record map and shape are regenerated.
+- **A kind's title** may also be a reference field, whose target's title the entity takes (a recipe is named by its
+  output item), or be left out (a dig table has no name; the site shows "Dig table 12"). `entities_build.py`, the
+  exporter and the site learn both.
+- **The declarations:** eight kinds, with descriptions for the glossary (VIMES), the profiles (CIMES) and the
+  objectives (FAMES).
+- **Pictures:** the quests' requester icons, after each is looked at. Condition icons are not pictures: their 1 to 16
+  index a sheet. The profiles' portraits are standing art (`CS…AAA`), which the user's choice for units left out, so
+  they wait for the user. The stage backdrops are marked `picture` in the registry and not published.
+- **Saved copies** (the data patches plan's §11.3 method): which of the new fields the game copies into saved state,
+  for `docs/modding/games/kamidori.md`.
+- **Checks:** an export of the clean install with no refusal, the counts above, the Python extractors' values for
+  each kind, the site built from it.
+
+**Built** (2026-11-21), as planned, with these results and changes:
+
+- **The export of the clean install** refuses nothing and finds no missing reference. Its counts are the ones above,
+  less the 20 placeholder quests: 167 quests. Its descriptions are 2,102 runs, six of them empty, with nothing of
+  another script dropped. It writes 2,270 pictures.
+- **Checked against the Python extractors** (`build/games/kamidori/data/*INIT.json`, the base and the three layers),
+  every kind matches. The ids match, and so do:
+  - the names, chapter labels and condition level names;
+  - the quests' reward items, the recipes' outputs and ingredients, and the dig tables' slots;
+  - the stages' labyrinths and floors;
+  - the profiles' biographies and the glossary's explanations, as the extractors decode CIMES and VIMES.
+- **A data file edits each table.** `kamidori-base`'s applier is generic over the record map, so a scratch package
+  setting one cell of each new table (ten values, two of them strings) passes `omp check`. Booted in the port with
+  it, the game holds all ten at the title (`drive.py port`, a `lua` step reading the cells).
+- **Saved copies** (a scan of the installed scripts, then a reading of every script that reads the tables, 30 of
+  them): the game copies four fields into saved state. These are a condition's turns, a stage's labyrinth and
+  floor, and a stage's name, which reaches a save's label. The quests, recipes, conditions, stages and dig tables
+  also decide results that play keeps; a recipe's learned flag reaches the shared profile. The profiles, objectives
+  and glossary are only shown. `docs/modding/games/kamidori.md`, "Data edits", has the sites.
+- **The requester icons**, 101 files for 153 quests, were looked at on one sheet. They are item and place icons and
+  small portraits, none explicit, so the list of explicit pictures stays as it was.
+- **A reference value below 0 is none**, as 0 is. The stages' `required_party_unit_ids` writes -1 for none, which the
+  first run counted as four missing units.
+- **The registry's array types:** the eight tables' arrays were written `int[RxC]`, which `globals_build.py` reads as
+  a flat array, so they are now `int[R][C]` like every other table. The condition resource deltas name their columns
+  too (`level_1_hp` … `level_5_fs`). These renames change `kamidori-base`'s layout. Its version goes to 1.2.0, and
+  nothing released named the old columns.
+- **The glossary's description is named `explanation`**, not `text`, which gave its page a "Text" heading under
+  "Text".
+- **The site** builds every new entity (3,566 pages, 3,536 entities). It names a recipe by its item and shows the
+  item's icon; it shows a quest's requester icon in lists.
+
 Found by milestone 1 for a later one: `manifest.json` keeps the command line as given, local paths included
 (`--output`, `--game-root`). Milestone 5, which publishes a bundle, decides what of the manifest goes in it.
 
@@ -136,6 +227,12 @@ Found by milestone 1 for a later one: `manifest.json` keeps the command line as 
 - **Pictures beyond the spec's examples:** the item's furniture sprite (`furniture`, SF0301 to SF0540). The costume
   graphics (`item.costume_graphic_asset_ids`) are not published: they include standing and room art, which the
   user's choice for units left out.
+- **A kind's title may be a reference or be left out** (milestone 2, §4.1). Spec §5.2 has a string field only. A
+  reference title is a published field, not text; the entity takes its target's title, and the lint refuses one
+  whose target's table no kind shows. With no title, the site names an entity by its kind and id. The export's
+  `kind.title_field` holds the field, or null.
+- **A negative reference value is none** (milestone 2), beside spec §5.3's 0: no record has a negative id, and
+  Kamidori writes -1 for none.
 - **References are written only for published fields** (an exporter rule for milestone 1; spec §5.3 does not say), so
   a reference never shows a value the kind does not publish.
 - **What milestone 1 built differently** (2026-11-21):
@@ -148,8 +245,7 @@ Found by milestone 1 for a later one: `manifest.json` keeps the command line as 
     use as the record map does.
   - **The `cell` table is sparse:** it holds the cells a script wrote or that are not default. The `field` table
     adds `ref_table`, `bank`, `address`, `width` and `column_index`, so the site can find any cell.
-  - **A description is its pieces joined line by line** with `
-`, the empty lines at its end dropped. Ruby is not
+  - **A description is its pieces joined line by line** with `\n`, the empty lines at its end dropped. Ruby is not
     kept yet (the base text only); the pieces of another script are dropped and counted.
   - **The export's own table names are reserved** as kind ids, beside `tooltips`, in the lint and the exporter.
   - **The fourth battle column's picture is `battle_face`** (§3): it is a close-up face, not battle art.

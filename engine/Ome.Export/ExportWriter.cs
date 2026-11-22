@@ -237,7 +237,8 @@ public static class ExportWriter
                 : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
             string[] pictureNames = declaration.Pictures.Where(picture => picture.Field == field.Name)
                 .Select(picture => picture.Name).ToArray();
-            bool text = field.Name == declaration.Title || declaration.Text.Contains(field.Name);
+            // A title that is a reference takes its target's title (game data export plan §4.1); it is no text field.
+            bool text = field.IsString && (field.Name == declaration.Title || declaration.Text.Contains(field.Name));
             insert.Row(declaration.Id, field.Name, field.TypeName, declaration.Fields.Contains(field.Name) ? 1 : 0, text ? 1 : 0,
                        declaration.Filters.Contains(field.Name) ? 1 : 0, refTable, refKind,
                        pictureNames.Length == 0 ? null : string.Join(",", pictureNames), BankName(field.Array.Bank),

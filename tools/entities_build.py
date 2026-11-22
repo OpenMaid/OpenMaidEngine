@@ -239,6 +239,15 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
     ids: dict[str, str] = {}
     for kind in kinds:
         lint_kind(game, kind, source, text_scripts, ids, errors)
+    # A reference title takes its target's title, so a kind must show the target's table.
+    declared = {kind.get("table") for kind in kinds if isinstance(kind, dict)}
+    for kind in kinds:
+        table = game.tables.get(kind.get("table")) if isinstance(kind, dict) else None
+        title = kind.get("title") if table else None
+        target = (table.get("refs") or {}).get(title.partition(".")[0]) if isinstance(title, str) else None
+        if target and target != globals_build.REF_PICTURE and target not in declared:
+            errors.append(f"{source}: kind {kind.get('id')!r}: title {title} refers to table {target}, which no kind "
+                          f"shows, so it has no title to take")
 
     relation_ids: set[str] = set()
     for loader in data.get("loader", []):
@@ -289,8 +298,23 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                           f"the player's progress rather than the game's data, so no kind publishes it")
 
     one(kind.get("exists"), "exists", None)
-    title = kind.get("title")
-    published(title, "title", one(title, "title", "string"))
+    # The title (game data export plan §4.1): a string field, a reference field whose target's title the entity takes
+    # (a recipe is named by the item it makes), or none, and the site names an entity by its kind and id.
+    if "title" in kind:
+        title = kind["title"]
+        field = one(title, "title", None)
+        if field is not None and field.kind == "integer":
+            base = str(title).partition(".")[0]
+            target = (table.get("refs") or {}).get(base)
+            if target is None or target == globals_build.REF_PICTURE:
+                errors.append(f"{where}: title {title} is an integer field the registry's [table.refs] does not mark as "
+                              f"referring to a table; a title is a string field or a reference")
+            elif base not in kind.get("fields", []):
+                errors.append(f"{where}: title {title} is a reference, which the kind must publish: list {base} under "
+                              f"fields")
+        elif field is not None and field.kind != "string":
+            errors.append(f"{where}: title {title} must be a string field or a reference")
+        published(title, "title", field)
     check_skip(game, table, kind.get("skip"), where, errors)
 
     text = kind.get("text", [])
@@ -417,7 +441,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str) -> str
                    "text_scripts": export.get("text_scripts", []),
                    "explicit_pictures": export.get("explicit_pictures", [])},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
-                   "skip": k.get("skip", {}), "title": k["title"], "text": k.get("text", []),
+                   "skip": k.get("skip", {}), "title": k.get("title"), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
                    "descriptions": k.get("description", [])} for k in data.get("kind", [])],
         "loaders": [{"scope": l["scope"], "keys": l["keys"], "skip": l.get("skip", {}), "script": l["script"],

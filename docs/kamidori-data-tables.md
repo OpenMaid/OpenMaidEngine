@@ -59,8 +59,10 @@ All commands run from `age-reimpl/` with `py -3.11 -X utf8` and `--game kamidori
    boot order above and records each script's global delta. This is the ground truth that static extraction
    is checked against; `init_image.merged(TABLE)` gives a table's final cells.
 7. `global_map.py` then `globals_build.py --build` → auto shape map merged under `globals-kamidori.toml`.
-8. The registry's `[[table]]` entries (`unit`, `item`, `skill`, `stage_enemy`) group these parallel arrays as
-   Open Maid Script tables ([design spec](superpowers/specs/2026-10-06-open-maid-script-design.md) §5.3).
+8. The registry's `[[table]]` entries group these parallel arrays as records: `unit`, `item`, `skill` and
+   `stage_enemy`, and since 2026-11-21 `quest` (QUINIT), `recipe` (ALINIT), `condition` (ILINIT), `stage_catalog`
+   (STINIT2; `stage` is the registry's scope), `dig_table` (DIINIT), `character_profile` (CIINIT), `objective`
+   (FAINIT) and `glossary_entry` (VIINIT). They are Open Maid Script tables ([design spec](superpowers/specs/2026-10-06-open-maid-script-design.md) §5.3).
    `Ome.Cli oms-decompile --game kamidori --script EBINIT.BIN` then prints one
    `with unit[0x2f9] { .stats.max_hp = 0xc … }` block per unit, and a mod edits a unit the same way
    (`oms/examples/kamidori-gate6/OMSAUTO.oms`).

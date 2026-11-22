@@ -123,8 +123,9 @@ Speakers come from `unit_speaker_names` (`enum speaker` in `oms/kamidori/adv.oms
 
 ## Data edits
 
-A data file ([../data-files.md](../data-files.md)) changes the unit, item and skill tables, and each floor's
-enemies, with no Lua and no script. `kamidori-base` accepts the kind `kamidori.tables`. It applies each file's boot
+A data file ([../data-files.md](../data-files.md)) changes the unit, item and skill tables, the quests, recipes,
+conditions, stage list, dig tables, character profiles, objectives and glossary, and each floor's enemies, with no
+Lua and no script. `kamidori-base` accepts the kind `kamidori.tables`. It applies each file's boot
 tables at `kamidori.data.layered`, after every layer has written them and before INIT2's own work reads them, and a
 stage's part each time the floor's loaders have run: at `kamidori.stage.loaded` for the floor being played, and at
 `kamidori.stage.previewed` for the stage list's preview. This one changes the enemy unit 761
@@ -139,8 +140,25 @@ drop_chance.drop_1 = 100   # 30
 ```
 
 - **Tables and fields** are those of `../../global-reference-kamidori.md`, "Tables", by the names in its `field`
-  column: `unit` (records 0 to 999), `item` (0 to 1999) and `skill` (0 to 999). A field with a row takes its columns
-  by the names the reference gives (`stats.max_hp`), and by number only where a column has no name.
+  column. Each table has room for the records below, by id, and the game writes some of them:
+
+  | Table | What it holds | Records | The game writes |
+  |---|---|---|---|
+  | `unit` | units: characters and enemies | 0 to 999 | 445 |
+  | `item` | items | 0 to 1999 | 1,318 |
+  | `skill` | skills | 0 to 999 | 452 |
+  | `quest` | the quest board (QUINIT) | 0 to 1999 | 187, 20 of them `仮` placeholders |
+  | `recipe` | alchemy recipes (ALINIT) | 0 to 1999 | 492 |
+  | `condition` | conditions such as poison, five levels each (ILINIT) | 0 to 29 | 28 |
+  | `stage_catalog` | the stage list: names, gates, rewards (STINIT2) | 0 to 999 | 209 |
+  | `dig_table` | what a dig point yields (DIINIT) | 0 to 199 | 93 |
+  | `character_profile` | the character profiles (CIINIT) | 0 to 199 | 43 |
+  | `objective` | the chapter objectives (FAINIT) | 0 to 1999 | 126 |
+  | `glossary_entry` | the glossary (VIINIT) | 0 to 999 | 163 |
+
+  The stage list's table is `stage_catalog`, since `stage` names a floor's enemies (below). A field with a row takes
+  its columns by the names the reference gives (`stats.max_hp`, `level_names.level_1`), and by number only where a
+  column has no name.
 - **Saved fields are refused:** `item.inventory_count`, `item.growth_exp`, `item.growth_level`,
   `item.costume_enhancement_grid` and `item.costume_gem_sockets`. They lie below the saved prefix, so a load would
   bring the saved value back over the edit.
@@ -234,6 +252,35 @@ drop_chance.drop_1 = 100   # 30
   ADDEXP adds through `shared_scratch_value`), and the levels and stats that follow are saved; and
   `item.growth_mastery_reward_items` names the item added to the inventory when an item's growth is mastered
   (`CHECKIMPROVE@0x139`, through ADDITEM).
+- **The quest, recipe, condition, stage list and dig tables** are read where the game uses them, with four copies
+  into saved state:
+  - `condition.duration_turns` gives a condition's turns when it is applied (`unit_condition_remaining_turns`,
+    `ADDILLSUB@0x193` and `0x1b1`), so a save made on a floor keeps the turns it gave. `condition.stat_deltas` and
+    `critical_rate_delta` are worked into the battle units' stats too, but CALCREVISE rebuilds those from scratch
+    each time, so an edit holds from the next recompute.
+  - `stage_catalog.labyrinth_id` and `floor_number` become `current_labyrinth_id` and `current_floor_no` when a
+    floor is entered (`FIELD@0x7`, `ORGANIZE@0xa2e`), and the labyrinth becomes `current_world_area_id` when an
+    expedition starts (`FIELD@0x265`).
+  - `stage_catalog.name` becomes the location title (`GS[0x278]`, `FIELD@0x52e`), which a save copies into its
+    slot's label (`SAVE@0xd53`): the save list shows the name the stage had when the save was made.
+
+  Play keeps its results here as well:
+  - A quest's appear, clear and failure flags, prerequisite and deadline set its state bits (CHECKCONTRACT), and its
+    `failure_result_flag` a story flag. Its rewards are paid once, when it is settled (RECEIPT): reputation into
+    `player_evaluation_points`, `reward_money` into `player_money`, and its items into the inventory.
+  - A recipe's unlock fields decide when it is learned (`CHECKRECIPE@0x1da`). The learned flags are never cleared,
+    and `alchemy_recipe_ever_learned_flags` is written to the shared profile too, which outlives every save, so a
+    recipe an edit made learnable stays learned without the mod. Crafting takes the ingredients and their
+    quantities and adds the output and mutation items (`ALCHEMY@0xaad`), with synthesis experience and the
+    `evaluation_reward` (`ALCHEMY@0xba6`).
+  - A condition's susceptibility group, immunity skill and `can_affect_bosses` decide whether it takes hold, and its
+    `resource_deltas` change HP, SP and FS each turn (`FIELD@0x9775`).
+  - A stage's flags, prerequisite and labyrinth decide when it is open (`stage_availability_flags`,
+    `CHECKSTAGE@0x1d`, whose bit 0, once set, is never cleared), and its objective rewards are paid at the clear
+    (`STAGECLEAR@0xcf9`).
+  - A dig table decides what a dig point yields, added to the inventory after the floor (`REWARD@0x944`).
+
+  The character profiles, objectives and glossary are only shown: nothing of them is copied.
 - **Every other field** is read where the game uses it, so an edit reaches a save made before it. These lists come
   from a scan of the installed scripts that follows each field's value through a script's locals and block copies
   into a cell the save keeps, and into a global it leaves for a script it calls or takes back from one, and from

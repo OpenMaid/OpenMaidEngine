@@ -182,6 +182,174 @@ The current stage's enemy slots. STINIT, then each append's $n$STINIT, the stage
 | required_story_flags | stage_enemy_required_story_flags | `0x140b58` | `int[30][7]` | |
 | forbidden_story_flags | stage_enemy_forbidden_story_flags | `0x140c2a` | `int[30][5]` | |
 
+### quest[2000]
+
+Built by: `boot`.
+
+QUINIT quest records keyed by quest id: 1 to 999 journal quests, 1000 to 1999 reward notices. A quest exists when it has a name; the base and its layers write 187, of which 20 are 仮 placeholders whose first appear flag is 10000. A quest's progress is not here: CHECKCONTRACT posts it and RECEIPT pays its rewards.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | quest_names | `GS 0x625f` | `string[2000]` | |
+| description_lines | quest_description_lines | `GS 0x6a2f` | `string[2000][9]` | |
+| requester_name | quest_requester_names | `GS 0xb07f` | `string[2000]` | |
+| category_label | quest_category_labels | `GS 0xb84f` | `string[2000]` | |
+| requester_icon_asset_id | quest_requester_icon_asset_ids | `0x3b6e92` | `int[2000]` | pictures |
+| sort_key | quest_journal_sort_keys | `0x3b7662` | `int[2000]` | |
+| deadline_days | quest_deadline_days | `0x3b7e32` | `int[2000]` | |
+| prerequisite_quest_id | quest_prerequisite_quest_ids | `0x3b8602` | `int[2000]` | `quest` |
+| appear_required_flags | quest_appear_required_flag_ids | `0x3b8dd2` | `int[2000][3]` | |
+| appear_blocking_flags | quest_appear_blocking_flag_ids | `0x3ba542` | `int[2000][3]` | |
+| clear_flags | quest_clear_flag_ids | `0x3bbcb2` | `int[2000][3]` | |
+| failure_trigger_flags | quest_failure_trigger_flag_ids | `0x3bd422` | `int[2000][3]` | |
+| failure_result_flag | quest_failure_result_flag_ids | `0x3beb92` | `int[2000]` | |
+| difficulty_stars | quest_difficulty_stars | `0x3bf362` | `int[2000]` | |
+| reputation_reward | quest_reputation_rewards | `0x3bfb32` | `int[2000][2]` | |
+| reward_money | quest_reward_money | `0x3c0ad2` | `int[2000]` | |
+| reward_item_ids | quest_reward_item_ids | `0x3c12a2` | `int[2000][4]` | `item` |
+| reward_item_quantities | quest_reward_item_quantities | `0x3c31e2` | `int[2000][4]` | |
+
+### recipe[2000]
+
+Built by: `boot`.
+
+ALINIT alchemy recipes keyed by recipe id, mostly the id of the item it makes. A recipe exists when it names an output item; the base and its layers write 492. CHECKRECIPE learns a recipe once its unlock gates pass, and ALCHEMY lists and crafts it.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| output_item_id | alchemy_recipe_output_item_ids | `0x38c8d9` | `int[2000]` | `item` |
+| quest_marker | alchemy_recipe_quest_markers | `0x38d0a9` | `int[2000]` | |
+| required_synthesis_rank | alchemy_recipe_required_synthesis_ranks | `0x38d879` | `int[2000]` | |
+| visible_required_flags | alchemy_recipe_visible_required_flags | `0x38e049` | `int[2000][5]` | |
+| visible_forbidden_flags | alchemy_recipe_visible_forbidden_flags | `0x390759` | `int[2000][5]` | |
+| ingredient_item_ids | alchemy_recipe_ingredient_item_ids | `0x393639` | `int[2000][4]` | `item` |
+| ingredient_quantities | alchemy_recipe_ingredient_quantities | `0x395579` | `int[2000][4]` | |
+| mutation_chance | alchemy_recipe_mutation_chances | `0x3974b9` | `int[2000]` | |
+| mutation_required_flags | alchemy_recipe_mutation_required_flags | `0x397c89` | `int[2000][2]` | |
+| mutation_forbidden_flag | alchemy_recipe_mutation_forbidden_flags | `0x398c29` | `int[2000]` | |
+| mutation_item_id | alchemy_recipe_mutation_item_ids | `0x3993f9` | `int[2000]` | `item` |
+| unlock_craftsman_rank | alchemy_recipe_unlock_craftsman_ranks | `0x399bc9` | `int[2000]` | |
+| unlock_synthesis_rank | alchemy_recipe_unlock_synthesis_ranks | `0x39a399` | `int[2000]` | |
+| unlock_grown_item_id | alchemy_recipe_unlock_grown_item_ids | `0x39ab69` | `int[2000]` | `item` |
+| unlock_prerequisite_recipe_id | alchemy_recipe_unlock_prerequisite_recipes | `0x39b339` | `int[2000]` | `recipe` |
+| unlock_shop_level | alchemy_recipe_unlock_shop_levels | `0x39bb09` | `int[2000]` | |
+| unlock_workshop_level | alchemy_recipe_unlock_workshop_levels | `0x39c2d9` | `int[2000]` | |
+| unlock_quarters_level | alchemy_recipe_unlock_quarters_levels | `0x39caa9` | `int[2000]` | |
+| unlock_room4_level | alchemy_recipe_unlock_room4_levels | `0x39d279` | `int[2000]` | |
+| unlock_knowledge | alchemy_recipe_unlock_knowledge | `0x39da49` | `int[2000]` | |
+| unlock_sense | alchemy_recipe_unlock_sense | `0x39e219` | `int[2000]` | |
+| unlock_story_flags | alchemy_recipe_unlock_story_flags | `0x39e9e9` | `int[2000][3]` | |
+| evaluation_reward | alchemy_recipe_evaluation_rewards | `0x3a0159` | `int[2000]` | |
+| unlock_text | alchemy_recipe_unlock_texts | `GS 0x51c8` | `string[2000]` | |
+
+### condition[30]
+
+Built by: `boot`.
+
+ILINIT conditions keyed by condition id, 1 to 28 written, each with five levels. A unit's level of each is battle state (unit_condition_levels); an item's and a skill's condition columns are indexed by these ids.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| level_names | condition_level_names | `GS 0x6168` | `string[30][5]` | |
+| susceptibility_group | condition_susceptibility_group | `0x3b223a` | `int[30]` | |
+| immunity_skill_id | condition_immunity_skill_id | `0x3b2258` | `int[30]` | `skill` |
+| can_affect_bosses | condition_can_affect_bosses | `0x3b2276` | `int[30]` | |
+| cleared_by_recover | condition_cleared_by_recover | `0x3b2294` | `int[30]` | |
+| icon_id | condition_icon_ids | `0x3b22b2` | `int[30]` | |
+| duration_turns | condition_duration_turns_by_level | `0x3b22d0` | `int[30][5]` | |
+| stat_deltas | condition_stat_deltas | `0x3b2366` | `int[30][45]` | |
+| critical_rate_delta | condition_critical_rate_deltas | `0x3b28ac` | `int[30]` | |
+| resource_deltas | condition_resource_deltas | `0x3b28ca` | `int[30][15]` | |
+
+### stage_catalog[1000]
+
+Built by: `boot`.
+
+STINIT2's stage catalog keyed by stage id, the id current_stage_id and the stage scope take; 209 named stages. Not named stage, which is the scope of the stage loaders' tables. SELSTAGE lists the stages; AIM, FIELD, SELSTAGE and STAGECLEAR read the objectives' rewards.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | stage_display_names | `GS 0x24b3` | `string[1000]` | |
+| select_background_asset_id | stage_select_background_asset_ids | `0x140d4c` | `int[1000]` | pictures |
+| labyrinth_id | stage_labyrinth_ids | `0x141134` | `int[1000]` | |
+| floor_number | stage_floor_numbers | `0x14151c` | `int[1000]` | |
+| required_party_unit_ids | stage_required_party_unit_ids | `0x141904` | `int[1000][10]` | `unit` |
+| prerequisite_labyrinth_id | stage_prerequisite_labyrinth_ids | `0x144014` | `int[1000]` | |
+| prerequisite_floor_number | stage_prerequisite_floor_numbers | `0x1443fc` | `int[1000]` | |
+| required_story_flags | stage_required_story_flag_ids | `0x1447e4` | `int[1000][7]` | |
+| forbidden_story_flags | stage_forbidden_story_flag_ids | `0x14633c` | `int[1000][7]` | |
+| recommended_level | stage_recommended_levels | `0x147e94` | `int[1000]` | |
+| objective_money_rewards | stage_objective_money_rewards | `0x14827c` | `int[1000][4]` | |
+| objective_item_rewards | stage_objective_item_rewards | `0x14921c` | `int[1000][4]` | `item` |
+| objective_evaluation_rewards | stage_objective_evaluation_rewards | `0x14a1bc` | `int[1000][4]` | |
+| objective_bonus_point_rewards | stage_objective_bonus_point_rewards | `0x14b15c` | `int[1000][4]` | |
+| boss_flag | stage_boss_flags | `0x14c4e4` | `int[1000]` | |
+| event_entry_flag | stage_event_entry_flags | `0x14c8cc` | `int[1000]` | |
+| sort_key | stage_select_sort_keys | `0x14ccb4` | `int[1000]` | |
+
+### dig_table[200]
+
+Built by: `boot`.
+
+DIINIT's gathering drop tables, ten slots each: table (object type - 0x20) * 100 + payload, so 採取 points take 0 to 99 and 発掘 points 100 to 199. DIG rolls once and takes the first enabled slot whose threshold is above the roll; 93 tables are written.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| roll_thresholds | dig_table_roll_thresholds | `0x2a7b66` | `int[200][10]` | |
+| item_ids | dig_table_item_ids | `0x2a8336` | `int[200][10]` | `item` |
+| required_story_flags | dig_table_required_story_flags | `0x2a8b06` | `int[200][10]` | |
+| forbidden_story_flags | dig_table_forbidden_story_flags | `0x2a92d6` | `int[200][10]` | |
+
+### character_profile[200]
+
+Built by: `boot`.
+
+CIINIT's character profiles keyed by profile id (the base 1 to 34, $1$ 51 to 59), which INFO7 lists; 43 are written. A profile's biography is the CIMES script its biography_script_id names.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | character_profile_names | `GS 0xd0eb` | `string[200]` | |
+| race_text | character_profile_race_texts | `GS 0xd1b3` | `string[200]` | |
+| sex_text | character_profile_sex_texts | `GS 0xd27b` | `string[200]` | |
+| epithet | character_profile_epithets | `GS 0xd343` | `string[200]` | |
+| sort_key | character_profile_sort_keys | `0x3d19d6` | `int[200]` | |
+| unit_id | character_profile_unit_ids | `0x3d1a9e` | `int[200]` | `unit` |
+| unlock_flags | character_profile_unlock_flag_ids | `0x3d1b66` | `int[200][3]` | |
+| portrait_x_offset | character_profile_portrait_x_offsets | `0x3d1dbe` | `int[200]` | |
+| portrait_y_offset | character_profile_portrait_y_offsets | `0x3d1e86` | `int[200]` | |
+| portrait_asset_id | character_profile_portrait_asset_ids | `0x3d1f4e` | `int[200]` | pictures |
+| biography_script_id | character_profile_biography_script_ids | `0x3d2016` | `int[200]` | |
+
+### objective[2000]
+
+Built by: `boot`.
+
+FAINIT's chapter objectives keyed by objective id, which INFO1 lists; 126 have text. The current one is current_objective_id, and its message is the FAMES script message_script_id names.
+
+| field | global | address | type |
+|---|---|---|---|
+| chapter_label | objective_chapter_labels | `GS 0xc14b` | `string[2000]` |
+| text | objective_texts | `GS 0xc91b` | `string[2000]` |
+| sort_key | objective_sort_keys | `0x3cac75` | `int[2000]` |
+| required_flags | objective_required_flag_ids | `0x3cb445` | `int[2000][3]` |
+| forbidden_flags | objective_forbidden_flag_ids | `0x3ccbb5` | `int[2000][3]` |
+| complete_flags | objective_complete_flag_ids | `0x3ce325` | `int[2000][3]` |
+| incomplete_override_flags | objective_incomplete_override_flag_ids | `0x3cfa95` | `int[2000][3]` |
+| message_script_id | objective_message_script_ids | `0x3d1205` | `int[2000]` |
+
+### glossary_entry[1000]
+
+Built by: `boot`.
+
+VIINIT's glossary keyed by entry id, which INFO8 lists; 163 are written. An entry's text is the VIMES script message_script_id names.
+
+| field | global | address | type |
+|---|---|---|---|
+| name | vocabulary_names | `GS 0xd40b` | `string[1000]` |
+| sort_key | vocabulary_sort_keys | `0x3d20df` | `int[1000]` |
+| unlock_scenes | vocabulary_unlock_scene_ids | `0x3d24c7` | `int[1000][3]` |
+| message_script_id | vocabulary_message_script_ids | `0x3d3c37` | `int[1000]` |
+
 ### Scope stage
 
 Ids 1 to 999. A data file reaches each table below as `stage.<id>.<name>.<record>` and not by its own name (data patches spec §6.2).
@@ -651,10 +819,10 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x3b2276` | condition_can_affect_bosses | high | investigation | CALCILL@0x00019: a zero value with a nonzero boss flag 0x2b66ac on the target unit skips the infliction (same as Himegari). |
 | `0x3b2294` | condition_cleared_by_recover | high | investigation | RECOVER@0x00071 resets only flagged conditions to the equipment baseline. EQUIP@0x0014e zeroes the delta for flagged conditions when re-equipping. |
 | `0x3b22b2` | condition_icon_ids | high | investigation | DRAWCHSTATE@0x00164 and STATUS@0x01bed choose the status icon by it. |
-| `0x3b22d0` | condition_duration_turns_by_level | high | investigation | ADDILLSUB@0x00164 sets the remaining turns 0x61320 to max(current, duration[level]). For negative deltas it overwrites directly. |
-| `0x3b2366` | condition_stat_deltas | high | investigation | CALCREVISE@0x00648 adds [cond][(level-1)*9+k] into unit stats 0x54062 columns 0..8. Values fit the names: curse lowers everything, 命中1..5 add accuracy 4..20 to column 0, and 歩低 lowers movement (column 8). Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=agility, 7=luck, 8=movement. |
+| `0x3b22d0` | condition_duration_turns_by_level | high | investigation | ADDILLSUB@0x00164 sets the remaining turns 0x61320 to max(current, duration[level]). For negative deltas it overwrites directly. Columns: 0=level_1_turns, 1=level_2_turns, 2=level_3_turns, 3=level_4_turns, 4=level_5_turns. |
+| `0x3b2366` | condition_stat_deltas | high | investigation | CALCREVISE@0x00648 adds [cond][(level-1)*9+k] into unit stats 0x54062 columns 0..8. Values fit the names: curse lowers everything, 命中1..5 add accuracy 4..20 to column 0, and 歩低 lowers movement (column 8). Columns: 0=level_1_accuracy, 1=level_1_evasion, 2=level_1_physical_attack, 3=level_1_physical_defense, 4=level_1_magic_attack, 5=level_1_magic_defense, 6=level_1_agility, 7=level_1_luck, 8=level_1_movement, 9=level_2_accuracy, 10=level_2_evasion, 11=level_2_physical_attack, 12=level_2_physical_defense, 13=level_2_magic_attack, 14=level_2_magic_defense, 15=level_2_agility, 16=level_2_luck, 17=level_2_movement, 18=level_3_accuracy, 19=level_3_evasion, 20=level_3_physical_attack, 21=level_3_physical_defense, 22=level_3_magic_attack, 23=level_3_magic_defense, 24=level_3_agility, 25=level_3_luck, 26=level_3_movement, 27=level_4_accuracy, 28=level_4_evasion, 29=level_4_physical_attack, 30=level_4_physical_defense, 31=level_4_magic_attack, 32=level_4_magic_defense, 33=level_4_agility, 34=level_4_luck, 35=level_4_movement, 36=level_5_accuracy, 37=level_5_evasion, 38=level_5_physical_attack, 39=level_5_physical_defense, 40=level_5_magic_attack, 41=level_5_magic_defense, 42=level_5_agility, 43=level_5_luck, 44=level_5_movement. |
 | `0x3b28ac` | condition_critical_rate_deltas | high | investigation | CALCREVISE@0x0069a adds it into unit critical 0x54670. Values: curse -25, exaltation +10, 痛打 +10. |
-| `0x3b28ca` | condition_resource_deltas | med | investigation | Read by CALCDMG@0x01481 (drain on hit) and FIELD@0x09775 (per-turn ticks). Regeneration 14..16 give +1..5. |
+| `0x3b28ca` | condition_resource_deltas | med | investigation | Read by CALCDMG@0x01481 (drain on hit) and FIELD@0x09775 (per-turn ticks). Regeneration 14..16 give +1..5. Columns: 0=level_1_hp, 1=level_1_sp, 2=level_1_fs, 3=level_2_hp, 4=level_2_sp, 5=level_2_fs, 6=level_3_hp, 7=level_3_sp, 8=level_3_fs, 9=level_4_hp, 10=level_4_sp, 11=level_4_fs, 12=level_5_hp, 13=level_5_sp, 14=level_5_fs. |
 | `0x3b2a8c` | affinity_damage_percent_by_level | high | investigation | CALCBTPARAM@0x007a3 multiplies attack power by [defender affinity level for the attack element]; a negative value (吸収) heals. BTRTN@0x0012e, SELACT and the RTN_M05x scripts use it to estimate damage. |
 | `0x3b2a98` | species_condition_susceptibility_percent | high | investigation | ADDILLSUB@0x0001a and CALCILL@0x00090 index [species 0x2b5edc][condition_susceptibility_group]. AFINIT fills rows 1..16 with copy-inline-int-array. |
 | `0x3b2b60` | weapon_rank_exp_thresholds | high | investigation | ADDEXP@0x004c8 raises character weapon rank 0x7e1a1 (max 6) while weapon EXP 0x7e205 reaches the next threshold. FELLOWSTATUS displays it. item_rank is compared against this rank. |
@@ -726,7 +894,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x3d1f4e` | character_profile_portrait_asset_ids | high | investigation | INFO7@0x00d7d set-texture, positioned with the x/y offsets below. |
 | `0x3d2016` | character_profile_biography_script_ids | high | investigation | INFO7@0x00e9a call-script with selector 0x3d19d5 = profile id; CIMES dispatches on 0x3d19d5 and prints the biography. |
 | `0x3d20df` | vocabulary_sort_keys | high | investigation | INFO8@0x6e2 sort-indices-by-key-sum over 200 ids. |
-| `0x3d24c7` | vocabulary_unlock_scene_ids | high | investigation | INFO8@0x73f: column 0 zero -> listed; otherwise listed if ANY nonzero v has viewed_scene_flags[v-1] set (loaded from the shared profile at INFO8@0x7b6). Columns: 0=unlock_scene_plus_one_1, 1=unlock_scene_plus_one_2, 2=unlock_scene_plus_one_3. |
+| `0x3d24c7` | vocabulary_unlock_scene_ids | high | investigation | INFO8@0x73f: column 0 zero -> listed; otherwise listed if ANY nonzero v has viewed_scene_flags[v-1] set (loaded from the shared profile at INFO8@0x7b6). 1,000 rows, as the glossary's other arrays: VIINIT and its layers write rows 1 to 193, and no script writes the 3,000 cells between its end and vocabulary_message_script_ids (the boot image, 2026-11-21). Columns: 0=unlock_scene_plus_one_1, 1=unlock_scene_plus_one_2, 2=unlock_scene_plus_one_3. |
 | `0x3d3c37` | vocabulary_message_script_ids | high | investigation | INFO8@0xd95 call-script's it to render the description of current_vocabulary_id. |
 | `0x3d4180` | scjump_handler_chain | high | investigation | INIT2@0x54 seeds slot0 with SCJUMP; $1$AUTORUN@0x54 appends $1$SCJUMP at slot1; $2$/$3$AUTORUN shift the chain right and insert at slot0. CHECKREWARD@0x2cd, ALLMAP, FIELD, SELSTAGE, STUDIO, SYSTEM4, TOWN call each nonzero entry while scjump_chain_pending==1. One of the 18 per-table hook chains at 0x3d40c0 + 0x20*k. |
 | `0x3d4240` | event_cg_variant_handler_chain | high | investigation | INIT2@0x72 / $1$AUTORUN@0x72 register EVINIT handlers; 110 SC scripts and CGMODE@0x1133 call them. EVINIT rules test (G[0x64201+k]&2) && G[0x642c9+k]==form for party characters k=1..4 (form ids 101-102, 111-117, 131-137, 151-157); the last matching rule wins. |
@@ -952,7 +1120,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `GS 0x51c8` | alchemy_recipe_unlock_texts | high | investigation | INFO4@0x1069 draws the string right-aligned under the recipe's rank requirements. Generic name-mode extraction mistook these hints for record names. |
 | `GS 0x5998` | skill_names | high | investigation | SKINIT writes GStr[0x5998+id]. INFO3@0x0192a and DRAWTOOLTIP show the name of item_granted_skill_id; BTL, SELACT, SELBOMB, FELLOW, STATUS and others also draw it. |
 | `GS 0x5d80` | skill_short_descriptions | med | investigation | SKINIT writes GStr[0x5d80+id]. Read by STATUS and FELLOWSTATUS. |
-| `GS 0x6168` | condition_level_names | high | investigation | ILINIT writes level names for ids 1..28. Same layout as Himegari condition_level_names (0x25fa). |
+| `GS 0x6168` | condition_level_names | high | investigation | ILINIT writes level names for ids 1..28. Same layout as Himegari condition_level_names (0x25fa). Columns: 0=level_1, 1=level_2, 2=level_3, 3=level_4, 4=level_5. |
 | `GS 0x61ff` | species_names | med | investigation | AFINIT writes 16 names. No direct reader was found in the static scan, so the GStr base is probably reached through an offset. |
 | `GS 0x621a` | affinity_level_names | high | investigation | INFO3@0x017b6 prints GStr[0x621a + 5 + item_affinity_level_deltas], so level 5 is neutral. |
 | `GS 0x625f` | quest_names | high | investigation | QUINIT quest titles (ids 1..999 = journal quests, 1000..1999 = reward notices). CHECKCONTRACT@0x1d and INFO2@0x6ab use a nonempty name as the existence test; INFO2@0x1058 and RECEIPT@0x343 draw it. |

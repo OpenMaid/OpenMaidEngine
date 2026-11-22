@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
 using Ome.Engine.Hosting;
 using Ome.Engine.Model;
@@ -113,7 +114,7 @@ public class GameDataExportTests
             ], "剣", "よく切れる", "盾"),
             [2] = Asm("$1$ITINIT.BIN",
                 [(OpSetString, [GS(ItemNames + 3), S(0)]), (OpMov, [G(ItemCategory + 3), I(4)]),
-                 (OpMov, [G(ItemIcon + 3), I(78)]), (OpExit, [])], "槍"),
+                 (OpMov, [G(ItemIcon + 3), I(78)]), (OpMov, [G(ItemSkill + 3), I(-1)]), (OpExit, [])], "槍"),
             [3] = Asm("SKINIT.BIN", [(OpSetString, [GS(SkillNames + 1), S(0)]), (OpMov, [G(SkillCategory + 1), I(1)]),
                                      (OpExit, [])], "斬撃"),
             [4] = Asm("SCENE.BIN", [(OpSetString, [GS(Scratch), S(0)]), (OpMov, [G(ItemCategory + 2), I(99)]), (OpExit, [])],
@@ -207,6 +208,57 @@ public class GameDataExportTests
         Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], Entity(result, "item", 1).Refs);
         Assert.Equal([new ExportRef("granted_skill", 0, "skill", 2)], Entity(result, "item", 2).Refs);
         Assert.Equal(1, result.Report.MissingRefs[("item", "granted_skill", "skill")]);
+        // A negative value is none, as 0 is: no record has a negative id (the games write -1 for none too).
+        Assert.Equal([-1L], Values(Entity(result, "item", 3), "granted_skill"));
+        Assert.Empty(Entity(result, "item", 3).Refs);
+    }
+
+    [Fact]
+    public void ATitleMayBeAReferenceOrNone()
+    {
+        // The item is named by its granted skill, as a recipe is by the item it makes; the skill has no title.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["title"] = "granted_skill";
+        declarations["kinds"]![1]!["title"] = null;
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = game.Registry,
+            Declarations = ExportDeclarations.Parse(declarations.ToJsonString()), Pictures = game.Pictures,
+            BuildInfo = game.BuildInfo,
+        });
+
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Empty(result.Report.Refusals);
+        Assert.Null(Text(sword, "name"));                           // no longer published as text
+        Assert.DoesNotContain(sword.Texts, text => text.Field == "granted_skill");
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], sword.Refs);
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("granted_skill", Scalar("SELECT title_field FROM kind WHERE id = 'item'"));
+            Assert.Equal("", Scalar("SELECT ifnull(title_field, '') FROM kind WHERE id = 'skill'"));
+            // The reference is a published value, not a text field.
+            Assert.Equal("1|0", Scalar("SELECT published || '|' || text FROM field WHERE kind = 'item' AND name = 'granted_skill'"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

@@ -75,7 +75,8 @@ public static class GameDataExporter
         var skips = kind.Skip.Select(skip => (Field: registry.Resolve(table, skip.Field), skip.Value)).ToList();
         IReadOnlyList<FieldLayout> published = kind.Fields.Select(field => registry.Resolve(table, field)).ToList();
         var texts = new List<string>();
-        if (kind.Title is { } title) texts.Add(title);
+        // A title is a string field, a reference whose target's title the entity takes, or none (plan §4.1).
+        if (kind.Title is { } title && registry.Resolve(table, title).IsString) texts.Add(title);
         texts.AddRange(kind.Text.Where(text => text != kind.Title));
         IReadOnlyList<FieldLayout> textFields = texts.Select(text => registry.Resolve(table, text)).ToList();
         var textArrays = new HashSet<string>(textFields.Select(field => field.Field), StringComparer.Ordinal);
@@ -287,7 +288,9 @@ public static class GameDataExporter
                     long?[] values = entity.Values.First(value => value.Field == field.Name).Values;
                     for (int element = 0; element < values.Length; element++)
                     {
-                        if (values[element] is not { } id || id == 0) continue;
+                        // 0 is none, and so is a negative value: no record has a negative id, and the games write -1
+                        // for none too (Kamidori's stage_required_party_unit_ids; export plan §5).
+                        if (values[element] is not { } id || id <= 0) continue;
                         if (!kindOfTable.TryGetValue(target, out string? toKind))
                         {
                             var unpublished = (kind.Declaration.Id, field.Name, target);

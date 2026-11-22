@@ -263,9 +263,11 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   (`牙コウモリ（牙蝙蝠/ニュクテリス）`), qualifying members of different enums that share a name, and translations
   that rename entries. Done when both games' registries generate the enums, the decompiler prints keys and
   values by name, and both games still rebuild byte-identically.
-- **Overlapping registry arrays.** `globals_build.py --lint` reports 2 Himegari and 39 Kamidori pairs of
+- **Overlapping registry arrays.** `globals_build.py --lint` reports 2 Himegari and 43 Kamidori pairs of
   overlapping arrays. Classify each as a deliberate sub-view or a size error, since element names depend on it
-  (OMS spec §11.3, §13).
+  (OMS spec §11.3, §13). One looks like a size error: Kamidori's `battle_routine_forbidden_story_flag_ids`
+  (`int[1000][150]`, RTINIT's banks 26 to 28) covers the four dig tables, which DIINIT writes, and the arrays after
+  them; the dig tables' `[200][10]` shapes made four of the pairs visible (2026-11-21, game data export milestone 2).
 - **Compiler warnings.** Two of the five §8.2 warnings are missing: an implicit string↔number conversion, which needs
   a type checker, and an `atomic` body that contains a wait (OMS spec §8.2). The compiler reports the other three
   through `OmsWarning`: an opcode no corpus executes, a division by a constant zero, and a recursive call over bound

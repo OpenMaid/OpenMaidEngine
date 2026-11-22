@@ -248,7 +248,8 @@ table = "hero"
     for needle in (
             "tooltips is a path of the site's database", "picture is a table of the export's database",
             "unknown key 'colour'",
-            "exists bio is a row of cells", "title class must be a string field",
+            "exists bio is a row of cells",
+            "title class is an integer field the registry's [table.refs] does not mark as referring to a table",
             "text class is not a string field", "'nope' is not a field of table hero",
             "fields name is a string field", "fields level is saved state",
             "filter 'bio' is not one of the kind's fields", "filter weapon is a row of cells",
@@ -257,6 +258,36 @@ table = "hero"
             "picture name 'Bad' must be a lowercase identifier",
             "kind 'heroes': tooltips is also the id of kind 'tooltips'",
             "table 'monster' is not a [[table]] of the registry"):
+        check(needle in output, f"the lint flags {needle!r}")
+
+
+def test_titles():
+    """A title is a string field, a reference whose target's title the entity takes, or none (export plan §4.1)."""
+    no_title = GOOD.replace('exists = "price"\ntitle = "name"\n', 'exists = "price"\n')
+    code, output, written = run(no_title, write=True)
+    check(code == 0, f"a kind may have no title ({output.strip()})")
+    kinds = json.loads(written or "{}").get("kinds", [])
+    check(len(kinds) > 1 and kinds[1].get("title") is None, "a kind without a title has title null in the JSON")
+    by_weapon = GOOD.replace('title = "name"\ntext = ["bio"]', 'title = "weapon.0"\ntext = ["bio"]')
+    code, output, _ = run(by_weapon, write=True)
+    check(code == 0, f"a reference to a shown kind's table may be a title ({output.strip()})")
+    output = errors_of(EXPORT + '''
+[[kind]]
+id = "hero"
+table = "hero"
+exists = "name"
+title = "weapon.1"
+
+[[kind]]
+id = "hero_by_art"
+table = "hero"
+exists = "name"
+title = "art.face"
+fields = ["art"]
+''')
+    for needle in ("title weapon.1 is a reference, which the kind must publish: list weapon under fields",
+                   "title art.face is an integer field the registry's [table.refs] does not mark as referring to a table",
+                   "kind 'hero': title weapon.1 refers to table weapon, which no kind shows"):
         check(needle in output, f"the lint flags {needle!r}")
 
 
