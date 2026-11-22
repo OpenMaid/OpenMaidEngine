@@ -10,6 +10,18 @@ the user supplies the *original game data* they own; mods layer on top. Those pr
 shape is feasible — and that it's a large, long-lived effort. Our decoding work (done) is the
 foundation; the runtime + backends + mod system is the bulk of the remaining work.
 
+**The project's name (the user, 2026-11-22):** the project as a whole is **Open Maid**, written "the Open Maid
+project" in prose. "Project" is not part of the name, and the name has no acronym, so it never meets its parts':
+- **Open Maid Engine (OME):** the engine, with its launcher and command-line tools;
+- **Open Maid Script (OMS):** the scripting language and its toolchain
+  (`docs/superpowers/specs/2026-10-06-open-maid-script-design.md`);
+- **Open Maid Pack (OMP):** a mod's package (§3.6);
+- **the site** at `openmaid.org`: the modding guide, the reference and the game databases, in its own repository,
+  `ome-site` (its plan's §11 has what the name changed there).
+
+"Open Maid Project" was set aside because its acronym is the pack's. Domains and handles write it `openmaid` or
+`OpenMaid`, as the repository `OpenMaidEngine` does.
+
 ---
 
 ## 1. Guiding principles
