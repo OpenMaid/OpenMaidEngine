@@ -51,14 +51,15 @@ EVERY = "*"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
-             "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about"}
+             "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
+             "joins"}
 # A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
 ABOUT_LIMIT = 160
 REFERENCED_AS_KEYS = {"heading", "details", "parts"}
 QUALIFIER_LIMIT = 3
 DETAIL_LIMIT = 4
 DESCRIPTION_KEYS = {"name", "script", "seed"}
-GROUP_KEYS = {"name", "fields", "labels"}
+GROUP_KEYS = {"name", "fields", "labels", "row_label"}
 SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
 # A picture sheet's catalog record, with its extension (SO009.AGF).
 SHEET = re.compile(r"[A-Z0-9_]+\.[A-Z0-9]+")
@@ -126,6 +127,7 @@ class Field:
     def __init__(self, global_name: str, entry: dict, records: int, column: int | None, prefixes: dict | None):
         type_ = str(entry.get("type") or "")
         self.global_name = global_name
+        self.column = column
         self.kind = {"GS": "string", "GF": "float", "G": "integer"}[bank(type_)]
         dims = globals_build.record_dims(type_, records) or [records]
         self.single = len(dims) == 1 or column is not None
@@ -137,12 +139,16 @@ class Field:
 
 
 def resolve_field(game: Game, table: dict, ref, where: str, errors: list[str]) -> Field | None:
-    """`field` or `field.column` of `table`, or None (the error appended)."""
+    """`field` or `field.column` of `table`, or None (the error appended). A table a kind's view joins (`_joins`,
+    see kind_view) gives its fields as `table.field` and `table.field.column`."""
     if not isinstance(ref, str):
         errors.append(f"{where}: {ref!r} is not a field name")
         return None
     field, _, column = ref.partition(".")
     fields = table.get("fields") or {}
+    joined = (table.get("_joins") or {}).get(field)
+    if field not in fields and joined is not None:
+        return resolve_field(game, joined, column, where, errors)
     if field not in fields:
         errors.append(f"{where}: {field!r} is not a field of table {table['name']}")
         return None
@@ -170,6 +176,51 @@ def resolve_field(game: Game, table: dict, ref, where: str, errors: list[str]) -
             errors.append(f"{where}: {field} has no column {column!r}")
             return None
     return Field(global_name, entry, table["records"], index, game.prefixes)
+
+
+def kind_view(game: Game, kind: dict) -> dict | None:
+    """A kind's table as its published fields and groups see it: the registry table, with the tables the kind joins
+    (`joins`, each a table whose `records_of` is the kind's) under `_joins`, so that `table.field` names a field of
+    one. None when the kind names no table of the registry."""
+    table = game.tables.get(kind.get("table"))
+    if table is None:
+        return None
+    joins = kind.get("joins") if isinstance(kind.get("joins"), list) else []
+    return {**table, "_joins": {name: game.tables[name] for name in joins
+                                if isinstance(name, str) and name in game.tables
+                                and game.tables[name].get("records_of") == table.get("name")}}
+
+
+def reference_of(table: dict, ref: str) -> tuple[dict, str, object] | None:
+    """The registry table a published field reference is of (a joined one's, for `table.field`), the field's name
+    there, and its `[table.refs]` entry (a table's name, `picture`, or a two-field reference); None for a field that
+    refers to nothing."""
+    base, _, rest = ref.partition(".")
+    joined = (table.get("_joins") or {}).get(base)
+    if base not in (table.get("fields") or {}) and joined is not None:
+        return reference_of(joined, rest)
+    value = (table.get("refs") or {}).get(base) if isinstance(table.get("refs"), dict) else None
+    return (table, base, value) if value is not None else None
+
+
+def check_joins(game: Game, kind: dict, table: dict, where: str, errors: list[str]) -> None:
+    """`joins` (export plan §5): the tables whose record r belongs to the kind's entity r, which the registry says by
+    the table's `records_of`. The kind publishes their fields as its own, written `table.field`."""
+    joins = kind.get("joins", [])
+    if not isinstance(joins, list) or not all(isinstance(name, str) for name in joins):
+        errors.append(f"{where}: joins must list tables of the registry")
+        return
+    for name in joins:
+        other = game.tables.get(name)
+        if other is None:
+            errors.append(f"{where}: joins {name!r}, which is not a [[table]] of the registry")
+        elif other.get("records_of") != table.get("name"):
+            errors.append(f"{where}: joins {name}, whose records are not {table.get('name')}'s: the registry's "
+                          f"table gives no records_of = {table.get('name')!r}")
+        if name in (table.get("fields") or {}):
+            errors.append(f"{where}: joins {name}, which is also a field of table {table.get('name')}")
+        if joins.count(name) > 1:
+            errors.append(f"{where}: joins {name} twice")
 
 
 def unknown_keys(entry: dict, allowed: set[str], where: str, errors: list[str]) -> None:
@@ -397,6 +448,10 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
     if table is None:
         errors.append(f"{where}: table {kind.get('table')!r} is not a [[table]] of the registry")
         return
+    check_joins(game, kind, table, where, errors)
+    # The published fields and the groups may name a joined table's fields; the title, text, pictures and the rest
+    # are the kind's own table's.
+    view = kind_view(game, kind)
 
     def one(ref, label: str, want: str | None) -> Field | None:
         field = resolve_field(game, table, ref, f"{where}: {label}", errors)
@@ -458,9 +513,16 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             errors.append(f"{where}: {label} must be a list of fields")
             continue
         for ref in refs:
-            field = resolve_field(game, table, ref, f"{where}: {label}", errors)
+            field = resolve_field(game, view if label == "fields" else table, ref, f"{where}: {label}", errors)
             if field is None:
                 continue
+            # A paired reference (its record a pair of elements, row and slot) is published by the first column of
+            # each pair, whose value the record is named by; the pair's second is part of it.
+            reference = reference_of(view, ref) if label == "fields" else None
+            if reference is not None and isinstance(reference[2], dict) and reference[2].get("pairs") \
+                    and (field.column is None or field.column % 2):
+                errors.append(f"{where}: fields {ref}: {reference[1]} is a paired reference, a record for each pair of "
+                              f"its elements; publish the first column of each pair (column 0, 2 ...)")
             if want == "string" and field.kind != "string":
                 errors.append(f"{where}: text {ref} is not a string field; list it under fields")
             if label == "fields" and field.kind == "string":
@@ -552,7 +614,7 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                 errors.append(f"{gwhere}: {ref} is also in group {grouped[ref]!r}")
                 continue
             grouped[ref] = gname
-            field = resolve_field(game, table, ref, f"{gwhere}: fields", errors)
+            field = resolve_field(game, view, ref, f"{gwhere}: fields", errors)
             if field is None:
                 continue
             if field.single:
@@ -565,6 +627,9 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                           "number of rows")
         if "labels" in group and not isinstance(group["labels"], str):
             errors.append(f"{gwhere}: labels must name a loaded table's text field, as table.field")
+        # A row word names row r with its number, "Level 12", where no table's text labels the rows.
+        if "row_label" in group:
+            check_heading(group["row_label"], f"{gwhere}: row_label", errors)
 
     check_text_blocks(game, table, kind, where, errors)
 
@@ -711,7 +776,7 @@ def check_group_labels(game: Game, kind: dict, loaded: dict[str, dict], where: s
         if field is not None and not field.single:
             errors.append(f"{gwhere} {group['labels']!r} is a row of cells; a label is one cell of a record")
         widths = [f.width for ref in group.get("fields", [])
-                  if (f := resolve_field(game, table, ref, gwhere, [])) is not None and not f.single]
+                  if (f := resolve_field(game, kind_view(game, kind), ref, gwhere, [])) is not None and not f.single]
         if widths and loaded_table["records"] < min(widths):
             errors.append(f"{gwhere}: table {short} has {loaded_table['records']} records, fewer than the group's "
                           f"{min(widths)} rows")
@@ -726,8 +791,9 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
     for a loaded table's field, a field or text of the same table, one cell a row. `parts` gives a heading to each of
     the loaded table's parts that its rows read under (a stage's allies). A row of cells of the kind whose columns are
     a table's records (`columns_ref`: a skill's condition levels, by condition) refers to the record of each column whose
-    cell is not 0, and may be keyed as a reference is (site plan §13, C2)."""
-    table = game.tables.get(kind.get("table"))
+    cell is not 0, and may be keyed as a reference is (site plan §13, C2). A field of a table the kind joins is keyed
+    `table.field`, and a published column of a paired reference `field.column`, each as the kind publishes it."""
+    table = kind_view(game, kind)
     entries = kind.get("referenced_as", {})
     if table is None:
         return
@@ -746,6 +812,34 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
     for key, entry in entries.items():
         rwhere = f"{where}: referenced_as {key}"
         short, dot, name = key.partition(".")
+        reference = reference_of(table, key) if dot and short not in loaded else None
+        if reference is not None:
+            # The kind's own published field: a joined table's (table.field) or a paired reference's column.
+            if key not in fields:
+                errors.append(f"{rwhere}: {key!r} is not a published field")
+                continue
+            if reference[2] == globals_build.REF_PICTURE:
+                errors.append(f"{rwhere}: {key} is not a reference to a table ([table.refs])")
+                continue
+            target = globals_build.ref_target(reference[2])
+            if target not in shown_tables:
+                errors.append(f"{rwhere}: {key} refers to table {target}, which no kind shows")
+            if isinstance(entry, str):
+                entry = {"heading": entry}
+            if not isinstance(entry, dict) or "heading" not in entry:
+                errors.append(f"{rwhere} must be a heading or {{ heading, details, parts }}")
+                continue
+            unknown_keys(entry, REFERENCED_AS_KEYS - {"parts"}, rwhere, errors)
+            check_heading(entry["heading"], f"{rwhere}: heading", errors)
+            details = entry.get("details", [])
+            if not isinstance(details, list) or len(details) > DETAIL_LIMIT:
+                errors.append(f"{rwhere}: details must list at most {DETAIL_LIMIT} fields")
+                details = []
+            for detail in details:
+                if not isinstance(detail, str) or detail not in fields + text or not one_cell(table, detail):
+                    errors.append(f"{rwhere}: detail {detail!r} must be one of the kind's fields or text, one cell a "
+                                  f"record")
+            continue
         if dot:
             found = loaded.get(short)
             if found is None:
@@ -1103,8 +1197,10 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "skip": k.get("skip", {}), "title": k.get("title"), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
                    "descriptions": k.get("description", []),
-                   "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels")}
+                   "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels"),
+                               "row_label": g.get("row_label")}
                               for g in k.get("group", [])],
+                   "joins": k.get("joins", []),
                    "notes": k.get("notes", {}), "labels": k.get("labels", {}),
                    "qualifiers": k.get("qualifiers", []), "about": k.get("about"),
                    "referenced_as": [

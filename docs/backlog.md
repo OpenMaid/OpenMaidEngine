@@ -533,18 +533,11 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   boss: a stage names none, and the game marks a boss by its unit, `unit_boss_class` (DRAWCHSTATE draws a boss
   marker when it is not 0; its values, -1 to 4, are a first reading). Done when the registry reads its values, the
   unit kind publishes it, and a stage's enemies mark the boss (site plan §13).
-- **What Arterial's declarations cannot say yet** (the second game's test of the export, 2026-11-22; export plan §5,
-  "A second game: Arterial"):
-  - **A table keyed by another table's records.** `party_member` is kept for each character, by its `CHINIT` id: the
-    skills, items and card each level brings. No kind can show it on the character's page. Done when a kind or a
-    loaded table can say that its record r belongs to record r of another kind, and the character's page shows it.
-  - **A card named by two elements of one field.** `battle_leader_cards` holds (row, slot) pairs in one array of four,
-    and `area_unit_cards` a pair in an array of two. A two-field reference takes its parts from two fields at the same
-    element, so neither links to its card. Done when `[table.refs]` can name a record from elements 2k and 2k + 1.
-    An item's `card_rows` and `card_slots`, which limit the cards that may carry it, wait on the same question.
-  - **Unnamed cells.** The builders wrote 235 cells that no global names: battle 90, character 96, opponent 21,
-    ultimate 26 and condition 2 (the export's report gives their ranges). Done when the registry names them, or says
-    why they are not data.
+- **The cards an Arterial item may be carried by** (export plan §5, "A second game: Arterial"). `item_card_rows`
+  and `item_card_slots` limit which cards may carry an item. 191 items set a row and 6 of them a slot too. A row
+  alone names every card of that row, and no card sits at slot 0, so the two cells are not a two-field reference:
+  `row × 30 + 0` names no card. Only the six with a slot name one card. Done when a reference can name a card row,
+  a set of cards, and the item's page lists the cards that may carry it.
 
 ## Platform and project
 
@@ -763,6 +756,10 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     - **Five boot tables have no leader** (`IMINIT`, `RFINIT`, `DUINIT`, `RTINIT`, `EUINIT`): they are listed by
       the arrays the scripts index, which can lump two arrays into one (`RFINIT`'s `G[0x32fb16]` holds such a
       lump).
+    - **Unnamed cells the builders write.** The data export's report (2026-11-22) counts 235 cells inside its kinds'
+      tables that the builders write and no global names: battle 90, character 96, opponent 21, ultimate 26 and
+      condition 2. `data-export --game arterial` prints each range. Done when the registry names them or says why
+      they are not data. The export publishes each one it can then name.
     - **`SCJUMP`** is read as far as its protocol, its rule counts and what its rules test: the scenes' played
       cells (`scene_played_flags`), the area in play and the point unit 1 stands on, and its seven contexts
       (2026-11-20, `arterial-data-tables.md`, "Scene dispatch"). The story cells outside the played cells are not

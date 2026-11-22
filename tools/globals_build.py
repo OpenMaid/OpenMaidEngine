@@ -18,8 +18,12 @@ a table's `aliases` and its `[table.field_aliases]` (old name = current field), 
 A table's `[table.refs]` says which of its integer fields hold the ids of another table's records, or packed resource
 ids (`picture`), every element of the field, 0 for none (game data export spec §5.3); the JSON's `tables` and the
 reference doc carry them. A reference whose record is made of two fields is `{ table, times, plus }`: the record is the
-field's value times `times`, plus field `plus`'s value at the same element (Arterial's cards, row × 30 + slot); the JSON
-writes its table under `refs` and the rest under `ref_keys`.
+field's value times `times`, plus field `plus`'s value at the same element (Arterial's cards, row × 30 + slot); one
+whose two cells are a pair of elements of one field is `{ table, times, pairs = true }`: element 2k's value times
+`times`, plus element 2k + 1's, names a record (a battle's leader cards, a row and a slot for each side). The JSON
+writes its table under `refs` and the rest under `ref_keys`. A table's `records_of` names the table whose record r its
+record r belongs to (Arterial's `party_member`, kept for each character by its character id); the JSON and the reference
+doc carry it.
 A global's value facets say what its values mean to a reader (game data export plan §5): `values` gives OME's word for
 some values, `values_from` names the game's own table of names (`{ global, first }`: the string global's element k names
 value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global (or for element k of a
@@ -285,7 +289,28 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
                 errors.append(f"{tag}: field {field} needs a fully sized [{records}] or [{records}][n] array"
                               + (", a scalar or a 1-D array" if records == 1 else "")
                               + f"; {global_name} is {e.get('type')!r}")
-    return errors + lint_table_aliases(tables, by_name) + lint_table_refs(tables, by_name)
+    return (errors + lint_table_aliases(tables, by_name) + lint_table_refs(tables, by_name)
+            + lint_table_records_of(tables))
+
+
+def lint_table_records_of(tables: list[dict]) -> list[str]:
+    """`records_of`: the table whose record r this table's record r belongs to, as the game keeps a character's party
+    state by its character id (Arterial's `party_member`). Errors: a value that names no other table of the registry, and
+    a table with more records than the one it names."""
+    errors: list[str] = []
+    by_name = {t.get("name"): t for t in tables if isinstance(t.get("name"), str)}
+    for t in tables:
+        if "records_of" not in t or not isinstance(t.get("name"), str):
+            continue
+        tag, other = f"table {t['name']!r}", t["records_of"]
+        target = by_name.get(other) if isinstance(other, str) else None
+        if target is None or other == t["name"]:
+            errors.append(f"{tag}: records_of {other!r} must name another table of the registry")
+        elif isinstance(t.get("records"), int) and isinstance(target.get("records"), int) \
+                and t["records"] > target["records"]:
+            errors.append(f"{tag}: has {t['records']} records, more than {other}'s {target['records']}, so not every "
+                          f"record is one of {other}'s")
+    return errors
 
 
 REF_PICTURE = "picture"
@@ -300,7 +325,8 @@ def split_refs(refs: dict) -> tuple[dict, dict]:
     """A table's references as the JSON writes them: field = target table under `refs`, and a two-field reference's
     `{ times, plus }` under `ref_keys`."""
     targets = {field: ref_target(value) for field, value in refs.items()}
-    keys = {field: {"times": value.get("times"), "plus": value.get("plus")}
+    keys = {field: ({"times": value.get("times"), "pairs": True} if value.get("pairs")
+                    else {"times": value.get("times"), "plus": value.get("plus")})
             for field, value in refs.items() if isinstance(value, dict)}
     return targets, keys
 
@@ -310,7 +336,8 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
     is not a field of the table (an old name included: a reference names the current one), a target that is neither
     a table of the registry nor `picture`, and a field whose global is not an integer array, since an id is an
     integer. A two-field reference is `{ table, times, plus }`, its table a table of the registry, `times` a whole
-    number above 0 and `plus` another integer field of the table, as wide as the field."""
+    number above 0 and `plus` another integer field of the table, as wide as the field; a paired one is
+    `{ table, times, pairs = true }`, its field a row of cells of an even width, each pair of elements one record."""
     errors: list[str] = []
     names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
     for t in tables:
@@ -319,8 +346,8 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
             continue
         tag = f"table {name!r}"
         if not isinstance(refs, dict) or not all(isinstance(v, (str, dict)) for v in refs.values()):
-            errors.append(f"{tag}: refs must be a table of field = the table its values name, {REF_PICTURE}, or "
-                          f"{{ table, times, plus }}")
+            errors.append(f"{tag}: refs must be a table of field = the table its values name, {REF_PICTURE}, "
+                          f"{{ table, times, plus }} or {{ table, times, pairs = true }}")
             continue
         fields = t.get("fields") if isinstance(t.get("fields"), dict) else {}
 
@@ -334,17 +361,28 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
                 continue
             target = ref_target(value)
             if isinstance(value, dict):
-                if set(value) != {"table", "times", "plus"}:
+                paired = set(value) == {"table", "times", "pairs"}
+                if set(value) != {"table", "times", "plus"} and not paired:
                     errors.append(f"{tag}: refs gives {field} a two-field reference, which must be "
-                                  f"{{ table, times, plus }}")
+                                  f"{{ table, times, plus }} or {{ table, times, pairs = true }}")
                     continue
                 if target == REF_PICTURE:
                     errors.append(f"{tag}: refs gives {field} a two-field reference to {REF_PICTURE}, which is one "
                                   f"cell")
-                times, plus = value["times"], value["plus"]
+                times = value["times"]
                 if not isinstance(times, int) or isinstance(times, bool) or times < 1:
                     errors.append(f"{tag}: refs gives {field} times {times!r}, which must be a whole number above 0")
-                if not isinstance(plus, str) or plus not in fields or plus == field:
+                plus = value.get("plus")
+                if paired:
+                    # Each pair of elements is one record: element 2k times `times`, plus element 2k + 1.
+                    dims = record_dims(type_of(field), t.get("records")) if isinstance(t.get("records"), int) else None
+                    if value["pairs"] is not True:
+                        errors.append(f"{tag}: refs gives {field} pairs {value['pairs']!r}; a paired reference is "
+                                      f"pairs = true")
+                    elif dims is None or len(dims) != 2 or dims[1] % 2:
+                        errors.append(f"{tag}: refs pairs {field}'s elements, so its global {fields[field]} must be a "
+                                      f"row of cells of an even width ({type_of(field) or 'no type'})")
+                elif not isinstance(plus, str) or plus not in fields or plus == field:
                     errors.append(f"{tag}: refs gives {field} plus {plus!r}, which must be another field of the table")
                 else:
                     plus_type, field_type = type_of(plus), type_of(field)
@@ -694,6 +732,8 @@ def table_json(t: dict) -> dict:
         out["aliases"] = sorted(t["aliases"])
     if t.get("field_aliases"):
         out["field_aliases"] = dict(sorted(t["field_aliases"].items()))
+    if t.get("records_of"):
+        out["records_of"] = t["records_of"]
     if t.get("refs"):
         targets, keys = split_refs(t["refs"])
         out["refs"] = dict(sorted(targets.items()))
@@ -719,6 +759,8 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 L += ["Formerly " + ", ".join(f"`{alias}`" for alias in sorted(t["aliases"])) + ".", ""]
             if t.get("usage"):
                 L += [t["usage"], ""]
+            if t.get("records_of"):
+                L += [f"Record r is record r of `{t['records_of']}`.", ""]
             refs = t.get("refs") or {}
             L += (["| field | global | address | type | refers to |", "|---|---|---|---|---|"] if refs
                   else ["| field | global | address | type |", "|---|---|---|---|"])
@@ -733,7 +775,9 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 if refs:
                     value = refs.get(field)
                     target = ref_target(value)
-                    key = f" (× {value['times']} + {value['plus']})" if isinstance(value, dict) else ""
+                    key = ("" if not isinstance(value, dict)
+                           else f" (element 2k × {value['times']} + element 2k + 1)" if value.get("pairs")
+                           else f" (× {value['times']} + {value['plus']})")
                     row += " pictures |" if target == REF_PICTURE else f" `{target}`{key} |" if target else " |"
                 L.append(row)
             L.append("")

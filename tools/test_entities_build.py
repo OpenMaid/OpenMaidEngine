@@ -248,8 +248,10 @@ def test_good_declarations():
           "a relation keeps its where")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
-    check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"], "labels": None}],
+    check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"], "labels": None,
+                                  "row_label": None}],
           "the JSON keeps a kind's groups")
+    check(hero.get("joins") == [], "a kind that joins no table has an empty list")
     check(hero.get("notes") == {} and hero.get("text_blocks") == {}, "a kind without notes or text blocks has empty tables")
     check(weapon.get("groups") == [], "a kind without groups has an empty list")
     code, _, written_again = run(GOOD, write=True)
@@ -387,7 +389,7 @@ fields = ["weapon", "trait"]
 ''', write=True)
     check(code == 0 and written is not None
           and json.loads(written)["kinds"][0]["groups"] == [{"name": "arms", "fields": ["weapon", "trait"],
-                                                             "labels": None}],
+                                                             "labels": None, "row_label": None}],
           f"a field a multiple of the narrowest's width may join a group: {output}")
 
 
@@ -653,6 +655,72 @@ def test_column_references():
           "are a table's records (columns_ref)" in output, "the lint flags a heading on a row of plain cells")
 
 
+# A hero's bond (export plan §5): record r is hero r's (records_of), its partners two weapons, each a pair of
+# elements (row x 1 + slot), and its ranks two numbers a record. The last global lies below the saved prefix.
+BONDS = "".join([
+    g("0x500", "bond_partners", "int[4][4]", {"0": "first_row", "1": "first_slot", "2": "second_row"}),
+    g("0x520", "bond_ranks", "int[4][2]"),
+    g("0x180", "bond_flags", "int[4]"),
+]) + '''
+[[table]]
+name = "hero_bond"
+records = 4
+built_by = "boot"
+records_of = "hero"
+[table.fields]
+partners = "bond_partners"
+rank = "bond_ranks"
+flags = "bond_flags"
+[table.refs]
+partners = { table = "weapon", times = 1, pairs = true }
+'''
+
+
+def test_joins_and_pairs():
+    """A kind publishes a joined table's fields as table.field, a paired reference by the first column of each pair,
+    and a group's rows by a word and their number."""
+    global REGISTRY
+    saved = REGISTRY
+    joined = GOOD.replace('fields = ["class", "weapon", "weapon_level"]\n',
+                          'joins = ["hero_bond"]\n'
+                          'fields = ["class", "weapon", "weapon_level", "hero_bond.partners.first_row", '
+                          '"hero_bond.partners.second_row", "hero_bond.rank"]\n', 1)
+    joined = joined.replace('[[kind.group]]\nname = "arms"\nfields = ["weapon", "weapon_level"]\n',
+                            '[[kind.group]]\nname = "arms"\nfields = ["weapon", "weapon_level", "hero_bond.rank"]\n'
+                            'row_label = "Slot"\n\n'
+                            '[kind.labels]\n"hero_bond.rank" = "Rank"\n\n'
+                            '[kind.referenced_as]\n"hero_bond.partners.first_row" = "First partner of"\n', 1)
+    try:
+        REGISTRY = saved + BONDS
+        code, output, written = run(joined, write=True)
+        check(code == 0, f"a joined table's fields and a paired reference's columns lint clean ({output.strip()})")
+        hero = json.loads(written or "{}").get("kinds", [{}])[0]
+        check(hero.get("joins") == ["hero_bond"], "the JSON keeps a kind's joins")
+        check(hero.get("groups", [{}])[0].get("row_label") == "Slot", "the JSON keeps a group's row word")
+        check({"field": "hero_bond.partners.first_row", "heading": "First partner of", "details": [], "parts": {}}
+              in hero.get("referenced_as", []), "the JSON keeps a joined reference's heading")
+
+        def flags(text: str, needle: str, message: str) -> None:
+            code, output, _ = run(text)
+            check(code != 0 and needle in output, f"{message} ({output.strip()[-300:]})")
+
+        flags(joined.replace('"hero_bond.partners.second_row"', '"hero_bond.partners.first_slot"'),
+              "fields hero_bond.partners.first_slot: partners is a paired reference",
+              "the lint refuses a pair's second column")
+        flags(joined.replace('"hero_bond.partners.second_row"', '"hero_bond.partners"'),
+              "fields hero_bond.partners: partners is a paired reference", "the lint refuses a paired field whole")
+        flags(joined.replace('"hero_bond.rank"]\n', '"hero_bond.rank", "hero_bond.flags"]\n', 1),
+              "fields hero_bond.flags is saved state", "a joined field below the saved prefix is refused")
+        flags(joined.replace('joins = ["hero_bond"]', 'joins = ["weapon"]'),
+              "joins weapon, whose records are not hero's", "the lint refuses a join without records_of")
+        flags(joined.replace('row_label = "Slot"', 'row_label = ""'),
+              "group 'arms': row_label must be a line", "the lint refuses an empty row word")
+        flags(joined.replace('title = "name"\ntext = ["bio"]', 'title = "hero_bond.rank"\ntext = ["bio"]', 1),
+              "'hero_bond' is not a field of table hero", "only fields and groups name a joined table's fields")
+    finally:
+        REGISTRY = saved
+
+
 def test_design_pass_features():
     code, output, written = run(FEATURES, write=True)
     check(code == 0, f"notes, a sheet picture, group labels, a literal and a stepped loader lint clean ({output.strip()})")
@@ -820,6 +888,7 @@ def main():
     test_loader_and_relation_errors()
     test_design_pass_features()
     test_column_references()
+    test_joins_and_pairs()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0

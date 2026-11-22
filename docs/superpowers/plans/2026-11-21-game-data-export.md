@@ -938,3 +938,32 @@ authors.
   What the declarations still cannot say is in the backlog ("Game data export and the site"): a table keyed by another
   table's records, a card named by two elements of one field, and the 235 cells the builders wrote that no global
   names.
+- **Joined tables and paired references** (2026-11-22; the user: "Go ahead with those 2, then we'll backlog 3 for now
+  since that's RE work that will lead to increased export fidelity, not explicitly export fidelity alone"). The first
+  two of the backlog's three are built. The lint checks each, and `tools/test_globals.py`,
+  `tools/test_entities_build.py` and the exporter's tests (`AJoinedTablesRecordIsTheEntitysAndAPairOfElementsNamesARecord`,
+  `AKindJoinsOnlyATableWhoseRecordsAreItsOwn`) cover them:
+  - **A paired reference.** A `[table.refs]` value may be `{ table, times, pairs = true }`: elements 2k and 2k + 1 of
+    one field are a record's two parts, 2k's value times `times` plus 2k + 1's. A kind publishes it by the first
+    column of each pair, whose reference the export writes as a two-field reference's, and the lint refuses the field
+    whole or a pair's second column. Arterial's battle publishes each side's leader card, side 0's being none where the
+    player fights with their own deck (208 of 257 battles). `area_unit_cards` is declared too, though no kind shows
+    an area's units.
+  - **A joined table.** A registry table's `records_of` names the table whose record r its record r is: Arterial's
+    `party_member` is the character's, by its character id. A kind's `joins` lists such tables, and its fields,
+    groups, notes, labels and `referenced_as` name their fields as `table.field`. The exporter reads a joined cell as
+    the kind's own, refusals, modder cells and script use included. An entity past the joined table's records has none
+    of its cells: its values are withheld, with no refusal. The snippet writes the joined record under its own table
+    (`[party_member.82]`). The exporter refuses a join whose table's `records_of` is not the kind's table. An Arterial
+    character publishes `party_member`'s level cards, skills and 奥義 levels as the group `levels`.
+  - **A group's row word.** A group's `row_label` names row r with its number ("Level 12"). The export's
+    `group_label` table gained a `row_label` column, and its `labels` may be null.
+  - **A snippet names the whole record.** Each published two-field reference now brings its second cell into the
+    snippet: its `plus` field, or a pair's second column. A modder could not change the card a row names without its
+    slot.
+
+  Arterial's export reads 108 characters, 801 level cards and 278 level skills. It also reads 49 player and 257
+  opponent leader cards, every one a card the export has. Kamidori's export is the same as before but for the
+  `group_label` column. The third of the backlog's points, the unnamed cells, went to Arterial's reverse-engineering
+  item there, by the user's word: naming them is RE work that the export gains from. The backlog keeps an item's card
+  restriction too. A row alone names every card of the row, so it is no paired or two-field reference.

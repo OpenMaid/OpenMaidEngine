@@ -385,6 +385,38 @@ def test_table_refs():
                    "a two-field reference to picture", "icon plus 'icon', which must be another field",
                    "rank a two-field reference, which must be { table, times, plus }"):
         check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
+    # A paired reference: each pair of elements of one field is a record, row times 3 plus slot (Arterial's battle
+    # leader cards, a row and a slot for each side).
+    entries[("G", 0x60)] = {**base, "_addr": 0x60, "name": "hero_partners", "type": "int[4][4]"}
+    keyed[0]["fields"]["partners"] = "hero_partners"
+    keyed[0]["refs"] = {"partners": {"table": "weapon", "times": 3, "pairs": True}}
+    check(G.lint_tables(keyed, entries) == [], f"a paired reference lints clean ({G.lint_tables(keyed, entries)})")
+    table = G.table_json(keyed[0])
+    check(table.get("refs") == {"partners": "weapon"}
+          and table.get("ref_keys") == {"partners": {"times": 3, "pairs": True}},
+          f"the JSON writes a paired reference's key ({table})")
+    keyed[0]["refs"] = {"slot": {"table": "weapon", "times": 3, "pairs": True},
+                        "partners": {"table": "weapon", "times": 3, "pairs": 1},
+                        "rank": {"table": "weapon", "times": 3, "pairs": True}}
+    errors = G.lint_tables(keyed, entries)
+    for needle in ("partners pairs 1; a paired reference is pairs = true",
+                   "refs pairs rank's elements, so its global hero_ranks must be a row of cells of an even width"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
+    check(not any("refs pairs slot's" in e for e in errors), f"an even row of two pairs lints clean ({errors})")
+    # records_of: the table whose record r a table's record r is (Arterial's party_member, by character id).
+    del keyed[0]["refs"]
+    member = {"name": "member", "records": 4, "built_by": "boot", "fields": {"rank": "hero_ranks"},
+              "records_of": "hero"}
+    check(G.lint_tables([keyed[0], weapon, member], entries) == [], "records_of another table lints clean")
+    check(G.table_json(member).get("records_of") == "hero" and "records_of" not in G.table_json(keyed[0]),
+          "the JSON carries records_of")
+    errors = G.lint_tables([keyed[0], weapon, {**member, "records_of": "member"},
+                            {**member, "name": "big", "records": 4, "records_of": "weapon"}], entries)
+    for needle in ("table 'member': records_of 'member' must name another table",
+                   "table 'big': has 4 records, more than weapon's 3"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
+    doc = G.emit_reference_md({}, [{**member, "fields": {}}], [])
+    check("Record r is record r of `hero`." in doc, "the reference doc says records_of")
 
 def test_scopes_lint():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}

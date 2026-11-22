@@ -182,14 +182,33 @@ table = "character"
 about = "Everyone who speaks a line: the name plate's names, and a party character's 奥義 and pictures."
 exists = "name.name"
 title = "name.name"
-fields = ["ultimate_id"]
+# A party character's record of party_member is its character id (the registry's records_of): what it brings at each
+# of its levels. Its level item column is in the scripts, and no record writes it.
+joins = ["party_member"]
+fields = ["ultimate_id", "party_member.level_card_row", "party_member.level_skills",
+          "party_member.level_ultimate_level"]
 pictures = { portrait = "picture.0" }
+
+# Row r is level r: the card it brings then, its four skills (one for each skill line) and the 奥義 level it reaches.
+[[kind.group]]
+name = "levels"
+fields = ["party_member.level_card_row", "party_member.level_skills", "party_member.level_ultimate_level"]
+row_label = "Level"
 
 [kind.labels]
 ultimate_id = "奥義"
+levels = "Levels"
+"party_member.level_card_row" = "Card"
+"party_member.level_skills" = "Skill line"
+"party_member.level_ultimate_level" = "奥義 level"
+
+[kind.notes]
+levels = "What the character brings as it reaches each level, once: a copy of a card, a skill for each of its four skill lines while the line is open, and the 奥義 level it reaches."
 
 [kind.referenced_as]
 ultimate_id = "Characters with it"
+"party_member.level_card_row" = "Brought by characters"
+"party_member.level_skills" = "Characters with it"
 
 [[kind]]
 id = "character_profile"
@@ -339,15 +358,23 @@ table = "battle"
 about = "The battles of the story and the arenas: each side's deck, the rule, and the opponent's 奥義."
 exists = "deck.side_1"
 title = "deck.side_1"
-fields = ["deck", "rule", "opponent_ultimate", "opponent_ultimate_level"]
+fields = ["deck", "leader_card.side_0_row", "leader_card.side_1_row", "rule", "opponent_ultimate",
+          "opponent_ultimate_level"]
 
 [kind.labels]
 deck = "Decks"
+"leader_card.side_0_row" = "Player's leader"
+"leader_card.side_1_row" = "Opponent's leader"
 opponent_ultimate = "Opponent's 奥義"
 opponent_ultimate_level = "Its level"
 
+[kind.notes]
+"leader_card.side_0_row" = "None where the player fights with their own deck and leader."
+
 [kind.referenced_as]
 deck = "Battles"
+"leader_card.side_0_row" = "The player's leader in battles"
+"leader_card.side_1_row" = "Leads the opponent in battles"
 rule = "Battles"
 opponent_ultimate = "Used in battles"
 

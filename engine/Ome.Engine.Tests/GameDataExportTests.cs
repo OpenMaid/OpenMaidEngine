@@ -42,9 +42,18 @@ public class GameDataExportTests
     private const int BonusTitle = 960, BonusLevel = 5200, BonusStats = 5210, RuleState = 5300;
     // The game's names of the item categories (export plan §5), which ITINIT writes: element k names category k + 1.
     private const int CategoryNames = 980;
+    // An item's bond (export plan §5): a table whose record r is item r's (records_of), three records, so item 3 has
+    // none. Its partners are two skills, each a pair of elements (row × 1 + slot); its tiers two numbers a record.
+    private const int BondPartners = 5500, BondTiers = 5520;
 
-    private static RegistryView Registry(bool formats = false, RefKey? skillKey = null, bool bitNames = false) => new(
+    private static RegistryView Registry(bool formats = false, RefKey? skillKey = null, bool bitNames = false,
+                                         string? bondsOf = null) => new(
         [
+            new TableLayout("item_bond", 3, [("partners", "bond_partners"), ("tier", "bond_tiers")],
+                            new Dictionary<string, string> { ["partners"] = "skill" })
+            {
+                RefKeys = new Dictionary<string, RefKey> { ["partners"] = new RefKey(1, null) }, RecordsOf = bondsOf,
+            },
             new TableLayout("item", 4,
                 [("name", "item_names"), ("short_description", "item_short_descriptions"), ("category", "item_category"),
                  ("price", "item_prices"), ("icon", "item_icon"), ("handler_script_id", "item_handler"),
@@ -101,6 +110,9 @@ public class GameDataExportTests
             new ArrayLayout("bonus_level", GlobalBank.Integer, BonusLevel, [], new Dictionary<int, string>()),
             new ArrayLayout("bonus_stats", GlobalBank.Integer, BonusStats, [3], new Dictionary<int, string> { [0] = "attack" }),
             new ArrayLayout("rule_state", GlobalBank.Integer, RuleState, [4, 3], new Dictionary<int, string>()),
+            new ArrayLayout("bond_partners", GlobalBank.Integer, BondPartners, [3, 4],
+                            new Dictionary<int, string> { [0] = "first_row", [1] = "first_slot", [2] = "second_row" }),
+            new ArrayLayout("bond_tiers", GlobalBank.Integer, BondTiers, [3, 2], new Dictionary<int, string>()),
         ]);
 
     private static ArrayLayout Array(string name, GlobalBank bank, int address, int records)
@@ -161,10 +173,16 @@ public class GameDataExportTests
     private static Script Asm(string name, IReadOnlyList<(int, Operand[])> code, params string[] strings)
         => ScriptAssembler.Assemble(Table, name, code, strings);
 
-    private static ExportInputs Game(Faults faults = Faults.None)
+    private static ExportInputs Game(Faults faults = Faults.None, bool bonds = false)
     {
         var byId = new Dictionary<long, Script>
         {
+            [23] = Asm("BDINIT.BIN",
+            [
+                (OpMov, [G(BondPartners + 4), I(1)]), (OpMov, [G(BondPartners + 6), I(1)]), (OpMov, [G(BondPartners + 7), I(1)]),
+                (OpMov, [G(BondTiers + 2), I(3)]), (OpMov, [G(BondTiers + 3), I(4)]), (OpMov, [G(BondTiers + 4), I(5)]),
+                (OpExit, []),
+            ]),
             [1] = Asm("ITINIT.BIN",
             [
                 (OpSetString, [GS(ItemNames + 1), S(0)]), (OpSetString, [GS(ItemShorts + 1), S(1)]),
@@ -228,6 +246,7 @@ public class GameDataExportTests
         if (faults.HasFlag(Faults.ExcludedBuilderWrites)) calls.Add((OpCallScript, [I(6)]));
         if (faults.HasFlag(Faults.StringWithoutOrigin)) calls.Add((OpCallScript, [I(7)]));
         if (faults.HasFlag(Faults.DerivedScriptWrites)) calls.Add((OpCallScript, [I(22)]));
+        if (bonds) calls.Add((OpCallScript, [I(23)]));
         calls.Add((OpExit, []));
         Script boot = Asm("BOOT.BIN", calls);
         var byName = byId.Values.Append(boot).ToDictionary(script => ScriptNames.Normalized(script.Name), StringComparer.Ordinal);
@@ -503,6 +522,102 @@ public class GameDataExportTests
         Assert.Equal([new ExportRef("granted_skill", 0, "skill", 7)], Entity(result, "item", 2).Refs);
         Assert.Empty(Entity(result, "item", 3).Refs);
         Assert.Equal(2, result.Report.MissingRefs[("item", "granted_skill", "skill")]);
+    }
+
+    // An item kind that joins its bonds (export plan §5): the first partner of each pair, and the tiers beside the
+    // prices as a group whose rows are tiers.
+    private static ExportInputs Bonds(string? bondsOf = "item")
+    {
+        ExportInputs game = Game(bonds: true);
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        JsonNode item = declarations["kinds"]![0]!;
+        item["joins"] = JsonNode.Parse("""["item_bond"]""");
+        item["fields"] = JsonNode.Parse(
+            """["category", "price", "price.sell", "granted_skill", "item_bond.partners.first_row", "item_bond.partners.second_row", "item_bond.tier"]""");
+        item["groups"] = JsonNode.Parse("""[{"name": "tiers", "fields": ["price", "item_bond.tier"], "row_label": "Tier"}]""");
+        return new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = game.StopOf,
+            Registry = Registry(bondsOf: bondsOf), Declarations = ExportDeclarations.Parse(declarations.ToJsonString()),
+            Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        };
+    }
+
+    [Fact]
+    public void AJoinedTablesRecordIsTheEntitysAndAPairOfElementsNamesARecord()
+    {
+        ExportResult result = GameDataExporter.Run(Bonds());
+        ExportEntity sword = Entity(result, "item", 1);
+        // Each pair of partners is row × 1 + slot: (1, 0) skill 1 and (1, 1) skill 2, which no record has.
+        Assert.Equal([1], Values(sword, "item_bond.partners.first_row"));
+        Assert.Equal([3, 4], Values(sword, "item_bond.tier"));
+        Assert.Equal([new ExportRef("item_bond.partners.first_row", 0, "skill", 1),
+                      new ExportRef("item_bond.partners.second_row", 0, "skill", 2)],
+                     sword.Refs.Where(r => r.Field.StartsWith("item_bond.", StringComparison.Ordinal)));
+        Assert.Equal(1, result.Report.MissingRefs[("item", "item_bond.partners.second_row", "skill")]);
+        // Item 2's bond has no partner, and item 3 is past the bond table's three records: its cells are withheld.
+        Assert.Equal([5, 0], Values(Entity(result, "item", 2), "item_bond.tier"));
+        Assert.DoesNotContain(Entity(result, "item", 2).Refs, r => r.Field.StartsWith("item_bond.", StringComparison.Ordinal));
+        ExportEntity spear = Entity(result, "item", 3);
+        Assert.Equal([null, null], Values(spear, "item_bond.tier"));
+        Assert.DoesNotContain(spear.Cells, cell => cell.Field.StartsWith("item_bond.", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.Report.Refusals, refusal => refusal.Field.StartsWith("item_bond.", StringComparison.Ordinal));
+        // The modder cells name the joined table's fields as the kind publishes them, by element.
+        Assert.Contains(new ExportModderCell("item_bond.partners", 2, GlobalBank.Integer, BondPartners + 6, "1", "BDINIT.BIN"),
+                        sword.Cells);
+        // The snippet sets the bond as a record of its own table, each published pair whole (its slot beside its row).
+        Assert.EndsWith("""
+            granted_skill = 1
+
+            [item_bond.1.partners]
+            first_row = 1
+            first_slot = 0
+            second_row = 1
+            3 = 1
+
+            [item_bond.1.tier]
+            0 = 3
+            1 = 4
+            """.ReplaceLineEndings("\n") + "\n", sword.Snippet);
+        Assert.DoesNotContain("[item_bond.", spear.Snippet ?? "", StringComparison.Ordinal);
+        Assert.Empty(result.Report.SnippetProblems);
+
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            // A joined field is in the kind's field table, with the joined table's reference, and a group's row word.
+            Assert.Equal("1|skill|skill", Scalar("SELECT published || '|' || ref_table || '|' || ref_kind FROM field "
+                                                 + "WHERE kind = 'item' AND name = 'item_bond.partners.first_row'"));
+            Assert.Equal("0", Scalar("SELECT published FROM field WHERE kind = 'item' AND name = 'item_bond.partners'"));
+            Assert.Equal("tiers||Tier", Scalar("SELECT name || '|' || ifnull(labels, '') || '|' || row_label FROM group_label "
+                                               + "WHERE kind = 'item'"));
+            Assert.Equal("[3,4]", Scalar("SELECT \"item_bond.tier\" FROM item WHERE id = 1"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AKindJoinsOnlyATableWhoseRecordsAreItsOwn()
+    {
+        ExportFailure failure = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(Bonds(bondsOf: null)));
+        Assert.Contains("joins table item_bond, whose records are not item's", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]

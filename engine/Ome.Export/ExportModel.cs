@@ -124,6 +124,8 @@ public sealed class ExportEntity(int id)
     public List<ExportRelation> Relations { get; } = [];
     /// <summary>The snippet's record (spec §6.6, plan §4.3): each published, text and picture field at its value.</summary>
     internal List<KeyValuePair<string, DataValue>> SnippetRecord { get; } = [];
+    /// <summary>The snippet's records of the tables its kind joins: the table and the record's fields.</summary>
+    internal List<(string Table, List<KeyValuePair<string, DataValue>> Fields)> SnippetJoined { get; } = [];
     /// <summary>The snippet's loaded rows: scope, table name, record and the row's fields.</summary>
     internal List<(string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> SnippetRows { get; } = [];
     /// <summary>A data file that sets the entity's published fields to their values, ready to edit (spec §6.6).</summary>
@@ -162,6 +164,13 @@ public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, 
 {
     /// <summary>The tables loaders publish under this kind's entities (export plan §4.2).</summary>
     public List<ExportLoadedTable> Loaded { get; } = [];
+    /// <summary>The tables it joins (export plan §5, <c>joins</c>), by name: record r of each is entity r.</summary>
+    public IReadOnlyDictionary<string, TableLayout> Joins { get; init; } = new Dictionary<string, TableLayout>();
+    /// <summary>Every field of its joined tables, each written <c>table.field</c>.</summary>
+    public IReadOnlyList<FieldLayout> JoinedFields { get; init; } = [];
+
+    /// <summary>The table a field of the kind is of: a joined table's, or its own.</summary>
+    public TableLayout TableOf(FieldLayout field) => field.Joined is { } joined ? Joins[joined] : Table;
     /// <summary>The scripts that read, write or index a cell of its table or of its loaded tables, with their counts
     /// (plan §4.3), by script name.</summary>
     public List<(string Script, GlobalUse Use)> ScriptUse { get; } = [];

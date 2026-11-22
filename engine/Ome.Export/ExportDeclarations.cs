@@ -124,6 +124,11 @@ public sealed record KindDeclaration(
     /// null.</summary>
     public string? About { get; init; }
 
+    /// <summary>The tables whose record r belongs to the kind's entity r (export plan §5; the registry's
+    /// <c>records_of</c>), whose fields it publishes as its own, each written <c>table.field</c>: an Arterial
+    /// character's party state.</summary>
+    public IReadOnlyList<string> Joins { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -154,6 +159,8 @@ public sealed record KindDeclaration(
                     {
                         Labels = group.TryGetProperty("labels", out JsonElement labels)
                                  && labels.ValueKind == JsonValueKind.String ? labels.GetString() : null,
+                        RowLabel = group.TryGetProperty("row_label", out JsonElement row)
+                                   && row.ValueKind == JsonValueKind.String ? row.GetString() : null,
                     }).ToList()
                 : [],
             Sheets = kind.TryGetProperty("pictures", out JsonElement sheets)
@@ -174,6 +181,7 @@ public sealed record KindDeclaration(
             About = kind.TryGetProperty("about", out JsonElement about) && about.ValueKind == JsonValueKind.String
                 ? about.GetString()
                 : null,
+            Joins = ExportDeclarations.Strings(kind, "joins"),
             ReferencedAs = kind.TryGetProperty("referenced_as", out JsonElement referenced)
                 ? referenced.EnumerateArray().Select(entry => new ReferenceHeadingDeclaration(
                     entry.GetProperty("field").GetString()!, entry.GetProperty("heading").GetString()!,
@@ -194,10 +202,12 @@ public sealed record TextBlockDeclaration(string Name, int First, int Last);
 
 /// <summary>A group of a kind's published fields (export plan §5), in its order: rows of cells, each field's width a
 /// multiple of the narrowest's. <see cref="Labels"/> names a text field of a table the kind's loaders publish
-/// (<c>table.field</c>), whose record r labels row r.</summary>
+/// (<c>table.field</c>), whose record r labels row r; <see cref="RowLabel"/> is a word that names row r with its number
+/// ("Level" for "Level 12").</summary>
 public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields)
 {
     public string? Labels { get; init; }
+    public string? RowLabel { get; init; }
 }
 
 /// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture

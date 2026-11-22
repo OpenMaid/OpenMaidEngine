@@ -1039,6 +1039,7 @@ type = "int[100][40]"
 usage = "CCINIT: the 奥義 level (1 to 9) the character reaches at each level; COUNTSKILL raises party_member_ultimate_levels to it."
 source = "investigation"
 confidence = "high"
+none = 0
 
 [[global]]
 address = "0x3ae0"
@@ -3619,6 +3620,10 @@ picture = "area_unit_pictures"
 extra_picture = "area_unit_extra_pictures"
 state_id = "area_unit_state_ids"
 
+# A unit's card is a row and a slot in one row of two cells (BTL passes the pair to CALCARM).
+[table.refs]
+card = { table = "card", times = 30, pairs = true }
+
 [[table]]
 name = "deck"
 records = 1000
@@ -3651,6 +3656,7 @@ cpu_profile = "cpu_profile"
 name = "party_member"
 records = 100
 built_by = "boot"
+records_of = "character"
 usage = "CCINIT party characters keyed by character id (the same ids as character), with their saved state: what each brings at each of its levels, and its level, experience, 奥義 level, picture set and open skill lines."
 
 [table.fields]
@@ -3730,7 +3736,9 @@ rule = "battle_rules"
 music = "battle_music"
 background = "battle_backgrounds"
 
+# Each side's leader card is a pair of elements of leader_card: its row and its slot (side 0's, then side 1's).
 [table.refs]
+leader_card = { table = "card", times = 30, pairs = true }
 deck = "deck"
 opponent_ultimate = "ultimate"
 rule = "battle_rule"

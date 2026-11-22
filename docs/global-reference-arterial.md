@@ -185,17 +185,17 @@ Built by: `area`.
 
 UNINIT's units of the area in play, keyed by unit number.
 
-| field | global | address | type |
-|---|---|---|---|
-| card | area_unit_cards | `0x33301e` | `int[200][2]` |
-| kind | area_unit_kinds | `0x332dc6` | `int[200]` |
-| icon | area_unit_icons | `0x332e8e` | `int[200]` |
-| deck | area_unit_decks | `0x332f56` | `int[200]` |
-| routine | area_unit_routines | `0x333276` | `int[200]` |
-| battle_music | area_unit_battle_music | `0x3342de` | `int[200]` |
-| picture | area_unit_pictures | `0x3345fe` | `int[200][2]` |
-| extra_picture | area_unit_extra_pictures | `0x33478e` | `int[200]` |
-| state_id | area_unit_state_ids | `0x333406` | `int[200]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| card | area_unit_cards | `0x33301e` | `int[200][2]` | `card` (element 2k × 30 + element 2k + 1) |
+| kind | area_unit_kinds | `0x332dc6` | `int[200]` | |
+| icon | area_unit_icons | `0x332e8e` | `int[200]` | |
+| deck | area_unit_decks | `0x332f56` | `int[200]` | |
+| routine | area_unit_routines | `0x333276` | `int[200]` | |
+| battle_music | area_unit_battle_music | `0x3342de` | `int[200]` | |
+| picture | area_unit_pictures | `0x3345fe` | `int[200][2]` | |
+| extra_picture | area_unit_extra_pictures | `0x33478e` | `int[200]` | |
+| state_id | area_unit_state_ids | `0x333406` | `int[200]` | |
 
 ### deck[1000]
 
@@ -225,6 +225,8 @@ DEINIT decks keyed by deck id: a name and up to 20 cards, each as a row and a sl
 Built by: `boot`.
 
 CCINIT party characters keyed by character id (the same ids as character), with their saved state: what each brings at each of its levels, and its level, experience, 奥義 level, picture set and open skill lines.
+
+Record r is record r of `character`.
 
 | field | global | address | type | refers to |
 |---|---|---|---|---|
@@ -287,7 +289,7 @@ DUINIT battles keyed by battle id (battle_id): each side's leader and deck, the 
 | field | global | address | type | refers to |
 |---|---|---|---|---|
 | uses_player_deck | battle_uses_player_deck_flags | `0x36d67e` | `int[1000]` | |
-| leader_card | battle_leader_cards | `0x36da66` | `int[1000][4]` | |
+| leader_card | battle_leader_cards | `0x36da66` | `int[1000][4]` | `card` (element 2k × 30 + element 2k + 1) |
 | deck | battle_decks | `0x36ea06` | `int[1000][2]` | `deck` |
 | opponent_ultimate | battle_opponent_ultimates | `0x36f1d6` | `int[1000]` | `ultimate` |
 | opponent_ultimate_level | battle_opponent_ultimate_levels | `0x36f5be` | `int[1000]` | |
@@ -662,7 +664,7 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x2ac567` | party_member_level_card_slots | high | investigation | CCINIT: and that card's slot. |
 | `0x2ad507` | party_member_level_items | med | investigation | An item the character brings at each level: CALCCC gives it with ADDITEM once, when the level is reached. No record of the game writes it. |
 | `0x2ae4a7` | party_member_level_skills | high | investigation | CCINIT: the skills (SKINIT ids) the character has at each level, one for each skill line, at column 4 * level + line. COUNTSKILL counts one only while its line is open. |
-| `0x2b2327` | party_member_level_ultimate_levels | high | investigation | CCINIT: the 奥義 level (1 to 9) the character reaches at each level; COUNTSKILL raises party_member_ultimate_levels to it. |
+| `0x2b2327` | party_member_level_ultimate_levels | high | investigation | CCINIT: the 奥義 level (1 to 9) the character reaches at each level; COUNTSKILL raises party_member_ultimate_levels to it. 0 means none. |
 | `0x2b32c7` | card_row_character_ids | high | investigation | CDINIT: the character (a CHINIT id) of a card row, written where the row's first card starts. BTL reads a unit's pictures from CHINIT through it. |
 | `0x2b338f` | card_append_numbers | high | investigation | CDINIT: the append (1 to 4) that added the card; unset for the base data's. |
 | `0x2b4aff` | card_sort_keys | high | investigation | CDINIT: a sort number; the card lists (the book, the deck builder, the shop) are in its order. |

@@ -111,8 +111,8 @@ public static class ExportWriter
             "CREATE TABLE field_group (kind TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, "
             + "field TEXT NOT NULL, PRIMARY KEY (kind, name, position))",
             // A group's row labels (export plan §5): a loaded table's text field, table.field, whose record r labels
-            // row r.
-            "CREATE TABLE group_label (kind TEXT NOT NULL, name TEXT NOT NULL, labels TEXT NOT NULL, "
+            // row r, or a word that names row r with its number ("Level 12").
+            "CREATE TABLE group_label (kind TEXT NOT NULL, name TEXT NOT NULL, labels TEXT, row_label TEXT, "
             + "PRIMARY KEY (kind, name))",
             // A line that explains a detail to a reader (export plan §5): a field's, a group's, or a loaded table's
             // field's, written table.field.
@@ -388,14 +388,14 @@ public static class ExportWriter
     private static void WriteFields(SqliteConnection connection, ExportKind kind, IReadOnlyList<ExportKind> kinds)
     {
         KindDeclaration declaration = kind.Declaration;
-        var named = kind.TableFields.Concat(kind.Declared.Where(field => field.Column is not null))
+        var named = kind.TableFields.Concat(kind.JoinedFields).Concat(kind.Declared.Where(field => field.Column is not null))
             .DistinctBy(field => field.Name).ToList();
         using var insert = new Inserter(connection, "field", "kind", "name", "type", "published", "text", "filter",
                                         "ref_table", "ref_kind", "picture", "bank", "address", "width", "column_index",
                                         "columns", "column_kind");
         foreach (FieldLayout field in named)
         {
-            string? refTable = kind.Table.Refs.GetValueOrDefault(field.Field);
+            string? refTable = kind.TableOf(field).Refs.GetValueOrDefault(field.Field);
             string? refKind = refTable == null || refTable == "picture"
                 ? null
                 : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
@@ -417,9 +417,10 @@ public static class ExportWriter
             foreach (GroupDeclaration group in declaration.Groups)
                 for (int position = 0; position < group.Fields.Count; position++)
                     groups.Row(declaration.Id, group.Name, position, group.Fields[position]);
-        using (var labels = new Inserter(connection, "group_label", "kind", "name", "labels"))
+        using (var labels = new Inserter(connection, "group_label", "kind", "name", "labels", "row_label"))
             foreach (GroupDeclaration group in declaration.Groups)
-                if (group.Labels != null) labels.Row(declaration.Id, group.Name, group.Labels);
+                if (group.Labels != null || group.RowLabel != null)
+                    labels.Row(declaration.Id, group.Name, group.Labels, group.RowLabel);
         using (var blocks = new Inserter(connection, "text_block", "kind", "field", "position", "name", "first", "last"))
             foreach ((string field, IReadOnlyList<TextBlockDeclaration> list) in declaration.TextBlocks)
                 for (int position = 0; position < list.Count; position++)

@@ -80,19 +80,32 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
                                  IReadOnlyDictionary<string, string> Refs)
 {
     /// <summary>Its two-field references' keys, by field (<c>ref_keys</c>): the record a value names is the value times
-    /// <see cref="RefKey.Times"/> plus the <see cref="RefKey.Plus"/> field's value.</summary>
+    /// <see cref="RefKey.Times"/> plus the <see cref="RefKey.Plus"/> field's value, or for a paired reference the next
+    /// element's.</summary>
     public IReadOnlyDictionary<string, RefKey> RefKeys { get; init; } = new Dictionary<string, RefKey>();
+
+    /// <summary>The table whose record r its record r belongs to (<c>records_of</c>), or null: Arterial's party_member,
+    /// kept for each character by its character id.</summary>
+    public string? RecordsOf { get; init; }
 }
 
 /// <summary>How a two-field reference names its record (export plan §5): the field's value times
 /// <paramref name="Times"/>, plus field <paramref name="Plus"/>'s value at the same element. Arterial names a card by
-/// its row and slot, row × 30 + slot.</summary>
-public sealed record RefKey(int Times, string Plus);
+/// its row and slot, row × 30 + slot. A paired reference (<paramref name="Plus"/> null) takes both from its own field:
+/// element 2k times <paramref name="Times"/>, plus element 2k + 1 (a battle's leader card for each side).</summary>
+public sealed record RefKey(int Times, string? Plus)
+{
+    public bool Pairs => Plus is null;
+}
 
 /// <summary>A field as a declaration names it (<c>stats</c>, or one column, <c>graphic.face_CA_AA</c>): the cells it
-/// covers in each record.</summary>
+/// covers in each record. A field of a table the kind joins (<see cref="Joined"/>) is named <c>table.field</c>.</summary>
 public sealed record FieldLayout(string Name, string Field, ArrayLayout Array, int? Column)
 {
+    /// <summary>The table the kind joins that the field is of (export plan §5, <c>joins</c>), or null for the kind's own.
+    /// </summary>
+    public string? Joined { get; init; }
+
     /// <summary>How many cells it has in a record.</summary>
     public int Elements => Column is null ? Array.Width : 1;
 
@@ -181,11 +194,16 @@ public sealed class RegistryView
                 var keys = entry.TryGetProperty("ref_keys", out JsonElement keyMap)
                     ? keyMap.EnumerateObject().ToDictionary(
                         pair => pair.Name,
-                        pair => new RefKey(pair.Value.GetProperty("times").GetInt32(), pair.Value.GetProperty("plus").GetString()!),
+                        pair => new RefKey(pair.Value.GetProperty("times").GetInt32(),
+                                           pair.Value.TryGetProperty("plus", out JsonElement plus) ? plus.GetString() : null),
                         StringComparer.Ordinal)
                     : new Dictionary<string, RefKey>(StringComparer.Ordinal);
                 tables.Add(new TableLayout(entry.GetProperty("name").GetString()!, entry.GetProperty("records").GetInt32(),
-                                           fields, refs) { RefKeys = keys });
+                                           fields, refs)
+                {
+                    RefKeys = keys,
+                    RecordsOf = entry.TryGetProperty("records_of", out JsonElement of) ? of.GetString() : null,
+                });
             }
         return new RegistryView(tables, arrays);
     }

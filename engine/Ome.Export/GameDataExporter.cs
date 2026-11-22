@@ -54,7 +54,7 @@ public static class GameDataExporter
         if (inputs.ScriptIndex is { } index)
             foreach (ExportKind kind in kinds)
                 kind.ScriptUse.AddRange(index.UsesOf(
-                    [.. kind.TableFields.Concat(kind.Loaded.SelectMany(loaded => loaded.TableFields))
+                    [.. kind.TableFields.Concat(kind.JoinedFields).Concat(kind.Loaded.SelectMany(loaded => loaded.TableFields))
                         .Select(field => field.Array).Distinct()
                         .Select(array => (array.Bank, array.Address, array.Address + array.Dimensions[0] * array.Width))])
                     .OrderBy(use => use.Script, StringComparer.Ordinal));
@@ -219,7 +219,28 @@ public static class GameDataExporter
         IReadOnlyList<FieldLayout> tableFields = registry.FieldsOf(table);
         FieldLayout exists = registry.Resolve(table, kind.Exists);
         var skips = kind.Skip.Select(skip => (Field: registry.Resolve(table, skip.Field), skip.Value)).ToList();
-        IReadOnlyList<FieldLayout> published = kind.Fields.Select(field => registry.Resolve(table, field)).ToList();
+        // The tables the kind joins (export plan §5): record r of each is entity r (the registry's records_of), and the
+        // kind publishes their fields as its own, written table.field. An entity past a joined table's records has
+        // none of its cells.
+        var joins = new Dictionary<string, TableLayout>(StringComparer.Ordinal);
+        foreach (string name in kind.Joins)
+        {
+            TableLayout joined = registry.Table(name);
+            if (joined.RecordsOf != table.Name)
+                throw new ExportFailure($"{kind.Id} joins table {name}, whose records are not {table.Name}'s (its "
+                                        + "records_of)");
+            joins[name] = joined;
+        }
+        IReadOnlyList<FieldLayout> joinedFields = [.. joins.SelectMany(pair => registry.FieldsOf(pair.Value).Select(
+            field => field with { Name = $"{pair.Key}.{field.Name}", Joined = pair.Key }))];
+        FieldLayout Resolve(string reference)
+        {
+            int dot = reference.IndexOf('.', StringComparison.Ordinal);
+            return dot > 0 && joins.TryGetValue(reference[..dot], out TableLayout? joined)
+                ? registry.Resolve(joined, reference[(dot + 1)..]) with { Name = reference, Joined = reference[..dot] }
+                : registry.Resolve(table, reference);
+        }
+        IReadOnlyList<FieldLayout> published = kind.Fields.Select(Resolve).ToList();
         var texts = new List<string>();
         // A title is a string field, a reference whose target's title the entity takes, or none (plan §4.1).
         if (kind.Title is { } title && registry.Resolve(table, title).IsString) texts.Add(title);
@@ -232,8 +253,11 @@ public static class GameDataExporter
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
-        // The snippet sets what the site shows of a record (plan §4.3): its published fields, its text and its pictures.
-        IReadOnlyList<FieldLayout> snippetFields = [.. published, .. textFields, .. pictures.Select(picture => picture.Field),
+        // The snippet sets what the site shows of a record (plan §4.3): its published fields, its text and its pictures,
+        // and the second cell of each two-field reference, without which a modder could not change the record it names
+        // (a card's slot beside its row).
+        IReadOnlyList<FieldLayout> snippetFields = [.. published, .. KeyPartners(published, tableFields, joinedFields, table, joins),
+                                                    .. textFields, .. pictures.Select(picture => picture.Field),
                                                     .. sheets.Select(sheet => sheet.Field)];
         var entities = new List<ExportEntity>();
         for (int record = 0; record < table.Records; record++)
@@ -247,9 +271,10 @@ public static class GameDataExporter
             // script's cell is withheld, its writer shown (export plan §5).
             // Keyed by bank and address: a string array and an integer array may share addresses in their banks.
             var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
-            foreach (FieldLayout field in tableFields)
+            bool Joins(FieldLayout field) => field.Joined is not { } joined || record < joins[joined].Records;
+            foreach (FieldLayout field in tableFields.Concat(joinedFields.Where(Joins)))
             {
-                bool publishedText = textArrays.Contains(field.Field);
+                bool publishedText = field.Joined == null && textArrays.Contains(field.Field);
                 for (int element = 0; element < field.Elements; element++)
                 {
                     ExportCell cell = Read(boot, field, record, element);
@@ -257,16 +282,19 @@ public static class GameDataExporter
                     bool shown = (!field.IsString || publishedText) && !derived;
                     string? reason = shown ? RefusalOf(boot, cell, rule) : null;
                     if (reason != null)
-                        report.Refusals.Add(new Refusal(kind.Id, record, field.Field, element, cell.Bank, cell.Address, reason));
+                        report.Refusals.Add(new Refusal(kind.Id, record, field.Name, element, cell.Bank, cell.Address, reason));
                     cells[new GlobalCell(cell.Bank, cell.Address)] = (cell, reason != null || derived);
                     if (cell.Writer != null || !cell.IsDefault)
-                        entity.Cells.Add(new ExportModderCell(field.Field, element, cell.Bank, cell.Address,
+                        entity.Cells.Add(new ExportModderCell(field.Name, element, cell.Bank, cell.Address,
                             reason != null || !shown ? null : cell.Text ?? cell.Number.ToString(CultureInfo.InvariantCulture),
                             cell.Writer));
                 }
             }
+            // A joined field of a record its table does not have is withheld, as a refused cell is.
             (ExportCell Cell, bool Refused) At(FieldLayout field, int element)
-                => cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))];
+                => Joins(field)
+                    ? cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))]
+                    : (new ExportCell(field.Name, element, field.Array.Bank, 0, 0, null, null), true);
 
             foreach (FieldLayout field in published)
             {
@@ -277,8 +305,11 @@ public static class GameDataExporter
                     values[element] = refused ? null : cell.Number;
                 }
                 entity.Values.Add((field.Name, values));
-                if (table.RefKeys.TryGetValue(field.Field, out RefKey? key))
-                    entity.KeyedRefs[field.Name] = KeyedIds(field, tableFields, key, At);
+                TableLayout owner = field.Joined is { } joined ? joins[joined] : table;
+                if (owner.RefKeys.TryGetValue(field.Field, out RefKey? key))
+                    entity.KeyedRefs[field.Name] = KeyedIds(field, field.Joined == null ? tableFields
+                                                                : [.. joinedFields.Where(other => other.Joined == field.Joined)],
+                                                            key, At);
             }
             // A string is translated at its origin, which stands for the site the game draws it at (plan §4.6).
             foreach (FieldLayout field in textFields)
@@ -311,17 +342,30 @@ public static class GameDataExporter
             }
             foreach (DescriptionDeclaration description in kind.Descriptions)
                 Describe(inputs, boot, kind, entity, description, At, table, languages, report);
-            entity.SnippetRecord.AddRange(SnippetEntries(tableFields, snippetFields, (field, column) =>
+            DataValue? SnippetValue(FieldLayout field, int column)
             {
                 var (cell, refused) = At(field, column);
                 return refused ? null : field.IsString ? new DataString(cell.Text ?? "") : new DataInteger(cell.Number);
-            }));
+            }
+            entity.SnippetRecord.AddRange(SnippetEntries(tableFields, snippetFields, SnippetValue));
+            // A joined table's record is a record of its own table in a data file.
+            foreach ((string name, TableLayout joined) in joins)
+            {
+                if (record >= joined.Records) continue;
+                List<KeyValuePair<string, DataValue>> fields = SnippetEntries(
+                    [.. joinedFields.Where(field => field.Joined == name)],
+                    [.. snippetFields.Where(field => field.Joined == name)], SnippetValue);
+                if (fields.Count > 0) entity.SnippetJoined.Add((name, fields));
+            }
             entities.Add(entity);
         }
         var declared = published.Concat(textFields).Concat(pictures.Select(picture => picture.Field))
             .Concat(sheets.Select(sheet => sheet.Field)).Concat(skips.Select(skip => skip.Field)).Append(exists)
             .DistinctBy(field => field.Name).ToList();
-        return new ExportKind(kind, table, tableFields, published, declared, entities);
+        return new ExportKind(kind, table, tableFields, published, declared, entities)
+        {
+            Joins = joins, JoinedFields = joinedFields,
+        };
     }
 
     private static ExportCell Read(GameSession session, FieldLayout field, int record, int element)
@@ -523,7 +567,9 @@ public static class GameDataExporter
             // A data file reaches a scope's table only (plan §5): a table with none has no snippet rows.
             if (table.Scope is not { } scope) continue;
             entity.SnippetRows.Add((scope, name, row,
-                SnippetEntries(table.TableFields, [.. table.Published, .. table.Text], (field, column) =>
+                SnippetEntries(table.TableFields, [.. table.Published, .. KeyPartners(table.Published, table.TableFields, [],
+                                                       table.Table, new Dictionary<string, TableLayout>()), .. table.Text],
+                               (field, column) =>
                 {
                     var (cell, refused) = At(field, column);
                     return refused ? null : field.IsString ? new DataString(cell.Text ?? "") : new DataInteger(cell.Number);
@@ -618,6 +664,26 @@ public static class GameDataExporter
     /// <paramref name="shown"/> covers, once, in the table's order, at its value. A row's columns are written by name
     /// where the registry names them and by number otherwise, as a data file must; a refused element is left out.
     /// </summary>
+    /// <summary>The second cell of each published two-field reference (export plan §5): its <c>plus</c> field whole, or
+    /// for a paired one the column after the published one.</summary>
+    private static IEnumerable<FieldLayout> KeyPartners(IReadOnlyList<FieldLayout> published, IReadOnlyList<FieldLayout> tableFields,
+                                                        IReadOnlyList<FieldLayout> joinedFields, TableLayout table,
+                                                        IReadOnlyDictionary<string, TableLayout> joins)
+    {
+        foreach (FieldLayout field in published)
+        {
+            TableLayout owner = field.Joined is { } joined ? joins[joined] : table;
+            if (!owner.RefKeys.TryGetValue(field.Field, out RefKey? key)) continue;
+            if (key.Pairs)
+            {
+                if (field.Column is { } column) yield return field with { Column = column + 1 };
+                continue;
+            }
+            yield return (field.Joined == null ? tableFields : joinedFields)
+                .First(other => other.Field == key.Plus && other.Joined == field.Joined);
+        }
+    }
+
     private static List<KeyValuePair<string, DataValue>> SnippetEntries(IReadOnlyList<FieldLayout> tableFields,
         IReadOnlyList<FieldLayout> shown, Func<FieldLayout, int, DataValue?> valueOf)
     {
@@ -625,7 +691,7 @@ public static class GameDataExporter
         foreach (FieldLayout whole in tableFields)
         {
             var columns = new SortedSet<int>();
-            foreach (FieldLayout field in shown.Where(field => field.Field == whole.Field))
+            foreach (FieldLayout field in shown.Where(field => field.Field == whole.Field && field.Joined == whole.Joined))
                 if (field.Column is { } column) columns.Add(column);
                 else columns.UnionWith(Enumerable.Range(0, whole.Elements));
             if (columns.Count == 0) continue;
@@ -656,6 +722,8 @@ public static class GameDataExporter
             {
                 KeyValuePair.Create(kind.Table.Name, (DataValue)new DataTable([KeyValuePair.Create(id, (DataValue)new DataTable(entity.SnippetRecord))])),
             };
+            foreach ((string table, List<KeyValuePair<string, DataValue>> fields) in entity.SnippetJoined)
+                top.Add(KeyValuePair.Create(table, (DataValue)new DataTable([KeyValuePair.Create(id, (DataValue)new DataTable(fields))])));
             foreach (IGrouping<string, (string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> scope
                      in entity.SnippetRows.GroupBy(row => row.Scope))
             {
@@ -858,17 +926,21 @@ public static class GameDataExporter
     // ------------------------------------------------------------------------------------------------- references (§5.3)
 
     /// <summary>The records a two-field reference names (<c>[table.refs]</c> <c>{ table, times, plus }</c>, export plan
-    /// §5): each element's value times <c>times</c>, plus the <c>plus</c> field's value at the same element. A value of
-    /// 0 or below stays as it is, none; an element either of whose cells is withheld is null.</summary>
+    /// §5): each element's value times <c>times</c>, plus the <c>plus</c> field's value at the same element; for a
+    /// paired one (<c>{ table, times, pairs = true }</c>) element 2k's value times <c>times</c>, plus element 2k + 1's,
+    /// and an element 2k + 1, the second of a pair, names none. A value of 0 or below stays as it is, none; an element
+    /// either of whose cells is withheld is null.</summary>
     private static long?[] KeyedIds(FieldLayout field, IReadOnlyList<FieldLayout> tableFields, RefKey key,
                                     Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
     {
-        FieldLayout plus = tableFields.First(other => other.Field == key.Plus);
+        FieldLayout plus = tableFields.First(other => other.Field == (key.Plus ?? field.Field) && other.Column == null);
         var ids = new long?[field.Elements];
         for (int element = 0; element < field.Elements; element++)
         {
+            int column = field.Column ?? element;
+            if (key.Pairs && column % 2 == 1) continue;
             var (value, refused) = at(field, element);
-            var (part, partRefused) = at(plus, field.Column ?? element);
+            var (part, partRefused) = at(plus, key.Pairs ? column + 1 : column);
             ids[element] = refused || partRefused ? null
                 : value.Number <= 0 ? value.Number
                 : value.Number * key.Times + part.Number;
@@ -907,7 +979,7 @@ public static class GameDataExporter
         {
             foreach (FieldLayout field in kind.Published)
             {
-                if (!kind.Table.Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
+                if (!kind.TableOf(field).Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
                 foreach (ExportEntity entity in kind.Entities)
                     Link(kind, entity, target, field.Name, 0, entity.KeyedRefs.GetValueOrDefault(field.Name)
                                                               ?? entity.Values.First(value => value.Field == field.Name).Values);
