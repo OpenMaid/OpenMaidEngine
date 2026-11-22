@@ -85,7 +85,9 @@ Ome.Cli omp text import-scripts --from TRANSLATED_ROOT --output my.lang --langua
 - `--verify` reads the catalogs back and checks every message against the translated scripts.
 - The summary and `import-report.json` list what could not be carried.
 - The manifest's `glyph_delay_scale` is the original's character count divided by the translation's. Its `id` and
-  `name` are placeholders: edit them, since the importer leaves an existing manifest unchanged.
+  `name` are placeholders, and it has no `authors`: edit them, and name the translators in `authors`, since the
+  importer leaves an existing manifest unchanged. Whatever shows the package's text elsewhere, such as the game data
+  export, credits it by these.
 - Run the result as any package, with `--mod my.lang --language en`.
 
 The text and images remain their translators' work. The package is for playing a translated install you already

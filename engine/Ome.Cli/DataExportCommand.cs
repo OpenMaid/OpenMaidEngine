@@ -3,17 +3,23 @@ using System.Security.Cryptography;
 using System.Text;
 using Ome.Engine.Devices;
 using Ome.Engine.Frontend.Shell;
+using Ome.Engine.Localization;
 using Ome.Engine.Model;
 using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
 using Ome.Export;
+using Ome.Mods.Localization;
+using Ome.Mods.Manifest;
+using Ome.Mods.Packages;
+using Ome.Script.Abi;
 using Ome.Script.Patch;
 
 /// <summary>
 /// <c>data-export</c> (game data export spec §6.1): reads the selected game's data through the engine, as its
 /// declarations (<c>build/games/&lt;game&gt;/entities.json</c>) publish it, and writes <c>&lt;revision&gt;.sqlite</c>,
-/// its pictures and <c>manifest.json</c> to <c>--output</c> (default <c>build/games/&lt;game&gt;/export/</c>). Exit 0
-/// on a clean export, 1 when a value was refused (§5.5; the rest is still written), 2 when it could not run.
+/// its pictures and <c>manifest.json</c> to <c>--output</c> (default <c>build/games/&lt;game&gt;/export/</c>). Each
+/// <c>--language PACKAGE</c> translates the text into the languages a language package declares (§6.4). Exit 0 on a
+/// clean export, 1 when a value was refused (§5.5; the rest is still written), 2 when it could not run.
 /// </summary>
 internal static class DataExportCommand
 {
@@ -27,11 +33,17 @@ internal static class DataExportCommand
             int index = Array.IndexOf(args, name);
             return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
         }
-        if (args.Contains("--language"))
-        {
-            Console.Error.WriteLine("data-export: --language is exported from milestone 7 of the game data export (spec §13)");
-            return 2;
-        }
+        var packages = new List<string>();
+        for (int k = 0; k < args.Length; k++)
+            if (args[k] == "--language")
+            {
+                if (k + 1 >= args.Length)
+                {
+                    Console.Error.WriteLine("data-export: --language needs a language package's folder");
+                    return 2;
+                }
+                packages.Add(args[++k]);
+            }
         string output = Path.GetFullPath(Option("--output") ?? Path.Combine(Paths.GameBuild(gameId), "export"));
         string entitiesJson = Path.Combine(Paths.GameBuild(gameId), "entities.json");
         if (!File.Exists(entitiesJson))
@@ -50,6 +62,7 @@ internal static class DataExportCommand
                 throw new ExportFailure($"{entitiesJson} declares {declarations.Profile}, not {gameId}");
             RunStop bootStop = ReadAt(gameId, declarations.ReadAt, catalog, store);
             revision = RevisionOf(gameRoot, catalog, store, out string catalogFingerprint);
+            IReadOnlyList<ExportLanguage> languages = Languages(packages, gameId, catalog, store);
             inputs = new ExportInputs
             {
                 GameId = gameId,
@@ -66,6 +79,8 @@ internal static class DataExportCommand
                 Shape = BaseModShape(gameId),
                 ScriptIndex = ScriptIndexCommand.Build(catalog, store, provider, table, out _),
                 Names = GlobalNames.Load(Paths.GlobalsJson(gameId)),
+                Languages = languages,
+                Messages = languages.Count == 0 ? null : new ScriptMessageIndex(table, OpcodeContracts.Load(Paths.OpcodesJson)),
                 Pictures = new CatalogPictures(new ResourceMap(catalog, store, Console.Error.WriteLine, allowBmpAsAgf)),
                 BuildInfo =
                 [
@@ -80,9 +95,16 @@ internal static class DataExportCommand
                 ],
             };
         }
-        catch (Exception error) when (error is ExportFailure or InvalidDataException or IOException)
+        catch (Exception error) when (error is ExportFailure or InvalidDataException or IOException
+                                          or ModManifestException)
         {
             Console.Error.WriteLine($"data-export: {error.Message}");
+            return 2;
+        }
+        catch (TextCatalogException error)
+        {
+            Console.Error.WriteLine("data-export: a language's catalogs do not load");
+            foreach (string problem in error.Problems) Console.Error.WriteLine($"  {problem}");
             return 2;
         }
 
@@ -102,6 +124,47 @@ internal static class DataExportCommand
         ExportFiles files = ExportWriter.Write(result, output, revision, manifest);
         Print(result, output, files, read, clock.Elapsed);
         return result.Report.ExitCode;
+    }
+
+    /// <summary>
+    /// The languages of the packages <c>--language</c> names (spec §6.4, plan §4.6): each language one declares, loaded
+    /// from every package given, in that order, so a later one wins at equal scope as in the port's stack. The
+    /// install's own scripts bind the site entries; a language package changes no script, so its <c>text/</c> gives the
+    /// catalogs the port loads from it.
+    /// </summary>
+    private static IReadOnlyList<ExportLanguage> Languages(IReadOnlyList<string> packages, string gameId,
+                                                           Sys4AssetCatalog catalog, Sys4AssetStore store)
+    {
+        var read = new List<(ModManifest Manifest, TextSource Source)>();
+        foreach (string package in packages)
+        {
+            string directory = Path.GetFullPath(package);
+            string path = Path.Combine(directory, ManifestReader.FileName);
+            if (!File.Exists(path)) throw new ExportFailure($"--language {package}: no {ManifestReader.FileName}");
+            ModManifest manifest = ManifestReader.Parse(File.ReadAllText(path), path);
+            if (manifest.Languages.Count == 0)
+                throw new ExportFailure($"--language {package}: {manifest.Id} declares no language");
+            if (manifest.Profile is { } profile && profile != gameId)
+                throw new ExportFailure($"--language {package}: {manifest.Id} is for {profile}, not {gameId}");
+            read.Add((manifest, new TextSource(Path.Combine(directory, ModLayout.TextFolder), manifest.Languages,
+                                               manifest.Id)));
+        }
+        var binder = TextSiteBinder.For(LanguageLaunch.BaseFingerprints(catalog, store), null);
+        var languages = new List<ExportLanguage>();
+        foreach (string tag in read.SelectMany(package => package.Manifest.Languages)
+                     .Select(language => LanguageTag.Normalize(language.Tag)).Distinct())
+        {
+            if (tag == LanguageTag.Source) throw new ExportFailure($"--language: {tag} is the source language");
+            var report = new TextLoadReport();
+            TextLanguage text = TextRootLoader.Load(read.Select(package => package.Source).ToList(), tag, binder, report);
+            foreach (string line in report.Lines()) Console.WriteLine($"  {line}");
+            languages.Add(new ExportLanguage(tag, text, read
+                .Where(package => package.Manifest.Languages.Any(language => LanguageTag.Normalize(language.Tag) == tag))
+                .Select(package => new ExportLanguagePackage(package.Manifest.Id, package.Manifest.Name,
+                                                             package.Manifest.Version.ToString(), package.Manifest.Authors))
+                .ToList()));
+        }
+        return languages;
     }
 
     /// <summary>The game's base mod's shape of its data kind, which every snippet is checked against (export plan
@@ -206,7 +269,7 @@ internal static class DataExportCommand
         Console.WriteLine($"data-export: {result.Declarations.Profile}, boot {report.BootHalt}, read in {read.TotalSeconds:0.0} s");
         foreach (ExportKind kind in result.Kinds)
         {
-            int texts = kind.Entities.Sum(entity => entity.Texts.Count);
+            int texts = kind.Entities.Sum(entity => entity.Texts.Count(text => text.Language == ExportWriter.SourceLanguage));
             int refs = kind.Entities.Sum(entity => entity.Refs.Count);
             int pictures = kind.Entities.Sum(entity => entity.Pictures.Count);
             Console.WriteLine($"  {kind.Declaration.Id,-10} {kind.Entities.Count,5} entities, {texts,5} texts, {refs,5} refs, "
@@ -228,6 +291,16 @@ internal static class DataExportCommand
                               + $"scripts, {scan.Rows} rows, {scan.Excluded} excluded, {scan.Unresolved.Count} unresolved in "
                               + $"{scan.Unresolved.Select(call => call.Script).Distinct().Count()} scripts, "
                               + $"{scan.Keyless.Count} to no entity");
+        }
+        foreach (LanguageReport language in report.Languages)
+        {
+            string packages = string.Join(", ", language.Language.Packages.Select(package =>
+                $"{package.Id} {package.Version}, "
+                + (package.Authors.Count == 0 ? "no authors given" : "by " + string.Join(", ", package.Authors))));
+            Console.WriteLine($"  language {language.Language.Tag} ({packages}): {language.StringsTranslated} of "
+                              + $"{language.Strings} strings, {language.DescriptionsTranslated} of {language.Descriptions} "
+                              + $"descriptions and {language.DescriptionsPartly} partly, {language.Misses.Count} misses, "
+                              + $"{language.DescriptionHalts.Count} halts");
         }
         int snippets = result.Kinds.SelectMany(kind => kind.Entities).Count(entity => entity.Snippet != null);
         Console.WriteLine($"  snippets: {snippets}, {report.SnippetProblems.Count} problems");
@@ -261,6 +334,14 @@ internal static class DataExportCommand
                 $"{call.Script}@0x{call.Offset:x}: {call.Reason}"));
             Section($"{scan.Declaration.Id} calls to no {scan.Declaration.Kind}", scan.Keyless.Count, scan.Keyless.Select(call =>
                 $"{call.Script}@0x{call.Offset:x}: {scan.Declaration.Key} {call.Key}"));
+        }
+        foreach (LanguageReport language in report.Languages)
+        {
+            var misses = language.Misses;
+            Section($"{language.Language.Tag} misses", misses.Count, misses.Select(miss =>
+                $"{miss.Script}@0x{miss.Offset:x}: {miss.Source.Replace("\n", "\\n", StringComparison.Ordinal)}"));
+            Section($"{language.Language.Tag} description halts", language.DescriptionHalts.Count,
+                    language.DescriptionHalts.Select(halt => $"{halt.Kind} {halt.Id} {halt.Description}: {halt.Halt}"));
         }
         Console.WriteLine($"  wrote {files.Database} and {files.Files.Count - 1} pictures to {output} in {total.TotalSeconds:0.0} s");
         if (report.ExitCode != 0)

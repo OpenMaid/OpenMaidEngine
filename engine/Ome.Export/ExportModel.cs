@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Ome.Engine.Hosting;
+using Ome.Engine.Localization;
 using Ome.Engine.Model;
 using Ome.Engine.Modding;
 using Ome.Engine.Natives;
@@ -27,6 +28,13 @@ public interface IPictureSource
     /// <summary>The picture a packed resource id names, or null when it names none.</summary>
     ExportPicture? Resolve(long packedId);
 }
+
+/// <summary>A package a language of the export comes from (spec §6.4): what the site credits.</summary>
+public sealed record ExportLanguagePackage(string Id, string Name, string Version, IReadOnlyList<string> Authors);
+
+/// <summary>A language the export translates its text into (spec §6.4, plan §4.6): its catalogs, loaded from the
+/// packages that declare it, as the port loads them.</summary>
+public sealed record ExportLanguage(string Tag, TextLanguage Text, IReadOnlyList<ExportLanguagePackage> Packages);
 
 /// <summary>What one export reads (game data export spec §6.1): the installed game the caller loaded, the
 /// declarations and the registry.</summary>
@@ -57,6 +65,11 @@ public sealed class ExportInputs
     /// are found in (plan §4.5); null leaves <c>script_use</c> empty, and fails an export that declares relations.
     /// </summary>
     public ScriptIndex? ScriptIndex { get; init; }
+    /// <summary>The languages to translate the text into, besides the source (spec §6.4, plan §4.6), in order.</summary>
+    public IReadOnlyList<ExportLanguage> Languages { get; init; } = [];
+    /// <summary>The message tables a language's description text resolves by (localization spec §6.2), as the port's;
+    /// null resolves each run on its own.</summary>
+    public ITextMessageIndex? Messages { get; init; }
     /// <summary>The registry's names for global cells, which the report's unnamed cells are counted by (plan §4.3);
     /// null counts none.</summary>
     public GlobalNames? Names { get; init; }
@@ -75,8 +88,9 @@ public sealed record ExportCell(string Field, int Index, GlobalBank Bank, int Ad
 /// <summary>A value left out of the export (spec §5.5), with its cell and why.</summary>
 public sealed record Refusal(string Kind, int Id, string Field, int Index, GlobalBank Bank, int Address, string Reason);
 
-/// <summary>A published string or description, in the source language.</summary>
-public sealed record ExportText(string Field, int Index, string Value);
+/// <summary>A published string or description in a language: the source's (<see cref="ExportWriter.SourceLanguage"/>)
+/// or one the export translates into (spec §6.4).</summary>
+public sealed record ExportText(string Field, int Index, string Value, string Language = ExportWriter.SourceLanguage);
 
 /// <summary>A reference (spec §5.3): element <see cref="Index"/> of <see cref="Field"/> names entity
 /// <see cref="ToId"/> of <see cref="ToKind"/>.</summary>
@@ -170,11 +184,45 @@ public sealed class ExportReport
     public List<(string Kind, int Id, string Description, long ScriptId)> MissingScripts { get; } = [];
     /// <summary>What each script relation's scan found (spec §6.7, plan §4.5), in the declarations' order.</summary>
     public List<RelationScan> Relations { get; } = [];
+    /// <summary>What each language's translation found (spec §6.4, plan §4.6), in the inputs' order.</summary>
+    public List<LanguageReport> Languages { get; } = [];
+}
+
+/// <summary>What one language's translation of the export found (spec §6.4, plan §4.6): its strings and
+/// descriptions, and the misses of the text it exports, each as the port's miss log gives it.</summary>
+public sealed class LanguageReport(ExportLanguage language)
+{
+    private readonly HashSet<(string Source, string Script, int Offset)> _misses = [];
+
+    public ExportLanguage Language { get; } = language;
+    /// <summary>Published table strings, and those an entry translated.</summary>
+    public int Strings { get; internal set; }
+    public int StringsTranslated { get; internal set; }
+    /// <summary>Descriptions with text, those whose every run was presented, and those with a run presented and a run
+    /// missed.</summary>
+    public int Descriptions { get; internal set; }
+    public int DescriptionsTranslated { get; internal set; }
+    public int DescriptionsPartly { get; internal set; }
+    /// <summary>Description runs in the language that did not end at their script's exit, with their halt.</summary>
+    public List<(string Kind, int Id, string Description, string Halt)> DescriptionHalts { get; } = [];
+    /// <summary>The strings the export's text missed (localization spec §14): a table string at its origin, a
+    /// description's message or run at its site in the description's script; each once, by script, offset and source.
+    /// </summary>
+    public IReadOnlyList<(string Source, string Script, int Offset)> Misses
+        => [.. _misses.OrderBy(miss => miss.Script, StringComparer.Ordinal).ThenBy(miss => miss.Offset)
+                      .ThenBy(miss => miss.Source, StringComparer.Ordinal)];
+
+    internal void Missed(string source, string script, int offset)
+        => _misses.Add((source, TextCatalog.NormalizeScriptName(script), offset));
 }
 
 /// <summary>An export read from the game, ready to be written.</summary>
 public sealed record ExportResult(ExportDeclarations Declarations, IReadOnlyList<ExportKind> Kinds, ExportReport Report,
-                                  IReadOnlyList<(string Key, string Value)> BuildInfo);
+                                  IReadOnlyList<(string Key, string Value)> BuildInfo)
+{
+    /// <summary>The languages its text is translated into, besides the source (spec §6.4).</summary>
+    public IReadOnlyList<ExportLanguage> Languages { get; init; } = [];
+}
 
 /// <summary>Why an export could not run at all (exit code 2): a boot that ended elsewhere, a missing script.</summary>
 public sealed class ExportFailure(string message) : Exception(message);

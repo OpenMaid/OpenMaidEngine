@@ -182,12 +182,39 @@ public static class ExportWriter
             ["game"] = result.Declarations.Profile,
             ["revision"] = revision,
             ["declarations_sha256"] = result.Declarations.SourceSha256,
-            ["languages"] = SourceLanguage,
+            ["languages"] = string.Join(",", result.Languages.Select(language => language.Tag).Prepend(SourceLanguage)),
             ["source_language"] = SourceLanguage,
         };
+        // Each translated language's packages (spec §6.4), for the site to credit.
+        if (result.Languages.Count > 0) rows["language_packages"] = LanguagePackages(result.Languages);
         foreach ((string key, string value) in result.BuildInfo) rows[key] = value;
         using var insert = new Inserter(connection, "build_info", "key", "value");
         foreach ((string key, string value) in rows) insert.Row(key, value);
+    }
+
+    /// <summary>A JSON array of each language's packages: its language, id, name, version and authors.</summary>
+    private static string LanguagePackages(IReadOnlyList<ExportLanguage> languages)
+    {
+        var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            json.WriteStartArray();
+            foreach (ExportLanguage language in languages)
+                foreach (ExportLanguagePackage package in language.Packages)
+                {
+                    json.WriteStartObject();
+                    json.WriteString("language", language.Tag);
+                    json.WriteString("id", package.Id);
+                    json.WriteString("name", package.Name);
+                    json.WriteString("version", package.Version);
+                    json.WriteStartArray("authors");
+                    foreach (string author in package.Authors) json.WriteStringValue(author);
+                    json.WriteEndArray();
+                    json.WriteEndObject();
+                }
+            json.WriteEndArray();
+        }
+        return Encoding.UTF8.GetString(buffer.ToArray());
     }
 
     private static void WriteKind(SqliteConnection connection, ExportKind kind, string revision,
@@ -215,7 +242,7 @@ public static class ExportWriter
             row.Add(ContentHash(entity));
             values.Row([.. row]);
             foreach (ExportText text in entity.Texts)
-                texts.Row(id, entity.Id, text.Field, text.Index, SourceLanguage, text.Value);
+                texts.Row(id, entity.Id, text.Field, text.Index, text.Language, text.Value);
             foreach (ExportRef reference in entity.Refs)
                 refs.Row(id, entity.Id, reference.Field, reference.Index, reference.ToKind, reference.ToId);
             foreach ((string name, ExportPicture picture) in entity.Pictures)
@@ -319,8 +346,9 @@ public static class ExportWriter
                        null);
     }
 
-    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, text, references, its pictures'
-    /// hashes and explicit marks, and the rows its loaders built (written only when it has some), in the export's order.
+    /// <summary>The SHA-256 of an entity's canonical form (spec §7.3): its values, its text in each language, references,
+    /// its pictures' hashes and explicit marks, the calls its script relations found, and the rows its loaders built
+    /// (written only when it has some), in the export's order.
     /// </summary>
     public static string ContentHash(ExportEntity entity)
     {
@@ -346,6 +374,7 @@ public static class ExportWriter
                 json.WriteStartArray();
                 json.WriteStringValue(text.Field);
                 json.WriteNumberValue(text.Index);
+                json.WriteStringValue(text.Language);
                 json.WriteStringValue(text.Value);
                 json.WriteEndArray();
             }

@@ -63,6 +63,16 @@ public sealed class TextMissLog
         get { lock (_lock) return _counts.Count; }
     }
 
+    /// <summary>The strings missed, each with its site and the times it was, ordered by script, offset and source.
+    /// </summary>
+    public IReadOnlyList<(string Source, string Script, int Offset, int Count)> Misses()
+    {
+        lock (_lock)
+            return _counts.OrderBy(row => row.Key.Script, StringComparer.Ordinal).ThenBy(row => row.Key.Offset)
+                .ThenBy(row => row.Key.Source, StringComparer.Ordinal)
+                .Select(row => (row.Key.Source, row.Key.Script, row.Key.Offset, row.Value)).ToList();
+    }
+
     /// <summary>The messages narrowed to fit.</summary>
     public int NarrowedCount
     {

@@ -5,8 +5,8 @@
 the `ome-site` repository at `docs/specs/2026-11-21-site-design.md`, is cited as "site §n". The spec stays the design's
 home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what changed
 since the spec was accepted (§5).
-**Status:** milestones 0 to 6 built (2026-11-21; milestone 2 in §4.1, milestone 3 in §4.2, milestone 4 in §4.3,
-milestone 5 in §4.4, milestone 6 in §4.5).
+**Status:** milestones 0 to 7 built (2026-11-21 and 2026-11-22; milestone 2 in §4.1, milestone 3 in §4.2,
+milestone 4 in §4.3, milestone 5 in §4.4, milestone 6 in §4.5, milestone 7 in §4.6).
 §4 gets each later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
 batch was merged); its first commit (`0848b00a`) is the spec.
@@ -559,6 +559,92 @@ rule; this milestone exports ADDITEM's relations, names the globals UNITECH take
 - **The site** (its plan, §7) lists each entity's relations with links to the scripts' reference pages, and the
   calls with their offsets in the modder panel.
 
+### 4.6 Milestone 7: languages
+
+Started 2026-11-21 at the user's word ("Go ahead with the next one"). Spec §6.4 gives the rule: each published table
+string is looked up at its origin and each piece of a description at its `show-text` site, as the engine translates
+them when drawn; a miss keeps the source text and is counted; the export records each package's id, version and
+authors.
+
+**What the code says:**
+
+- **The port translates as it draws** (localization spec §5.2, §6.2): the text native's `Presenter`, which the VM asks
+  at each run. A message of several runs (`ScriptMessageIndex`) resolves as one sentence at its first run's site; its
+  later runs draw nothing (the listener hears them as hidden runs) and the sentence draws its own line breaks, while
+  the listener still hears each `end-text-line` inside it. A single run resolves with its operand's origin. A miss
+  draws the source text and goes to the miss log, once per message. `GameSession.RunScene` takes no presenter, so a
+  headless run draws source text.
+- **A package's language** is its manifest's `[[language]]` with its `text/` folder, laid out as a text root
+  (`text/<tag>/**.toml`). `TextRootLoader.Load(sources, tag, binder, report)` loads it, and the binder drops a site
+  entry whose script's fingerprint is not the install's (`LanguageLaunch.BaseFingerprints`). The port mounts a
+  package through the link cache; with no other mod a language package changes no script, so its `text/` loaded as a
+  source, as `--text-root` loads a folder, gives the same catalogs.
+- **Kamidori's converted package** is `build/games/kamidori/import-en/` (local test data: never committed or shipped,
+  `docs/localization-import-test.md`): 217 catalog files, 48,586 entries. Its manifest gives an id, a name and a
+  version, and no authors; neither it nor the translated install names the translators.
+- **A table string's drawing site is not known:** the game draws it from a UI script the export does not run. Its
+  origin is (`GameSession.StringStores`), and the importer scoped each stored literal by its origin (the import test,
+  R2), so a lookup at the origin finds what the port finds there.
+
+**The plan:**
+
+- **`RunScene` takes a presenter.** The run's text native presents with it, and the run records string stores,
+  seeded from the session's, so a drawn string resolves at its origin as it does in the port.
+- **`--language PACKAGE`,** repeatable. The CLI reads each package's manifest (id, name, version, authors and its
+  `[[language]]` tags), refuses one for another game, and loads each declared language from every package given, in
+  that order, a later one winning at equal scope as in the port's stack; the install's fingerprints bind the site
+  entries, and the load report's lines are printed. The exporter gets each language with the packages that declare
+  it, and the message index.
+- **One presenter per language,** with its own miss log:
+  - **a published table string** is looked up at its origin, which stands for the drawing site too. An entry gives
+    the string's row in the language. A miss gives none, and is logged; the site shows the source text in its place,
+    as the engine draws it.
+  - **a description** runs again from the boot with the presenter. Its text keeps each run's presented text, and the
+    source text of a run with no entry; a presented message's hidden runs and the line ends inside it give nothing.
+    It has a row in the language when any of its runs was presented, and it is counted as translated, or as partly
+    translated when a run missed.
+- **The writer:** the `text` rows in each language; `build_info`'s `languages` (the source language, then each
+  exported one, comma-separated as `layers` is) and `language_packages` (a JSON array of each language's packages:
+  language, id, name, version and authors); the content hash's text entries carry their language.
+- **The report:** per language, its packages, the strings and descriptions translated, partly translated and missed,
+  and the misses, `script@offset` with the source text.
+- **The site** shows the game text in each exported language with a switch, and credits the packages' authors (site
+  §8.6; the site plan's next part).
+- **Checks:** a synthetic game with two languages: a site entry at a table string's origin, a global entry, a
+  description presented as one sentence with its own breaks, the same description resolved run by run where the
+  sentence misses (partly translated), a miss that gives no row, and the database's rows, `build_info` and hashes;
+  the Kamidori export with the converted package.
+
+**Built** (2026-11-22), as planned, with these details:
+
+- **A description's misses are its own.** Its run from the boot also draws what the scripts it calls draw, which
+  the export drops (milestone 1, §5), so each language's run gets its own miss log and the report keeps only the
+  misses in the description's script. A table string that is only a number is not a miss, as in the port's log.
+- **`TextMissLog.Misses()`** lists the log's misses, each source with its script, offset and count, for the report.
+- **The CLI's refusals** (exit 2): a package with no manifest, no `[[language]]`, another game's profile, or the
+  source language as its tag, and a catalog the loader refuses, with its problems listed.
+- **The report** gives, per language, its packages with their versions and authors ("no authors given" when the
+  manifest names none), the strings and descriptions translated and partly translated, the misses and the halts;
+  then the misses, `script@offset` with the source text, and any halt of a description's run.
+
+**Results:**
+
+- **Kamidori with the converted package** (`build/games/kamidori/import-en/`, 48,586 entries from 217 files): 7,563
+  of 8,276 table strings translated, and 2,076 of 2,096 descriptions, 15 more partly; 733 misses (713 table strings,
+  20 description runs), no halts. Every table string missed is absent from the catalog: the converted install keeps
+  it in Japanese (its ITINIT.BIN holds 装備衣装 22 times). A partly translated description is a message with no
+  entry, resolved run by run, so only its item's name translates (`【基本攻撃：Anti-Air Bow】`). 54 more English
+  descriptions hold Japanese because the converted install's own text does, often garbled (`BAS: 】手`), which the
+  importer carries as it is. The export reads in about 37 s, from 22 s.
+- **The package's manifest names no authors,** and neither the converted install nor the repository names the
+  translators, so the export's `language_packages` gives an empty list; the site's credit names the package until the
+  user gives their names.
+- **Tests:** two on the synthetic game with English and French catalogs (each lookup rule with its rows and report,
+  a message presented as one sentence, the same message resolved run by run, a miss with no row; the database's text
+  in each language, `build_info` and the content hashes), beside the earlier ones; 57 pass with the session and script
+  index tests. Core validation passes.
+- **The site** (its plan, §8) shows each language with a switch and credits the package.
+
 ## 5. What changed since the spec
 
 - **The kind ids a site path takes** (spec §5.2's comment): `docs` and `api` are reserved for game ids, the first path
@@ -654,3 +740,16 @@ rule; this milestone exports ADDITEM's relations, names the globals UNITECH take
 - **A call whose key no entity has is reported**, not written, and the report counts the excluded calls. The
   `relation` table has a primary key (the entity, the relation, the script and the offset), which spec §7.2 does not
   give.
+- **A miss gives no row** (milestone 7, §4.6). Spec §6.4 says a miss keeps the source text: the row would repeat the
+  source, so the export leaves it out and the site shows the source text in its place, as the engine draws it. The
+  report counts the miss.
+- **A description is presented as the engine draws it** (spec §6.4 looks up each piece at its `show-text` site): a
+  message of several runs resolves as one sentence at its first run's site, and only a message with no entry resolves
+  run by run. It has a row in the language when any run was presented, and the report counts it as partly translated
+  when a run missed.
+- **The report counts the misses of exported text only:** a description's run draws the scripts it calls too, and
+  their misses are not the description's.
+- **`language_packages` gives each package's name** beside the id, version and authors spec §6.4 lists, so the site's
+  credit can name it; it is JSON in `build_info`, and `languages` is the source language first, comma-separated.
+- **The content hash's text entries carry their language** (spec §7.3 says the entity's text), so a page changes
+  when its translation does.

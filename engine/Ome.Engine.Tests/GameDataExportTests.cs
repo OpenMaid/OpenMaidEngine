@@ -2,11 +2,13 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Data.Sqlite;
 using Ome.Engine.Hosting;
+using Ome.Engine.Localization;
 using Ome.Engine.Model;
 using Ome.Engine.Natives;
 using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
 using Ome.Export;
+using Ome.Mods.Localization;
 using Xunit;
 
 namespace Ome.Engine.Tests;
@@ -251,8 +253,9 @@ public class GameDataExportTests
 
     private static long?[] Values(ExportEntity entity, string field) => entity.Values.Single(value => value.Field == field).Values;
 
-    private static string? Text(ExportEntity entity, string field, int index = 0)
-        => entity.Texts.SingleOrDefault(text => text.Field == field && text.Index == index)?.Value;
+    private static string? Text(ExportEntity entity, string field, int index = 0, string language = "ja")
+        => entity.Texts.SingleOrDefault(text => text.Field == field && text.Index == index && text.Language == language)
+            ?.Value;
 
     // ------------------------------------------------------------------------------------------------- a clean export
 
@@ -704,6 +707,166 @@ public class GameDataExportTests
             Declarations = ExportDeclarations.Parse(declarations), Registry = game.Registry, Pictures = game.Pictures,
             BuildInfo = game.BuildInfo, Shape = shape ?? game.Shape, ScriptIndex = index ?? game.ScriptIndex,
         };
+
+    // ------------------------------------------------------------------------------------------------- languages (§6.4)
+
+    private const string ItInitFingerprint = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+
+    /// <summary>English and French for the synthetic game (plan §4.6), from one package's text root in
+    /// <paramref name="root"/>, its site entries bound as the install's ITINIT. English: a site entry at ITINIT's store
+    /// of 剣, a global entry for よく切れる, and ITMES's message as one sentence of two lines. French: 剣 at the same site,
+    /// and the message's brackets alone, so the message misses and its runs resolve on their own.</summary>
+    private static IReadOnlyList<ExportLanguage> Languages(string root, ExportInputs game)
+    {
+        void Write(string file, string text)
+        {
+            string path = Path.Combine(root, file);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, text, new UTF8Encoding(false));
+        }
+        int swordAt = game.ScriptByName("ITINIT")!.Instructions[0].Offset;
+        Write("en/ITINIT.toml", $$"""
+            script = "ITINIT"
+            fingerprint = "{{ItInitFingerprint}}"
+
+            [[text]]
+            source = "剣"
+            at = {{swordAt}}
+            text = "Sword"
+            """);
+        Write("en/_global.toml", """
+            [[text]]
+            source = "よく切れる"
+            text = "Cuts well"
+
+            [[text]]
+            source = "【剣】鋭い"
+            text = "[Sword]\nSharp"
+            """);
+        Write("fr/ITINIT.toml", $$"""
+            script = "ITINIT"
+            fingerprint = "{{ItInitFingerprint}}"
+
+            [[text]]
+            source = "剣"
+            at = {{swordAt}}
+            text = "Épée"
+            """);
+        Write("fr/_global.toml", """
+            [[text]]
+            source = "【"
+            text = "«"
+
+            [[text]]
+            source = "】"
+            text = "»"
+            """);
+        var source = new TextSource(root, [new LanguageSettings("en"), new LanguageSettings("fr")], "test.languages");
+        var binder = new TextSiteBinder(script => script == "ITINIT" ? ItInitFingerprint : null);
+        var package = new ExportLanguagePackage("test.languages", "Test languages", "1.2.0", ["A. Translator"]);
+        return [.. new[] { "en", "fr" }.Select(tag =>
+            new ExportLanguage(tag, TextRootLoader.Load([source], tag, binder, new TextLoadReport()), [package]))];
+    }
+
+    private static ExportInputs WithLanguages(ExportInputs game, IReadOnlyList<ExportLanguage> languages)
+        => new()
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = game.StopOf,
+            Declarations = game.Declarations, Registry = game.Registry, Pictures = game.Pictures,
+            BuildInfo = game.BuildInfo, Shape = game.Shape, ScriptIndex = game.ScriptIndex,
+            Languages = languages, Messages = new ScriptMessageIndex(Table, Contracts),
+        };
+
+    [Fact]
+    public void ALanguageLooksUpATableStringAtItsOriginAndADescriptionAsTheEngineDrawsIt()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportInputs game = Game();
+            ExportResult result = GameDataExporter.Run(WithLanguages(game, Languages(root, game)));
+
+            ExportEntity sword = Entity(result, "item", 1), shield = Entity(result, "item", 2);
+            Assert.Equal("Sword", Text(sword, "name", language: "en"));     // the site entry at ITINIT's store
+            Assert.Equal("剣", Text(sword, "name"));                       // the source text stays
+            Assert.Equal("Cuts well", Text(sword, "short_description", language: "en"));
+            // The message is one sentence, which draws its own line break; its later runs and the line end between them
+            // draw nothing.
+            Assert.Equal("[Sword]\nSharp", Text(sword, "description", language: "en"));
+            // A miss gives no row: the site shows the source text in its place.
+            Assert.Null(Text(shield, "name", language: "en"));
+            // French has no sentence: it misses, and each run resolves on its own, the item's name at the instruction
+            // that stored it, through the boot's string stores.
+            Assert.Equal("«Épée»\n鋭い", Text(sword, "description", language: "fr"));
+            Assert.Equal("Épée", Text(sword, "name", language: "fr"));
+            Assert.Null(Text(sword, "short_description", language: "fr"));
+
+            LanguageReport english = result.Report.Languages[0], french = result.Report.Languages[1];
+            Assert.Equal(("en", 5, 2, 1, 1, 0), (english.Language.Tag, english.Strings, english.StringsTranslated,
+                                                 english.Descriptions, english.DescriptionsTranslated,
+                                                 english.DescriptionsPartly));
+            Assert.Equal(("fr", 5, 1, 1, 0, 1), (french.Language.Tag, french.Strings, french.StringsTranslated,
+                                                french.Descriptions, french.DescriptionsTranslated,
+                                                french.DescriptionsPartly));
+            // The misses are the port's, of the exported text: each string at its origin, and French's message once, at
+            // its first run; OTHER's line, which the description drops, is none.
+            Assert.Equal([("槍", "$1$ITINIT"), ("盾", "ITINIT"), ("斬撃", "SKINIT")],
+                         english.Misses.Select(miss => (miss.Source, miss.Script)));
+            Script itmes = game.ScriptByName("ITMES")!;
+            Assert.Equal([("【剣】鋭い", "ITMES", itmes.Instructions[1].Offset)],
+                         french.Misses.Where(miss => miss.Script == "ITMES"));
+            Assert.Equal(["槍", "よく切れる", "盾", "斬撃"], french.Misses.Where(miss => miss.Script != "ITMES")
+                                                                .Select(miss => miss.Source));
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TheDatabaseHoldsEachLanguagesTextAndItsPackages()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportInputs game = Game();
+            ExportResult source = GameDataExporter.Run(game);
+            ExportResult result = GameDataExporter.Run(WithLanguages(game, Languages(Path.Combine(root, "text"), game)));
+            ExportWriter.Write(result, Path.Combine(root, "export"), "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "export", "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+
+            Assert.Equal("Sword", Scalar("SELECT value FROM text WHERE kind = 'item' AND id = 1 AND field = 'name' AND lang = 'en'"));
+            Assert.Equal("3", Scalar("SELECT count(*) FROM text WHERE lang = 'en'"));
+            Assert.Equal("Épée|«Épée»\n鋭い", Scalar("SELECT group_concat(value, '|') FROM (SELECT value FROM text "
+                                                    + "WHERE lang = 'fr' ORDER BY field DESC)"));
+            Assert.Equal("ja,en,fr", Scalar("SELECT value FROM build_info WHERE key = 'languages'"));
+            JsonArray packages = JsonNode.Parse(Scalar("SELECT value FROM build_info WHERE key = 'language_packages'")!)!
+                .AsArray();
+            Assert.Equal(["en", "fr"], packages.Select(package => package!["language"]!.GetValue<string>()));
+            Assert.Equal("""{"language":"en","id":"test.languages","name":"Test languages","version":"1.2.0","authors":["A. Translator"]}""",
+                         packages[0]!.ToJsonString());
+            // A translated entity's hash covers its text in each language; one no language translates keeps its hash.
+            Assert.NotEqual(ExportWriter.ContentHash(Entity(source, "item", 1)), ExportWriter.ContentHash(Entity(result, "item", 1)));
+            Assert.Equal(ExportWriter.ContentHash(Entity(source, "item", 2)), ExportWriter.ContentHash(Entity(result, "item", 2)));
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
 
     /// <summary>The script index of every script the synthetic game has, run or not, as the CLI builds it from the
     /// catalog.</summary>

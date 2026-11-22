@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Ome.Engine.Hosting;
+using Ome.Engine.Localization;
 using Ome.Engine.Model;
 using Ome.Engine.Modding;
 using Ome.Engine.Natives;
@@ -14,7 +15,8 @@ using Script = Ome.Engine.Model.Script;
 /// <summary>
 /// Reads a game's data through the engine (game data export spec §6): the boot with its writes recorded, each kind's
 /// records, the run-time check of what may be published (§5.5), the descriptions (§5.7), the loaders (§6.3), the
-/// references (§5.3) and the pictures (§6.5). <see cref="ExportWriter"/> writes the result.
+/// references (§5.3), the pictures (§6.5), the script relations (§6.7) and the text in each language (§6.4).
+/// <see cref="ExportWriter"/> writes the result.
 /// </summary>
 public static class GameDataExporter
 {
@@ -32,13 +34,15 @@ public static class GameDataExporter
         var report = new ExportReport();
         var explicitPictures = new ExplicitPictures(declarations.ExplicitPictures);
         GameSession boot = Boot(inputs, report);
+        List<Translation> languages = [.. inputs.Languages.Select(language => new Translation(language, inputs.Messages))];
+        report.Languages.AddRange(languages.Select(language => language.Report));
 
         var kinds = new List<ExportKind>();
         foreach (KindDeclaration kind in declarations.Kinds)
         {
             if (FixedTables.Contains(kind.Id))
                 throw new ExportFailure($"kind {kind.Id} has the name of one of the export's own tables");
-            kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, report));
+            kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, languages, report));
         }
         foreach (LoaderDeclaration loader in declarations.Loaders) Load(inputs, boot, loader, kinds, rule, report);
         LinkReferences(kinds, report);
@@ -54,7 +58,7 @@ public static class GameDataExporter
         if (inputs.Names is { } names)
             foreach (ExportKind kind in kinds) CountUnnamed(names, boot, kind, report);
         report.UnmatchedExplicitPictures.AddRange(explicitPictures.Unmatched);
-        return new ExportResult(declarations, kinds, report, inputs.BuildInfo);
+        return new ExportResult(declarations, kinds, report, inputs.BuildInfo) { Languages = inputs.Languages };
     }
 
     /// <summary>The integer cells a kind's builders (the writers of its cells) wrote that no global of the registry
@@ -127,7 +131,8 @@ public static class GameDataExporter
     // ------------------------------------------------------------------------------------------------- one kind
 
     private static ExportKind ReadKind(ExportInputs inputs, GameSession boot, KindDeclaration kind, BuilderRule rule,
-                                       ExplicitPictures explicitPictures, ExportReport report)
+                                       ExplicitPictures explicitPictures, IReadOnlyList<Translation> languages,
+                                       ExportReport report)
     {
         RegistryView registry = inputs.Registry;
         TableLayout table = registry.Table(kind.Table);
@@ -189,11 +194,17 @@ public static class GameDataExporter
                 }
                 entity.Values.Add((field.Name, values));
             }
+            // A string is translated at its origin, which stands for the site the game draws it at (plan §4.6).
             foreach (FieldLayout field in textFields)
                 for (int element = 0; element < field.Elements; element++)
                 {
                     var (cell, refused) = At(field, element);
-                    if (!refused && cell.Text is { Length: > 0 } text) entity.Texts.Add(new ExportText(field.Name, element, text));
+                    if (refused || cell.Text is not { Length: > 0 } text) continue;
+                    entity.Texts.Add(new ExportText(field.Name, element, text));
+                    if (!boot.StringStores.TryGetValue(cell.Address, out TextManager.StringStore store)) continue;
+                    foreach (Translation language in languages)
+                        if (language.String(text, store.Origin) is { } translated)
+                            entity.Texts.Add(new ExportText(field.Name, element, translated, language.Tag));
                 }
             foreach ((string name, FieldLayout field) in pictures)
             {
@@ -204,7 +215,7 @@ public static class GameDataExporter
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
             foreach (DescriptionDeclaration description in kind.Descriptions)
-                Describe(inputs, boot, kind, entity, description, At, table, report);
+                Describe(inputs, boot, kind, entity, description, At, table, languages, report);
             entity.SnippetRecord.AddRange(SnippetEntries(tableFields, snippetFields, (field, column) =>
             {
                 var (cell, refused) = At(field, column);
@@ -415,7 +426,7 @@ public static class GameDataExporter
 
     private static void Describe(ExportInputs inputs, GameSession boot, KindDeclaration kind, ExportEntity entity,
                                  DescriptionDeclaration description, Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at,
-                                 TableLayout table, ExportReport report)
+                                 TableLayout table, IReadOnlyList<Translation> languages, ExportReport report)
     {
         Script? script;
         if (description.ScriptField is { } scriptField)
@@ -439,44 +450,129 @@ public static class GameDataExporter
             return;
         }
 
-        GameSession run = boot.CopyState();
-        foreach ((string global, SeedValue value) in description.Seed)
-            run.Seed(inputs.Registry.IntegerGlobal(global), value.For(entity.Id));
-        var shown = new DescriptionText(script.Name);
-        SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(),
-                                          new VmOptions(MaxSteps: inputs.DescriptionMaxSteps) { ProfileId = inputs.GameId },
-                                          inputs.Scripts, build: inputs.Build, textListener: shown);
+        // Each run starts from the boot with the description's seeds; a language's run presents its text (plan §4.6).
+        (SceneResult Result, DescriptionText Shown) RunFromBoot(TextPresenter? presenter)
+        {
+            GameSession run = boot.CopyState();
+            foreach ((string global, SeedValue value) in description.Seed)
+                run.Seed(inputs.Registry.IntegerGlobal(global), value.For(entity.Id));
+            var shown = new DescriptionText(script.Name);
+            SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(),
+                                              new VmOptions(MaxSteps: inputs.DescriptionMaxSteps) { ProfileId = inputs.GameId },
+                                              inputs.Scripts, build: inputs.Build, textListener: shown, presenter: presenter);
+            return (result, shown);
+        }
+
+        var (result, shown) = RunFromBoot(null);
         report.DescriptionRuns++;
         report.DroppedPieces += shown.Dropped;
         if (result.Halt != "exit") report.DescriptionHalts.Add((kind.Id, entity.Id, description.Name, result.Halt ?? ""));
-        if (shown.Text() is { Length: > 0 } text) entity.Texts.Add(new ExportText(description.Name, 0, text));
-        else report.EmptyDescriptions++;
+        if (shown.Text() is not { Length: > 0 } text)
+        {
+            report.EmptyDescriptions++;
+            return;
+        }
+        entity.Texts.Add(new ExportText(description.Name, 0, text));
+        foreach (Translation language in languages)
+        {
+            // Each run logs its own misses, so the report keeps those of the description's own script.
+            var misses = new TextMissLog();
+            var (again, presented) = RunFromBoot(language.PresenterFor(misses));
+            if (again.Halt != "exit")
+                language.Report.DescriptionHalts.Add((kind.Id, entity.Id, description.Name, again.Halt ?? ""));
+            string own = TextCatalog.NormalizeScriptName(script.Name);
+            foreach ((string missed, string where, int offset, _) in misses.Misses())
+                if (where == own) language.Report.Missed(missed, where, offset);
+            if (language.Description(presented) is { } translated)
+                entity.Texts.Add(new ExportText(description.Name, 0, translated, language.Tag));
+        }
+    }
+
+    /// <summary>One language of the export (spec §6.4, plan §4.6): presenters as the port's, with the same catalogs
+    /// and message tables, and its report.</summary>
+    private sealed class Translation(ExportLanguage language, ITextMessageIndex? messages)
+    {
+        private readonly TextPresenter _strings = new(language.Text, messages: messages);
+
+        public LanguageReport Report { get; } = new(language);
+        public string Tag => language.Tag;
+
+        /// <summary>A presenter that logs to <paramref name="misses"/>, for one description run.</summary>
+        public TextPresenter PresenterFor(TextMissLog misses) => new(language.Text, misses: misses, messages: messages);
+
+        /// <summary>A table string's text in the language, looked up at its origin; null when no entry has it, which a
+        /// string that is only a number never needs.</summary>
+        public string? String(string text, TextSite origin)
+        {
+            Report.Strings++;
+            if (_strings.Present(text, origin, origin) is { Entry: not null } presented)
+            {
+                Report.StringsTranslated++;
+                return presented.Text;
+            }
+            if (!TextPatternMatcher.IsNumber(text)) Report.Missed(text, origin.Script, origin.Offset);
+            return null;
+        }
+
+        /// <summary>A description's text in the language, when any of its runs was presented; null when none was.</summary>
+        public string? Description(DescriptionText shown)
+        {
+            Report.Descriptions++;
+            if (shown.Presented == 0) return null;
+            if (shown.Missed == 0) Report.DescriptionsTranslated++;
+            else Report.DescriptionsPartly++;
+            return shown.Text();
+        }
     }
 
     /// <summary>The text one script shows in a description run (spec §5.7), line by line; another script's runs are
-    /// dropped and counted.</summary>
+    /// dropped and counted. In a run that presents its text (plan §4.6), a run shows its presented text, or its source
+    /// text when it has no entry; a presented message's later runs show nothing, and the line ends before them lie
+    /// inside its sentence, which draws its own breaks (localization spec §6.2).</summary>
     private sealed class DescriptionText(string script) : ITextListener
     {
         private readonly List<StringBuilder> _lines = [new()];
+        private int _breaks;
 
         public int Dropped { get; private set; }
+        /// <summary>The script's runs an entry presented, and those that missed one (a number misses none).</summary>
+        public int Presented { get; private set; }
+        public int Missed { get; private set; }
 
-        public void RunShown(AdvLiveTextRun run, int glyphDelayMilliseconds) => Shown(run);
+        public void RunShown(AdvLiveTextRun run, int glyphDelayMilliseconds)
+        {
+            if (!Mine(run)) return;
+            Break();
+            if (run.Presented is { Entry: not null }) Presented++;
+            else if (run.Text.Length > 0 && !TextPatternMatcher.IsNumber(run.Text)) Missed++;
+            _lines[^1].Append(run.Presented?.Text ?? run.Text);
+        }
 
-        public void HiddenRunShown(AdvLiveTextRun run) => Shown(run);
+        public void HiddenRunShown(AdvLiveTextRun run)
+        {
+            if (Mine(run)) _breaks = 0;
+        }
 
-        public void LineEnded(int layoutSlot) => _lines.Add(new StringBuilder());
+        // A line end takes effect at the next run, which is hidden when the line end lies inside a presented message.
+        public void LineEnded(int layoutSlot) => _breaks++;
 
-        private void Shown(AdvLiveTextRun run)
+        private bool Mine(AdvLiveTextRun run)
         {
             if (run.ScriptStack.Count > 0 && string.Equals(run.ScriptStack[^1], script, StringComparison.Ordinal))
-                _lines[^1].Append(run.Text);
-            else Dropped++;
+                return true;
+            Dropped++;
+            return false;
+        }
+
+        private void Break()
+        {
+            for (; _breaks > 0; _breaks--) _lines.Add(new StringBuilder());
         }
 
         /// <summary>The lines joined by <c>\n</c>, without the empty lines at the end.</summary>
         public string Text()
         {
+            Break();
             var lines = _lines.Select(line => line.ToString()).ToList();
             while (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
             return string.Join('\n', lines);

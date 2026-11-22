@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ome.Engine.Diagnostics;
 using Ome.Engine.Hosting;
+using Ome.Engine.Localization;
 using Ome.Engine.Model;
 using Ome.Engine.Natives;
 using Ome.Engine.Persistence;
@@ -61,11 +62,15 @@ public sealed partial class GameSession
     /// <param name="textListener">Hears what this run's text native shows (<see cref="ITextListener"/>): the runs with
     /// their ruby and script stack, and the line ends, which <see cref="SceneResult.Emitted"/> does not keep (game data
     /// export spec §5.7).</param>
+    /// <param name="presenter">The language the run presents its text in (localization spec §5.2), or null for the
+    /// source text. A run with one records the string stores, from the session's, so a drawn string resolves at the
+    /// instruction that stored it, as it does in the port (game data export spec §6.4).</param>
     public SceneResult RunScene(Script script, OpcodeTable table, IInputAndWaits waits,
                                 VmOptions? options = null, IScriptProvider? provider = null,
                                 ITraceSink? sink = null,
                                 EngineBuild? build = null, Func<SkipAndAuto, Audio>? audio = null,
-                                Scripting? scripting = null, ITextListener? textListener = null)
+                                Scripting? scripting = null, ITextListener? textListener = null,
+                                TextPresenter? presenter = null)
     {
         // Each run has its own skip and auto native, and an audio native over it (audio builds one; without it the run
         // plays nothing). The mixer settings are the session's. Its save native reads and writes the session's profile
@@ -78,6 +83,11 @@ public sealed partial class GameSession
             saves: new SavesAndSettings(SharedProfile, NativeDatStore), shell: shell, build: build, skipAndAuto: skip,
             audio: audio?.Invoke(skip) ?? Audio.Silent(skip, AudioMixerSettings), scripting: scripting);
         if (textListener != null) vm.Text.Listen(textListener);
+        if (presenter != null)
+        {
+            vm.Text.Presenter = presenter;
+            vm.RecordsStringStores = true;
+        }
         foreach (var kv in Globals) vm.SeedGlobal(kv.Key, kv.Value);
         foreach (var kv in GlobalFloats) vm.GlobalFloats[kv.Key] = kv.Value;
         foreach (var kv in GlobalStrings) vm.GlobalStrings[kv.Key] = kv.Value;
@@ -85,10 +95,9 @@ public sealed partial class GameSession
         foreach (var kv in GlobalStringPointers) vm.GlobalStringPointers[kv.Key] = kv.Value;
         bool records = options?.RecordsWrites == true;
         if (records)
-        {
             foreach (var kv in Writers) vm.Memory.SeedWriter(kv.Key, kv.Value);
+        if (records || presenter != null)
             foreach (var kv in StringStores) vm.Text.SeedStringStore(kv.Key, kv.Value);
-        }
 
         vm.Run();
 
