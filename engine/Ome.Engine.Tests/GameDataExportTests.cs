@@ -480,8 +480,8 @@ public class GameDataExportTests
     [Fact]
     public void TheDatabaseHoldsAKindsGroupsInTheirOrder()
     {
-        // A group (export plan §5). The lint checks that its fields are rows of cells of one width; the writer writes the
-        // declaration as it is given, so this one need not be.
+        // A group (export plan §5). The lint checks that its fields are rows of cells, each width a multiple of the
+        // narrowest's; the writer writes the declaration as it is given, so this one need not be.
         JsonNode declarations = JsonNode.Parse(Declarations)!;
         declarations["kinds"]![0]!["groups"] = JsonNode.Parse("""[{"name": "prices", "fields": ["price", "category"]}]""");
         ExportInputs game = Game();

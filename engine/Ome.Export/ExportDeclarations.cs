@@ -64,8 +64,8 @@ public sealed record ExportDeclarations(
 }
 
 /// <summary>One kind (spec §5.2): a registry table, which of its records are entities, and what is published. Its
-/// <see cref="Groups"/> (export plan §5) are published rows of cells of one width, which the site shows as one
-/// table.</summary>
+/// <see cref="Groups"/> (export plan §5) are published rows of cells, which the site shows as one table: the narrowest
+/// field's width is its number of rows, and each field's width a multiple of it.</summary>
 public sealed record KindDeclaration(
     string Id,
     IReadOnlyList<string> Aliases,
@@ -110,7 +110,8 @@ public sealed record KindDeclaration(
         };
 }
 
-/// <summary>A group of a kind's published fields (export plan §5), in its order: rows of cells of one width.</summary>
+/// <summary>A group of a kind's published fields (export plan §5), in its order: rows of cells, each field's width a
+/// multiple of the narrowest's.</summary>
 public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields);
 
 /// <summary>A description (spec §5.7): text a script shows for a record, run with its seeds.</summary>

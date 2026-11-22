@@ -754,12 +754,14 @@ authors.
 - **The content hash's text entries carry their language** (spec §7.3 says the entity's text), so a page changes
   when its translation does.
 - **A kind may group its fields** (the site's design pass, 2026-11-22; spec §5.2 has none). `[[kind.group]]` names two
-  or more published rows of cells of one width, which the site shows as one table with a row for each element: a
-  recipe's ingredient items beside their quantities, a unit's stats beside their growth and caps. The export gives
+  or more published rows of cells, which the site shows as one table: a recipe's ingredient items beside their
+  quantities, a unit's stats beside their growth and caps. The narrowest field's width is the number of rows; each
+  field's width is a multiple of it, and a field some times as wide gives that many columns, its elements row by row
+  (a condition's turns, nine stat changes and three resource changes at each of its five levels). The export gives
   them in a `field_group` table (kind, name, position, field), which spec §7.2 lacks; the content hash leaves them out,
   since they arrange the page and change no value, and the declarations' hash in `build_info` covers them. Kamidori
-  declares six: a recipe's ingredients, a quest's reward items, a unit's stats and its drops, a stage's objective
-  rewards and a dig table's slots.
+  declares seven: a recipe's ingredients, a quest's reward items, a unit's stats and its drops, a condition's levels,
+  a stage's objective rewards and a dig table's slots.
 - **Kamidori publishes no story flags or scene numbers** (the user, 2026-11-22, on the built site: "the numbers shown
   dont really mean anything, so those would be better as modder mode things"). The flags that gate a quest, a recipe,
   a stage, a dig table, a character profile, an objective and a stage's enemies, and a glossary entry's unlock scenes,

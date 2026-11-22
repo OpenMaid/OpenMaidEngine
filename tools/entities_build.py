@@ -387,8 +387,10 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             errors.append(f"{dwhere}: script {script['name']} is not one of [export] text_scripts")
         check_seed(game, description.get("seed"), dwhere, errors)
 
-    # A group (game data export plan §5): published rows of cells of one width, which the site shows as one table with
-    # a row for each element, as a recipe's ingredients beside their quantities.
+    # A group (game data export plan §5): published rows of cells, which the site shows as one table, as a recipe's
+    # ingredients beside their quantities. The narrowest field's width is the table's row count; a field as wide as it
+    # gives a column, and a field some times as wide gives that many, its elements row by row (a condition's nine stat
+    # changes at each of its five levels).
     groups = kind.get("group", [])
     if not isinstance(groups, list):
         errors.append(f"{where}: group must be an array of tables ([[kind.group]])")
@@ -428,9 +430,10 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                 errors.append(f"{gwhere}: {ref} has one cell for each record; a group's fields are rows of cells")
             else:
                 widths[ref] = field.width
-        if len(set(widths.values())) > 1:
+        if widths and any(width % min(widths.values()) for width in widths.values()):
             shown = ", ".join(f"{ref} {width}" for ref, width in widths.items())
-            errors.append(f"{gwhere}: its fields differ in width ({shown}); each must have one element for each row")
+            errors.append(f"{gwhere}: each field's width must be a multiple of the narrowest's ({shown}), which is the "
+                          "number of rows")
 
 
 def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind_tables: dict, errors: list[str]) -> None:

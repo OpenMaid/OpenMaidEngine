@@ -31,6 +31,7 @@ REGISTRY = "".join([
     g("0x320", "hero_art_ids", "int[4][3]", {"0": "face", "2": "map"}),
     g("0x340", "hero_handler_ids", "int[4]"),
     g("0x350", "hero_weapon_levels", "int[4][2]"),
+    g("0x360", "hero_trait_ids", "int[4][4]"),
     g("0x10", "hero_names", "string[4]"),
     g("0x20", "hero_bios", "string[4][2]"),
     g("0x400", "weapon_prices", "int[3]"),
@@ -51,6 +52,7 @@ level = "hero_levels"
 class = "hero_classes"
 weapon = "hero_weapon_ids"
 weapon_level = "hero_weapon_levels"
+trait = "hero_trait_ids"
 art = "hero_art_ids"
 handler = "hero_handler_ids"
 name = "hero_names"
@@ -302,7 +304,7 @@ table = "hero"
 
 
 def test_group_errors():
-    """A group (export plan §5): two or more published rows of cells of one width, each in one group."""
+    """A group (export plan §5): two or more published rows of cells, each width a multiple of the narrowest's."""
     kind = GOOD.split("[[kind.group]]")[0].split("[[kind]]")[1]
     output = errors_of(EXPORT + "[[kind]]" + kind.replace('fields = ["class", "weapon", "weapon_level"]',
                                                          'fields = ["class", "weapon", "weapon_level", "art", "art.map"]') + '''
@@ -324,7 +326,8 @@ name = "Lone"
 fields = ["weapon"]
 ''')
     for needle in (
-            "group 'arms': its fields differ in width (weapon 2, art 3)", "group 'arms': unknown key 'size'",
+            "group 'arms': each field's width must be a multiple of the narrowest's (weapon 2, art 3)",
+            "group 'arms': unknown key 'size'",
             "group 'class': class is also a field of table hero", "group 'class': 'level' is not one of the kind's fields",
             "group 'arms': arms is also a field of table hero, a description or another group",
             "group 'arms': class has one cell for each record", "group 'arms': art.map has one cell for each record",
@@ -341,6 +344,16 @@ name = "second"
 fields = ["weapon_level", "weapon"]
 ''')
     check("group 'second': weapon_level is also in group 'first'" in output, "a field is in one group only")
+    # Two traits for each weapon: a field twice as wide as the narrowest gives two columns.
+    wide = kind.replace('fields = ["class", "weapon", "weapon_level"]', 'fields = ["class", "weapon", "weapon_level", "trait"]')
+    code, output, written = run(EXPORT + "[[kind]]" + wide + '''
+[[kind.group]]
+name = "arms"
+fields = ["weapon", "trait"]
+''', write=True)
+    check(code == 0 and written is not None
+          and json.loads(written)["kinds"][0]["groups"] == [{"name": "arms", "fields": ["weapon", "trait"]}],
+          f"a field a multiple of the narrowest's width may join a group: {output}")
 
 
 def test_titles():

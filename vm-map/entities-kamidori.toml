@@ -160,6 +160,11 @@ fields = [
 ]
 filters = ["susceptibility_group"]
 
+# A row for each of the five levels: its turns, its nine stat changes and its three resource changes.
+[[kind.group]]
+name = "levels"
+fields = ["duration_turns", "stat_deltas", "resource_deltas"]
+
 [[kind]]
 id = "stage"
 table = "stage_catalog"
