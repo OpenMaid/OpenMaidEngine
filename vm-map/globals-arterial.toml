@@ -684,7 +684,7 @@ address = "0x326cca"
 name = "item_card_rows"
 category = "data-table"
 type = "int[2000]"
-usage = "ITINIT: where set, the one card row whose cards can carry the item (INIT2 takes an item off a card that fails)."
+usage = "ITINIT: where set, the one card row whose cards can carry the item: INIT2@0x003df, ITEM@0x0128a and SELITEM@0x010ab refuse a card of another row (INIT2 takes the item off it). With item_card_slots 0, every card of the row may carry it."
 source = "investigation"
 confidence = "high"
 
@@ -693,7 +693,7 @@ address = "0x32749a"
 name = "item_card_slots"
 category = "data-table"
 type = "int[2000]"
-usage = "ITINIT: where set, the one slot of a row whose card can carry the item."
+usage = "ITINIT: where set, the one slot of a row whose card can carry the item: INIT2@0x0040a, ITEM@0x012b5 and SELITEM@0x010d6 refuse a card of another slot. Only items that set a row set it (6 at the boot)."
 source = "investigation"
 confidence = "high"
 
@@ -3580,6 +3580,8 @@ obtained = "item_obtained_flags"
 talent_id = "talent"
 condition_id = "condition"
 picture = "picture"
+# The cards that may carry the item: the row's card at the slot, or with slot 0 every card of the row (INIT2@0x003df).
+card_row = { table = "card", times = 30, plus = "card_slot", any = 0 }
 
 [[table]]
 name = "area_point"

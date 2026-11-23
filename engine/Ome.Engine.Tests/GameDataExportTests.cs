@@ -164,6 +164,11 @@ public class GameDataExportTests
             ? new ExportPicture($"ICON{packedId:000}", Encoding.ASCII.GetBytes($"png {packedId}"), 32, 16)
             : null;
 
+        // A keyed picture (export plan §5) is named by its key too, as the catalog source names it.
+        public ExportPicture? ResolveKeyed(long packedId, int key) => Resolve(packedId) is { } picture
+            ? picture with { Name = $"{picture.Name}-key-{key:x6}" }
+            : null;
+
         // A sheet's cells (export plan §5): SHEET.AGF holds one row of cells, so a cell below it is none.
         public ExportPicture? Cell(string sheet, int x, int y, int width, int height) => sheet == "SHEET.AGF" && y < 18
             ? new ExportPicture($"SHEET-{x}-{y}", Encoding.ASCII.GetBytes($"png {x} {y}"), width, height)
@@ -524,6 +529,40 @@ public class GameDataExportTests
         Assert.Equal(2, result.Report.MissingRefs[("item", "granted_skill", "skill")]);
     }
 
+    [Fact]
+    public void ARowReferenceNamesEveryRecordOfItsRow()
+    {
+        // With any = 2 (export plan §5), a category of 2 names every skill of row granted_skill: item 1 (skill 1,
+        // category 2) names row 1, skill 1 alone of it; item 2 (skill 2, category 3) names skill 2 × 1 + 3 = 5, which no
+        // record has. An Arterial item that every card of a row may carry has slot 0.
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop,
+            Registry = Registry(skillKey: new RefKey(1, "category") { Any = 2 }),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], sword.Refs);
+        Assert.Equal([0L], sword.KeyedRefs["granted_skill"]);
+        Assert.Equal([1L], sword.KeyedRows["granted_skill"]);
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 5)], Entity(result, "item", 2).Refs);
+        Assert.Equal([(long?)null], Entity(result, "item", 2).KeyedRows["granted_skill"]);
+
+        // A row none of whose records is an entity is a missing reference: with times 3, row 1 is skills 3 to 5.
+        result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop,
+            Registry = Registry(skillKey: new RefKey(3, "category") { Any = 2 }),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Empty(Entity(result, "item", 1).Refs);
+        Assert.Equal(2, result.Report.MissingRefs[("item", "granted_skill", "skill")]);
+    }
+
     // An item kind that joins its bonds (export plan §5): the first partner of each pair, and the tiers beside the
     // prices as a group whose rows are tiers.
     private static ExportInputs Bonds(string? bondsOf = "item")
@@ -775,11 +814,12 @@ public class GameDataExportTests
         // value k + 1, and 0 has OME's word; a price is shown halved, in gold, and 0 means none. A label names the
         // category for a reader.
         ExportInputs game = Game();
-        // Qualifiers and reference headings (export plan §5) go to the database as the declarations give them.
+        // Qualifiers, marks and reference headings (export plan §5) go to the database as the declarations give them.
         string declarations = Declarations.Replace("\"filters\": [\"category\"],",
                                                    "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"}, "
                                                    + "\"about\": \"Things to carry.\", "
                                                    + "\"qualifiers\": [\"category\", \"short_description\"], "
+                                                   + "\"marks\": [{\"field\": \"category\", \"word\": \"Gear\"}], "
                                                    + "\"referenced_as\": [{\"field\": \"granted_skill\", "
                                                    + "\"heading\": \"Granted by\", \"details\": [\"price\"], "
                                                    + "\"parts\": {}}],",
@@ -828,6 +868,7 @@ public class GameDataExportTests
             Assert.Equal("Kind", Scalar("SELECT text FROM label WHERE kind = 'item' AND name = 'category'"));
             Assert.Equal("0:category,1:short_description", Scalar(
                 "SELECT group_concat(position || ':' || field, ',') FROM (SELECT * FROM qualifier ORDER BY position)"));
+            Assert.Equal("item:0:category:Gear", Scalar("SELECT kind || ':' || position || ':' || field || ':' || word FROM mark"));
             Assert.Equal("item:granted_skill::Granted by:[\"price\"]", Scalar(
                 "SELECT kind || ':' || field || ':' || part || ':' || heading || ':' || details FROM referenced_as"));
             Assert.Equal("1:ja:武器,2:ja:防具", Scalar(
@@ -1318,6 +1359,81 @@ public class GameDataExportTests
         Assert.Contains("[field.1.loot.2]\nskill_id = 1\ncount = {0 = 5}\n", sword.Snippet, StringComparison.Ordinal);
     }
 
+    // The loot of skill 1 alone, with the skill's category beside it (export plan §5): a where and a join.
+    private static readonly string Joined = Loader.Replace(
+        "\"fields\": [\"skill_id\", \"count\"]}",
+        "\"fields\": [\"skill_id\", \"count\", \"skill.category\"], \"where\": {\"skill_id\": [1]}, "
+        + "\"joins\": {\"skill\": \"skill_id\"}}", StringComparison.Ordinal);
+
+    [Fact]
+    public void ALoadedRowKeepsTheRecordsItsWhereNamesAndTheRecordItsJoinReaches()
+    {
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), WithLoader(Joined)));
+        Assert.Empty(result.Report.Refusals);
+        ExportEntity sword = Entity(result, "item", 1);
+        // Both of item 1's loot records grant skill 1; item 2's record 1 grants skill 2, so its record 2 alone is a row.
+        Assert.Equal([1, 2], sword.Loaded.Select(row => row.Record));
+        Assert.Equal([2], Entity(result, "item", 2).Loaded.Select(row => row.Record));
+        // The row's skill_id names skill 1, whose category is 1; the joined field is written table.field.
+        Assert.Equal([1], Loaded(sword, "loot", 1, "skill.category"));
+        Assert.Contains(new ExportRef("loot.skill_id", 1, "skill", 1), sword.Refs);   // the join's field still links
+        ExportLoadedTable table = result.Kinds[0].Loaded.Single();
+        Assert.Equal("skill", table.TableOf(table.Published.Single(field => field.Name == "skill.category")).Name);
+        // A data file edits the scope's table: the snippet has no joined field.
+        Assert.EndsWith("[field.1.loot.2]\nskill_id = 1\ncount = {0 = 5, 1 = 0}\n", sword.Snippet, StringComparison.Ordinal);
+
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            string? Scalar(string folder, string sql)
+            {
+                using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+                {
+                    DataSource = Path.Combine(folder, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+                }.ToString());
+                connection.Open();
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            Assert.Equal("1", Scalar(root, "SELECT \"skill.category\" FROM \"item.loot\" WHERE id = 1 AND record = 1"));
+            Assert.Equal("int|1", Scalar(root, "SELECT type || '|' || published FROM loaded_field "
+                                                  + "WHERE loaded = 'loot' AND name = 'skill.category'"));
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+
+        // A join must go through a field that refers to its table.
+        string wrong = Joined.Replace("\"joins\": {\"skill\": \"skill_id\"}", "\"joins\": {\"skill\": \"count\"}",
+                                      StringComparison.Ordinal);
+        ExportFailure failure = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(WithDeclarations(Game(), WithLoader(wrong))));
+        Assert.Contains("joins skill through count, which is not one cell that refers to skill", failure.Message,
+                        StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AReferenceWithBasesNamesAListedValuesBasePlusItsPlus()
+    {
+        // With bases {1: 0, 2: 10} (export plan §5): item 1 (skill 1, category 2) names 0 + 2 = skill 2, item 2 (skill
+        // 2, category 3) 10 + 3 = skill 13, and item 3's -1, which bases does not list, none. A Kamidori map object of
+        // type 32 gathers from dig table 0 plus its payload.
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop,
+            Registry = Registry(skillKey: new RefKey(1, "category") { Bases = new Dictionary<long, long> { [1] = 0, [2] = 10 } }),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 2)], Entity(result, "item", 1).Refs);
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 13)], Entity(result, "item", 2).Refs);
+        Assert.Empty(Entity(result, "item", 3).Refs);
+        Assert.Equal([0L], Entity(result, "item", 3).KeyedRefs["granted_skill"]);
+    }
+
     // The loot whose skill is on skill 1's side (export plan §5): a part, which the site shows apart.
     private static readonly string Parted = Loader.Replace(
         "\"fields\": [\"skill_id\", \"count\"]}",
@@ -1449,6 +1565,19 @@ public class GameDataExportTests
         Assert.Null(Badge(3));                                                         // category 4: the next row, off it
         Assert.Contains(("item", 3, "badge", 4L), result.Report.UnresolvedPictures);
         Assert.Equal(7, Entity(result, "item", 1).Pictures.Single(p => p.Name == "badge").Picture.Width);
+    }
+
+    [Fact]
+    public void AKeyedPictureIsAskedForWithItsColourKey()
+    {
+        // { field, key }: the colour the game draws transparent (Himegari's map sprites); a plain field asks for the
+        // picture as it is.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse("""{"field": "icon", "key": 65280}""");
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        (string name, ExportPicture picture) = Assert.Single(Entity(result, "item", 1).Pictures);
+        Assert.Equal(("icon", "ICON077-key-00ff00"), (name, picture.Name));
+        Assert.Equal("ICON077", Assert.Single(GameDataExporter.Run(Game()).Kinds[0].Entities[0].Pictures).Picture.Name);
     }
 
     [Fact]

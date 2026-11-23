@@ -281,6 +281,24 @@ return {
                 unit_id = { global = "stage_enemy_unit_id", kind = "integer" },
             },
         },
+        stage_object = {
+            records = 50,
+            built_by = "stage",
+            fields = {
+                base_value = { global = "stage_object_base_value", kind = "integer" },
+                difficulty_mask = { global = "stage_object_difficulty_mask", kind = "integer" },
+                forbidden_story_flags = { global = "stage_object_forbidden_story_flags", kind = "integer", width = 5 },
+                primary_param = { global = "stage_object_primary_param", kind = "integer" },
+                reinforcement_interval_turns = { global = "stage_object_reinforcement_interval_turns", kind = "integer" },
+                reinforcement_spawn_limit = { global = "stage_object_reinforcement_spawn_limit", kind = "integer" },
+                required_story_flags = { global = "stage_object_required_story_flags", kind = "integer", width = 7 },
+                secondary_param = { global = "stage_object_secondary_param", kind = "integer" },
+                tile_x = { global = "stage_object_tile_x", kind = "integer" },
+                tile_y = { global = "stage_object_tile_y", kind = "integer" },
+                type_id = { global = "stage_object_type_id", kind = "integer" },
+                use_story_flags_by_faction = { global = "stage_object_use_story_flags_by_faction", kind = "integer", width = 5 },
+            },
+        },
         stage_reward = {
             records = 4,
             built_by = "stage",
@@ -352,6 +370,6 @@ return {
         },
     },
     scopes = {
-        stage = { first = 1, last = 999, tables = { enemy = "stage_enemy", reward = "stage_reward" } },
+        stage = { first = 1, last = 999, tables = { enemy = "stage_enemy", object = "stage_object", reward = "stage_reward" } },
     },
 }

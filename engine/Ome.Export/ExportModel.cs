@@ -28,6 +28,11 @@ public interface IPictureSource
     /// <summary>The picture a packed resource id names, or null when it names none.</summary>
     ExportPicture? Resolve(long packedId);
 
+    /// <summary>The picture a packed resource id names with every pixel of the colour <paramref name="key"/> (0xRRGGBB)
+    /// transparent, as the game draws it when it loads the picture with that colour key (export plan §5: Himegari's map
+    /// sprites, DRAWCH@0x9c), named by its catalog name and <c>-key-RRGGBB</c>; or null when it names none.</summary>
+    ExportPicture? ResolveKeyed(long packedId, int key) => Resolve(packedId);
+
     /// <summary>A cell cut from the catalog picture <paramref name="sheet"/> (export plan §5), or null when there is no
     /// such picture or the cell lies outside it.</summary>
     ExportPicture? Cell(string sheet, int x, int y, int width, int height) => null;
@@ -115,6 +120,9 @@ public sealed class ExportEntity(int id)
     /// <summary>The records its published two-field references name (export plan §5), by field; null for an element
     /// either cell of which is withheld.</summary>
     public Dictionary<string, long?[]> KeyedRefs { get; } = new(StringComparer.Ordinal);
+    /// <summary>The rows its row references name (export plan §5), by field: for an element whose plus is the
+    /// reference's <c>any</c>, the row, every record of which it names; else null.</summary>
+    public Dictionary<string, long?[]> KeyedRows { get; } = new(StringComparer.Ordinal);
     public List<(string Name, ExportPicture Picture)> Pictures { get; } = [];
     public List<ExportModderCell> Cells { get; } = [];
     /// <summary>The rows its loaders built (export plan §4.2), by table and record.</summary>
@@ -141,6 +149,9 @@ public sealed record ExportLoadedRow(string Table, int Record, IReadOnlyList<(st
 
     /// <summary>The records its published two-field references name (export plan §5), by field.</summary>
     public IReadOnlyDictionary<string, long?[]> KeyedRefs { get; init; } = new Dictionary<string, long?[]>();
+
+    /// <summary>The rows its published row references name (export plan §5), by field.</summary>
+    public IReadOnlyDictionary<string, long?[]> KeyedRows { get; init; } = new Dictionary<string, long?[]>();
 }
 
 /// <summary>A table a loader publishes under its key kind (export plan §4.2), with the layouts the writer needs.
@@ -154,6 +165,19 @@ public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, strin
 
     /// <summary>Its parts (export plan §5), each with the row's field it reads and the global that field indexes.</summary>
     public IReadOnlyList<(PartDeclaration Declaration, FieldLayout Field, ArrayLayout Global)> Parts { get; init; } = [];
+
+    /// <summary>The values a record's field must hold to be a row (export plan §5).</summary>
+    public IReadOnlyList<(FieldLayout Field, IReadOnlySet<long> Values)> Where { get; init; } = [];
+
+    /// <summary>The tables a row's reference reaches (export plan §5), by name, with the referring field.</summary>
+    public IReadOnlyDictionary<string, (TableLayout Table, FieldLayout Through)> Joins { get; init; }
+        = new Dictionary<string, (TableLayout, FieldLayout)>();
+
+    /// <summary>Every field of the tables it joins, each named <c>table.field</c>.</summary>
+    public IReadOnlyList<FieldLayout> JoinedFields { get; init; } = [];
+
+    /// <summary>The registry table a field is of: a joined table's, or its own.</summary>
+    public TableLayout TableOf(FieldLayout field) => field.Joined is { } joined ? Joins[joined].Table : Table;
 }
 
 /// <summary>One kind's entities, with the layouts the writer needs: every field of the table, the published ones,

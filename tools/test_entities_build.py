@@ -236,7 +236,7 @@ def test_good_declarations():
     check(data.get("loaders", [{}])[0].get("tables") == {"foe": {"table": "foe", "exists": "hero",
                                                                "fields": ["hero", "levels"], "text": [],
                                                                "literals": [], "notes": {}, "labels": {},
-                                                               "parts": []}},
+                                                               "parts": [], "where": {}, "joins": {}}},
           "a loader's published table names its registry table beside its short name")
     check(data.get("loaders", [{}])[0].get("seed") == [{"global": "current_hero_id", "index": [], "value": "key"}],
           "a loader's seed table is written as the list of cells it seeds")
@@ -560,6 +560,7 @@ title = "name"
 text = ["bio"]
 fields = ["class", "weapon", "weapon_level"]
 qualifiers = ["class"]
+marks = { class = "Classed" }
 about = "The heroes who join the party."
 
 [[kind.group]]
@@ -676,6 +677,86 @@ partners = { table = "weapon", times = 1, pairs = true }
 '''
 
 
+# A stage's camps, each led by a hero (export plan §5): a loaded table whose rows are the camps of kind 1 or 2, joined to
+# the hero its chief names.
+CAMPS = "".join([g("0x4d0", "camp_chief_ids", "int[5]"), g("0x4e0", "camp_kinds", "int[5]")]) + '''
+[[table]]
+name = "camp"
+records = 5
+built_by = "stage"
+[table.fields]
+chief = "camp_chief_ids"
+kind = "camp_kinds"
+[table.refs]
+chief = "hero"
+'''
+
+CAMP_LOADER = '''
+[[loader]]
+keys = "hero"
+script = "FIELD"
+read_at = "demo.stage.loaded"
+
+[loader.tables.camp]
+table = "camp"
+exists = "kind"
+where = { kind = [1, 2] }
+joins = { hero = "chief" }
+fields = ["kind", "chief", "hero.class", "hero.weapon"]
+labels = { "hero.class" = "Chief's class" }
+'''
+
+
+def test_keyed_picture():
+    """A picture may name the colour the game draws transparent, { field, key }; the JSON keeps it."""
+    keyed = GOOD.replace('other = "art.1" }', 'other = { field = "art.1", key = 0x00ff00 } }', 1)
+    code, output, written = run(keyed, write=True)
+    check(code == 0, f"a keyed picture lints clean ({output.strip()[-300:]})")
+    hero = json.loads(written or "{}").get("kinds", [{}])[0]
+    check(hero.get("pictures", {}).get("other") == {"field": "art.1", "key": 0x00ff00},
+          "the JSON keeps a picture's key")
+    code, output, _ = run(keyed.replace("key = 0x00ff00", "key = 0x1000000"))
+    check(code != 0 and "picture other: key must be a colour 0xRRGGBB" in output, "a key is a colour 0xRRGGBB")
+    code, output, _ = run(keyed.replace("key = 0x00ff00", "key = 0x00ff00, alpha = 1"))
+    check(code != 0 and "picture other: unknown key 'alpha'" in output, "a keyed picture has a field and a key")
+
+
+def test_loaded_where_and_joins():
+    """A loaded table keeps the records whose field holds a value its where lists, publishes the fields of the record a
+    row's reference reaches as table.field, and its kind may label it; a joined reference is keyed table.field.field."""
+    global REGISTRY
+    saved = REGISTRY
+    camps = GOOD.replace('fields = ["class", "weapon", "weapon_level"]\n',
+                         'fields = ["class", "weapon", "weapon_level"]\n'
+                         'labels = { camp = "Camp" }\n'
+                         'referenced_as = { "camp.hero.weapon" = "Wielded in camps" }\n', 1) + CAMP_LOADER
+    try:
+        REGISTRY = saved + CAMPS
+        code, output, written = run(camps, write=True)
+        check(code == 0, f"a loaded table's where, joins and label lint clean ({output.strip()[-400:]})")
+        loaders = json.loads(written or "{}").get("loaders", [])
+        camp = loaders[-1].get("tables", {}).get("camp", {}) if loaders else {}
+        check(camp.get("where") == {"kind": [1, 2]} and camp.get("joins") == {"hero": "chief"},
+              "the JSON keeps a loaded table's where and joins")
+
+        def flags(text: str, needle: str, message: str) -> None:
+            code, output, _ = run(text)
+            check(code != 0 and needle in output, f"{message} ({output.strip()[-300:]})")
+
+        flags(camps.replace('joins = { hero = "chief" }', 'joins = { hero = "kind" }'),
+              "join 'hero': kind does not refer to table hero", "a join goes through a reference to its table")
+        flags(camps.replace('joins = { hero = "chief" }', 'joins = { tavern = "chief" }'),
+              "join 'tavern' is not a [[table]] of the registry", "a join names a registry table")
+        flags(camps.replace('joins = { hero = "chief" }', 'joins = { kind = "chief" }'),
+              "join 'kind' has the name of a field of table camp", "a join's name is no field of the table")
+        flags(camps.replace('where = { kind = [1, 2] }', 'where = { kind = [], hero = [1] }'),
+              "where kind must list the whole numbers", "a where lists values")
+        flags(camps.replace('labels = { camp = "Camp" }', 'labels = { tent = "Tent" }'),
+              "label 'tent' names nothing the page shows", "a kind's label names a loaded table it has")
+    finally:
+        REGISTRY = saved
+
+
 def test_joins_and_pairs():
     """A kind publishes a joined table's fields as table.field, a paired reference by the first column of each pair,
     and a group's rows by a word and their number."""
@@ -743,6 +824,7 @@ def test_design_pass_features():
     check(foe.get("parts") == [{"name": "friend", "field": "hero", "global": "foe_side_groups", "same_as": 1,
                                 "note": "On the hero's side."}], "a loaded table keeps its parts")
     check(hero.get("qualifiers") == ["class"], "the JSON keeps a kind's qualifiers")
+    check(hero.get("marks") == [{"field": "class", "word": "Classed"}], "the JSON keeps a kind's marks")
     check(hero.get("about") == "The heroes who join the party.", "the JSON keeps a kind's about line")
     check(hero.get("referenced_as") == [
         {"field": "weapon", "heading": "Wielded by", "details": ["weapon_level", "class"], "parts": {}},
@@ -793,6 +875,13 @@ def test_design_pass_features():
 
     output = errors_of(FEATURES.replace('about = "The heroes who join the party."', 'about = "' + "x" * 161 + '"'))
     check("about is 161 characters; it is a line of at most 160" in output, "the lint flags a long about line")
+    output = errors_of(FEATURES.replace('marks = { class = "Classed" }',
+                                        'marks = { nobody = "x", weapon = "Armed", class = "' + "z" * 41 + '" }'))
+    for needle in ("mark 'nobody' is not one of the kind's fields",
+                   "mark weapon is a row of cells; name one column of it",
+                   "mark weapon is a reference; a mark is a value the entity has",
+                   "mark class must be a line of at most 40 characters"):
+        check(needle in output, f"the lint flags {needle!r}")
     output = errors_of(FEATURES.replace('qualifiers = ["class"]', 'qualifiers = ["class", "nobody", "weapon", "class"]')
                        .replace('weapon = { heading = "Wielded by", details = ["weapon_level", "class"] }',
                                 'weapon = { heading = "Wielded by", details = ["bio", "level"], extra = 1, '
@@ -889,6 +978,8 @@ def main():
     test_design_pass_features()
     test_column_references()
     test_joins_and_pairs()
+    test_loaded_where_and_joins()
+    test_keyed_picture()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0

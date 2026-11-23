@@ -190,9 +190,11 @@ item_icon_id
 item_inventory_counts
 item_max_range
 item_min_range
+item_names
 item_random_tier
 item_resource_recovery_amounts
 item_sex_restriction_mask
+item_short_descriptions
 item_sort_key
 item_stat_modifiers
 item_status_delta_levels
@@ -280,8 +282,10 @@ skill_icon_id
 skill_info_revealed_flags
 skill_max_range_encoded
 skill_min_range_encoded
+skill_names
 skill_proc_chance_percent
 skill_resource_deltas
+skill_short_descriptions
 skill_sort_key
 skill_status_levels
 stage_authoring_difficulty_tiers
@@ -441,7 +445,9 @@ usable_action_max_range
 usable_action_min_range
 table item
 table skill
+table stage_catalog
 table stage_enemy
+table stage_goal
 table unit
 field item.attack_element
 field item.category
@@ -454,9 +460,11 @@ field item.handler_script_id
 field item.icon_id
 field item.max_range
 field item.min_range
+field item.name
 field item.random_tier
 field item.resource_recovery_amounts
 field item.sex_restriction_mask
+field item.short_description
 field item.sort_key
 field item.stat_modifiers
 field item.status_delta_levels
@@ -473,10 +481,31 @@ field skill.icon_id
 field skill.info_revealed_flag
 field skill.max_range_encoded
 field skill.min_range_encoded
+field skill.name
 field skill.proc_chance_percent
 field skill.resource_deltas
+field skill.short_description
 field skill.sort_key
 field skill.status_levels
+field stage_catalog.authoring_difficulty_tier
+field stage_catalog.clear_base_spendable_point_reward
+field stage_catalog.clear_coin_quantities
+field stage_catalog.description
+field stage_catalog.extra_dungeon_flag
+field stage_catalog.forbidden_story_flag_ids
+field stage_catalog.loader_script_id
+field stage_catalog.main_progression_flag
+field stage_catalog.map_max_tile_x
+field stage_catalog.map_max_tile_y
+field stage_catalog.map_min_tile_x
+field stage_catalog.map_min_tile_y
+field stage_catalog.minimap_atlas_origin_y
+field stage_catalog.name
+field stage_catalog.number_major
+field stage_catalog.number_minor
+field stage_catalog.required_story_flag_ids
+field stage_catalog.scjump_decision_ids
+field stage_catalog.unlock_group_id
 field stage_enemy.auto_level_scale_divisor
 field stage_enemy.battle_routine_set_ids
 field stage_enemy.difficulty_mask
@@ -492,6 +521,10 @@ field stage_enemy.spawn_object_slot
 field stage_enemy.spawn_tile_x
 field stage_enemy.spawn_tile_y
 field stage_enemy.unit_id
+field stage_goal.defeat_condition_1
+field stage_goal.defeat_condition_2
+field stage_goal.victory_condition_1
+field stage_goal.victory_condition_2
 field unit.auto_level_scale_divisor
 field unit.battle_cutin_asset_ids
 field unit.battle_portrait_asset_ids
@@ -543,3 +576,4 @@ field unit.voice_suppression_flag_id
 field unit.weapon_item_category
 scope stage
 scope stage.enemy
+scope stage.goal

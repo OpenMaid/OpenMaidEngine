@@ -67,6 +67,10 @@ public sealed record ExportDeclarations(
             ? list.EnumerateArray().Select(item => item.GetString()!).ToList()
             : [];
 
+    /// <summary>Whether a kind's picture is a cell of a sheet (<c>{ field, sheet, … }</c>), not a field's own picture.</summary>
+    internal static bool IsSheet(JsonElement picture)
+        => picture.ValueKind == JsonValueKind.Object && picture.TryGetProperty("sheet", out _);
+
     /// <summary>A declaration's <c>notes</c>, name to line, in order.</summary>
     internal static IReadOnlyList<(string Name, string Note)> Notes(JsonElement parent) => Pairs(parent, "notes");
 
@@ -90,7 +94,7 @@ public sealed record KindDeclaration(
     IReadOnlyList<string> Text,
     IReadOnlyList<string> Fields,
     IReadOnlyList<string> Filters,
-    IReadOnlyList<(string Name, string Field)> Pictures,
+    IReadOnlyList<(string Name, string Field, int? Key)> Pictures,
     IReadOnlyList<DescriptionDeclaration> Descriptions)
 {
     public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
@@ -129,6 +133,10 @@ public sealed record KindDeclaration(
     /// character's party state.</summary>
     public IReadOnlyList<string> Joins { get; init; } = [];
 
+    /// <summary>The words the site shows beside a link to an entity whose field is not none (export plan §5), by the
+    /// field, in order: a unit that is a boss is marked "Boss".</summary>
+    public IReadOnlyList<(string Field, string Word)> Marks { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -145,9 +153,14 @@ public sealed record KindDeclaration(
             ExportDeclarations.Strings(kind, "text"),
             ExportDeclarations.Strings(kind, "fields"),
             ExportDeclarations.Strings(kind, "filters"),
+            // A picture is a field, or { field, key }: the colour the game draws transparent (export plan §5).
             kind.TryGetProperty("pictures", out JsonElement pictures)
-                ? pictures.EnumerateObject().Where(pair => pair.Value.ValueKind == JsonValueKind.String)
-                    .Select(pair => (pair.Name, pair.Value.GetString()!)).ToList()
+                ? pictures.EnumerateObject().Where(pair => !ExportDeclarations.IsSheet(pair.Value))
+                    .Select(pair => pair.Value.ValueKind == JsonValueKind.String
+                        ? (pair.Name, pair.Value.GetString()!, (int?)null)
+                        : (pair.Name, pair.Value.GetProperty("field").GetString()!,
+                           pair.Value.TryGetProperty("key", out JsonElement key) ? key.GetInt32() : (int?)null))
+                    .ToList()
                 : [],
             kind.TryGetProperty("descriptions", out JsonElement descriptions)
                 ? descriptions.EnumerateArray().Select(DescriptionDeclaration.Parse).ToList()
@@ -164,7 +177,7 @@ public sealed record KindDeclaration(
                     }).ToList()
                 : [],
             Sheets = kind.TryGetProperty("pictures", out JsonElement sheets)
-                ? sheets.EnumerateObject().Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
+                ? sheets.EnumerateObject().Where(pair => ExportDeclarations.IsSheet(pair.Value))
                     .Select(pair => SheetPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
                 : [],
             Notes = ExportDeclarations.Notes(kind),
@@ -182,6 +195,10 @@ public sealed record KindDeclaration(
                 ? about.GetString()
                 : null,
             Joins = ExportDeclarations.Strings(kind, "joins"),
+            Marks = kind.TryGetProperty("marks", out JsonElement marks)
+                ? marks.EnumerateArray().Select(mark => (mark.GetProperty("field").GetString()!,
+                    mark.GetProperty("word").GetString()!)).ToList()
+                : [],
             ReferencedAs = kind.TryGetProperty("referenced_as", out JsonElement referenced)
                 ? referenced.EnumerateArray().Select(entry => new ReferenceHeadingDeclaration(
                     entry.GetProperty("field").GetString()!, entry.GetProperty("heading").GetString()!,
@@ -356,6 +373,15 @@ public sealed record LoadedTableDeclaration(string Name, string Table, string Ex
     public IReadOnlyList<(string Name, string Label)> Labels { get; init; } = [];
     public IReadOnlyList<PartDeclaration> Parts { get; init; } = [];
 
+    /// <summary>The values a record's field must hold for the record to be a row (export plan §5), by field: a stage's
+    /// map objects of type 32 or 33, its dig sites.</summary>
+    public IReadOnlyList<(string Field, IReadOnlyList<long> Values)> Where { get; init; } = [];
+
+    /// <summary>The tables a row's reference reaches (export plan §5), each with the field that refers to it: the row
+    /// publishes the record it names as its own fields, written <c>table.field</c>, a dig site its dig table's items.
+    /// </summary>
+    public IReadOnlyList<(string Table, string Through)> Joins { get; init; } = [];
+
     internal static LoadedTableDeclaration Parse(string name, JsonElement table)
         => new(name, table.GetProperty("table").GetString()!, table.GetProperty("exists").GetString()!,
                ExportDeclarations.Strings(table, "fields"))
@@ -368,6 +394,11 @@ public sealed record LoadedTableDeclaration(string Name, string Table, string Ex
                 : [],
             Notes = ExportDeclarations.Notes(table),
             Labels = ExportDeclarations.Pairs(table, "labels"),
+            Where = table.TryGetProperty("where", out JsonElement where)
+                ? where.EnumerateObject().Select(pair => (pair.Name,
+                    (IReadOnlyList<long>)pair.Value.EnumerateArray().Select(value => value.GetInt64()).ToList())).ToList()
+                : [],
+            Joins = ExportDeclarations.Pairs(table, "joins"),
             Parts = table.TryGetProperty("parts", out JsonElement parts)
                 ? parts.EnumerateArray().Select(part => new PartDeclaration(
                     part.GetProperty("name").GetString()!, part.GetProperty("field").GetString()!,

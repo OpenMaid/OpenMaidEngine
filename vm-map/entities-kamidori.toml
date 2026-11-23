@@ -102,14 +102,16 @@ exists = "full_name"
 title = "full_name"
 text = ["display_name", "initial_class_title", "bestiary_description"]
 fields = [
-    "race", "sex", "bestiary_listed", "starting_level", "level_cap", "stats",
+    "race", "sex", "boss_class", "bestiary_listed", "starting_level", "level_cap", "stats",
     "stat_growth", "initial_stat_caps", "element_resistance", "equippable_category_mask", "initial_weapon_level",
     "default_attack_item_id", "initial_equipment", "default_costume_item_id", "skill", "party_cost",
     "initial_affinity_tenths", "experience_reward", "bestiary_knowledge_gain", "drop_item", "drop_chance",
     "habitat_area",
 ]
-filters = ["race", "sex"]
+filters = ["race", "sex", "boss_class"]
 qualifiers = ["initial_class_title", "starting_level", "level_cap"]
+# A boss is marked wherever a unit is linked (the site's second design review, P13): a stage's enemies mark theirs.
+marks = { boss_class = "Boss" }
 
 [[kind.group]]
 name = "stat_table"
@@ -125,12 +127,14 @@ element_resistance = "Each element's resistance, as the game names its steps."
 equippable_category_mask = "The kinds of item it can equip."
 drops = "Each item it can drop and its chance; a chance of 5% or less counts as a rare drop."
 habitat_area = "The world areas the bestiary lists as where it lives."
+boss_class = "A boss has the boss marker, its battle music by its class, and is spared the conditions that cannot affect bosses; a stage won by defeating its bosses waits for every boss but those not needed to win."
 
 [kind.labels]
 bestiary_listed = "In the bestiary"
 initial_affinity_tenths = "Initial affinity"
 equippable_category_mask = "Equips"
 display_name = "Short name"
+boss_class = "Boss"
 
 [kind.referenced_as]
 skill = "Units that have it"
@@ -353,6 +357,7 @@ floor_number = "Floor"
 prerequisite_floor_number = "Prerequisite floor"
 boss_flag = "Boss stage"
 event_entry_flag = "Event stage"
+object = "Dig site"
 
 [kind.referenced_as]
 labyrinth_id = { heading = "Stages", details = ["floor_number"] }
@@ -361,10 +366,10 @@ objective_item_rewards = { heading = "Stage reward", details = ["labyrinth_id", 
 required_party_unit_ids = { heading = "Must join the sortie on", details = ["labyrinth_id", "floor_number"] }
 "enemy.unit_id" = { heading = "Enemy on stages", details = ["labyrinth_id", "floor_number", "enemy.min_level",
                     "enemy.max_level"], parts = { ally = "Ally on stages" } }
+"object.dig_table.item_ids" = { heading = "Dug on stages", details = ["labyrinth_id", "floor_number", "object.type_id"] }
 
-# The dig tables are not published (the user, 2026-11-22): a table is reached only through a floor's dig points, the
-# map objects of a stage, which no loader publishes yet, so its page could not say where it is dug. They go with the
-# stage maps (docs/backlog.md).
+# The dig tables have no kind (the user, 2026-11-22): a table is reached only through a floor's dig points, so a stage's
+# page lists its dig sites with their tables' items (the stage loader's object table, above).
 
 # The world areas (the user, 2026-11-22): the places of the world map, which a stage's labyrinth and a unit's habitat
 # name. Their map position is modder data.
@@ -455,6 +460,18 @@ field = "faction_id"
 global = "stage_faction_alliance"
 same_as = 1
 note = "Units whose faction the stage puts in the player's alliance, so they are not the player's enemies."
+
+# A stage's dig sites (the user, 2026-11-22: dig tables merged "into stage data"): its map objects of type 32 (採取) and
+# 33 (発掘), each with the items of the dig table it gathers from, (type - 32) * 100 + primary_param, which SELSTAGE
+# lists on the stage select screen (SELSTAGE@0x17f1). The rolls are left out: a slot's story flags decide which slots
+# take part, so a threshold is no chance a reader could use (DIG@0x12f).
+[loader.tables.object]
+exists = "type_id"
+where = { type_id = [32, 33] }
+joins = { dig_table = "type_id" }
+fields = ["type_id", "dig_table.item_ids", "secondary_param", "tile_x", "tile_y", "difficulty_mask"]
+labels = { type_id = "Point", "dig_table.item_ids" = "Items", secondary_param = "Materials a use", tile_x = "X", tile_y = "Y", difficulty_mask = "Difficulty" }
+notes = { "dig_table.item_ids" = "What its dig table can give; the story so far decides which of them a use rolls from.", secondary_param = "How many materials one use of the point rolls for.", difficulty_mask = "The difficulties the point is placed on." }
 
 # The goals the stage's rewards are for, which label the stage's objective_rewards rows. STINIT leaves the first
 # goal's text empty: AIM@0x5b4 and STAGECLEAR@0x8be draw a fixed text in its place, which a literal gives.

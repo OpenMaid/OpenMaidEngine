@@ -122,8 +122,9 @@ public static class ExportWriter
             + "name TEXT NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, PRIMARY KEY (kind, field, position))",
             "CREATE TABLE text (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "lang TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY (kind, id, field, idx, lang))",
+            // A row reference's element names several records (export plan §5), so an element may have several rows.
             "CREATE TABLE ref (from_kind TEXT NOT NULL, from_id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
-            + "to_kind TEXT NOT NULL, to_id INTEGER NOT NULL, PRIMARY KEY (from_kind, from_id, field, idx))",
+            + "to_kind TEXT NOT NULL, to_id INTEGER NOT NULL, PRIMARY KEY (from_kind, from_id, field, idx, to_kind, to_id))",
             // The calls the script relations resolved (spec §6.7, export plan §4.5): the script as the index names it,
             // the call's offset, and the count as the script sets it, signed (null for a relation with none).
             "CREATE TABLE relation (kind TEXT NOT NULL, id INTEGER NOT NULL, relation TEXT NOT NULL, script TEXT NOT NULL, "
@@ -170,6 +171,10 @@ public static class ExportWriter
             + "lang TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, field, column_index, lang))",
             // The fields that tell apart a kind's entities with one name (export plan §5), in order.
             "CREATE TABLE qualifier (kind TEXT NOT NULL, position INTEGER NOT NULL, field TEXT NOT NULL, "
+            + "PRIMARY KEY (kind, position))",
+            // The words shown beside a link to an entity whose field is not none (export plan §5), in order: a unit
+            // that is a boss is marked "Boss".
+            "CREATE TABLE mark (kind TEXT NOT NULL, position INTEGER NOT NULL, field TEXT NOT NULL, word TEXT NOT NULL, "
             + "PRIMARY KEY (kind, position))",
             // How a reference reads on its target's page (export plan §5): the heading of the list of the kind's
             // entities whose field names it, and the fields shown beside each (a JSON array). A loaded table's field
@@ -329,9 +334,9 @@ public static class ExportWriter
             using (var insert = new Inserter(connection, "loaded_field", "kind", "loaded", "name", "type", "published",
                                              "text", "ref_table", "ref_kind", "bank", "address", "width", "column_index",
                                              "columns", "column_kind"))
-                foreach (FieldLayout field in table.TableFields)
+                foreach (FieldLayout field in table.TableFields.Concat(table.JoinedFields))
                 {
-                    string? refTable = table.Table.Refs.GetValueOrDefault(field.Field);
+                    string? refTable = table.TableOf(field).Refs.GetValueOrDefault(field.Field);
                     string? refKind = refTable == null || refTable == "picture"
                         ? null
                         : kinds.FirstOrDefault(other => other.Table.Name == refTable)?.Declaration.Id;
@@ -458,6 +463,9 @@ public static class ExportWriter
         using (var qualifiers = new Inserter(connection, "qualifier", "kind", "position", "field"))
             for (int position = 0; position < declaration.Qualifiers.Count; position++)
                 qualifiers.Row(declaration.Id, position, declaration.Qualifiers[position]);
+        using (var marks = new Inserter(connection, "mark", "kind", "position", "field", "word"))
+            for (int position = 0; position < declaration.Marks.Count; position++)
+                marks.Row(declaration.Id, position, declaration.Marks[position].Field, declaration.Marks[position].Word);
         using var headings = new Inserter(connection, "referenced_as", "kind", "field", "part", "heading", "details");
         foreach (ReferenceHeadingDeclaration entry in declaration.ReferencedAs)
         {

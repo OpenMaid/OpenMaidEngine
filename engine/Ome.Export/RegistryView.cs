@@ -96,6 +96,16 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
 public sealed record RefKey(int Times, string? Plus)
 {
     public bool Pairs => Plus is null;
+
+    /// <summary>The plus value that names every record of the value's row, value × <see cref="Times"/> to value ×
+    /// <see cref="Times"/> + <see cref="Times"/> - 1 (<c>any</c>), or null: an Arterial item that every card of a row
+    /// may carry has slot 0.</summary>
+    public long? Any { get; init; }
+
+    /// <summary>The values that name a record, each with the record its plus counts from (<c>bases</c>), or null: a
+    /// value that is not one of them names none. A Kamidori map object of type 32 gathers from dig table 0 plus its
+    /// payload, one of type 33 from table 100 plus it, and another type from none.</summary>
+    public IReadOnlyDictionary<long, long>? Bases { get; init; }
 }
 
 /// <summary>A field as a declaration names it (<c>stats</c>, or one column, <c>graphic.face_CA_AA</c>): the cells it
@@ -194,8 +204,16 @@ public sealed class RegistryView
                 var keys = entry.TryGetProperty("ref_keys", out JsonElement keyMap)
                     ? keyMap.EnumerateObject().ToDictionary(
                         pair => pair.Name,
-                        pair => new RefKey(pair.Value.GetProperty("times").GetInt32(),
-                                           pair.Value.TryGetProperty("plus", out JsonElement plus) ? plus.GetString() : null),
+                        pair => new RefKey(pair.Value.TryGetProperty("times", out JsonElement times) ? times.GetInt32() : 1,
+                                           pair.Value.TryGetProperty("plus", out JsonElement plus) ? plus.GetString() : null)
+                        {
+                            Any = pair.Value.TryGetProperty("any", out JsonElement any) ? any.GetInt64() : null,
+                            Bases = pair.Value.TryGetProperty("bases", out JsonElement bases)
+                                ? bases.EnumerateObject().ToDictionary(
+                                    basePair => long.Parse(basePair.Name, CultureInfo.InvariantCulture),
+                                    basePair => basePair.Value.GetInt64())
+                                : null,
+                        },
                         StringComparer.Ordinal)
                     : new Dictionary<string, RefKey>(StringComparer.Ordinal);
                 tables.Add(new TableLayout(entry.GetProperty("name").GetString()!, entry.GetProperty("records").GetInt32(),

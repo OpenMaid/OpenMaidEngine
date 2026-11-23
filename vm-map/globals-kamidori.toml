@@ -657,10 +657,12 @@ address = "0x2b66ac"
 name = "unit_boss_class"
 category = "data-table"
 type = "int[1000]"
-value_domain = "-1..4 (155 rows); signed like Himegari's boss class"
-usage = "FIELD@0x08d6b takes abs() of both combatants' values and compares (==4 special); FIELD@0x0abef tests >0; CALCDMG@0x00821 adds a per-class bonus row; DRAWCHSTATE@0x000f5 draws a boss marker when nonzero."
+value_domain = "0 not a boss; nonzero a boss, whose magnitude picks the battle music and whose sign says whether a boss victory needs it: 1 to 4 count, -1 does not. At the boot 48 units have 1, 16 have 2, 11 have 3, 5 have 4 (the Reaper's five records) and 75 have -1."
+usage = "Every reader takes nonzero as a boss. DRAWCHSTATE@0x000f5 draws the boss marker. CALCILL@0x0002e lets a condition whose condition_can_affect_bosses is 0 pass a boss by. CALCDMG@0x00821 adds passive skill 58's bonus against a boss (skill_combat_stat_deltas[58]). FIELD@0x08d6b takes the larger abs() of the two combatants' classes for the battle's music, which BTL@0x00fdd plays: 4 plays BGM 8, 1 to 3 play BGM 0x20 + class (33 to 35), and 0 the common battle music (32 or 31). FIELD@0x0abef: a stage whose stage_victory_defeat_unit is -2 is won when no hostile unit with a class above 0 is left, so a unit of -1 is a boss that victory does not wait for."
+values = { "-1" = "Boss not needed to win, BGM 33", "1" = "Boss, BGM 33", "2" = "Boss, BGM 34", "3" = "Boss, BGM 35", "4" = "Boss, BGM 8" }
+none = 0
 source = "investigation"
-confidence = "med"
+confidence = "high"
 
 [[global]]
 address = "0x2b6a94"
@@ -1529,32 +1531,32 @@ source = "investigation"
 confidence = "med"
 
 [[global]]
-address = "0x25997e"
+address = "0x24d62e"
 name = "battle_routine_use_limits"
 category = "data-table"
 type = "int[1000][50]"
 value_domain = "max uses"
-usage = "RTINIT bank 22 (root 0x14d09e + bank*50000). BTRTN@0x0027f compares it with 0x629c8[unit][step]."
+usage = "RTINIT bank 21 (root 0x14d09e + bank*50000), the map routines' bank 7 fourteen banks on. BTRTN@0x0027f compares it with 0x629c8[unit][step]. No battle routine sets it at the boot."
 source = "investigation"
 confidence = "high"
 
 [[global]]
-address = "0x265cce"
+address = "0x25997e"
 name = "battle_routine_required_story_flag_ids"
 category = "data-table"
 type = "int[1000][150]"
 value_domain = "3 flags per step"
-usage = "RTINIT bank 23 (root 0x14d09e + bank*50000). BTRTN@0x001b6. Occupies banks 23..25."
+usage = "RTINIT bank 22 (root 0x14d09e + bank*50000). BTRTN@0x001b6 reads [routine][3 * step + i]. Occupies banks 22..24. No battle routine sets it at the boot."
 source = "investigation"
 confidence = "high"
 
 [[global]]
-address = "0x28a6be"
+address = "0x27e36e"
 name = "battle_routine_forbidden_story_flag_ids"
 category = "data-table"
 type = "int[1000][150]"
 value_domain = "3 flags per step"
-usage = "RTINIT bank 26 (root 0x14d09e + bank*50000). BTRTN@0x00230. Occupies banks 26..28."
+usage = "RTINIT bank 25 (root 0x14d09e + bank*50000). BTRTN@0x00230 reads [routine][3 * step + i]. Occupies banks 25..27, which end where bank 28's tables (LAINIT, OBINIT, HAINIT, CDINIT2, DIINIT, EBINIT) begin. No battle routine sets it at the boot."
 source = "investigation"
 confidence = "high"
 
@@ -4626,7 +4628,8 @@ name = "stage_object_type_id"
 category = "data-table"
 type = "int[50]"
 value_domain = "OBINIT object type id; 0 = empty slot"
-usage = "SETOBJ@0x2a iterates slots with a type; SETMAPTEX@0x156 loads the type's sprite (0x2a363e); DRAWOBJ, CHECKOBJ, CALCOCC, FIELD read OBINIT properties through it."
+values = { "32" = "Gathering point", "33" = "Excavation point" }
+usage = "SETOBJ@0x2a iterates slots with a type; SETMAPTEX@0x156 loads the type's sprite (0x2a363e); DRAWOBJ, CHECKOBJ, CALCOCC, FIELD read OBINIT properties through it. Types 0x20 (採取ポイント) and 0x21 (発掘ポイント) gather from a dig table (SELSTAGE@0x17f8, FIELD@0x897e)."
 source = "investigation"
 confidence = "high"
 
@@ -4656,7 +4659,7 @@ name = "stage_object_secondary_param"
 category = "data-table"
 type = "int[50]"
 value_domain = "type-dependent: teleporters = destination tile y; chests/treasure/gather points = quantity/grade"
-usage = "CHECKOBJ@0x208 (teleport destination y occupancy check); FIELD@0x7a49.. reads it when an object is used (item quantity / harvest grade); RTN_M004/005/011/012 read it for AI object targeting."
+usage = "CHECKOBJ@0x208 (teleport destination y occupancy check); FIELD@0x7a49.. reads it when an object is used (item quantity / harvest grade); RTN_M004/005/011/012 read it for AI object targeting. On a gathering point (type 0x20 or 0x21), FIELD@0x89ad adds it to dig_pending_gather_counts[its dig table]: how many materials DIG rolls for a use."
 source = "investigation"
 confidence = "med"
 
@@ -4686,7 +4689,8 @@ name = "stage_object_difficulty_mask"
 category = "data-table"
 type = "int[50]"
 value_domain = "bitmask over difficulty 0x320b (7 = all)"
-usage = "SETOBJ@0x4d: check-bit against 0x320b; clear bit = object not placed."
+bits_of = "labyrinth_difficulty"
+usage = "SETOBJ@0x4d: check-bit against 0x320b, the difficulty, as stage_enemy_difficulty_mask is (FIELD@0x4aed); clear bit = object not placed."
 source = "investigation"
 confidence = "high"
 
@@ -4694,7 +4698,7 @@ confidence = "high"
 address = "0x140608"
 name = "stage_object_required_story_flags"
 category = "data-table"
-type = "int[50x7]"
+type = "int[50][7]"
 value_domain = "story flag ids (1-based), all must be set"
 usage = "SETOBJ@0xcc and SELSTAGE: any positive entry whose 0x50d[flag-1]!=1 suppresses the object."
 source = "investigation"
@@ -4704,7 +4708,7 @@ confidence = "high"
 address = "0x140766"
 name = "stage_object_forbidden_story_flags"
 category = "data-table"
-type = "int[50x5]"
+type = "int[50][5]"
 value_domain = "story flag ids (1-based), none may be set"
 usage = "SETOBJ@0x12d and SELSTAGE: any entry whose flag is set suppresses the object."
 source = "investigation"
@@ -4714,7 +4718,7 @@ confidence = "high"
 address = "0x140860"
 name = "stage_object_use_story_flags_by_faction"
 category = "data-table"
-type = "int[50x5]"
+type = "int[50][5]"
 value_domain = "story flag id per using faction 0..4 (mostly column 1 = player)"
 usage = "FIELD@0x2e71 and @0x73ff: when a unit of faction f uses the object, sets 0x50d[value-1]=1 (e.g. 8275 = gather done), then increments the use counter 0x37305."
 source = "investigation"
@@ -6761,6 +6765,30 @@ forbidden_story_flags = "stage_enemy_forbidden_story_flags"
 unit_id = "unit"
 
 [[table]]
+name = "stage_object"
+records = 50
+built_by = "stage"
+usage = "The current stage's map objects, slots 1 to 49 (SETOBJ@0x2a and SELSTAGE@0x17d4 walk them). STINIT, then each append's $n$STINIT, write them with the rest of the stage. An object's type is an OBINIT type (the object_type_* arrays). A 採取 point (type 0x20) or 発掘 point (type 0x21) gathers from dig table (type - 0x20) * 100 + primary_param: SELSTAGE@0x1825 lists that table's items on the stage select screen, and FIELD@0x897e rolls from it secondary_param times when the point is used. A data file reaches it through the stage scope."
+
+[table.fields]
+tile_x = "stage_object_tile_x"
+tile_y = "stage_object_tile_y"
+type_id = "stage_object_type_id"
+base_value = "stage_object_base_value"
+primary_param = "stage_object_primary_param"
+secondary_param = "stage_object_secondary_param"
+reinforcement_interval_turns = "stage_object_reinforcement_interval_turns"
+reinforcement_spawn_limit = "stage_object_reinforcement_spawn_limit"
+difficulty_mask = "stage_object_difficulty_mask"
+required_story_flags = "stage_object_required_story_flags"
+forbidden_story_flags = "stage_object_forbidden_story_flags"
+use_story_flags_by_faction = "stage_object_use_story_flags_by_faction"
+
+[table.refs]
+# A gathering point's dig table: type 0x20 counts from table 0 and type 0x21 from table 100 (SELSTAGE@0x182c).
+type_id = { table = "dig_table", bases = { 32 = 0, 33 = 100 }, plus = "primary_param" }
+
+[[table]]
 name = "stage_reward"
 records = 4
 built_by = "stage"
@@ -7007,3 +7035,4 @@ usage = "A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appe
 [scope.tables]
 enemy = "stage_enemy"
 reward = "stage_reward"
+object = "stage_object"

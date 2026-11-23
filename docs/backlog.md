@@ -263,11 +263,11 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   (`牙コウモリ（牙蝙蝠/ニュクテリス）`), qualifying members of different enums that share a name, and translations
   that rename entries. Done when both games' registries generate the enums, the decompiler prints keys and
   values by name, and both games still rebuild byte-identically.
-- **Overlapping registry arrays.** `globals_build.py --lint` reports 2 Himegari and 43 Kamidori pairs of
-  overlapping arrays. Classify each as a deliberate sub-view or a size error, since element names depend on it
-  (OMS spec §11.3, §13). One looks like a size error: Kamidori's `battle_routine_forbidden_story_flag_ids`
-  (`int[1000][150]`, RTINIT's banks 26 to 28) covers the four dig tables, which DIINIT writes, and the arrays after
-  them; the dig tables' `[200][10]` shapes made four of the pairs visible (2026-11-21, game data export milestone 2).
+- **Overlapping registry arrays.** `globals_build.py --lint` reports 2 Himegari pairs of overlapping arrays
+  (`attack_element_effectiveness_percent` with `item_tuning_stat_bonus_curves`, and `defense_element_names` with
+  `terrain_type_names`). Classify each as a deliberate sub-view or a size error, since element names depend on it
+  (OMS spec §11.3, §13). Kamidori's 43 were all one placement error, fixed on 2026-11-22: its three battle routine
+  arrays sat one RTINIT bank too late (`kamidori-data-tables.md`, "Enemy AI routines").
 - **Compiler warnings.** Two of the five §8.2 warnings are missing: an implicit string↔number conversion, which needs
   a type checker, and an `atomic` body that contains a wait (OMS spec §8.2). The compiler reports the other three
   through `OmsWarning`: an opcode no corpus executes, a division by a constant zero, and a recursive call over bound
@@ -515,11 +515,6 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   - Done when the export declares a map for a kind in a form both games fit (a background or a grid, its nodes or
     tiles, the links between them, and the markers placed on them, each with an icon), the exporter writes it, and the
     site draws it on the entity's page.
-- **Dig sites on a stage's page.** The `dig_table` kind was dropped on 2026-11-22: its page listed a table's items
-  but could not say where the table is used. The user: "Maybe we drop dig tables or merge them into stage data". A
-  dig site is a map object of type `0x20` (採取) or `0x21` (発掘), whose payload picks a DIINIT table
-  (`kamidori-data-tables.md`, "World map, gathering, arena"). Done when a stage's page lists its dig sites with the
-  items each can give, most likely with the stage maps above, which place the map objects.
 - **Costumes.** The user: "One entity type we may want to add are costumes. Wil and the 3 heroines get them, and
   they contain upgrades costing materials and giving benefits." A costume is an item (`unit_default_costume_item_id`,
   ITINIT costume ids 101 to 151). Its board is 15×15 nodes (`item_costume_enhancement_grid`, whose node bits the
@@ -529,15 +524,14 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   CALCARM sums them. What a node costs in materials is not in the registry yet. Done when a `costume` kind (or the
   costume items' pages) shows each costume's board: its nodes, what each gives and what it costs, read through a
   loader that runs COINIT for each costume.
-- **A unit's boss marker** (the site's second design review, P13, 2026-11-22). A stage's enemy table cannot mark its
-  boss: a stage names none, and the game marks a boss by its unit, `unit_boss_class` (DRAWCHSTATE draws a boss
-  marker when it is not 0; its values, -1 to 4, are a first reading). Done when the registry reads its values, the
-  unit kind publishes it, and a stage's enemies mark the boss (site plan §13).
-- **The cards an Arterial item may be carried by** (export plan §5, "A second game: Arterial"). `item_card_rows`
-  and `item_card_slots` limit which cards may carry an item. 191 items set a row and 6 of them a slot too. A row
-  alone names every card of that row, and no card sits at slot 0, so the two cells are not a two-field reference:
-  `row × 30 + 0` names no card. Only the six with a slot name one card. Done when a reference can name a card row,
-  a set of cards, and the item's page lists the cards that may carry it.
+- **Himegari's section grows with its registry.** The section publishes the four understood tables and STINIT2's
+  stages (2026-11-22). What the registry already holds that it could add next: the item and skill icons
+  (`item_icon_id` 1 to 360 and `skill_icon_id` 51 to 56 number cells of an icon sheet the registry does not name yet,
+  so a sheet picture can cut them once it does); the class change rules (CCINIT, `class_change_title_output`); the map
+  objects (OBINIT, `object_type_names` and `object_type_descriptions`); and the meaning of `stage_enemy_faction_id`
+  (0, 2 or 3), which would split a stage's enemies from its allies as Kamidori's parts do. `unit_boss_class` and
+  `unit_species_category` are read at medium confidence. Done when each is a kind, a field or a part on the site, or
+  the registry says why it is not.
 
 ## Platform and project
 

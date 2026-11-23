@@ -12,8 +12,15 @@
     "stage": {
       "$ref": "#/definitions/scope.stage"
     },
+    "stage_catalog": {
+      "$ref": "#/definitions/records.stage_catalog"
+    },
     "stage_enemy": {
       "description": "stage_enemy is reached through its scope: write stage.<id>.enemy",
+      "type": "null"
+    },
+    "stage_goal": {
+      "description": "stage_goal is reached through its scope: write stage.<id>.goal",
       "type": "null"
     },
     "unit": {
@@ -340,6 +347,10 @@
           "minimum": -2147483648,
           "maximum": 4294967295
         },
+        "name": {
+          "description": "item.name: item_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
         "random_tier": {
           "description": "item.random_tier: item_random_tier, a whole number",
           "type": "integer",
@@ -388,6 +399,10 @@
           "type": "integer",
           "minimum": -2147483648,
           "maximum": 4294967295
+        },
+        "short_description": {
+          "description": "item.short_description: item_short_descriptions, text the save's code page (932) can encode",
+          "type": "string"
         },
         "sort_key": {
           "description": "item.sort_key: item_sort_key, a whole number",
@@ -1052,6 +1067,10 @@
           "minimum": -2147483648,
           "maximum": 4294967295
         },
+        "name": {
+          "description": "skill.name: skill_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
         "proc_chance_percent": {
           "description": "skill.proc_chance_percent: skill_proc_chance_percent, a whole number",
           "type": "integer",
@@ -1090,6 +1109,10 @@
             }
           },
           "additionalProperties": false
+        },
+        "short_description": {
+          "description": "skill.short_description: skill_short_descriptions, text the save's code page (932) can encode",
+          "type": "string"
         },
         "sort_key": {
           "description": "skill.sort_key: skill_sort_key, a whole number",
@@ -1311,6 +1334,378 @@
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "record.stage_catalog": {
+      "description": "stage_catalog: one record's fields, by name; write stage_catalog.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "authoring_difficulty_tier": {
+          "description": "stage_catalog.authoring_difficulty_tier: stage_authoring_difficulty_tiers, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "clear_base_spendable_point_reward": {
+          "description": "stage_catalog.clear_base_spendable_point_reward: stage_clear_base_spendable_point_rewards, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "clear_coin_quantities": {
+          "description": "stage_catalog.clear_coin_quantities: stage_clear_coin_quantities, a row of 3 columns by name; write clear_coin_quantities.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write bronze_coin_item_91",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write silver_coin_item_92",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write gold_coin_item_93",
+              "type": "null"
+            },
+            "bronze_coin_item_91": {
+              "description": "stage_catalog.clear_coin_quantities.bronze_coin_item_91: column 0 of stage_clear_coin_quantities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "gold_coin_item_93": {
+              "description": "stage_catalog.clear_coin_quantities.gold_coin_item_93: column 2 of stage_clear_coin_quantities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "silver_coin_item_92": {
+              "description": "stage_catalog.clear_coin_quantities.silver_coin_item_92: column 1 of stage_clear_coin_quantities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": {
+          "description": "stage_catalog.description: stage_description_lines, a row of 6 columns by name; write description.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write uncleared_line_1",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write uncleared_line_2",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write uncleared_line_3",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write cleared_line_1",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write cleared_line_2",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write cleared_line_3",
+              "type": "null"
+            },
+            "cleared_line_1": {
+              "description": "stage_catalog.description.cleared_line_1: column 3 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            },
+            "cleared_line_2": {
+              "description": "stage_catalog.description.cleared_line_2: column 4 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            },
+            "cleared_line_3": {
+              "description": "stage_catalog.description.cleared_line_3: column 5 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            },
+            "uncleared_line_1": {
+              "description": "stage_catalog.description.uncleared_line_1: column 0 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            },
+            "uncleared_line_2": {
+              "description": "stage_catalog.description.uncleared_line_2: column 1 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            },
+            "uncleared_line_3": {
+              "description": "stage_catalog.description.uncleared_line_3: column 2 of stage_description_lines, text the save's code page (932) can encode",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "extra_dungeon_flag": {
+          "description": "stage_catalog.extra_dungeon_flag: stage_extra_dungeon_flags, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "forbidden_story_flag_ids": {
+          "description": "stage_catalog.forbidden_story_flag_ids: stage_forbidden_story_flag_ids, a row of 7 columns by name; write forbidden_story_flag_ids.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write forbidden_flag_1",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write forbidden_flag_2",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write forbidden_flag_3",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write forbidden_flag_4",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write forbidden_flag_5",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write forbidden_flag_6",
+              "type": "null"
+            },
+            "6": {
+              "description": "column 6 is named: write forbidden_flag_7",
+              "type": "null"
+            },
+            "forbidden_flag_1": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_1: column 0 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_2": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_2: column 1 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_3": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_3: column 2 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_4": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_4: column 3 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_5": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_5: column 4 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_6": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_6: column 5 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "forbidden_flag_7": {
+              "description": "stage_catalog.forbidden_story_flag_ids.forbidden_flag_7: column 6 of stage_forbidden_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "loader_script_id": {
+          "description": "stage_catalog.loader_script_id: stage_loader_script_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "main_progression_flag": {
+          "description": "stage_catalog.main_progression_flag: stage_main_progression_flags, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_max_tile_x": {
+          "description": "stage_catalog.map_max_tile_x: stage_map_max_tile_x, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_max_tile_y": {
+          "description": "stage_catalog.map_max_tile_y: stage_map_max_tile_y, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_min_tile_x": {
+          "description": "stage_catalog.map_min_tile_x: stage_map_min_tile_x, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "map_min_tile_y": {
+          "description": "stage_catalog.map_min_tile_y: stage_map_min_tile_y, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "minimap_atlas_origin_y": {
+          "description": "stage_catalog.minimap_atlas_origin_y: stage_minimap_atlas_origin_y, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "name": {
+          "description": "stage_catalog.name: stage_display_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "number_major": {
+          "description": "stage_catalog.number_major: stage_display_number_major, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "number_minor": {
+          "description": "stage_catalog.number_minor: stage_display_number_minor, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "required_story_flag_ids": {
+          "description": "stage_catalog.required_story_flag_ids: stage_required_story_flag_ids, a row of 7 columns by name; write required_story_flag_ids.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write required_flag_1",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write required_flag_2",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write required_flag_3",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write required_flag_4",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write required_flag_5",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write required_flag_6",
+              "type": "null"
+            },
+            "6": {
+              "description": "column 6 is named: write required_flag_7",
+              "type": "null"
+            },
+            "required_flag_1": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_1: column 0 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_2": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_2: column 1 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_3": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_3: column 2 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_4": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_4: column 3 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_5": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_5: column 4 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_6": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_6: column 5 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "required_flag_7": {
+              "description": "stage_catalog.required_story_flag_ids.required_flag_7: column 6 of stage_required_story_flag_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "scjump_decision_ids": {
+          "description": "stage_catalog.scjump_decision_ids: stage_scjump_decision_ids, a row of 3 columns by name; write scjump_decision_ids.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write entry",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write clear",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write failure",
+              "type": "null"
+            },
+            "clear": {
+              "description": "stage_catalog.scjump_decision_ids.clear: column 1 of stage_scjump_decision_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "entry": {
+              "description": "stage_catalog.scjump_decision_ids.entry: column 0 of stage_scjump_decision_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "failure": {
+              "description": "stage_catalog.scjump_decision_ids.failure: column 2 of stage_scjump_decision_ids, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "unlock_group_id": {
+          "description": "stage_catalog.unlock_group_id: stage_unlock_group_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
         }
       },
       "additionalProperties": false
@@ -1592,6 +1987,29 @@
           "type": "integer",
           "minimum": -2147483648,
           "maximum": 4294967295
+        }
+      },
+      "additionalProperties": false
+    },
+    "record.stage_goal": {
+      "description": "stage_goal: one record's fields, by name; write stage.<id>.goal.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "defeat_condition_1": {
+          "description": "stage_goal.defeat_condition_1: stage_defeat_condition_1, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "defeat_condition_2": {
+          "description": "stage_goal.defeat_condition_2: stage_defeat_condition_2, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "victory_condition_1": {
+          "description": "stage_goal.victory_condition_1: stage_victory_condition_1, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "victory_condition_2": {
+          "description": "stage_goal.victory_condition_2: stage_victory_condition_2, text the save's code page (932) can encode",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -3017,6 +3435,17 @@
         "$ref": "#/definitions/record.skill"
       }
     },
+    "records.stage_catalog": {
+      "description": "stage_catalog: records by id, 0 to 999; write stage_catalog.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 999
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.stage_catalog"
+      }
+    },
     "records.stage_enemy": {
       "description": "stage_enemy: records by id, 0 to 29; write stage.<id>.enemy.<id>.<field> = ...",
       "type": "object",
@@ -3026,6 +3455,17 @@
       },
       "additionalProperties": {
         "$ref": "#/definitions/record.stage_enemy"
+      }
+    },
+    "records.stage_goal": {
+      "description": "stage_goal: records by id, 0 to 0; write stage.<id>.goal.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.stage_goal"
       }
     },
     "records.unit": {
@@ -3040,18 +3480,21 @@
       }
     },
     "scope.stage": {
-      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy.<id>.<field> = ...",
+      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy or goal.<id>.<field> = ...",
       "type": "object",
       "x-ome-decimal-keys": {
         "minimum": 1,
         "maximum": 999
       },
       "additionalProperties": {
-        "description": "one stage's tables, by short name; write stage.<id>.enemy.<id>.<field> = ...",
+        "description": "one stage's tables, by short name; write stage.<id>.enemy or goal.<id>.<field> = ...",
         "type": "object",
         "properties": {
           "enemy": {
             "$ref": "#/definitions/records.stage_enemy"
+          },
+          "goal": {
+            "$ref": "#/definitions/records.stage_goal"
           }
         },
         "additionalProperties": false

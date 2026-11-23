@@ -254,6 +254,34 @@ internal static class DataExportCommand
             return sheet;
         }
 
+        private readonly Dictionary<(long, int), ExportPicture?> _keyed = new();
+
+        public ExportPicture? ResolveKeyed(long packedId, int key)
+        {
+            if (_keyed.TryGetValue((packedId, key), out ExportPicture? known)) return known;
+            ExportPicture? picture = null;
+            if (resources.ResolveTexture(packedId) is { } entry)
+                try
+                {
+                    // The colour the game loads the picture with as its key (SetTexture's key, BlendMath) is drawn as
+                    // nothing: here every pixel of exactly that colour is transparent.
+                    RgbaImage image = resources.DecodeTexture(entry);
+                    byte[] pixels = (byte[])image.Pixels.Clone();
+                    for (int at = 0; at < pixels.Length; at += 4)
+                        if (BlendMath.ColorKeyMatches(pixels[at], pixels[at + 1], pixels[at + 2], key))
+                            pixels[at] = pixels[at + 1] = pixels[at + 2] = pixels[at + 3] = 0;
+                    picture = new ExportPicture($"{Path.GetFileNameWithoutExtension(entry.Name)}-key-{key:x6}",
+                                                PngWriter.Write(new RgbaImage(image.Width, image.Height, pixels)),
+                                                image.Width, image.Height);
+                }
+                catch (Exception error) when (error is InvalidDataException or IOException)
+                {
+                    Console.Error.WriteLine($"data-export: picture {entry.Name}: {error.Message}");
+                }
+            _keyed[(packedId, key)] = picture;
+            return picture;
+        }
+
         public ExportPicture? Resolve(long packedId)
         {
             if (_decoded.TryGetValue(packedId, out ExportPicture? known)) return known;

@@ -177,6 +177,7 @@ name = "item_category"
 category = "data-table"
 type = "int[1000]"
 value_domain = "{0,1,2,4,8,9,10..17,19..23}"
+values = { "0" = "Innate attack", "1" = "Key item", "2" = "Consumable", "4" = "Stat stone", "8" = "Synthesis material", "9" = "Coin", "19" = "Boots", "20" = "Armor", "21" = "Shield", "22" = "Accessory", "23" = "Capture rope" }
 usage = "ITINIT field for all 287 items and ITMES's top-level behavior dispatch. Observed groups: 0 innate attacks, 1 key/story items, 2 consumables, 4 stat stones, 8 synthesis materials, 9 coins, 10..17 weapon families, 19 boots, 20 armor, 21 shields, 22 accessories, and 23 capture ropes."
 source = "investigation"
 confidence = "high"
@@ -207,6 +208,7 @@ name = "item_attack_element"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark)"
+values_from = { global = "attack_element_names", first = 0 }
 usage = "Populated for 107 weapons/attacks. Values exactly match the AFINIT attack-attribute string table at GStr[0x2690 + value] and the Japanese item descriptions; combat scope/parameter code consumes the same array."
 source = "investigation"
 confidence = "high"
@@ -217,6 +219,7 @@ name = "item_defense_element"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1..12 (AFINIT defense-attribute enum)"
+values_from = { global = "defense_element_names", first = 0 }
 usage = "Populated for the 13 shields. Values match descriptions such as physical, universal, holy, dark, spirit, and divinity defense; DRAWTIP renders them through AFINIT's defense string table at GStr[0x26a4 + value]."
 source = "investigation"
 confidence = "high"
@@ -278,6 +281,7 @@ name = "item_sex_restriction_mask"
 category = "data-table"
 type = "int[1000]"
 value_domain = "bit mask; shipped ITINIT populates value 4 on two items"
+bits_of = "unit_sex_category"
 usage = "Sparse ITINIT equipment restriction. CHMENU uses unit_sex_category as a bit index and rejects an item when that bit is absent from this mask. Both populated items carry only bit 2; EBINIT value 2 is female, and ITMES explicitly describes item 419 as female-only."
 source = "investigation"
 confidence = "high"
@@ -526,6 +530,7 @@ name = "skill_category"
 category = "data-table"
 type = "int[300]"
 value_domain = "1..7"
+values = { "1" = "Movement and exploration", "2" = "Defense or special attack", "3" = "Utility or passive", "4" = "Combat passive", "5" = "Physical special", "6" = "Offensive magic", "7" = "Healing magic" }
 usage = "SKINIT category for all 131 skills. The records establish 1 movement/exploration, 2 defense/special attack, 3 utility/passive, 4 combat passive, 5 physical special, 6 offensive magic, and 7 healing magic. Combat and menu scripts dispatch directly on these values."
 source = "investigation"
 confidence = "high"
@@ -546,6 +551,8 @@ name = "skill_min_range_encoded"
 category = "data-table"
 type = "int[300]"
 value_domain = "1..2; stored minimum range plus one"
+offset = -1
+none = 0
 usage = "Populated for the 94 active skills. CALCSCOPE and CALCREVISE subtract one before using it as the lower range bound; SELACT and DRAWTIP use the same encoded bound."
 source = "investigation"
 confidence = "high"
@@ -556,6 +563,8 @@ name = "skill_max_range_encoded"
 category = "data-table"
 type = "int[300]"
 value_domain = "1..10; stored maximum range plus one"
+offset = -1
+none = 0
 usage = "Populated for the same 94 active skills as skill_min_range_encoded. CALCSCOPE subtracts one to obtain the upper bound, exactly matching descriptions such as range 3 -> stored 4 and range 9 -> stored 10."
 source = "investigation"
 confidence = "high"
@@ -566,6 +575,7 @@ name = "skill_attack_element"
 category = "data-table"
 type = "int[300]"
 value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark)"
+values_from = { global = "attack_element_names", first = 0 }
 usage = "Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it."
 source = "investigation"
 confidence = "high"
@@ -724,6 +734,8 @@ name = "unit_boss_class"
 category = "data-table"
 type = "int[1000]"
 value_domain = "0=ordinary; signed boss class ±1..±4: 1=named/story character, 2=monster/special encounter, 3=demon-lord class, 4=final boss; positive values are defeat-boss victory targets and negative values are exempt"
+values = { "1" = "Story character", "2" = "Special encounter", "3" = "Demon lord", "4" = "Final boss", "-1" = "Story character, not a target", "-2" = "Special encounter, not a target", "-3" = "Demon lord, not a target", "-4" = "Final boss, not a target" }
+none = 0
 usage = "Nonzero for 112 bosses, special encounters, summoned adds, and map hazards. CALCDMG grants every nonzero class the boss adjustment, CALCILL grants condition immunity, and FIELD/MAGIC/USEMAGIC exclude nonzero classes from ordinary-unit rules. FIELD draws the normal faction-colored unit banner for classes 0 and ±1..±3, then adds the separate yellow boss marker below it when this value is nonzero; class ±4 suppresses both standard markers for its special presentation. On stages whose clear rule is defeat-boss targets, FIELD blocks victory only while a positive-class enemy remains; negative peers keep boss treatment but are ignored, as with Octavia beside Bridget, Deirdre's shadows, EX-8 adds beside Tiamat, and the final boss's three organs. Classes 1..3 are otherwise authoring categories with no distinct shipped-script branch. Either sign of class 4 selects the final-boss battle BGM and special tactical-map presentation."
 source = "investigation"
 confidence = "med"
@@ -929,6 +941,7 @@ name = "unit_species_category"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1..3"
+values = { "1" = "Human", "2" = "Demon", "3" = "Monster" }
 usage = "Broad EBINIT species/allegiance category for 198 units: value 1 covers humans and allied heroines, 2 covers demons including Emilio and Lily as well as many demonic monsters, and 3 covers other monsters, dragons, and elementals. CHMENU uses it for equipment restrictions, CALCDMG for category-sensitive effects, and INFOCH/INFOEN for display."
 source = "investigation"
 confidence = "med"
@@ -939,6 +952,7 @@ name = "unit_sex_category"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1 male, 2 female, 3 sexless"
+values = { "1" = "Male", "2" = "Female", "3" = "Sexless" }
 usage = "EBINIT sex category for 251 units. Named character records establish the three values; CHMENU tests it against item_sex_restriction_mask, while INFOCH and INFOEN use the same category in unit presentation."
 source = "investigation"
 confidence = "high"
@@ -949,6 +963,7 @@ name = "unit_defense_element"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1..12 (AFINIT defense-attribute enum)"
+values_from = { global = "defense_element_names", first = 0 }
 usage = "EBINIT defensive affinity for 250 units. DRAWENP renders it through the same twelve-value defense-attribute vocabulary as item_defense_element; CALCBTPARAM, BTRTN, and route scripts consume it during battle resolution."
 source = "investigation"
 confidence = "high"
@@ -5034,6 +5049,46 @@ source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8"]
 
+[[global]]
+address = "0x1bd2"
+name = "item_names"
+category = "string-table"
+type = "string[1000]"
+value_domain = "ITINIT item name by item id (item 1 銅の鍵)"
+usage = "ITINIT writes one for each of its 287 items, GS[0x1bd2 + id], before the record's numbers (ITINIT@0x0). DRAWTIP, DRAWCHP, DRAWENP, INFOEN, BTL, FIELD, ALCHEMY, SALLY and the random-item scripts index it by an item id."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1fba"
+name = "item_short_descriptions"
+category = "string-table"
+type = "string[1000]"
+value_domain = "ITINIT one-line item summary by item id (item 101 ＨＰ３０回復); 189 items have one"
+usage = "ITINIT writes it after the item's name, GS[0x1fba + id], 1,000 cells after item_names. STATUS@0xa7a and SALLY@0x17b1 draw it for current_item_id."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x23a2"
+name = "skill_names"
+category = "string-table"
+type = "string[300]"
+value_domain = "SKINIT skill name by skill id (skill 1 飛行)"
+usage = "SKINIT writes one for each of its 131 skills, GS[0x23a2 + id], before the record's numbers (SKINIT@0x0). ADDSKILL, ADDEXP, BTL, DRAWENP, DRAWTIP, FIELD, INFOAF, INFOEN and SELACT index it by a skill id."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x24ce"
+name = "skill_short_descriptions"
+category = "string-table"
+type = "string[300]"
+value_domain = "SKINIT one-line skill summary by skill id (skill 1 縦穴地形の移動が可能)"
+usage = "SKINIT writes it after the skill's numbers, GS[0x24ce + id], 300 cells after skill_names (SKINIT@0x1e). STATUS@0xa8d draws it for current_skill_id."
+source = "investigation"
+confidence = "high"
+
 # ---------------------------------------------------------------------------------------------- tables
 # Open Maid Script tables (design spec §5.3): record views over the parallel arrays above. A field names a
 # global by name; its leading dimension must be the record count. Generated into globals.json `tables`.
@@ -5097,6 +5152,21 @@ drop_item = "unit_drop_item_ids"
 drop_chance = "unit_drop_chance_percent"
 large_battle_sprite = "unit_large_battle_sprite"
 
+[table.refs]
+voice_family_unit_id = "unit"
+roster_variant_ids = "unit"
+canonical_id = "unit"
+sex_magic_bonus_item_id = "item"
+default_attack_item_id = "item"
+starting_equipment_item_id = "item"
+starting_skill = "skill"
+drop_item = "item"
+status_art_asset_ids = "picture"
+map_sprite_asset_ids = "picture"
+battle_sprite_asset_id = "picture"
+battle_portrait_asset_ids = "picture"
+battle_cutin_asset_ids = "picture"
+
 [[table]]
 name = "item"
 records = 1000
@@ -5104,6 +5174,8 @@ built_by = "boot"
 usage = "ITINIT item records keyed by item id."
 
 [table.fields]
+name = "item_names"
+short_description = "item_short_descriptions"
 sort_key = "item_sort_key"
 random_tier = "item_random_tier"
 category = "item_category"
@@ -5124,6 +5196,10 @@ essence_recovery_amount = "item_essence_recovery_amount"
 weapon_class = "item_weapon_class"
 handler_script_id = "item_handler_script_id"
 
+[table.refs]
+character_whitelist = "unit"
+granted_skill_id = "skill"
+
 [[table]]
 name = "skill"
 records = 300
@@ -5131,6 +5207,8 @@ built_by = "boot"
 usage = "SKINIT skill records keyed by skill id, with the per-skill acquisition state."
 
 [table.fields]
+name = "skill_names"
+short_description = "skill_short_descriptions"
 acquired_flag = "skill_acquired_flags"
 info_revealed_flag = "skill_info_revealed_flags"
 sort_key = "skill_sort_key"
@@ -5170,6 +5248,48 @@ battle_routine_set_ids = "stage_enemy_battle_routine_set_ids"
 required_story_flags = "stage_enemy_required_story_flags"
 forbidden_story_flags = "stage_enemy_forbidden_story_flags"
 
+[table.refs]
+unit_id = "unit"
+
+[[table]]
+name = "stage_catalog"
+records = 1000
+built_by = "boot"
+usage = "STINIT2's stage records keyed by stage id: what FORT and SELSTAGE list, the stage's map bounds, its clear rewards and its loader. Stage ids 1 to 170 are written; a stage whose two number parts are both zero is an event FORT plays without entering FIELD."
+
+[table.fields]
+name = "stage_display_names"
+description = "stage_description_lines"
+number_major = "stage_display_number_major"
+number_minor = "stage_display_number_minor"
+unlock_group_id = "stage_unlock_group_ids"
+main_progression_flag = "stage_main_progression_flags"
+required_story_flag_ids = "stage_required_story_flag_ids"
+forbidden_story_flag_ids = "stage_forbidden_story_flag_ids"
+map_min_tile_x = "stage_map_min_tile_x"
+map_max_tile_x = "stage_map_max_tile_x"
+map_min_tile_y = "stage_map_min_tile_y"
+map_max_tile_y = "stage_map_max_tile_y"
+minimap_atlas_origin_y = "stage_minimap_atlas_origin_y"
+clear_base_spendable_point_reward = "stage_clear_base_spendable_point_rewards"
+authoring_difficulty_tier = "stage_authoring_difficulty_tiers"
+scjump_decision_ids = "stage_scjump_decision_ids"
+extra_dungeon_flag = "stage_extra_dungeon_flags"
+clear_coin_quantities = "stage_clear_coin_quantities"
+loader_script_id = "stage_loader_script_ids"
+
+[[table]]
+name = "stage_goal"
+records = 1
+built_by = "stage"
+usage = "The current stage's victory and defeat conditions as AIM shows them: STINIT writes the four lines for the stage it loads. A data file reaches it through the stage scope."
+
+[table.fields]
+victory_condition_1 = "stage_victory_condition_1"
+victory_condition_2 = "stage_victory_condition_2"
+defeat_condition_1 = "stage_defeat_condition_1"
+defeat_condition_2 = "stage_defeat_condition_2"
+
 [[scope]]
 name = "stage"
 first = 1
@@ -5178,3 +5298,4 @@ usage = "A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per
 
 [scope.tables]
 enemy = "stage_enemy"
+goal = "stage_goal"

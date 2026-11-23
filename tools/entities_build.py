@@ -42,7 +42,7 @@ RESERVED_KINDS = {"tooltips", "search"}
 # A kind's id names its table in the export's database, beside these (game data export spec §7.2); Ome.Export refuses
 # them too (GameDataExporter.FixedTables).
 EXPORT_TABLES = {"build_info", "kind", "field", "field_group", "group_label", "note", "text_block", "text", "ref",
-                 "qualifier", "referenced_as",
+                 "qualifier", "referenced_as", "mark",
                  "relation", "picture", "cell", "snippet", "script_use", "loaded", "loaded_field", "loaded_part",
                  "label", "value_format", "value_name"}
 KEY = "key"
@@ -52,7 +52,7 @@ EVERY = "*"
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures"}
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
-             "joins"}
+             "joins", "marks"}
 # A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
 ABOUT_LIMIT = 160
 REFERENCED_AS_KEYS = {"heading", "details", "parts"}
@@ -64,7 +64,7 @@ SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
 # A picture sheet's catalog record, with its extension (SO009.AGF).
 SHEET = re.compile(r"[A-Z0-9_]+\.[A-Z0-9]+")
 LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables"}
-LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts"}
+LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts", "where", "joins"}
 PART_KEYS = {"name", "field", "global", "same_as", "note"}
 # One integer list: a part's global, which the row's field indexes.
 LIST_TYPE = re.compile(r"int\[(\d+)\]")
@@ -390,8 +390,14 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
         errors.append(f"{source}: kind must be an array of tables ([[kind]])")
         kinds = []
     ids: dict[str, str] = {}
+    # The tables each kind's loaders publish, which a kind's label may name.
+    loaded_names: dict[str, set[str]] = {}
+    for loader in data.get("loader", []):
+        if isinstance(loader, dict) and isinstance(loader.get("keys"), str) and isinstance(loader.get("tables"), dict):
+            loaded_names.setdefault(loader["keys"], set()).update(loader["tables"])
     for kind in kinds:
-        lint_kind(game, kind, source, text_scripts, ids, errors)
+        lint_kind(game, kind, source, text_scripts, ids, errors,
+                  loaded_names.get(kind.get("id"), set()) if isinstance(kind, dict) else set())
     # A reference title takes its target's title, so a kind must show the target's table.
     declared = {kind.get("table") for kind in kinds if isinstance(kind, dict)}
     for kind in kinds:
@@ -425,7 +431,7 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
 
 
 def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: dict[str, str],
-              errors: list[str]) -> None:
+              errors: list[str], loaded_names: set[str] = frozenset()) -> None:
     kid = kind.get("id")
     where = f"{source}: kind {kid!r}"
     unknown_keys(kind, KIND_KEYS, where, errors)
@@ -543,10 +549,18 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
     for name, ref in pictures.items():
         if not IDENTIFIER.fullmatch(name):
             errors.append(f"{where}: picture name {name!r} must be a lowercase identifier")
-        if isinstance(ref, dict):
+        if isinstance(ref, dict) and "sheet" in ref:
             check_sheet(ref, lambda field, label=f"picture {name}": one(field, label, "integer"),
                         f"{where}: picture {name}", errors)
             continue
+        if isinstance(ref, dict):
+            # { field, key }: the colour the game loads the picture with as its key, drawn as nothing (export plan §5:
+            # Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB.
+            unknown_keys(ref, {"field", "key"}, f"{where}: picture {name}", errors)
+            key = ref.get("key")
+            if not isinstance(key, int) or isinstance(key, bool) or not 0 <= key <= 0xFFFFFF:
+                errors.append(f"{where}: picture {name}: key must be a colour 0xRRGGBB")
+            ref = ref.get("field")
         field = one(ref, f"picture {name}", "integer")
         if field is not None and refs.get(str(ref).partition(".")[0]) != globals_build.REF_PICTURE:
             errors.append(f"{where}: picture {name} reads {ref}, which the registry's [table.refs] does not mark as "
@@ -647,8 +661,9 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         elif key not in shown_fields and key not in group_names:
             errors.append(f"{where}: note {key!r} names none of the kind's fields, text or groups")
         check_note(note, f"{where}: note {key}", errors)
-    # A label (export plan §5): a reader's name for a shown field, grouped or not, or a group.
-    check_labels(kind.get("labels", {}), shown_fields | group_names, where, errors)
+    # A label (export plan §5): a reader's name for a shown field, grouped or not, a group, or a table the kind's
+    # loaders publish, which the page heads with it (a stage's map objects, shown as its dig sites).
+    check_labels(kind.get("labels", {}), shown_fields | group_names | set(loaded_names), where, errors)
     # About (site plan §10.3, finding 18): what the kind's entities are, in one line, for its card and its list.
     if "about" in kind:
         about = kind["about"]
@@ -670,6 +685,20 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             errors.append(f"{where}: qualifier {ref} is listed twice")
         else:
             one(ref, "qualifier", None)
+    # Marks (export plan §5): a word the site shows beside every link to an entity whose field is not none, as a unit
+    # that is a boss. The field is a shown value, one cell a record, and no reference: the mark says what it is.
+    marks = kind.get("marks", {})
+    if not isinstance(marks, dict):
+        errors.append(f"{where}: marks must be a table of field = word")
+        marks = {}
+    for ref, word in marks.items():
+        if ref not in published_fields:
+            errors.append(f"{where}: mark {ref!r} is not one of the kind's fields")
+            continue
+        one(ref, "mark", "integer")
+        if reference_of(view, ref) is not None:
+            errors.append(f"{where}: mark {ref} is a reference; a mark is a value the entity has")
+        check_heading(word, f"{where}: mark {ref}", errors)
 
 
 def check_text_blocks(game: Game, table: dict, kind: dict, where: str, errors: list[str]) -> None:
@@ -853,6 +882,10 @@ def check_referenced_as(game: Game, kind: dict, loaded: dict[str, tuple[dict, di
             published = fields
             own_text = []
         target = refs_of(owner).get(name)
+        if target is None and dot and "." in name:
+            # A field of a table the loaded table joins, table.field: its own table's reference.
+            joined_reference = reference_of(owner, name)
+            target = globals_build.ref_target(joined_reference[2]) if joined_reference else None
         if name not in published:
             errors.append(f"{rwhere}: {key!r} is not a published field" + (f" of table {short}" if dot else ""))
             continue
@@ -1017,11 +1050,52 @@ def lint_loaded_tables(game: Game, tables, scope: dict | None, scoped: bool, key
             if owner is not None:
                 errors.append(f"{twhere}: table {table['name']} is a table of scope {owner}, which a loader with that "
                               f"scope reads")
+        # Joins (export plan §5): `table = field`, a table the row's reference in field reaches; the row publishes the
+        # record it names as its own fields, written table.field (a stage's dig sites take their dig table's items).
+        base_table = table
+        joins = entry.get("joins", {})
+        if not isinstance(joins, dict):
+            errors.append(f"{twhere}: joins must be a table of table = the field that refers to it")
+            joins = {}
+        joined: dict[str, dict] = {}
+        for jname, through in joins.items():
+            jwhere = f"{twhere}: join {jname!r}"
+            if jname in (table.get("fields") or {}):
+                errors.append(f"{jwhere} has the name of a field of table {table['name']}")
+                continue
+            if jname not in game.tables:
+                errors.append(f"{jwhere} is not a [[table]] of the registry")
+                continue
+            field = resolve_field(game, table, through, jwhere, errors)
+            if field is None:
+                continue
+            reference = reference_of(table, through)
+            if not field.single or "." in through:
+                errors.append(f"{jwhere}: {through} must be one cell of the record, which names the joined record")
+            elif reference is None or globals_build.ref_target(reference[2]) != jname:
+                errors.append(f"{jwhere}: {through} does not refer to table {jname} ([table.refs])")
+            else:
+                joined[jname] = game.tables[jname]
+        if joined:
+            table = {**table, "_joins": joined}
+        # Where (export plan §5): the values a record's field must hold to be a row (a map object's type, 32 or 33, a
+        # dig site's).
+        rules = entry.get("where", {})
+        if not isinstance(rules, dict):
+            errors.append(f"{twhere}: where must be a table of field = the values it may hold")
+            rules = {}
+        for wref, values in rules.items():
+            field = resolve_field(game, base_table, wref, f"{twhere}: where", errors)
+            if field is not None and (not field.single or field.kind != "integer"):
+                errors.append(f"{twhere}: where {wref} must be one integer cell of the record")
+            if not isinstance(values, list) or not values or not all(
+                    isinstance(v, int) and not isinstance(v, bool) for v in values):
+                errors.append(f"{twhere}: where {wref} must list the whole numbers a row's {wref} may hold")
         found[short] = (table, entry)
         if short in key_fields:
             errors.append(f"{twhere} has the name of a field of the key kind's table {key_table['name']}: the export "
                           f"writes a loaded field as <table>.<field>, which would read as that field's column")
-        exists = resolve_field(game, table, entry.get("exists"), f"{twhere}: exists", errors)
+        exists = resolve_field(game, base_table, entry.get("exists"), f"{twhere}: exists", errors)
         if exists is not None and not exists.single:
             errors.append(f"{twhere}: exists {entry.get('exists')} is a row of cells; name one column of it")
         shown: list[str] = []
@@ -1181,7 +1255,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
         table = scopes[loader["scope"]]["tables"][short] if "scope" in loader else entry["table"]
         return {"table": table, "exists": entry["exists"], "fields": entry.get("fields", []),
                 "text": entry.get("text", []), "literals": entry.get("literals", []), "notes": entry.get("notes", {}),
-                "labels": entry.get("labels", {}), "parts": entry.get("parts", [])}
+                "labels": entry.get("labels", {}), "parts": entry.get("parts", []), "where": entry.get("where", {}),
+                "joins": entry.get("joins", {})}
 
     document = {
         "note": "DO NOT EDIT -- generated by tools/entities_build.py --build",
@@ -1203,6 +1278,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "joins": k.get("joins", []),
                    "notes": k.get("notes", {}), "labels": k.get("labels", {}),
                    "qualifiers": k.get("qualifiers", []), "about": k.get("about"),
+                   "marks": [{"field": field, "word": word} for field, word in k.get("marks", {}).items()],
                    "referenced_as": [
                        {"field": field, "heading": entry if isinstance(entry, str) else entry["heading"],
                         "details": [] if isinstance(entry, str) else entry.get("details", []),

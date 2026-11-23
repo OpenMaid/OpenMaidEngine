@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/globals.toml by tools/globals_build.py --build -->
 # Global Variable Reference — himegari (generated)
 
-3764 globals (461 curated, 3303 auto shape-inferred). Source of truth: `vm-map/globals.toml`.
+3764 globals (465 curated, 3299 auto shape-inferred). Source of truth: `vm-map/globals.toml`.
 
 ## Tables
 
@@ -13,57 +13,57 @@ Built by: `boot`.
 
 EBINIT unit records keyed by unit id, with the CNINIT/CVINIT voice maps and the per-unit story flags. `unit[id].stats.max_hp` is `unit_base_stats[id].max_hp`.
 
-| field | global | address | type |
-|---|---|---|---|
-| full_name | unit_full_names | `GS 0x84a` | `string[1000]` |
-| display_name | unit_display_names | `GS 0xc32` | `string[1000]` |
-| initial_class_title | unit_initial_class_titles | `GS 0x101a` | `string[1000]` |
-| trait_notes | unit_trait_notes | `GS 0x1402` | `string[1000][2]` |
-| story_display_name | unit_story_display_names | `GS 0x315` | `string[1000]` |
-| story_speaker_seen_flag | unit_story_speaker_seen_flags | `0x56223` | `int[1000]` |
-| voice_family_unit_id | unit_voice_family_unit_ids | `0x624bf` | `int[1000]` |
-| voice_suppression_flag_id | unit_voice_suppression_flag_ids | `0x628a7` | `int[1000]` |
-| voice | unit_voice_asset_ids | `0x66716` | `int[1000][30]` |
-| status_art_asset_ids | unit_status_art_asset_ids | `0x6dc46` | `int[1000][3]` |
-| map_sprite_asset_ids | unit_map_sprite_asset_ids | `0x6e7fe` | `int[1000][5]` |
-| battle_sprite_asset_id | unit_battle_sprite_asset_id | `0x6fb86` | `int[1000]` |
-| battle_portrait_asset_ids | unit_battle_portrait_asset_ids | `0x6ff6e` | `int[1000][2]` |
-| battle_cutin_asset_ids | unit_battle_cutin_asset_ids | `0x7073e` | `int[1000][2]` |
-| sort_key | unit_sort_key | `0x70f0e` | `int[1000]` |
-| enemy_info_listed | unit_enemy_info_listed | `0x712f6` | `int[1000]` |
-| icon_id | unit_icon_id | `0x716de` | `int[1000]` |
-| species_category | unit_species_category | `0x71ac6` | `int[1000]` |
-| sex_category | unit_sex_category | `0x71eae` | `int[1000]` |
-| boss_class | unit_boss_class | `0x72296` | `int[1000]` |
-| canonical_id | unit_canonical_id | `0x7267e` | `int[1000]` |
-| capturable | unit_capturable | `0x72a66` | `int[1000]` |
-| roster_state_flag_base_index | unit_roster_state_flag_base_index | `0x72e4e` | `int[1000]` |
-| sally_action_unlock_requirements | unit_sally_action_unlock_requirements | `0x73236` | `int[1000][4]` |
-| sally_event_ids | unit_sally_event_ids | `0x741d6` | `int[1000][8]` |
-| roster_variant_ids | unit_roster_variant_ids | `0x76116` | `int[1000][2]` |
-| sex_magic_bonus_item_id | unit_sex_magic_bonus_item_id | `0x768e6` | `int[1000]` |
-| essence_yield | unit_essence_yield | `0x76cce` | `int[1000]` |
-| summon_unlock_flag_index | unit_summon_unlock_flag_index | `0x770b6` | `int[1000]` |
-| summon_knowledge_threshold | unit_summon_knowledge_threshold | `0x7749e` | `int[1000]` |
-| summon_point_cost | unit_summon_point_cost | `0x77886` | `int[1000]` |
-| defense_element | unit_defense_element | `0x77c6e` | `int[1000]` |
-| default_attack_item_id | unit_default_attack_item_id | `0x78056` | `int[1000]` |
-| power_tier | unit_power_tier | `0x7843e` | `int[1000]` |
-| weapon_item_category | unit_weapon_item_category | `0x78826` | `int[1000]` |
-| starting_equipment_item_id | unit_starting_equipment_item_id | `0x78c0e` | `int[1000]` |
-| starting_skill | unit_starting_skill_ids | `0x78ff6` | `int[1000][4]` |
-| deployment_cost_base | unit_deployment_cost_base | `0x79f96` | `int[1000]` |
-| starting_level | unit_starting_level | `0x7a37e` | `int[1000]` |
-| level_cap | unit_level_cap | `0x7a766` | `int[1000]` |
-| auto_level_scale_divisor | unit_auto_level_scale_divisor | `0x7ab4e` | `int[1000]` |
-| stats | unit_base_stats | `0x7af36` | `int[1000][14]` |
-| stat_growth | unit_stat_growth_rates | `0x7e5e6` | `int[1000][14]` |
-| movement_routine_set | unit_movement_routine_set_ids | `0x81c96` | `int[1000][3]` |
-| battle_routine_set | unit_battle_routine_set_ids | `0x8284e` | `int[1000][3]` |
-| experience_reward | unit_experience_reward | `0x83406` | `int[1000]` |
-| drop_item | unit_drop_item_ids | `0x837ee` | `int[1000][8]` |
-| drop_chance | unit_drop_chance_percent | `0x8572e` | `int[1000][8]` |
-| large_battle_sprite | unit_large_battle_sprite | `0x8766e` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| full_name | unit_full_names | `GS 0x84a` | `string[1000]` | |
+| display_name | unit_display_names | `GS 0xc32` | `string[1000]` | |
+| initial_class_title | unit_initial_class_titles | `GS 0x101a` | `string[1000]` | |
+| trait_notes | unit_trait_notes | `GS 0x1402` | `string[1000][2]` | |
+| story_display_name | unit_story_display_names | `GS 0x315` | `string[1000]` | |
+| story_speaker_seen_flag | unit_story_speaker_seen_flags | `0x56223` | `int[1000]` | |
+| voice_family_unit_id | unit_voice_family_unit_ids | `0x624bf` | `int[1000]` | `unit` |
+| voice_suppression_flag_id | unit_voice_suppression_flag_ids | `0x628a7` | `int[1000]` | |
+| voice | unit_voice_asset_ids | `0x66716` | `int[1000][30]` | |
+| status_art_asset_ids | unit_status_art_asset_ids | `0x6dc46` | `int[1000][3]` | pictures |
+| map_sprite_asset_ids | unit_map_sprite_asset_ids | `0x6e7fe` | `int[1000][5]` | pictures |
+| battle_sprite_asset_id | unit_battle_sprite_asset_id | `0x6fb86` | `int[1000]` | pictures |
+| battle_portrait_asset_ids | unit_battle_portrait_asset_ids | `0x6ff6e` | `int[1000][2]` | pictures |
+| battle_cutin_asset_ids | unit_battle_cutin_asset_ids | `0x7073e` | `int[1000][2]` | pictures |
+| sort_key | unit_sort_key | `0x70f0e` | `int[1000]` | |
+| enemy_info_listed | unit_enemy_info_listed | `0x712f6` | `int[1000]` | |
+| icon_id | unit_icon_id | `0x716de` | `int[1000]` | |
+| species_category | unit_species_category | `0x71ac6` | `int[1000]` | |
+| sex_category | unit_sex_category | `0x71eae` | `int[1000]` | |
+| boss_class | unit_boss_class | `0x72296` | `int[1000]` | |
+| canonical_id | unit_canonical_id | `0x7267e` | `int[1000]` | `unit` |
+| capturable | unit_capturable | `0x72a66` | `int[1000]` | |
+| roster_state_flag_base_index | unit_roster_state_flag_base_index | `0x72e4e` | `int[1000]` | |
+| sally_action_unlock_requirements | unit_sally_action_unlock_requirements | `0x73236` | `int[1000][4]` | |
+| sally_event_ids | unit_sally_event_ids | `0x741d6` | `int[1000][8]` | |
+| roster_variant_ids | unit_roster_variant_ids | `0x76116` | `int[1000][2]` | `unit` |
+| sex_magic_bonus_item_id | unit_sex_magic_bonus_item_id | `0x768e6` | `int[1000]` | `item` |
+| essence_yield | unit_essence_yield | `0x76cce` | `int[1000]` | |
+| summon_unlock_flag_index | unit_summon_unlock_flag_index | `0x770b6` | `int[1000]` | |
+| summon_knowledge_threshold | unit_summon_knowledge_threshold | `0x7749e` | `int[1000]` | |
+| summon_point_cost | unit_summon_point_cost | `0x77886` | `int[1000]` | |
+| defense_element | unit_defense_element | `0x77c6e` | `int[1000]` | |
+| default_attack_item_id | unit_default_attack_item_id | `0x78056` | `int[1000]` | `item` |
+| power_tier | unit_power_tier | `0x7843e` | `int[1000]` | |
+| weapon_item_category | unit_weapon_item_category | `0x78826` | `int[1000]` | |
+| starting_equipment_item_id | unit_starting_equipment_item_id | `0x78c0e` | `int[1000]` | `item` |
+| starting_skill | unit_starting_skill_ids | `0x78ff6` | `int[1000][4]` | `skill` |
+| deployment_cost_base | unit_deployment_cost_base | `0x79f96` | `int[1000]` | |
+| starting_level | unit_starting_level | `0x7a37e` | `int[1000]` | |
+| level_cap | unit_level_cap | `0x7a766` | `int[1000]` | |
+| auto_level_scale_divisor | unit_auto_level_scale_divisor | `0x7ab4e` | `int[1000]` | |
+| stats | unit_base_stats | `0x7af36` | `int[1000][14]` | |
+| stat_growth | unit_stat_growth_rates | `0x7e5e6` | `int[1000][14]` | |
+| movement_routine_set | unit_movement_routine_set_ids | `0x81c96` | `int[1000][3]` | |
+| battle_routine_set | unit_battle_routine_set_ids | `0x8284e` | `int[1000][3]` | |
+| experience_reward | unit_experience_reward | `0x83406` | `int[1000]` | |
+| drop_item | unit_drop_item_ids | `0x837ee` | `int[1000][8]` | `item` |
+| drop_chance | unit_drop_chance_percent | `0x8572e` | `int[1000][8]` | |
+| large_battle_sprite | unit_large_battle_sprite | `0x8766e` | `int[1000]` | |
 
 ### item[1000]
 
@@ -71,27 +71,29 @@ Built by: `boot`.
 
 ITINIT item records keyed by item id.
 
-| field | global | address | type |
-|---|---|---|---|
-| sort_key | item_sort_key | `0x8c879` | `int[1000]` |
-| random_tier | item_random_tier | `0x8cc61` | `int[1000]` |
-| category | item_category | `0x8d049` | `int[1000]` |
-| min_range | item_min_range | `0x8d431` | `int[1000]` |
-| max_range | item_max_range | `0x8d819` | `int[1000]` |
-| icon_id | item_icon_id | `0x8dc01` | `int[1000]` |
-| attack_element | item_attack_element | `0x8dfe9` | `int[1000]` |
-| defense_element | item_defense_element | `0x8e3d1` | `int[1000]` |
-| character_whitelist | item_character_whitelist | `0x8e7b9` | `int[1000][5]` |
-| sex_restriction_mask | item_sex_restriction_mask | `0x8ff29` | `int[1000]` |
-| status_delta_levels | item_status_delta_levels | `0x906f9` | `int[1000][30]` |
-| equipped_status_levels | item_equipped_status_levels | `0x97c29` | `int[1000][30]` |
-| granted_skill_id | item_granted_skill_id | `0x9f159` | `int[1000]` |
-| stat_modifiers | item_stat_modifiers | `0x9f541` | `int[1000][14]` |
-| tuning_curve_ids | item_tuning_curve_ids | `0xa2bf1` | `int[1000][10]` |
-| resource_recovery_amounts | item_resource_recovery_amounts | `0xa5301` | `int[1000][3]` |
-| essence_recovery_amount | item_essence_recovery_amount | `0xa62a1` | `int[1000]` |
-| weapon_class | item_weapon_class | `0xa6689` | `int[1000]` |
-| handler_script_id | item_handler_script_id | `0xa6a71` | `int[1000]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | item_names | `GS 0x1bd2` | `string[1000]` | |
+| short_description | item_short_descriptions | `GS 0x1fba` | `string[1000]` | |
+| sort_key | item_sort_key | `0x8c879` | `int[1000]` | |
+| random_tier | item_random_tier | `0x8cc61` | `int[1000]` | |
+| category | item_category | `0x8d049` | `int[1000]` | |
+| min_range | item_min_range | `0x8d431` | `int[1000]` | |
+| max_range | item_max_range | `0x8d819` | `int[1000]` | |
+| icon_id | item_icon_id | `0x8dc01` | `int[1000]` | |
+| attack_element | item_attack_element | `0x8dfe9` | `int[1000]` | |
+| defense_element | item_defense_element | `0x8e3d1` | `int[1000]` | |
+| character_whitelist | item_character_whitelist | `0x8e7b9` | `int[1000][5]` | `unit` |
+| sex_restriction_mask | item_sex_restriction_mask | `0x8ff29` | `int[1000]` | |
+| status_delta_levels | item_status_delta_levels | `0x906f9` | `int[1000][30]` | |
+| equipped_status_levels | item_equipped_status_levels | `0x97c29` | `int[1000][30]` | |
+| granted_skill_id | item_granted_skill_id | `0x9f159` | `int[1000]` | `skill` |
+| stat_modifiers | item_stat_modifiers | `0x9f541` | `int[1000][14]` | |
+| tuning_curve_ids | item_tuning_curve_ids | `0xa2bf1` | `int[1000][10]` | |
+| resource_recovery_amounts | item_resource_recovery_amounts | `0xa5301` | `int[1000][3]` | |
+| essence_recovery_amount | item_essence_recovery_amount | `0xa62a1` | `int[1000]` | |
+| weapon_class | item_weapon_class | `0xa6689` | `int[1000]` | |
+| handler_script_id | item_handler_script_id | `0xa6a71` | `int[1000]` | |
 
 ### skill[300]
 
@@ -101,6 +103,8 @@ SKINIT skill records keyed by skill id, with the per-skill acquisition state.
 
 | field | global | address | type |
 |---|---|---|---|
+| name | skill_names | `GS 0x23a2` | `string[300]` |
+| short_description | skill_short_descriptions | `GS 0x24ce` | `string[300]` |
 | acquired_flag | skill_acquired_flags | `0x65ce` | `int[300]` |
 | info_revealed_flag | skill_info_revealed_flags | `0x5660b` | `int[300]` |
 | sort_key | skill_sort_key | `0xa6e5a` | `int[300]` |
@@ -123,23 +127,64 @@ Built by: `stage`.
 
 The current stage's enemy slots. STINIT, the stage loader FIELD calls (FIELD@0x200), zeroes all 30 slots of each array and writes the stage's (no stage gives slot 0 a unit). FIELD places the slots at the stage's start (FIELD@0x7f4), ADDEN places one later when a stage's handler calls it (current_stage_enemy_spawn_slot), and SETEN copies a slot's routines into its entity. A data file reaches it through the stage scope.
 
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| spawn_tile_x | stage_enemy_spawn_tile_x | `0xe773f` | `int[30]` | |
+| spawn_tile_y | stage_enemy_spawn_tile_y | `0xe775d` | `int[30]` | |
+| spawn_object_slot | stage_enemy_spawn_object_slot | `0xe777b` | `int[30]` | |
+| faction_id | stage_enemy_faction_id | `0xe7799` | `int[30]` | |
+| difficulty_mask | stage_enemy_difficulty_mask | `0xe77b7` | `int[30]` | |
+| first_clear_only | stage_enemy_first_clear_only | `0xe77d5` | `int[30]` | |
+| random_selection_weight | stage_enemy_random_selection_weight | `0xe77f3` | `int[30]` | |
+| unit_id | stage_enemy_unit_id | `0xe7811` | `int[30]` | `unit` |
+| min_level | stage_enemy_min_level | `0xe782f` | `int[30]` | |
+| max_level | stage_enemy_max_level | `0xe784d` | `int[30]` | |
+| auto_level_scale_divisor | stage_enemy_auto_level_scale_divisor | `0xe786b` | `int[30]` | |
+| movement_routine_set_ids | stage_enemy_movement_routine_set_ids | `0xe7889` | `int[30][3]` | |
+| battle_routine_set_ids | stage_enemy_battle_routine_set_ids | `0xe78e3` | `int[30][3]` | |
+| required_story_flags | stage_enemy_required_story_flags | `0xe793d` | `int[30][7]` | |
+| forbidden_story_flags | stage_enemy_forbidden_story_flags | `0xe7a0f` | `int[30][5]` | |
+
+### stage_catalog[1000]
+
+Built by: `boot`.
+
+STINIT2's stage records keyed by stage id: what FORT and SELSTAGE list, the stage's map bounds, its clear rewards and its loader. Stage ids 1 to 170 are written; a stage whose two number parts are both zero is an event FORT plays without entering FIELD.
+
 | field | global | address | type |
 |---|---|---|---|
-| spawn_tile_x | stage_enemy_spawn_tile_x | `0xe773f` | `int[30]` |
-| spawn_tile_y | stage_enemy_spawn_tile_y | `0xe775d` | `int[30]` |
-| spawn_object_slot | stage_enemy_spawn_object_slot | `0xe777b` | `int[30]` |
-| faction_id | stage_enemy_faction_id | `0xe7799` | `int[30]` |
-| difficulty_mask | stage_enemy_difficulty_mask | `0xe77b7` | `int[30]` |
-| first_clear_only | stage_enemy_first_clear_only | `0xe77d5` | `int[30]` |
-| random_selection_weight | stage_enemy_random_selection_weight | `0xe77f3` | `int[30]` |
-| unit_id | stage_enemy_unit_id | `0xe7811` | `int[30]` |
-| min_level | stage_enemy_min_level | `0xe782f` | `int[30]` |
-| max_level | stage_enemy_max_level | `0xe784d` | `int[30]` |
-| auto_level_scale_divisor | stage_enemy_auto_level_scale_divisor | `0xe786b` | `int[30]` |
-| movement_routine_set_ids | stage_enemy_movement_routine_set_ids | `0xe7889` | `int[30][3]` |
-| battle_routine_set_ids | stage_enemy_battle_routine_set_ids | `0xe78e3` | `int[30][3]` |
-| required_story_flags | stage_enemy_required_story_flags | `0xe793d` | `int[30][7]` |
-| forbidden_story_flags | stage_enemy_forbidden_story_flags | `0xe7a0f` | `int[30][5]` |
+| name | stage_display_names | `GS 0x27bd` | `string[1000]` |
+| description | stage_description_lines | `GS 0x2ba5` | `string[1000][6]` |
+| number_major | stage_display_number_major | `0xebd0d` | `int[1000]` |
+| number_minor | stage_display_number_minor | `0xec0f5` | `int[1000]` |
+| unlock_group_id | stage_unlock_group_ids | `0xe7e8d` | `int[1000]` |
+| main_progression_flag | stage_main_progression_flags | `0xe8275` | `int[1000]` |
+| required_story_flag_ids | stage_required_story_flag_ids | `0xea1b5` | `int[1000][7]` |
+| forbidden_story_flag_ids | stage_forbidden_story_flag_ids | `0xe865d` | `int[1000][7]` |
+| map_min_tile_x | stage_map_min_tile_x | `0xec4dd` | `int[1000]` |
+| map_max_tile_x | stage_map_max_tile_x | `0xec8c5` | `int[1000]` |
+| map_min_tile_y | stage_map_min_tile_y | `0xeccad` | `int[1000]` |
+| map_max_tile_y | stage_map_max_tile_y | `0xed095` | `int[1000]` |
+| minimap_atlas_origin_y | stage_minimap_atlas_origin_y | `0xed47d` | `int[1000]` |
+| clear_base_spendable_point_reward | stage_clear_base_spendable_point_rewards | `0xed865` | `int[1000]` |
+| authoring_difficulty_tier | stage_authoring_difficulty_tiers | `0xedc4d` | `int[1000]` |
+| scjump_decision_ids | stage_scjump_decision_ids | `0xee035` | `int[1000][3]` |
+| extra_dungeon_flag | stage_extra_dungeon_flags | `0xeebed` | `int[1000]` |
+| clear_coin_quantities | stage_clear_coin_quantities | `0xeefd5` | `int[1000][3]` |
+| loader_script_id | stage_loader_script_ids | `0xefb8d` | `int[1000]` |
+
+### stage_goal[1]
+
+Built by: `stage`.
+
+The current stage's victory and defeat conditions as AIM shows them: STINIT writes the four lines for the stage it loads. A data file reaches it through the stage scope.
+
+| field | global | address | type |
+|---|---|---|---|
+| victory_condition_1 | stage_victory_condition_1 | `GS 0x27b9` | `string` |
+| victory_condition_2 | stage_victory_condition_2 | `GS 0x27ba` | `string` |
+| defeat_condition_1 | stage_defeat_condition_1 | `GS 0x27bb` | `string` |
+| defeat_condition_2 | stage_defeat_condition_2 | `GS 0x27bc` | `string` |
 
 ### Scope stage
 
@@ -150,6 +195,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | name | table |
 |---|---|
 | enemy | stage_enemy |
+| goal | stage_goal |
 
 ## choice-output
 
@@ -278,9 +324,9 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0x70f0e` | unit_sort_key | high | investigation | EBINIT ordering key populated for 248 units. CHMENU, EXILE, SALLY, INFOEN, and SUMMON pass this array to op 0x12f's stable index sort or combine it with a unit id to build menu ordering keys, mirroring item_sort_key and skill_sort_key. |
 | `0x712f6` | unit_enemy_info_listed | high | investigation | EBINIT eligibility flag for 183 enemy-information entries. INFOEN stable-sorts all unit ids, retains only rows whose value is nonzero, and then gates each retained entry's revealed state through the encounter/profile table. |
 | `0x716de` | unit_icon_id | high | investigation | EBINIT icon selector populated for all 277 units. READICON returns it for unit ids; CHMENU, DRAWCHP, EXILE, SALLY, and SUMMON convert the value into icon-atlas page and cell coordinates. |
-| `0x71ac6` | unit_species_category | med | investigation | Broad EBINIT species/allegiance category for 198 units: value 1 covers humans and allied heroines, 2 covers demons including Emilio and Lily as well as many demonic monsters, and 3 covers other monsters, dragons, and elementals. CHMENU uses it for equipment restrictions, CALCDMG for category-sensitive effects, and INFOCH/INFOEN for display. |
-| `0x71eae` | unit_sex_category | high | investigation | EBINIT sex category for 251 units. Named character records establish the three values; CHMENU tests it against item_sex_restriction_mask, while INFOCH and INFOEN use the same category in unit presentation. |
-| `0x72296` | unit_boss_class | med | investigation | Nonzero for 112 bosses, special encounters, summoned adds, and map hazards. CALCDMG grants every nonzero class the boss adjustment, CALCILL grants condition immunity, and FIELD/MAGIC/USEMAGIC exclude nonzero classes from ordinary-unit rules. FIELD draws the normal faction-colored unit banner for classes 0 and ±1..±3, then adds the separate yellow boss marker below it when this value is nonzero; class ±4 suppresses both standard markers for its special presentation. On stages whose clear rule is defeat-boss targets, FIELD blocks victory only while a positive-class enemy remains; negative peers keep boss treatment but are ignored, as with Octavia beside Bridget, Deirdre's shadows, EX-8 adds beside Tiamat, and the final boss's three organs. Classes 1..3 are otherwise authoring categories with no distinct shipped-script branch. Either sign of class 4 selects the final-boss battle BGM and special tactical-map presentation. |
+| `0x71ac6` | unit_species_category | med | investigation | Broad EBINIT species/allegiance category for 198 units: value 1 covers humans and allied heroines, 2 covers demons including Emilio and Lily as well as many demonic monsters, and 3 covers other monsters, dragons, and elementals. CHMENU uses it for equipment restrictions, CALCDMG for category-sensitive effects, and INFOCH/INFOEN for display. Values: 1 Human, 2 Demon, 3 Monster. |
+| `0x71eae` | unit_sex_category | high | investigation | EBINIT sex category for 251 units. Named character records establish the three values; CHMENU tests it against item_sex_restriction_mask, while INFOCH and INFOEN use the same category in unit presentation. Values: 1 Male, 2 Female, 3 Sexless. |
+| `0x72296` | unit_boss_class | med | investigation | Nonzero for 112 bosses, special encounters, summoned adds, and map hazards. CALCDMG grants every nonzero class the boss adjustment, CALCILL grants condition immunity, and FIELD/MAGIC/USEMAGIC exclude nonzero classes from ordinary-unit rules. FIELD draws the normal faction-colored unit banner for classes 0 and ±1..±3, then adds the separate yellow boss marker below it when this value is nonzero; class ±4 suppresses both standard markers for its special presentation. On stages whose clear rule is defeat-boss targets, FIELD blocks victory only while a positive-class enemy remains; negative peers keep boss treatment but are ignored, as with Octavia beside Bridget, Deirdre's shadows, EX-8 adds beside Tiamat, and the final boss's three organs. Classes 1..3 are otherwise authoring categories with no distinct shipped-script branch. Either sign of class 4 selects the final-boss battle BGM and special tactical-map presentation. Values: -4 Final boss, not a target, -3 Demon lord, not a target, -2 Special encounter, not a target, -1 Story character, not a target, 1 Story character, 2 Special encounter, 3 Demon lord, 4 Final boss. 0 means none. |
 | `0x7267e` | unit_canonical_id | high | investigation | Maps 106 alternate, boss, brainwashed, EX, and enemy variants back to their canonical character or recruitable archetype. For example all Estelle bosses map to 12, brainwashed Sylphine maps to 5, and ordinary/EX orcs map to recruitable orc 52. Setup, menus, inventory, dismissal, and combat normalize through this id. |
 | `0x72a66` | unit_capturable | high | investigation | Capture eligibility for 74 ordinary enemy archetypes. SELACT and FIELD allow the capture skill only when this flag is nonzero and the acting unit's capture power meets the target-level check; successful resolution displays the explicit 'Captured the enemy' message. |
 | `0x72e4e` | unit_roster_state_flag_base_index | high | investigation | Persistent roster-state block for seven recruitable heroines. SALLY's first three unit actions mark offsets 1, 2, and 0 respectively; UNITECH marks the offset selected by its recruitment mode; DELCH, REMOVECH, SALLY, and EXILE mark offset 3 when the unit is removed or released. The values are relative indices into the shared flag bank, not absolute global addresses. |
@@ -292,7 +338,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0x770b6` | unit_summon_unlock_flag_index | high | investigation | Summoning-stone/unlock flag index for the 29 recruitable monster archetypes. SUMMON and SALLY subtract one and test the corresponding cell in the shared flag bank at 0x6d3 before listing or advancing the unit; GAMESTART uses presence of this mapping when restoring party slots. |
 | `0x7749e` | unit_summon_knowledge_threshold | high | investigation | Per-archetype familiarity threshold for 19 summonable units. SUMMON divides accumulated progress by it for the displayed percentage and treats zero-threshold units as limited to one copy; SALLY awards the corresponding summoning item and 'deepened understanding' message when accumulated progress reaches the threshold. |
 | `0x77886` | unit_summon_point_cost | high | investigation | Point cost for the 29 summonable unit archetypes. SUMMON compares it with the current point pool, emits 'Insufficient points' on failure, subtracts it on success, and displays the same number in each catalog row. |
-| `0x77c6e` | unit_defense_element | high | investigation | EBINIT defensive affinity for 250 units. DRAWENP renders it through the same twelve-value defense-attribute vocabulary as item_defense_element; CALCBTPARAM, BTRTN, and route scripts consume it during battle resolution. |
+| `0x77c6e` | unit_defense_element | high | investigation | EBINIT defensive affinity for 250 units. DRAWENP renders it through the same twelve-value defense-attribute vocabulary as item_defense_element; CALCBTPARAM, BTRTN, and route scripts consume it during battle resolution. Names: `defense_element_names`, element 0 naming 0. |
 | `0x78056` | unit_default_attack_item_id | high | investigation | EBINIT default attack for 250 units. Every populated value cross-resolves to ITINIT's innate-attack records; SELACT, BTL, CALCBTPARAM, CALCDMG, and CHMENU use it when no equipped weapon overrides the unit's natural attack. |
 | `0x7843e` | unit_power_tier | med | inference | Authoring-only EBINIT power/progression tier populated for 243 units. It is independent of species, sex, defense element, and boss class, but rises strongly with deployment cost, essence yield, level cap, and base stats. Lily's child/girl/adult forms are tiers 2/4/6, and recurring heroine boss definitions generally rise as their story appearances become stronger. No shipped script reads the array, and the /v2 native image contains no literal reference to its global index, so the descriptive name is correlation-based rather than a runtime behavior claim. |
 | `0x78826` | unit_weapon_item_category | high | investigation | EBINIT weapon/equipment-family restriction for 179 units. CHMENU compares an item's item_category directly with this value when deciding whether the selected unit can equip it; Lily's forms store -1 for unrestricted handling. |
@@ -314,14 +360,14 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0x8a167` | scjump_authored_chapters | high | investigation | SCINIT's parallel authored chapter metadata for each scjump_scene_script_resource_ids entry. Source assignments form contiguous chapter 1..9 runs followed by an unassigned -1 run. Of the 847 decision ids currently emitted by SCJUMP, 844 final tags agree with SCJUMP's independently decoded chapter paths; three retained mismatches are legacy/stale metadata. No shipped script reads this array directly. |
 | `0x8c879` | item_sort_key | high | investigation | ITINIT field for all 287 populated item ids. CHMENU, IMPROVE, and INFOIT pass this array as the primary key to op 0x12f's stable index sort, establishing it as the catalog/display ordering key. The runtime lookup base is one cell before ITINIT's first write because item ids are one-based. |
 | `0x8cc61` | item_random_tier | high | investigation | ITINIT field for all 287 items. ADDRANDOMITEM and LOSTRANDOMITEM bucket eligible item ids by this value before choosing a random gain/loss; IMPROVE compares it with the current progression rank. This is the random-item availability/rarity tier, distinct from item_category. |
-| `0x8d049` | item_category | high | investigation | ITINIT field for all 287 items and ITMES's top-level behavior dispatch. Observed groups: 0 innate attacks, 1 key/story items, 2 consumables, 4 stat stones, 8 synthesis materials, 9 coins, 10..17 weapon families, 19 boots, 20 armor, 21 shields, 22 accessories, and 23 capture ropes. |
+| `0x8d049` | item_category | high | investigation | ITINIT field for all 287 items and ITMES's top-level behavior dispatch. Observed groups: 0 innate attacks, 1 key/story items, 2 consumables, 4 stat stones, 8 synthesis materials, 9 coins, 10..17 weapon families, 19 boots, 20 armor, 21 shields, 22 accessories, and 23 capture ropes. Values: 0 Innate attack, 1 Key item, 2 Consumable, 4 Stat stone, 8 Synthesis material, 9 Coin, 19 Boots, 20 Armor, 21 Shield, 22 Accessory, 23 Capture rope. |
 | `0x8d431` | item_min_range | high | investigation | Populated for the 12 bows/ranged innate attacks whose descriptions say range 2. CALCSCOPE reads it as the first range bound; the paired maximum is item_max_range. |
 | `0x8d819` | item_max_range | high | investigation | Populated for the same 12 ranged items as item_min_range. CALCSCOPE reads it as the second range bound, matching every description's range-2 annotation. |
 | `0x8dc01` | item_icon_id | high | investigation | ITINIT field for all 287 items. READICON sorts and indexes this array to select icon atlas entries; ALCHEMY, CHMENU, IMPROVE, and INFOIT use the same value for item-row presentation. |
-| `0x8dfe9` | item_attack_element | high | investigation | Populated for 107 weapons/attacks. Values exactly match the AFINIT attack-attribute string table at GStr[0x2690 + value] and the Japanese item descriptions; combat scope/parameter code consumes the same array. |
-| `0x8e3d1` | item_defense_element | high | investigation | Populated for the 13 shields. Values match descriptions such as physical, universal, holy, dark, spirit, and divinity defense; DRAWTIP renders them through AFINIT's defense string table at GStr[0x26a4 + value]. |
+| `0x8dfe9` | item_attack_element | high | investigation | Populated for 107 weapons/attacks. Values exactly match the AFINIT attack-attribute string table at GStr[0x2690 + value] and the Japanese item descriptions; combat scope/parameter code consumes the same array. Names: `attack_element_names`, element 0 naming 0. |
+| `0x8e3d1` | item_defense_element | high | investigation | Populated for the 13 shields. Values match descriptions such as physical, universal, holy, dark, spirit, and divinity defense; DRAWTIP renders them through AFINIT's defense string table at GStr[0x26a4 + value]. Names: `defense_element_names`, element 0 naming 0. |
 | `0x8e7b9` | item_character_whitelist | high | investigation | Sparse ITINIT row-major table with stride 5. CHMENU rejects an item when column 0 is populated and the selected party slot's character id is absent from the row. Unique accessories 471/472 allow one character each, while crossover accessories 480..485 allow character ids 2, 3, and 4. Unused trailing columns remain zero. Columns: 0=allowed_character_id_1, 1=allowed_character_id_2, 2=allowed_character_id_3, 3=allowed_character_id_4, 4=allowed_character_id_5. |
-| `0x8ff29` | item_sex_restriction_mask | high | investigation | Sparse ITINIT equipment restriction. CHMENU uses unit_sex_category as a bit index and rejects an item when that bit is absent from this mask. Both populated items carry only bit 2; EBINIT value 2 is female, and ITMES explicitly describes item 419 as female-only. |
+| `0x8ff29` | item_sex_restriction_mask | high | investigation | Sparse ITINIT equipment restriction. CHMENU uses unit_sex_category as a bit index and rejects an item when that bit is absent from this mask. Both populated items carry only bit 2; EBINIT value 2 is female, and ITMES explicitly describes item 419 as female-only. Bits: bit k stands for `unit_sex_category` value k. |
 | `0x906f9` | item_status_delta_levels | high | investigation | Sparse ITINIT row-major table consumed by USEITEM and CALCILL when applying an item's effects. Positive values inflict or drain; -5 removes a condition (for example paralysis-removal item 108 stores -5 in column 8). Confirmed columns are 2 HP drain, 3 SP drain, 4 FS drain, 5 curse, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear. Columns: 2=hp_drain, 3=sp_drain, 4=fs_drain, 5=curse, 6=charm, 7=confusion, 8=paralysis, 9=poison, 10=water_flow, 11=fear. |
 | `0x97c29` | item_equipped_status_levels | high | investigation | Sparse ITINIT row-major table added to a unit's 30-column condition state by CALCREVISE. Item descriptions identify populated columns 9 poison, 11 fear, 13 regeneration, and 14 exaltation; these are passive equipped effects, distinct from item_status_delta_levels. Columns: 9=poison, 11=fear, 13=regeneration, 14=exaltation. |
 | `0x9f159` | item_granted_skill_id | high | investigation | Populated for 85 equipment items. Values cross-resolve to SKINIT (for example flying bracelet=1 Flying, transfer bracelet=21 Transfer, thief key=22 Lockpick, ropes=156 Capture Attack); CALCREVISE applies the linked skill and UI scripts display it. |
@@ -332,11 +378,11 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0xa6689` | item_weapon_class | high | investigation | Populated for 104 weapons/innate attacks. Stable values identify weapon families (1 unarmed, 2 staff, 3 claw, 4 dagger, 5 sword, 6 chain blade, 7 spear, 8 axe, 9 bow, 11 blade boots; later values are monster/natural attack classes). CALCDMG consumes it. |
 | `0xa6a71` | item_handler_script_id | high | investigation | ITINIT field for all 287 items. Item menus look up this value and feed it directly to call-script; the packed id 0x319b resolves to ITMES.BIN, the shared per-item behavior/description dispatcher. |
 | `0xa6e5a` | skill_sort_key | high | investigation | SKINIT field populated for 129 of 131 skills. ADDEXP, ADDSKILL, CHMENU, INFOIT, and SETCH combine it with skill_category to construct deterministic skill-list ordering keys; higher-level sort operations consume the resulting indices. |
-| `0xa6f86` | skill_category | high | investigation | SKINIT category for all 131 skills. The records establish 1 movement/exploration, 2 defense/special attack, 3 utility/passive, 4 combat passive, 5 physical special, 6 offensive magic, and 7 healing magic. Combat and menu scripts dispatch directly on these values. |
+| `0xa6f86` | skill_category | high | investigation | SKINIT category for all 131 skills. The records establish 1 movement/exploration, 2 defense/special attack, 3 utility/passive, 4 combat passive, 5 physical special, 6 offensive magic, and 7 healing magic. Combat and menu scripts dispatch directly on these values. Values: 1 Movement and exploration, 2 Defense or special attack, 3 Utility or passive, 4 Combat passive, 5 Physical special, 6 Offensive magic, 7 Healing magic. |
 | `0xa70b2` | skill_change_catalog_eligible | high | investigation | SKINIT inclusion flag for CHMENU's fourth (skill-change) catalog. CHMENU scans all 300 ids, keeps only nonzero rows, sorts acquired rows ahead of unavailable rows using skill_category and skill_sort_key, and copies the acquired prefix into catalog row 3. Eligible ids are 1, 2, 112, 130..133, 210, 228, 230, and 231. |
-| `0xa71de` | skill_min_range_encoded | high | investigation | Populated for the 94 active skills. CALCSCOPE and CALCREVISE subtract one before using it as the lower range bound; SELACT and DRAWTIP use the same encoded bound. |
-| `0xa730a` | skill_max_range_encoded | high | investigation | Populated for the same 94 active skills as skill_min_range_encoded. CALCSCOPE subtracts one to obtain the upper bound, exactly matching descriptions such as range 3 -> stored 4 and range 9 -> stored 10. |
-| `0xa7436` | skill_attack_element | high | investigation | Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it. |
+| `0xa71de` | skill_min_range_encoded | high | investigation | Populated for the 94 active skills. CALCSCOPE and CALCREVISE subtract one before using it as the lower range bound; SELACT and DRAWTIP use the same encoded bound. Shown as the value − 1. 0 means none. |
+| `0xa730a` | skill_max_range_encoded | high | investigation | Populated for the same 94 active skills as skill_min_range_encoded. CALCSCOPE subtracts one to obtain the upper bound, exactly matching descriptions such as range 3 -> stored 4 and range 9 -> stored 10. Shown as the value − 1. 0 means none. |
+| `0xa7436` | skill_attack_element | high | investigation | Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it. Names: `attack_element_names`, element 0 naming 0. |
 | `0xa7562` | skill_status_levels | high | investigation | Sparse SKINIT row-major condition table consumed by CALCILL when applying a skill's effects to the target unit. Skill names and descriptions identify columns 1 instant death, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear; the column layout matches item_status_delta_levels. Columns: 1=instant_death, 6=charm, 7=confusion, 8=paralysis, 9=poison, 10=water_flow, 11=fear. |
 | `0xa988a` | skill_icon_id | high | investigation | SKINIT icon id for all 131 skills. CHMENU and INFOIT translate it into the shared icon atlas; the six ids group movement, defense, utility, passive, physical-special, and magic icons. |
 | `0xa99b6` | skill_combat_stat_deltas | high | investigation | Sparse SKINIT row-major table applied by CALCBTPARAM for the selected action. Descriptions and combat consumers establish columns 0 accuracy, 1 evasion, 2 physical attack, 3 physical defense, 4 magic attack, 5 magic defense, 6 speed, 7 luck, 8 critical chance, and 9 capture power. Column 7 is unpopulated in shipped SKINIT; CALCBTPARAM adds any luck and critical modifiers into the critical percentage that CALCDMG rolls after the hit check. Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=speed, 7=luck, 8=critical_chance, 9=capture_power. |
@@ -669,6 +715,10 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `GS 0xc32` | unit_display_names | high | investigation | EBINIT writes one per unit record. BTL@0x00fcf/0x0100e/0x0172e, DRAWCHP@0x009a7, DRAWENP@0x008c5/0x00f41, EXILE@0x009db and INFOCH@0x0102e draw it. |
 | `GS 0x101a` | unit_initial_class_titles | high | investigation | EBINIT writes one per unit record. SETEN@0x0001f and SETCH@0x0003a copy it into the battle slot's title GS[0x2e2 + slot]; ADDEXP@0x00668 does the same outside the party (party units take unit_class_titles 0x27e), and INFOCH@0x01056 and INFOEN@0x01322 draw it. |
 | `GS 0x1402` | unit_trait_notes | med | investigation | EBINIT writes 194 cells. Unit 200 writes 0x1592/0x1593, which fixes the base and the two-cell row; the item-name table at 0x1bd2 starts exactly 2000 cells later. No shipped script reads it. Columns: 0=note_1, 1=note_2. |
+| `GS 0x1bd2` | item_names | high | investigation | ITINIT writes one for each of its 287 items, GS[0x1bd2 + id], before the record's numbers (ITINIT@0x0). DRAWTIP, DRAWCHP, DRAWENP, INFOEN, BTL, FIELD, ALCHEMY, SALLY and the random-item scripts index it by an item id. |
+| `GS 0x1fba` | item_short_descriptions | high | investigation | ITINIT writes it after the item's name, GS[0x1fba + id], 1,000 cells after item_names. STATUS@0xa7a and SALLY@0x17b1 draw it for current_item_id. |
+| `GS 0x23a2` | skill_names | high | investigation | SKINIT writes one for each of its 131 skills, GS[0x23a2 + id], before the record's numbers (SKINIT@0x0). ADDSKILL, ADDEXP, BTL, DRAWENP, DRAWTIP, FIELD, INFOAF, INFOEN and SELACT index it by a skill id. |
+| `GS 0x24ce` | skill_short_descriptions | high | investigation | SKINIT writes it after the skill's numbers, GS[0x24ce + id], 300 cells after skill_names (SKINIT@0x1e). STATUS@0xa8d draws it for current_skill_id. |
 | `GS 0x25fa` | condition_level_names | high | investigation | ILINIT's row-major five-name matrix. Runtime condition UI selects the row by condition id and the column by current level minus one; id 1 has only the unnumbered instant-death label, id 12 and ids 15..29 are reserved. Columns: 0=level_1, 1=level_2, 2=level_3, 3=level_4, 4=level_5. |
 | `GS 0x2690` | attack_element_names | high | investigation | AFINIT attack-side affinity vocabulary. DRAWTIP indexes ids 1..8 from ITINIT, while INFOAF displays those same eight ordinary attack elements above attack_element_effectiveness_percent. Columns: 1=physical, 2=universal, 3=fire, 4=ice, 5=lightning, 6=earth, 7=holy, 8=dark, 11=resistance_1, 12=resistance_2, 13=resistance_3, 14=resistance_4, 15=resistance_5, 16=resistance_6, 17=resistance_7. |
 | `GS 0x26a4` | defense_element_names | high | investigation | AFINIT defense-side affinity vocabulary. DRAWENP and DRAWTIP index it with unit/item defense element ids; the same id selects a row of attack_element_effectiveness_percent. Columns: 1=physical, 2=universal, 3=fire, 4=ice, 5=lightning, 6=earth, 7=holy, 8=dark, 9=divinity, 10=demon, 11=spirit, 12=undead. |
@@ -3914,10 +3964,6 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0x15261e` | battle_actor_hp_recovery | high | investigation | CALCDMG's actor-side HP recovery output. Absorb (SKINIT skill 40) contributes half of positive battle_hp_delta with a minimum of one, and the target's HP-absorption condition can add its level-scaled amount capped at the damage dealt. BTL adds the result to the actor's current HP, renders the green recovery number, and clamps the resource through the ordinary post-battle path. |
 | `0x14ca` | — | high | auto-shape | unit-desc2-table |
 | `0x14cb` | — | high | auto-shape | unit-desc3-table |
-| `GS 0x1bd2` | — | high | auto-shape | item-name-table |
-| `GS 0x1fba` | — | high | auto-shape | item-desc-table |
-| `GS 0x23a2` | — | high | auto-shape | skill-name-table |
-| `GS 0x24ce` | — | high | auto-shape | skill-desc-table |
 | `0x32f0` | — | med | auto-shape | current-entity-index? |
 | `0x3ebe` | — | med | auto-shape | record-table[stride 10] |
 | `0x45b9` | — | high | auto-shape | mainit-name-table |

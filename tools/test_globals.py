@@ -376,6 +376,30 @@ def test_table_refs():
     check(table.get("refs") == {"weapon": "weapon"} and table.get("ref_keys") == {"weapon": {"times": 3, "plus": "slot"}},
           f"the JSON writes a two-field reference's table and its key apart ({table})")
     check("ref_keys" not in G.table_json(good[0]), "a table without two-field references has no ref_keys key")
+    # With any, a plus of that value names every record of the row (an Arterial item any card of a row may carry).
+    keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 3, "plus": "slot", "any": 0}}
+    check(G.lint_tables(keyed, entries) == [], f"a row reference lints clean ({G.lint_tables(keyed, entries)})")
+    check(G.table_json(keyed[0]).get("ref_keys") == {"weapon": {"times": 3, "plus": "slot", "any": 0}},
+          "the JSON writes a row reference's any")
+    merged = {key: {**e, "provenance": "curated", "bank": key[0], "address": hex(key[1]), "usage": None}
+              for key, e in entries.items()}
+    doc = G.emit_reference_md(merged, [keyed[0]], [])
+    check("(× 3 + slot; a slot of 0 names every record from × 3 to × 3 + 2)" in doc,
+          "the reference doc says what a row reference's any names")
+    keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 3, "plus": "slot", "any": "none"}}
+    check(any("weapon any 'none', which must be the whole number" in e for e in G.lint_tables(keyed, entries)),
+          "lint_tables flags an any that is no whole number")
+    # With bases, a listed value names its base plus the plus field (a Kamidori map object's dig table, type 32 from
+    # table 0 and 33 from 100, plus its payload); another value names none.
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "bases": {"32": 0, "33": 100}, "plus": "rank"}}
+    check(G.lint_tables(keyed, entries) == [], f"a reference with bases lints clean ({G.lint_tables(keyed, entries)})")
+    check(G.table_json(keyed[0]).get("ref_keys") == {"icon": {"bases": {"32": 0, "33": 100}, "plus": "rank"}},
+          "the JSON writes a reference's bases")
+    doc = G.emit_reference_md(merged, [keyed[0]], [])
+    check("(32 from 0, 33 from 100, + rank; another value names none)" in doc, "the reference doc says the bases")
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "bases": {"x": -1}, "plus": "rank"}}
+    check(any("icon bases {'x': -1}, which must be a table of value" in e for e in G.lint_tables(keyed, entries)),
+          "lint_tables flags bases that are not values and records")
     keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 0, "plus": "rank"},
                         "icon": {"table": "picture", "times": 3, "plus": "icon"},
                         "rank": {"table": "weapon", "plus": "name"}}
@@ -443,7 +467,8 @@ def test_scopes_lint():
     # Arterial keys its area tables by area.
     expected = {
         "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy"})],
-        "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "reward": "stage_reward"})],
+        "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "reward": "stage_reward",
+                                                     "object": "stage_object"})],
         "globals-arterial.toml": [("area", 1, 299, {"point": "area_point", "route": "area_route", "unit": "area_unit"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):

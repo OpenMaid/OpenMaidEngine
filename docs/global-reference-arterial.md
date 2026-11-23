@@ -128,7 +128,7 @@ ITINIT items keyed by item id.
 | price | item_prices | `0x32b31a` | `int[2000][2]` | |
 | picture | item_pictures | `0x32c2ba` | `int[2000][2]` | pictures |
 | owned_count | item_owned_counts | `0x3f90` | `int[2000]` | |
-| card_row | item_card_rows | `0x326cca` | `int[2000]` | |
+| card_row | item_card_rows | `0x326cca` | `int[2000]` | `card` (× 30 + card_slot; a card_slot of 0 names every record from × 30 to × 30 + 29) |
 | card_slot | item_card_slots | `0x32749a` | `int[2000]` | |
 | required_slots | item_required_slots | `0x32267a` | `int[2000]` | |
 | required_races | item_required_races | `0x327c6a` | `int[2000]` | |
@@ -725,8 +725,8 @@ An area, by current_area_id (an id of AMINIT; the game's are 1 to 197 and its pe
 | `0x32555a` | item_condition_ids | high | investigation | ITINIT: a condition (an ILINIT id) the 消費 item gives its target in battle (SELITEM). |
 | `0x325d2a` | item_targets | high | investigation | ITINIT: which battlefield cells the 消費 item can target: 1 the first side's, 2 the second's, 3 both; 4 and 5 the empty cells of the first or the second side (SELITEM). |
 | `0x3264fa` | item_talent_ids | high | investigation | ITINIT: a talent (a TAINIT id) the item gives the card that carries it. |
-| `0x326cca` | item_card_rows | high | investigation | ITINIT: where set, the one card row whose cards can carry the item (INIT2 takes an item off a card that fails). |
-| `0x32749a` | item_card_slots | high | investigation | ITINIT: where set, the one slot of a row whose card can carry the item. |
+| `0x326cca` | item_card_rows | high | investigation | ITINIT: where set, the one card row whose cards can carry the item: INIT2@0x003df, ITEM@0x0128a and SELITEM@0x010ab refuse a card of another row (INIT2 takes the item off it). With item_card_slots 0, every card of the row may carry it. |
+| `0x32749a` | item_card_slots | high | investigation | ITINIT: where set, the one slot of a row whose card can carry the item: INIT2@0x0040a, ITEM@0x012b5 and SELITEM@0x010d6 refuse a card of another slot. Only items that set a row set it (6 at the boot). |
 | `0x327c6a` | item_required_races | high | investigation | ITINIT: bits of card_race_flags of which a card must have one to carry the item. Bits: bit k stands for `race_names` value k. |
 | `0x32843a` | item_excluded_races | high | investigation | ITINIT: bits of card_race_flags a card must not have to carry the item. Bits: bit k stands for `race_names` value k. |
 | `0x328c0a` | item_required_costs | high | investigation | ITINIT: the least card_current_costs a card may have to carry the item. |

@@ -213,12 +213,13 @@
         "item_category": [0, 4, 0],
         "item_handler_script_id": [0, 4, 0],
         "item_icon_id": [0, 4, 0],
+        "item_names": [0, 4, 0],
         "item_random_tier": [0, 4, 0],
+        "item_short_descriptions": [0, 2, 0],
         "item_sort_key": [0, 4, 0],
         "item_stat_modifiers": [0, 4, 0],
         "item_weapon_class": [0, 2, 0]
-      },
-      "unnamed": [0, 6, 0]
+      }
     },
     "$1$ITMES.BIN": {
       "id": 16777275,
@@ -871,6 +872,7 @@
         "modal_message_line_count": [8, 4, 0],
         "modal_message_lines": [0, 0, 4],
         "skill_category": [0, 0, 1],
+        "skill_names": [0, 0, 3],
         "skill_sort_key": [0, 0, 2],
         "system_flow_request": [2, 0, 0],
         "unit_canonical_id": [0, 0, 2],
@@ -886,7 +888,7 @@
         "unit_stat_growth_fractions": [0, 0, 7],
         "unit_stat_growth_rates": [0, 0, 1]
       },
-      "unnamed": [9, 2, 12],
+      "unnamed": [9, 2, 9],
       "patch_points": {
         "himegari.experience.after_calculation": "0x9a"
       },
@@ -1009,12 +1011,13 @@
         "current_item_count_change": [0, 1, 0],
         "current_item_id": [0, 1, 0],
         "item_category": [0, 0, 1],
+        "item_names": [0, 0, 1],
         "item_random_tier": [0, 0, 1],
         "item_tuning_facility_level": [1, 0, 0],
         "modal_message_line_count": [2, 1, 0],
         "modal_message_lines": [0, 0, 1]
       },
-      "unnamed": [0, 0, 2]
+      "unnamed": [0, 0, 1]
     },
     "ADDSKILL.BIN": {
       "id": 4248,
@@ -1043,10 +1046,11 @@
         "skill_acquired_flags": [2, 0, 1],
         "skill_category": [0, 0, 1],
         "skill_info_revealed_flags": [0, 0, 2],
+        "skill_names": [0, 0, 3],
         "skill_sort_key": [0, 0, 2],
         "unit_skill_ids": [0, 0, 6]
       },
-      "unnamed": [8, 9, 6]
+      "unnamed": [8, 9, 3]
     },
     "AFINIT.BIN": {
       "id": 13108,
@@ -1124,6 +1128,7 @@
         "item_handler_script_id": [0, 0, 1],
         "item_icon_id": [0, 0, 3],
         "item_inventory_counts": [0, 0, 8],
+        "item_names": [0, 0, 2],
         "maximum_spirit": [1, 0, 0],
         "modal_message_line_count": [12, 6, 0],
         "modal_message_lines": [0, 0, 6],
@@ -1138,7 +1143,7 @@
         "stage_extra_dungeon_flags": [0, 0, 2],
         "story_event_flags": [0, 0, 2]
       },
-      "unnamed": [20, 13, 9],
+      "unnamed": [20, 13, 7],
       "waits": {
         "fade-surface-out-to-black": 1,
         "sleep": 1
@@ -1282,11 +1287,13 @@
         "entity_unit_definition_ids": [0, 0, 22],
         "game_mode": [2, 2, 0],
         "item_category": [0, 0, 2],
+        "item_names": [0, 0, 4],
         "modal_message_line_count": [5, 2, 0],
         "modal_message_lines": [0, 0, 2],
         "selected_battle_animation_id": [16, 6, 0],
         "skill_battle_animation_id": [2, 0, 4],
         "skill_info_revealed_flags": [0, 0, 2],
+        "skill_names": [0, 0, 2],
         "skill_proc_chance_percent": [3, 0, 0],
         "skill_resource_deltas": [0, 0, 3],
         "system_flow_request": [1, 2, 0],
@@ -1304,7 +1311,7 @@
         "unit_voice_family_unit_ids": [0, 0, 3],
         "unit_voice_suppression_flag_ids": [0, 0, 3]
       },
-      "unnamed": [46, 6, 17],
+      "unnamed": [46, 6, 11],
       "waits": {
         "mark-frame-yield": 9,
         "run-timed-callback-sequence": 4,
@@ -2541,6 +2548,7 @@
         "familiar_training_progress": [1, 0, 0],
         "game_mode": [1, 1, 0],
         "item_icon_id": [0, 0, 1],
+        "item_names": [0, 0, 1],
         "maximum_spirit": [12, 0, 0],
         "party_slot_flags": [0, 0, 1],
         "selected_party_slot": [2, 1, 0],
@@ -2553,7 +2561,7 @@
         "unit_icon_id": [0, 0, 1],
         "unit_status_art_asset_ids": [0, 0, 2]
       },
-      "unnamed": [27, 2, 9]
+      "unnamed": [27, 2, 8]
     },
     "DRAWENP.BIN": {
       "id": 12970,
@@ -2585,6 +2593,8 @@
         "game_mode": [7, 7, 0],
         "item_defense_element": [0, 0, 4],
         "item_equipped_status_levels": [0, 0, 2],
+        "item_names": [0, 0, 3],
+        "skill_names": [0, 0, 3],
         "system_flow_request": [1, 0, 0],
         "unit_battle_portrait_asset_ids": [0, 0, 2],
         "unit_canonical_id": [0, 0, 2],
@@ -2595,7 +2605,7 @@
         "unit_map_sprite_asset_ids": [0, 0, 3],
         "unit_starting_skill_ids": [0, 0, 2]
       },
-      "unnamed": [78, 1, 11]
+      "unnamed": [78, 1, 5]
     },
     "DRAWMAP.BIN": {
       "id": 13001,
@@ -2698,14 +2708,16 @@
         "item_defense_element": [0, 0, 2],
         "item_granted_skill_id": [0, 0, 2],
         "item_min_range": [0, 0, 1],
+        "item_names": [0, 0, 2],
         "item_stat_modifiers": [0, 0, 1],
         "item_tuning_curve_ids": [0, 0, 1],
         "item_tuning_stat_bonus_curves": [0, 0, 1],
         "skill_category": [0, 0, 6],
         "skill_min_range_encoded": [0, 0, 2],
+        "skill_names": [0, 0, 2],
         "system_flow_request": [1, 0, 0]
       },
-      "unnamed": [4, 0, 6]
+      "unnamed": [4, 0, 2]
     },
     "DRAWVOL.BIN": {
       "id": 13024,
@@ -3038,6 +3050,7 @@
         "field_map_continue_mode": [11, 3, 0],
         "game_mode": [2, 2, 0],
         "healing_action_scope_masks": [0, 0, 1],
+        "item_names": [0, 0, 2],
         "magic_facility_level": [1, 0, 0],
         "map_target_tile_x": [0, 2, 0],
         "map_target_tile_y": [0, 2, 0],
@@ -3066,6 +3079,7 @@
         "selected_movement_route_steps": [0, 0, 33],
         "selected_party_slot": [1, 1, 0],
         "skill_combat_stat_deltas": [0, 0, 4],
+        "skill_names": [0, 0, 3],
         "skill_proc_chance_percent": [4, 0, 0],
         "skill_resource_deltas": [0, 0, 8],
         "stage_bgm_id": [9, 3, 0],
@@ -3131,7 +3145,7 @@
         "unit_voice_family_unit_ids": [0, 0, 1],
         "unit_voice_suppression_flag_ids": [0, 0, 1]
       },
-      "unnamed": [419, 226, 227],
+      "unnamed": [419, 226, 222],
       "patch_points": {
         "himegari.stage.after_loader": "0x20a",
         "himegari.stage.after_ready_handlers": "0xa27",
@@ -4112,10 +4126,11 @@
         "attack_element_effectiveness_percent": [0, 0, 1],
         "game_mode": [1, 1, 0],
         "information_tab_index": [1, 1, 0],
+        "skill_names": [0, 0, 1],
         "terrain_combat_stat_deltas": [0, 0, 1],
         "terrain_required_skill_ids": [0, 0, 2]
       },
-      "unnamed": [16, 7, 1],
+      "unnamed": [16, 7, 0],
       "waits": {
         "sleep": 1
       }
@@ -4192,6 +4207,8 @@
         "information_tab_index": [1, 1, 0],
         "item_defense_element": [0, 0, 2],
         "item_granted_skill_id": [0, 0, 2],
+        "item_names": [0, 0, 2],
+        "skill_names": [0, 0, 2],
         "unit_battle_sprite_asset_id": [0, 0, 2],
         "unit_defense_element": [0, 0, 1],
         "unit_display_names": [0, 0, 1],
@@ -4206,7 +4223,7 @@
         "unit_species_category": [0, 0, 3],
         "unit_starting_equipment_item_id": [0, 0, 2]
       },
-      "unnamed": [20, 10, 7],
+      "unnamed": [20, 10, 3],
       "waits": {
         "sleep": 1
       }
@@ -4417,16 +4434,17 @@
         "item_icon_id": [0, 287, 0],
         "item_max_range": [0, 12, 0],
         "item_min_range": [0, 12, 0],
+        "item_names": [0, 287, 0],
         "item_random_tier": [0, 287, 0],
         "item_resource_recovery_amounts": [0, 17, 0],
         "item_sex_restriction_mask": [0, 2, 0],
+        "item_short_descriptions": [0, 189, 0],
         "item_sort_key": [0, 287, 0],
         "item_stat_modifiers": [0, 403, 0],
         "item_status_delta_levels": [0, 47, 0],
         "item_tuning_curve_ids": [0, 379, 0],
         "item_weapon_class": [0, 104, 0]
-      },
-      "unnamed": [0, 476, 0]
+      }
     },
     "ITMES.BIN": {
       "id": 12699,
@@ -4564,13 +4582,14 @@
         "current_item_id": [0, 1, 0],
         "item_category": [0, 0, 1],
         "item_inventory_counts": [0, 0, 1],
+        "item_names": [0, 0, 1],
         "item_random_tier": [0, 0, 1],
         "modal_message_line_count": [4, 2, 0],
         "modal_message_lines": [0, 0, 2],
         "party_slot_character_id": [0, 0, 1],
         "party_slot_flags": [0, 0, 2]
       },
-      "unnamed": [0, 0, 5]
+      "unnamed": [0, 0, 4]
     },
     "MAGIC.BIN": {
       "id": 12997,
@@ -6207,6 +6226,8 @@
         "entity_unit_definition_ids": [0, 0, 1],
         "familiar_alignment": [12, 9, 0],
         "field_map_continue_mode": [1, 0, 0],
+        "item_names": [0, 0, 1],
+        "item_short_descriptions": [0, 0, 1],
         "maximum_spirit": [6, 0, 0],
         "modal_message_line_count": [20, 10, 0],
         "modal_message_lines": [0, 0, 10],
@@ -6249,7 +6270,7 @@
         "unit_summon_knowledge_threshold": [0, 0, 2],
         "unit_summon_unlock_flag_index": [0, 0, 2]
       },
-      "unnamed": [50, 40, 16],
+      "unnamed": [50, 40, 14],
       "waits": {
         "mark-frame-yield": 1,
         "sleep": 1
@@ -13602,19 +13623,21 @@
         "item_attack_element": [0, 0, 3],
         "item_category": [0, 0, 3],
         "item_min_range": [0, 0, 2],
+        "item_names": [0, 0, 3],
         "offensive_action_scope_masks": [3, 0, 2],
         "selected_movement_route_steps": [0, 0, 1],
         "skill_attack_element": [0, 0, 2],
         "skill_category": [0, 0, 7],
         "skill_combat_stat_deltas": [0, 0, 2],
         "skill_min_range_encoded": [0, 0, 2],
+        "skill_names": [0, 0, 3],
         "skill_resource_deltas": [0, 0, 3],
         "target_entity_index": [5, 0, 0],
         "unit_capturable": [0, 0, 1],
         "unit_default_attack_item_id": [0, 0, 4],
         "unit_display_names": [0, 0, 2]
       },
-      "unnamed": [62, 3, 14],
+      "unnamed": [62, 3, 8],
       "waits": {
         "sleep": 1
       }
@@ -13979,12 +14002,13 @@
         "skill_icon_id": [0, 131, 0],
         "skill_max_range_encoded": [0, 94, 0],
         "skill_min_range_encoded": [0, 94, 0],
+        "skill_names": [0, 131, 0],
         "skill_proc_chance_percent": [0, 14, 0],
         "skill_resource_deltas": [0, 98, 0],
+        "skill_short_descriptions": [0, 129, 0],
         "skill_sort_key": [0, 129, 0],
         "skill_status_levels": [0, 28, 0]
-      },
-      "unnamed": [0, 260, 0]
+      }
     },
     "SKMES.BIN": {
       "id": 12746,
@@ -20979,9 +21003,12 @@
         "entity_condition_levels": [0, 0, 1],
         "entity_equipped_active_skill_ids": [0, 0, 2],
         "game_mode": [1, 1, 0],
-        "item_icon_id": [0, 0, 1]
+        "item_icon_id": [0, 0, 1],
+        "item_names": [0, 0, 1],
+        "item_short_descriptions": [0, 0, 1],
+        "skill_short_descriptions": [0, 0, 1]
       },
-      "unnamed": [2, 5, 4],
+      "unnamed": [2, 5, 1],
       "waits": {
         "sleep": 1
       }
@@ -21274,6 +21301,7 @@
         "game_mode": [1, 1, 0],
         "item_category": [0, 0, 1],
         "item_inventory_counts": [0, 0, 1],
+        "item_names": [0, 0, 2],
         "maximum_spirit": [2, 0, 0],
         "modal_message_line_count": [8, 4, 0],
         "modal_message_lines": [0, 0, 4],
@@ -21311,7 +21339,7 @@
         "unit_current_stats": [0, 0, 10],
         "unit_stat_growth_fractions": [0, 0, 8]
       },
-      "unnamed": [28, 13, 7],
+      "unnamed": [28, 13, 5],
       "waits": {
         "mark-frame-yield": 1,
         "sleep": 1

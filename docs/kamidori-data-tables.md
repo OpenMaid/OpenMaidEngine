@@ -588,9 +588,14 @@ A table with 3 entries per step spans three banks. The routine id is `0x14d09c` 
 | 14 | `0x1f7efe` | provider 1..5 → `RTN_B###` |
 | 15 | | activation % |
 | 16 | | parameter 1 (a skill id for RTN_B004) |
-| 22 | | use limit, checked against `0x629c8` |
-| 23–25 | | required story flags |
-| 26–28 | | forbidden story flags |
+| 21 | `0x24d62e` | use limit, checked against `0x629c8` |
+| 22–24 | `0x25997e` | required story flags |
+| 25–27 | `0x27e36e` | forbidden story flags |
+
+The battle banks sit fourteen after the map banks of the same field, as provider 14 sits after provider 0. BTRTN
+reads them there. No battle routine sets a use limit or a flag at the boot: RTINIT writes nothing past bank 16.
+Bank 28 holds other tables (LAINIT's terrain, OBINIT's object types, HAINIT's halls, CDINIT2's field cards and
+DIINIT's dig tables), which an earlier reading took for the end of the forbidden flags (corrected 2026-11-22).
 
 A step runs when its provider is nonzero, all its flag checks pass, its use count is under the limit, and the
 random roll is under the activation %. If no step fires, BTRTN uses skill 21 (防御). 347 routines are populated,

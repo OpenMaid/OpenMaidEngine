@@ -66,8 +66,9 @@ experience_reward = 40     # 30
 ```
 
 - **Tables and fields** are those of `../../global-reference.md`, "Tables", by the names in its `field` column:
-  `unit` (records 0 to 999), `item` (0 to 999) and `skill` (0 to 299). A field with a row takes its columns by the
-  names the reference gives (`stat_modifiers.max_fs`), and by number only where a column has no name.
+  `unit` (records 0 to 999), `item` (0 to 999), `skill` (0 to 299) and `stage_catalog` (0 to 999, STINIT2's stages).
+  A field with a row takes its columns by the names the reference gives (`stat_modifiers.max_fs`), and by number only
+  where a column has no name.
 - **Saved fields are refused:** `unit.story_speaker_seen_flag`, `skill.acquired_flag` and
   `skill.info_revealed_flag`. They lie below the saved prefix, so a load would bring the saved value back over the
   edit.
@@ -138,6 +139,16 @@ experience_reward = 40     # 30
   [stage.1.enemy.2]
   unit_id = 810              # 200, 緑プテテット; 810 is ハルピュア
   ```
+
+- **A stage's goals** are the `stage_goal` table, one record, which a file names through the stage as `stage.1.goal.0`:
+  `victory_condition_1`, `victory_condition_2`, `defeat_condition_1` and `defeat_condition_2`, the lines AIM shows.
+  STINIT writes them for the stage it loads. FIELD copies them into the lines the stage shows at its start
+  (`FIELD@0x308`, GS `0x27a` to `0x27d`, unnamed), and a stage's handlers (READY, ROUND) rewrite both as it goes, so
+  the shown lines are saved: a save made on a stage keeps the lines it showed, with the mod or without it.
+- **The names are read where they are shown,** and none is saved: an item's and a skill's `name` and
+  `short_description`, and a stage's `name` and `description` (six lines, of which SELSTAGE shows the first three
+  before the stage is cleared and the last three after). One copy is: FIELD copies the stage's `name` into the title
+  it shows (`FIELD@0x211`, GS `0x278`, unnamed), which a save made on a stage keeps.
 
 - **The stage part holds through the stage.** FIELD runs the stage's loaders at its start, before it places the
   units, and again each time it is entered again during the stage (below, "FIELD runs the loaders more than once a

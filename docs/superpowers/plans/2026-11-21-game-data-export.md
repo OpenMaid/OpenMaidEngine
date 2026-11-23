@@ -967,3 +967,46 @@ authors.
   `group_label` column. The third of the backlog's points, the unnamed cells, went to Arterial's reverse-engineering
   item there, by the user's word: naming them is RE work that the export gains from. The backlog keeps an item's card
   restriction too. A row alone names every card of the row, so it is no paired or two-field reference.
+- **What the branch surfaced, settled before merge, and Himegari's section** (2026-11-22; the user: "Go ahead with
+  the 4 items we can do now. Then I want to take the data we do understand from Himegari right now and also set that
+  section up"). The lint checks each new form, and `tools/test_globals.py`, `tools/test_entities_build.py`
+  (`test_loaded_where_and_joins`, `test_keyed_picture`) and the exporter's tests
+  (`ARowReferenceNamesEveryRecordOfItsRow`, `AReferenceWithBasesNamesAListedValuesBasePlusItsPlus`,
+  `ALoadedRowKeepsTheRecordsItsWhereNamesAndTheRecordItsJoinReaches`, `AKeyedPictureIsAskedForWithItsColourKey`, and
+  the marks in `AShownFieldsValuesHaveTheRegistrysWordsAndTheGamesNamesAndItsNumbersTheirFormat`) cover them:
+  - **Kamidori's overlapping arrays** were one registry error: its three battle routine arrays sat one RTINIT bank
+    too late (`kamidori-data-tables.md`, "Enemy AI routines"). The registry has no Kamidori overlap left.
+  - **A mark** (site plan §13, P13). A kind's `marks = { field = "word" }` gives a word the site shows after every
+    link to an entity whose field is not none; the export's `mark` table holds them. Kamidori's `unit_boss_class` has
+    its five values and `none = 0`, and a unit is marked "Boss", in a stage's enemies too.
+  - **A row reference.** A `[table.refs]` value `{ table, times, plus, any = 0 }` names, where the plus field holds
+    `any`, every record of the value's row (value × times to value × times + times − 1). The export writes one
+    reference for each record the row has, under the same element, so the `ref` table's key gained `to_kind` and
+    `to_id`, and the site shows an element's links side by side. 191 Arterial items name the cards that may carry
+    them, 2,478 links ("Carried only by").
+  - **A reference by bases.** `{ table, bases = { value = base }, plus }` names, for a value `bases` lists, its base
+    plus the plus field's value, and none for another value. Kamidori's map object of type 32 (採取) or 33 (発掘)
+    gathers from dig table 0 or 100 plus its primary parameter (SELSTAGE@0x17f8, FIELD@0x897e).
+  - **A loaded table's `where` and `joins`.** `where = { field = [values] }` keeps the records whose one integer cell
+    holds a listed value. `joins = { table = field }` publishes the fields of the record the row's field refers to as
+    `table.field`, read from the run's state at that record and withheld past the table's records. A data file edits
+    the scope's table, so the snippet leaves joined fields out. A field a join goes through to a table no kind shows
+    links nothing and is not reported unpublished; to a kind's table it links as any reference. A kind's `labels` may
+    name one of its loaded tables, and the site heads the table with it. Kamidori's stage loader publishes
+    `stage_object` (a new registry table and scope table) as `object`, its map objects of type 32 and 33 joined to their
+    dig tables: 267 dig sites on 75 stages, labelled "Dig site", and 1,034 item links ("Dug on stages"). The dig
+    tables stay without a kind (the user).
+  - **A keyed picture.** A kind's picture may be `{ field, key }`: the colour (0xRRGGBB) the game loads it with as its
+    colour key, which the export makes transparent and names `-key-RRGGBB` after the catalog name
+    (`IPictureSource.ResolveKeyed`). Himegari's map sprites need it: DRAWCH loads them with the key `0x00ff00`
+    (DRAWCH@0x9c), and their sheets are drawn on green.
+  - **Himegari's section.** The registry gains the item and skill names and summaries (GS `0x1bd2`, `0x1fba`,
+    `0x23a2` and `0x24ce`, which ITINIT and SKINIT write before each record's numbers), value facets drawn from what
+    its usages establish (categories, sexes, species, boss classes, the AFINIT element names, the skill ranges stored
+    plus one, the sex mask), `[table.refs]` on its four tables, and two tables: `stage_catalog`, STINIT2's per-stage
+    arrays, and `stage_goal`, the stage's four goal lines, which STINIT writes for the stage it loads (scope table
+    `goal`). `vm-map/entities-himegari.toml` declares units, items, skills and stages, a stage's enemies and goals
+    read by a loader at `himegari.stage.after_loader`. The export reads 284 units, 291 items, 131 skills and 78
+    stages (69 with enemies and goals, 1,408 enemy rows), 422 description runs (ITMES and SKMES), nothing refused,
+    no halt and no missing reference, and 424 pictures. Four battle figures are explicit, found by looking at every
+    published picture.

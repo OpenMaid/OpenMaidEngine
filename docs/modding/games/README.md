@@ -54,7 +54,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Port saves | enabled, in `games/himegari/` |
 | OMS modules | `himegari.globals`, `himegari.scripts` (generated); `himegari.adv` (`oms/himegari/adv.oms`) |
 | Speakers | 274 in `himegari.adv`'s `enum speaker` |
-| Tables | `unit[1000]` (49 fields), `item[1000]` (19 fields), `skill[300]` (15 fields), `stage_enemy[30]` (15 fields) ([reference](../../global-reference.md)) |
+| Tables | `unit[1000]` (49 fields), `item[1000]` (21 fields), `skill[300]` (17 fields), `stage_enemy[30]` (15 fields), `stage_catalog[1000]` (19 fields), `stage_goal[1]` (4 fields) ([reference](../../global-reference.md)) |
 | Named patch points | `himegari.experience.after_calculation`, `himegari.boot.data_layered`, `himegari.boot.data_ready`, `himegari.stage.after_loader`, `himegari.stage.after_ready_handlers`, `himegari.stage.after_round_handlers`, `himegari.stage.after_close_handlers_won`, `himegari.stage.after_close_handlers_lost` ([reference](../../patch-point-reference.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [himegari.md](himegari.md) |
@@ -74,7 +74,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Port saves | enabled, in `games/kamidori/` |
 | OMS modules | `kamidori.globals`, `kamidori.scripts` (generated); `kamidori.adv` (`oms/kamidori/adv.oms`) |
 | Speakers | 114 in `kamidori.adv`'s `enum speaker` |
-| Tables | `unit[1000]` (44 fields), `item[2000]` (53 fields), `skill[1000]` (27 fields), `stage_enemy[30]` (15 fields), `stage_reward[4]` (1 fields), `quest[2000]` (18 fields), `recipe[2000]` (24 fields), `condition[30]` (10 fields), `stage_catalog[1000]` (17 fields), `class_change[1]` (9 fields), `world_area[100]` (6 fields), `dig_table[200]` (4 fields), `character_profile[200]` (11 fields), `objective[2000]` (8 fields), `glossary_entry[1000]` (4 fields) ([reference](../../global-reference-kamidori.md)) |
+| Tables | `unit[1000]` (44 fields), `item[2000]` (53 fields), `skill[1000]` (27 fields), `stage_enemy[30]` (15 fields), `stage_object[50]` (12 fields), `stage_reward[4]` (1 fields), `quest[2000]` (18 fields), `recipe[2000]` (24 fields), `condition[30]` (10 fields), `stage_catalog[1000]` (17 fields), `class_change[1]` (9 fields), `world_area[100]` (6 fields), `dig_table[200]` (4 fields), `character_profile[200]` (11 fields), `objective[2000]` (8 fields), `glossary_entry[1000]` (4 fields) ([reference](../../global-reference-kamidori.md)) |
 | Named patch points | `kamidori.experience.after_calculation`, `kamidori.boot.data_layered`, `kamidori.boot.data_ready`, `kamidori.stage.after_loader`, `kamidori.class_change.rules_run`, `kamidori.stage.after_info_reload`, `kamidori.stage.after_list_preview`, `kamidori.stage.after_ready_handlers`, `kamidori.stage.after_round_handlers`, `kamidori.stage.after_close_handlers` ([reference](../../patch-point-reference-kamidori.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [kamidori.md](kamidori.md) |

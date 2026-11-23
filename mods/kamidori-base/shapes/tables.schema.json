@@ -44,6 +44,10 @@
       "description": "stage_enemy is reached through its scope: write stage.<id>.enemy",
       "type": "null"
     },
+    "stage_object": {
+      "description": "stage_object is reached through its scope: write stage.<id>.object",
+      "type": "null"
+    },
     "stage_reward": {
       "description": "stage_reward is reached through its scope: write stage.<id>.reward",
       "type": "null"
@@ -4224,6 +4228,109 @@
       },
       "additionalProperties": false
     },
+    "record.stage_object": {
+      "description": "stage_object: one record's fields, by name; write stage.<id>.object.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "base_value": {
+          "description": "stage_object.base_value: stage_object_base_value, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "difficulty_mask": {
+          "description": "stage_object.difficulty_mask: stage_object_difficulty_mask, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "forbidden_story_flags": {
+          "description": "stage_object.forbidden_story_flags: stage_object_forbidden_story_flags, a row of 5 columns by number, 0 to 4; write forbidden_story_flags.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 4
+          },
+          "additionalProperties": {
+            "description": "stage_object.forbidden_story_flags.<column>: a column of stage_object_forbidden_story_flags, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "primary_param": {
+          "description": "stage_object.primary_param: stage_object_primary_param, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "reinforcement_interval_turns": {
+          "description": "stage_object.reinforcement_interval_turns: stage_object_reinforcement_interval_turns, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "reinforcement_spawn_limit": {
+          "description": "stage_object.reinforcement_spawn_limit: stage_object_reinforcement_spawn_limit, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "required_story_flags": {
+          "description": "stage_object.required_story_flags: stage_object_required_story_flags, a row of 7 columns by number, 0 to 6; write required_story_flags.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 6
+          },
+          "additionalProperties": {
+            "description": "stage_object.required_story_flags.<column>: a column of stage_object_required_story_flags, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "secondary_param": {
+          "description": "stage_object.secondary_param: stage_object_secondary_param, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "tile_x": {
+          "description": "stage_object.tile_x: stage_object_tile_x, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "tile_y": {
+          "description": "stage_object.tile_y: stage_object_tile_y, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "type_id": {
+          "description": "stage_object.type_id: stage_object_type_id, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "use_story_flags_by_faction": {
+          "description": "stage_object.use_story_flags_by_faction: stage_object_use_story_flags_by_faction, a row of 5 columns by number, 0 to 4; write use_story_flags_by_faction.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 4
+          },
+          "additionalProperties": {
+            "description": "stage_object.use_story_flags_by_faction.<column>: a column of stage_object_use_story_flags_by_faction, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "record.stage_reward": {
       "description": "stage_reward: one record's fields, by name; write stage.<id>.reward.<id>.<field> = ...",
       "type": "object",
@@ -5995,6 +6102,17 @@
         "$ref": "#/definitions/record.stage_enemy"
       }
     },
+    "records.stage_object": {
+      "description": "stage_object: records by id, 0 to 49; write stage.<id>.object.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 49
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.stage_object"
+      }
+    },
     "records.stage_reward": {
       "description": "stage_reward: records by id, 0 to 3; write stage.<id>.reward.<id>.<field> = ...",
       "type": "object",
@@ -6029,18 +6147,21 @@
       }
     },
     "scope.stage": {
-      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy or reward.<id>.<field> = ...",
+      "description": "stage: each stage's tables by its id, 1 to 999; write stage.<id>.enemy or object or reward.<id>.<field> = ...",
       "type": "object",
       "x-ome-decimal-keys": {
         "minimum": 1,
         "maximum": 999
       },
       "additionalProperties": {
-        "description": "one stage's tables, by short name; write stage.<id>.enemy or reward.<id>.<field> = ...",
+        "description": "one stage's tables, by short name; write stage.<id>.enemy or object or reward.<id>.<field> = ...",
         "type": "object",
         "properties": {
           "enemy": {
             "$ref": "#/definitions/records.stage_enemy"
+          },
+          "object": {
+            "$ref": "#/definitions/records.stage_object"
           },
           "reward": {
             "$ref": "#/definitions/records.stage_reward"

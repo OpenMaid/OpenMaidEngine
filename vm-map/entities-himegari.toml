@@ -1,0 +1,222 @@
+# Himegari's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals.toml (its tables, their [table.refs], its
+# globals), vm-map/patch-points-himegari.toml and the profile's saved prefix, and writes
+# build/games/himegari/entities.json for the exporter.
+#
+# The conventions are Kamidori's (vm-map/entities-kamidori.toml): scripts named without the `$n$` prefix and `.BIN`;
+# the story flags that gate a record left to the modder data; a field published when it means something to a player;
+# and a note only where the label and value leave a reader guessing.
+#
+# The section is as small as the registry's understood tables (the user, 2026-11-22): units, items, skills and the
+# stages with their enemies and goals. A kind, a field or a reference joins it as the reverse engineering names more.
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after every layer and TUNE (himegari.boot.data_ready).
+boot = { script = "INIT2", read_at = "himegari.boot.data_ready" }
+# The scripts whose stored values may be published: INIT2, the *INIT and *INIT2 table scripts and their `$n$` updates,
+# and AUTORUN, which the appends run.
+builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery and the H-scene gallery.
+excluded_builders = ["CGINIT", "SPINIT"]
+# The information screens whose shown text is data: item and skill descriptions.
+text_scripts = ["ITMES", "SKMES"]
+# The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
+# declarations publish (2026-11-22): three battle figures, the succubus (CB069A, and CB500A, her twin) and the harpy
+# (CB405A), are nude, and the lamia (CB360A) topless. Revealing but covered art (CB071A, CB072A and their twins CB510A
+# and CB515A, the status art CS004ZA, CS011ZA, CS015ZA and CS027ZA) is not on the list.
+explicit_pictures = ["CB069A", "CB500A", "CB405A", "CB360A"]
+
+[[kind]]
+id = "unit"
+table = "unit"
+about = "Every character and monster: stats and growth, element, starting equipment and skills, what it drops, and what it costs to field, release or summon."
+exists = "full_name"
+title = "full_name"
+text = ["display_name", "initial_class_title"]
+fields = [
+    "species_category", "sex_category", "boss_class", "capturable", "defense_element", "starting_level", "level_cap",
+    "stats", "stat_growth", "starting_equipment_item_id", "default_attack_item_id", "starting_skill",
+    "deployment_cost_base", "experience_reward", "essence_yield", "summon_point_cost", "summon_knowledge_threshold",
+    "sex_magic_bonus_item_id", "drop_item", "drop_chance",
+]
+filters = ["species_category", "sex_category", "boss_class", "defense_element"]
+qualifiers = ["initial_class_title", "starting_level", "level_cap"]
+# FIELD draws the yellow boss marker under a unit whose class is not 0 (unit_boss_class): a stage's enemies mark theirs.
+marks = { boss_class = "Boss" }
+
+[[kind.group]]
+name = "stat_table"
+fields = ["stats", "stat_growth"]
+
+[[kind.group]]
+name = "drops"
+fields = ["drop_item", "drop_chance"]
+
+[kind.notes]
+stat_table = "Stats are its base values at its starting level, growth what it gains each level in hundredths of a point."
+boss_class = "Every class but none takes the boss adjustment to damage and is spared conditions; a stage won by defeating its bosses waits for every boss but those not a target."
+capturable = "A unit whose capture power is high enough for its level can capture it."
+deployment_cost_base = "What it adds to the party's deployment total, which its capacity limits."
+essence_yield = "The essence it returns when released."
+summon_knowledge_threshold = "The progress a repeat summon needs; with none, it can be summoned once."
+sex_magic_bonus_item_id = "The item the sex magic actions give."
+drops = "Each item it can drop and its chance."
+experience_reward = "The base of the experience a fight with it gives, which the level difference scales."
+
+[kind.labels]
+species_category = "Species"
+sex_category = "Sex"
+boss_class = "Boss"
+defense_element = "Element"
+display_name = "Short name"
+initial_class_title = "Class"
+starting_equipment_item_id = "Starting equipment"
+default_attack_item_id = "Default attack"
+deployment_cost_base = "Deployment cost"
+summon_point_cost = "Summon cost"
+summon_knowledge_threshold = "Summon progress needed"
+sex_magic_bonus_item_id = "Sex magic bonus"
+
+[kind.referenced_as]
+starting_skill = "Units that start with it"
+drop_item = { heading = "Dropped by", details = ["drop_chance"] }
+default_attack_item_id = "Default attack of"
+starting_equipment_item_id = "Starting equipment of"
+sex_magic_bonus_item_id = "Sex magic bonus of"
+
+# The registry names the columns from the art's file prefixes: the status art (CS, the healthy one of its three), the
+# battle bust and face (CA), the map sprite (CP) and the battle figure (CB). DRAWCH loads the map sprite with the colour
+# key 0x00ff00 (DRAWCH@0x9c): its sheets are drawn on green, which the game, and so the export, makes transparent.
+[kind.pictures]
+status = "status_art_asset_ids.healthy"
+portrait = "battle_portrait_asset_ids.large_bust"
+face = "battle_portrait_asset_ids.compact_face"
+sprite = { field = "map_sprite_asset_ids.normal_compact", key = 0x00ff00 }
+battle = "battle_sprite_asset_id"
+
+[[kind]]
+id = "item"
+table = "item"
+about = "Every item: its category and element, the stats and conditions it changes, the skill it grants, what it restores, and who may use it."
+exists = "name"
+title = "name"
+text = ["short_description"]
+fields = [
+    "category", "weapon_class", "attack_element", "defense_element", "min_range", "max_range", "stat_modifiers",
+    "status_delta_levels", "equipped_status_levels", "granted_skill_id", "resource_recovery_amounts",
+    "sex_restriction_mask", "character_whitelist",
+]
+filters = ["category", "attack_element"]
+qualifiers = ["category"]
+
+[[kind.description]]
+name = "description"
+script = { field = "handler_script_id" }        # ITMES or a `$n$ITMES`, as the item menus call it
+seed = { current_item_id = "key" }
+
+[kind.notes]
+status_delta_levels = "The level it changes each condition by when used: -5 clears the condition, and a positive number inflicts or drains."
+equipped_status_levels = "The level of each condition its wearer has while it is equipped."
+resource_recovery_amounts = "The HP, SP and FS it restores; 999 restores them in full."
+sex_restriction_mask = "Only units of these sexes may equip it."
+character_whitelist = "The characters allowed to equip it, up to five."
+
+[kind.labels]
+weapon_class = "Weapon class"
+defense_element = "Element"
+granted_skill_id = "Grants"
+sex_restriction_mask = "Usable by"
+character_whitelist = "Characters"
+status_delta_levels = "Conditions when used"
+equipped_status_levels = "Conditions while equipped"
+
+[kind.referenced_as]
+granted_skill_id = "Granted by"
+character_whitelist = "Items only it may equip"
+
+[[kind]]
+id = "skill"
+table = "skill"
+about = "Every skill: its category, range and element, the conditions it inflicts, the stats it changes, and its cost."
+exists = "name"
+title = "name"
+text = ["short_description"]
+fields = [
+    "category", "min_range_encoded", "max_range_encoded", "attack_element", "status_levels", "combat_stat_deltas",
+    "resource_deltas", "proc_chance_percent",
+]
+filters = ["category", "attack_element"]
+
+[[kind.description]]
+name = "description"
+script = { field = "handler_script_id" }        # SKMES or a `$n$SKMES`, as CHMENU and INFOIT call it
+seed = { current_skill_id = "key" }
+
+[kind.notes]
+status_levels = "The level of each condition it inflicts."
+resource_deltas = "HP healed, on a healing skill, and SP (a negative number is its cost)."
+proc_chance_percent = "How often a passive skill acts."
+
+[kind.labels]
+min_range_encoded = "Min range"
+max_range_encoded = "Max range"
+status_levels = "Conditions"
+proc_chance_percent = "Chance"
+
+[[kind]]
+id = "stage"
+table = "stage_catalog"
+about = "Every stage: its number, what the select screen says of it, its goals, the enemies on it and what a clear gives."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "number_major", "number_minor", "extra_dungeon_flag", "main_progression_flag",
+    "clear_base_spendable_point_reward", "clear_coin_quantities",
+]
+filters = ["extra_dungeon_flag", "main_progression_flag"]
+qualifiers = ["number_major", "number_minor"]
+
+# SELSTAGE draws three lines of the six: the first three before the stage is cleared, the last three after.
+[kind.text_blocks.description]
+before_clear = [0, 2]
+after_clear = [3, 5]
+
+[kind.notes]
+number_major = "With the minor number, the stage's number; a negative one reads EX, and both zero is an event played without a map."
+extra_dungeon_flag = "One of the eight EX dungeons."
+main_progression_flag = "After a clear, the select screen moves to the first uncleared main stage."
+clear_base_spendable_point_reward = "The points a clear gives before the turn and party scoring scales them."
+clear_coin_quantities = "The bronze, silver and gold coins a clear gives."
+
+[kind.labels]
+number_major = "Number"
+number_minor = "Minor number"
+extra_dungeon_flag = "EX dungeon"
+main_progression_flag = "Main stage"
+clear_base_spendable_point_reward = "Points for a clear"
+clear_coin_quantities = "Coins for a clear"
+goal = "Goal"
+
+# The stage's loader: FIELD calls stage_loader_script_ids[current_stage_id] (STINIT for every shipped stage) and the
+# enemy slots and the goals hold the stage as authored at himegari.stage.after_loader, before FIELD places anything.
+[[loader]]
+scope = "stage"
+keys = "stage"
+script = "FIELD"
+seed = { current_stage_id = "key" }
+read_at = "himegari.stage.after_loader"
+
+[loader.tables.enemy]
+exists = "unit_id"
+fields = ["unit_id", "min_level", "max_level", "first_clear_only"]
+labels = { unit_id = "Unit", first_clear_only = "First clear only" }
+notes = { first_clear_only = "The slot is not placed once the stage has been cleared." }
+
+[loader.tables.goal]
+exists = "victory_condition_1"
+text = ["victory_condition_1", "victory_condition_2", "defeat_condition_1", "defeat_condition_2"]
+labels = { victory_condition_1 = "Victory", victory_condition_2 = "Victory, also", defeat_condition_1 = "Defeat", defeat_condition_2 = "Defeat, also" }
+
+[kind.referenced_as]
+"enemy.unit_id" = { heading = "Enemy on stages", details = ["number_major", "number_minor", "enemy.min_level", "enemy.max_level"] }

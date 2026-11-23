@@ -18,7 +18,11 @@ a table's `aliases` and its `[table.field_aliases]` (old name = current field), 
 A table's `[table.refs]` says which of its integer fields hold the ids of another table's records, or packed resource
 ids (`picture`), every element of the field, 0 for none (game data export spec §5.3); the JSON's `tables` and the
 reference doc carry them. A reference whose record is made of two fields is `{ table, times, plus }`: the record is the
-field's value times `times`, plus field `plus`'s value at the same element (Arterial's cards, row × 30 + slot); one
+field's value times `times`, plus field `plus`'s value at the same element (Arterial's cards, row × 30 + slot), and
+with `any` a plus of that value names every record of the row, value × times to value × times + times - 1 (an Arterial
+item that any card of a row may carry: `{ table, times, plus, any = 0 }`); one whose value picks where its records
+start is `{ table, bases, plus }`: a value that `bases` lists names its base plus the plus field's value, and another
+value names none (a Kamidori map object of type 32 or 33 uses dig table 0 or 100 plus its payload); one
 whose two cells are a pair of elements of one field is `{ table, times, pairs = true }`: element 2k's value times
 `times`, plus element 2k + 1's, names a record (a battle's leader cards, a row and a slot for each side). The JSON
 writes its table under `refs` and the rest under `ref_keys`. A table's `records_of` names the table whose record r its
@@ -326,7 +330,9 @@ def split_refs(refs: dict) -> tuple[dict, dict]:
     `{ times, plus }` under `ref_keys`."""
     targets = {field: ref_target(value) for field, value in refs.items()}
     keys = {field: ({"times": value.get("times"), "pairs": True} if value.get("pairs")
-                    else {"times": value.get("times"), "plus": value.get("plus")})
+                    else {"bases": value.get("bases"), "plus": value.get("plus")} if "bases" in value
+                    else {"times": value.get("times"), "plus": value.get("plus")}
+                    | ({"any": value["any"]} if "any" in value else {}))
             for field, value in refs.items() if isinstance(value, dict)}
     return targets, keys
 
@@ -362,10 +368,26 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
             target = ref_target(value)
             if isinstance(value, dict):
                 paired = set(value) == {"table", "times", "pairs"}
-                if set(value) != {"table", "times", "plus"} and not paired:
+                based = set(value) == {"table", "bases", "plus"}
+                if set(value) - {"any"} != {"table", "times", "plus"} and not paired and not based:
                     errors.append(f"{tag}: refs gives {field} a two-field reference, which must be "
-                                  f"{{ table, times, plus }} or {{ table, times, pairs = true }}")
+                                  f"{{ table, times, plus }}, {{ table, times, plus, any }}, {{ table, bases, plus }} "
+                                  f"or {{ table, times, pairs = true }}")
                     continue
+                # `bases`: the values that name a record, each with the record its plus counts from (a Kamidori map
+                # object's type 32 or 33 picks dig table 0 or 100, which its payload adds to).
+                if based:
+                    bases = value["bases"]
+                    if not isinstance(bases, dict) or not bases or not all(
+                            key.lstrip("-").isdigit() and isinstance(base, int) and not isinstance(base, bool)
+                            and base >= 0 for key, base in bases.items()):
+                        errors.append(f"{tag}: refs gives {field} bases {bases!r}, which must be a table of value = "
+                                      f"the record a value's plus counts from, whole numbers")
+                    value = {**value, "times": 1}
+                # `any`: the plus value that names every record of the row (an item any card of a row may carry).
+                if "any" in value and (not isinstance(value["any"], int) or isinstance(value["any"], bool)):
+                    errors.append(f"{tag}: refs gives {field} any {value['any']!r}, which must be the whole number a "
+                                  f"plus has when the value names every record of its row")
                 if target == REF_PICTURE:
                     errors.append(f"{tag}: refs gives {field} a two-field reference to {REF_PICTURE}, which is one "
                                   f"cell")
@@ -777,6 +799,11 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                     target = ref_target(value)
                     key = ("" if not isinstance(value, dict)
                            else f" (element 2k × {value['times']} + element 2k + 1)" if value.get("pairs")
+                           else " (" + ", ".join(f"{v} from {base}" for v, base in value["bases"].items())
+                                + f", + {value['plus']}; another value names none)" if "bases" in value
+                           else f" (× {value['times']} + {value['plus']}; a {value['plus']} of {value['any']} names "
+                                f"every record from × {value['times']} to × {value['times']} + {value['times'] - 1})"
+                           if "any" in value
                            else f" (× {value['times']} + {value['plus']})")
                     row += " pictures |" if target == REF_PICTURE else f" `{target}`{key} |" if target else " |"
                 L.append(row)

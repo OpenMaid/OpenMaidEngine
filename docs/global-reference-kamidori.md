@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/globals-kamidori.toml by tools/globals_build.py --build -->
 # Global Variable Reference — kamidori (generated)
 
-8306 globals (642 curated, 7664 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
+8304 globals (642 curated, 7662 auto shape-inferred). Source of truth: `vm-map/globals-kamidori.toml`.
 
 ## Tables
 
@@ -181,6 +181,27 @@ The current stage's enemy slots. STINIT, then each append's $n$STINIT, the stage
 | battle_routine_set_ids | stage_enemy_battle_routine_set_ids | `0x140afe` | `int[30][3]` | |
 | required_story_flags | stage_enemy_required_story_flags | `0x140b58` | `int[30][7]` | |
 | forbidden_story_flags | stage_enemy_forbidden_story_flags | `0x140c2a` | `int[30][5]` | |
+
+### stage_object[50]
+
+Built by: `stage`.
+
+The current stage's map objects, slots 1 to 49 (SETOBJ@0x2a and SELSTAGE@0x17d4 walk them). STINIT, then each append's $n$STINIT, write them with the rest of the stage. An object's type is an OBINIT type (the object_type_* arrays). A 採取 point (type 0x20) or 発掘 point (type 0x21) gathers from dig table (type - 0x20) * 100 + primary_param: SELSTAGE@0x1825 lists that table's items on the stage select screen, and FIELD@0x897e rolls from it secondary_param times when the point is used. A data file reaches it through the stage scope.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| tile_x | stage_object_tile_x | `0x140446` | `int[50]` | |
+| tile_y | stage_object_tile_y | `0x140478` | `int[50]` | |
+| type_id | stage_object_type_id | `0x1404aa` | `int[50]` | `dig_table` (32 from 0, 33 from 100, + primary_param; another value names none) |
+| base_value | stage_object_base_value | `0x1404dc` | `int[50]` | |
+| primary_param | stage_object_primary_param | `0x14050e` | `int[50]` | |
+| secondary_param | stage_object_secondary_param | `0x140540` | `int[50]` | |
+| reinforcement_interval_turns | stage_object_reinforcement_interval_turns | `0x140572` | `int[50]` | |
+| reinforcement_spawn_limit | stage_object_reinforcement_spawn_limit | `0x1405a4` | `int[50]` | |
+| difficulty_mask | stage_object_difficulty_mask | `0x1405d6` | `int[50]` | |
+| required_story_flags | stage_object_required_story_flags | `0x140608` | `int[50][7]` | |
+| forbidden_story_flags | stage_object_forbidden_story_flags | `0x140766` | `int[50][5]` | |
+| use_story_flags_by_faction | stage_object_use_story_flags_by_faction | `0x140860` | `int[50][5]` | |
 
 ### stage_reward[4]
 
@@ -403,6 +424,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 |---|---|
 | enemy | stage_enemy |
 | reward | stage_reward |
+| object | stage_object |
 
 ## choice-output
 
@@ -602,13 +624,13 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x140432` | stage_map_texture_asset_overrides | high | investigation | SETMAPTEX@0xc7..0x125 loads each slot into surface 0x52+slot; DRAWMAP selects surfaces by terrain texture slot. Same contract as Himegari stage_map_texture_asset_overrides. |
 | `0x140446` | stage_object_tile_x | high | investigation | DRAWOBJ@0x10b draws at x*100+50 - width/2; FIELD@0x8b4 indexes the 27x27 tile grid 0x508de; CALCOCC/MVSEEK/RTN_M* use it for occupancy and targeting. |
 | `0x140478` | stage_object_tile_y | high | investigation | Pair of stage_object_tile_x (DRAWOBJ@0x135, FIELD@0x8c0, CALCOCC, MVSEEK). |
-| `0x1404aa` | stage_object_type_id | high | investigation | SETOBJ@0x2a iterates slots with a type; SETMAPTEX@0x156 loads the type's sprite (0x2a363e); DRAWOBJ, CHECKOBJ, CALCOCC, FIELD read OBINIT properties through it. |
+| `0x1404aa` | stage_object_type_id | high | investigation | SETOBJ@0x2a iterates slots with a type; SETMAPTEX@0x156 loads the type's sprite (0x2a363e); DRAWOBJ, CHECKOBJ, CALCOCC, FIELD read OBINIT properties through it. Types 0x20 (採取ポイント) and 0x21 (発掘ポイント) gather from a dig table (SELSTAGE@0x17f8, FIELD@0x897e). Values: 32 Gathering point, 33 Excavation point. |
 | `0x1404dc` | stage_object_base_value | high | investigation | FIELD@0xa8e2/0xa910 sums it over all / player-owned type-1 objects for stage_defeat_base_loss_mode 2 and 3. |
 | `0x14050e` | stage_object_primary_param | high | investigation | FIELD@0x83e seeds the persistent object state 0x43655[stage][slot] from it for draw_class-1 types on a first visit; CHECKOBJ@0x1f3 (teleport dest x), @0x29a (chest item vs inventory), @0x2db (sealed-door flag), @0x3b9 (hazard faction). |
-| `0x140540` | stage_object_secondary_param | med | investigation | CHECKOBJ@0x208 (teleport destination y occupancy check); FIELD@0x7a49.. reads it when an object is used (item quantity / harvest grade); RTN_M004/005/011/012 read it for AI object targeting. |
+| `0x140540` | stage_object_secondary_param | med | investigation | CHECKOBJ@0x208 (teleport destination y occupancy check); FIELD@0x7a49.. reads it when an object is used (item quantity / harvest grade); RTN_M004/005/011/012 read it for AI object targeting. On a gathering point (type 0x20 or 0x21), FIELD@0x89ad adds it to dig_pending_gather_counts[its dig table]: how many materials DIG rolls for a use. |
 | `0x140572` | stage_object_reinforcement_interval_turns | high | investigation | FIELD@0x9cf7..0x9d98: spawns from the object when (turn - activation turn 0x50e90) / interval exceeds the spawned count 0x4f9a9; FIELD@0x9e58 uses it as the activation turn of type-27 (異界の門). |
 | `0x1405a4` | stage_object_reinforcement_spawn_limit | high | investigation | FIELD@0x9d05 stops spawning once the per-object count 0x4f9a9 reaches it. |
-| `0x1405d6` | stage_object_difficulty_mask | high | investigation | SETOBJ@0x4d: check-bit against 0x320b; clear bit = object not placed. |
+| `0x1405d6` | stage_object_difficulty_mask | high | investigation | SETOBJ@0x4d: check-bit against 0x320b, the difficulty, as stage_enemy_difficulty_mask is (FIELD@0x4aed); clear bit = object not placed. Bits: bit k stands for `labyrinth_difficulty` value k. |
 | `0x140608` | stage_object_required_story_flags | high | investigation | SETOBJ@0xcc and SELSTAGE: any positive entry whose 0x50d[flag-1]!=1 suppresses the object. |
 | `0x140766` | stage_object_forbidden_story_flags | high | investigation | SETOBJ@0x12d and SELSTAGE: any entry whose flag is set suppresses the object. |
 | `0x140860` | stage_object_use_story_flags_by_faction | high | investigation | FIELD@0x2e71 and @0x73ff: when a unit of faction f uses the object, sets 0x50d[value-1]=1 (e.g. 8275 = gather done), then increments the use counter 0x37305. |
@@ -661,9 +683,9 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x1f7efe` | battle_routine_provider_selectors | high | investigation | RTINIT bank 14 (root 0x14d09e + bank*50000). BTRTN@0x0015a dispatches via local table 0xa+n. |
 | `0x20424e` | battle_routine_activation_percents | high | investigation | RTINIT bank 15 (root 0x14d09e + bank*50000). BTRTN@0x002d3 compares it with the random stream 0x4f9dc. |
 | `0x21059e` | battle_routine_parameter_1 | med | investigation | RTINIT bank 16 (root 0x14d09e + bank*50000). RTN_B004@0x00000 selects that skill (0x60c4a) if it is in the usable list 0x52c3a. |
-| `0x25997e` | battle_routine_use_limits | high | investigation | RTINIT bank 22 (root 0x14d09e + bank*50000). BTRTN@0x0027f compares it with 0x629c8[unit][step]. |
-| `0x265cce` | battle_routine_required_story_flag_ids | high | investigation | RTINIT bank 23 (root 0x14d09e + bank*50000). BTRTN@0x001b6. Occupies banks 23..25. |
-| `0x28a6be` | battle_routine_forbidden_story_flag_ids | high | investigation | RTINIT bank 26 (root 0x14d09e + bank*50000). BTRTN@0x00230. Occupies banks 26..28. |
+| `0x24d62e` | battle_routine_use_limits | high | investigation | RTINIT bank 21 (root 0x14d09e + bank*50000), the map routines' bank 7 fourteen banks on. BTRTN@0x0027f compares it with 0x629c8[unit][step]. No battle routine sets it at the boot. |
+| `0x25997e` | battle_routine_required_story_flag_ids | high | investigation | RTINIT bank 22 (root 0x14d09e + bank*50000). BTRTN@0x001b6 reads [routine][3 * step + i]. Occupies banks 22..24. No battle routine sets it at the boot. |
+| `0x27e36e` | battle_routine_forbidden_story_flag_ids | high | investigation | RTINIT bank 25 (root 0x14d09e + bank*50000). BTRTN@0x00230 reads [routine][3 * step + i]. Occupies banks 25..27, which end where bank 28's tables (LAINIT, OBINIT, HAINIT, CDINIT2, DIINIT, EBINIT) begin. No battle routine sets it at the boot. |
 | `0x2a2d9a` | map_neighbor_dx | high | investigation | INIT2@0x1da inline array. SETROOM@0x313, MVSEEK@0x287 and DRAWMAP@0xfa1 add it to a tile x (and 2*x+dx to reach the edge cell between two tiles). |
 | `0x2a2d9f` | map_neighbor_dy | high | investigation | INIT2@0x1df inline array, paired with map_neighbor_dx by SETROOM, MVSEEK and DRAWMAP. |
 | `0x2a3511` | terrain_texture_slot_indices | high | investigation | DRAWMAP@0x304 picks stage_map_texture_asset_overrides[slot] (0x140432) and draws surface 0x52+slot (DRAWMAP@0x37e); DRAWMAP@0x3ea/0x45c draws a seam where neighbouring tiles of the same room use different slots. |
@@ -727,7 +749,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2b5af4` | unit_bestiary_listed | high | investigation | INFO3@0x00b10 and INFO5@0x00707 include only ids with this flag in the bestiary list. Values: 1 Yes. |
 | `0x2b5edc` | unit_race | high | investigation | INFO5@0x00d38 draws 0x61fe[race]; SETARMSTATE@0x00124 tests item race mask 0x2e60c8 bit race; CALCDMG/CALCILL/ADDILLSUB read it for race-dependent effects. Names: `species_names`, element 0 naming 1. |
 | `0x2b62c4` | unit_sex | high | investigation | SETARMSTATE@0x00161 checks bit <sex> of the item gender mask 0x2e6898 (Will's clothes mask 2 = bit1, Yuela's 4 = bit2); HISTORY@0x0097b: a backlog line is replayable when the voice slot preview is nonzero and (slot>0 or sex==2), i.e. unregistered female speakers fall back to the extra slot 0. Values: 1 Male, 2 Female, 3 Other or none. |
-| `0x2b66ac` | unit_boss_class | med | investigation | FIELD@0x08d6b takes abs() of both combatants' values and compares (==4 special); FIELD@0x0abef tests >0; CALCDMG@0x00821 adds a per-class bonus row; DRAWCHSTATE@0x000f5 draws a boss marker when nonzero. |
+| `0x2b66ac` | unit_boss_class | high | investigation | Every reader takes nonzero as a boss. DRAWCHSTATE@0x000f5 draws the boss marker. CALCILL@0x0002e lets a condition whose condition_can_affect_bosses is 0 pass a boss by. CALCDMG@0x00821 adds passive skill 58's bonus against a boss (skill_combat_stat_deltas[58]). FIELD@0x08d6b takes the larger abs() of the two combatants' classes for the battle's music, which BTL@0x00fdd plays: 4 plays BGM 8, 1 to 3 play BGM 0x20 + class (33 to 35), and 0 the common battle music (32 or 31). FIELD@0x0abef: a stage whose stage_victory_defeat_unit is -2 is won when no hostile unit with a class above 0 is left, so a unit of -1 is a boss that victory does not wait for. Values: -1 Boss not needed to win, BGM 33, 1 Boss, BGM 33, 2 Boss, BGM 34, 3 Boss, BGM 35, 4 Boss, BGM 8. 0 means none. |
 | `0x2b6a94` | unit_canonical_character_id | high | investigation | Variant-to-character normalization used before every persistent-character index: UNITECH@0x0002a, SETCH@0x0000c, ADDEXP@0x0000c, COMMITBTL@0x00130, BTL@0x04703, INFO5@0x01100 etc. (~45 scripts). Result is stored in 0x2d2845. |
 | `0x2b6e7c` | unit_cutin_element | med | investigation | CALCREVISE@0x000e1 copies it to battle slot 0x53d10 (costume item field 0x2df368 overrides, CALCREVISE@0x001e2); BTL@0x0443a picks a cut-in background movie from a local table indexed by it. |
 | `0x2b7264` | unit_element_resistance_levels | high | investigation | INFO5@0x00f2a draws 0x621a[5+v] for k=1..7 beside element names 0x6212+k; SETEN@0x00501 stores 5+v in battle slot 0x53d42; UNITECH@0x0020f seeds character_resistances (0x643f5). Columns: 1=physical, 2=earth, 3=cold, 4=fire, 5=lightning, 6=holy, 7=dark. Column names: `element_names`, element 0 naming column 0. Names: `affinity_level_names`, element 0 naming -5. |
@@ -8729,8 +8751,6 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x13f880` | — | med | auto-shape | record-table[stride 100] |
 | `0x13fa10` | — | med | auto-shape | record-table[stride 100] |
 | `0x1403ea` | — | med | auto-shape | record-table[stride 4] |
-| `0x24d62e` | — | med | auto-shape | record-table[stride 50] |
-| `0x27e36e` | — | med | auto-shape | record-table[stride 150] |
 | `0x2a2d96` | — | low | auto-shape | index/counter? |
 | `0x2a2da7` | — | med | auto-shape | record-table[stride 14] |
 | `0x2a2de1` | — | low | auto-shape | index/counter? |

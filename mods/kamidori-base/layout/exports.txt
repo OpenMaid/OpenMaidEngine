@@ -659,6 +659,7 @@ table recipe
 table skill
 table stage_catalog
 table stage_enemy
+table stage_object
 table stage_reward
 table unit
 table world_area
@@ -863,6 +864,18 @@ field stage_enemy.spawn_object_slot
 field stage_enemy.spawn_tile_x
 field stage_enemy.spawn_tile_y
 field stage_enemy.unit_id
+field stage_object.base_value
+field stage_object.difficulty_mask
+field stage_object.forbidden_story_flags
+field stage_object.primary_param
+field stage_object.reinforcement_interval_turns
+field stage_object.reinforcement_spawn_limit
+field stage_object.required_story_flags
+field stage_object.secondary_param
+field stage_object.tile_x
+field stage_object.tile_y
+field stage_object.type_id
+field stage_object.use_story_flags_by_faction
 field stage_reward.condition_text
 field unit.auto_level_scale_divisor
 field unit.bestiary_description
@@ -916,4 +929,5 @@ field world_area.picture_asset_id
 field world_area.travel_days
 scope stage
 scope stage.enemy
+scope stage.object
 scope stage.reward

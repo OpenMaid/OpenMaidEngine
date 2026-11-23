@@ -205,8 +205,19 @@ drop_chance.drop_1 = 100   # 30
   `stage.previewed` is not raised: the report says so in a note, the part is still applied where the floor is played,
   and the preview lists the floor's own enemies.
 - **INFO's 獲得地点 view reads no enemy.** To find the floors whose dig points yield an item, it runs every stage's
-  loaders and reads the stages' objects, which no data file edits; it raises no event for those stages. Off a floor
-  (INFO opened from the town or the workshop) it raises no event at all and leaves `current_stage_id` at 1000.
+  loaders and reads the stages' objects; it raises no event for those stages, so it reads each floor's own objects,
+  not a file's edit of them. Off a floor (INFO opened from the town or the workshop) it raises no event at all and
+  leaves `current_stage_id` at 1000.
+- **A floor's map objects** are the `stage_object` table, named through the stage as its enemies are:
+  `stage.51.object.4` is stage 51's object slot 4 (slots 0 to 49, of which SETOBJ and SELSTAGE read 1 to 49). Its
+  fields are the reference's: `type_id` (an OBINIT object type, 0 for an empty slot), `tile_x` and `tile_y`,
+  `primary_param`, `secondary_param`, `base_value`, `reinforcement_interval_turns`, `reinforcement_spawn_limit`,
+  `difficulty_mask`, and three rows given by number: `required_story_flags` (columns 0 to 6),
+  `forbidden_story_flags` (0 to 4) and `use_story_flags_by_faction` (0 to 4). A 採取 point (type 32) or 発掘 point
+  (type 33) gathers from dig table (type - 32) × 100 + `primary_param`, rolling `secondary_param` materials a use
+  (FIELD@`0x897e`, `0x899f`). The part is applied with the stage's enemies, each time its loaders run, and none of the
+  table is saved; what a save keeps of an object is apart from it, its uses (`stage_object_use_counts`) and its state
+  (`stage_object_persistent_state`, which FIELD@`0x83e` seeds from `primary_param` on a floor's first visit).
 - **A stage's objective texts** are the `stage_reward` table, named through the stage as its enemies are:
   `stage.51.reward.2.condition_text` names the condition of stage 51's objective reward 2, in the order of
   `stage_catalog`'s `objective_money_rewards` and the other reward rows (records 0 to 3). STINIT writes records 1 to

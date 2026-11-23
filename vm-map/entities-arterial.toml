@@ -100,7 +100,7 @@ exists = "name"
 title = "name"
 text = ["text"]
 fields = [
-    "kind", "rarity", "price",
+    "kind", "rarity", "price", "card_row",
     "required_slots", "required_races", "excluded_races", "required_cost", "required_control", "required_attack",
     "required_hp", "required_leader_lp",
     "cost_bonus", "control_bonus", "attack_bonus", "hp_bonus", "leader_lp_bonus", "talent_id", "condition_id",
@@ -112,6 +112,7 @@ pictures = { icon = "picture.1" }
 [kind.labels]
 talent_id = "Talent"
 condition_id = "Condition"
+card_row = "Carried only by"
 required_races = "Races required"
 excluded_races = "Races barred"
 leader_lp_bonus = "Leader LP bonus"
@@ -127,10 +128,12 @@ kind = "A card carries an equipment (装備) item; a consumable (消費) one is 
 talent_id = "The talent the item gives the card that carries it."
 condition_id = "The condition the consumable item gives its target in battle."
 required_races = "The card must be of one of these races."
+card_row = "The cards that may carry it, every card of one row or one card of it (INIT2 takes it off any other)."
 
 [kind.referenced_as]
 talent_id = "Items that give it"
 condition_id = "Items that inflict it"
+card_row = "Items only some cards may carry"
 
 [[kind]]
 id = "condition"
