@@ -35,7 +35,8 @@ public static class GameDataExporter
         var report = new ExportReport();
         var explicitPictures = new ExplicitPictures(declarations.ExplicitPictures);
         GameSession boot = Boot(inputs, report);
-        List<Translation> languages = [.. inputs.Languages.Select(language => new Translation(language, inputs.Messages))];
+        List<Translation> languages = [.. inputs.Languages.Select(language => new Translation(
+            language, inputs.Messages, declarations.TextOverrides.GetValueOrDefault(language.Tag)))];
         report.Languages.AddRange(languages.Select(language => language.Report));
 
         var kinds = new List<ExportKind>();
@@ -733,7 +734,8 @@ public static class GameDataExporter
     /// where the registry names them and by number otherwise, as a data file must; a refused element is left out.
     /// </summary>
     /// <summary>The second cell of each published two-field reference (export plan §5): its <c>plus</c> field whole, or
-    /// for a paired one the column after the published one. An offset reference has none.</summary>
+    /// for a paired one the column after the published one, and a reference's zero field (the field that says where a
+    /// 0 names record 0). An offset reference has no second cell.</summary>
     private static IEnumerable<FieldLayout> KeyPartners(IReadOnlyList<FieldLayout> published, IReadOnlyList<FieldLayout> tableFields,
                                                         IReadOnlyList<FieldLayout> joinedFields, TableLayout table,
                                                         IReadOnlyDictionary<string, TableLayout> joins)
@@ -741,7 +743,12 @@ public static class GameDataExporter
         foreach (FieldLayout field in published)
         {
             TableLayout owner = field.Joined is { } joined ? joins[joined] : table;
-            if (!owner.RefKeys.TryGetValue(field.Field, out RefKey? key) || key.Offset != null) continue;
+            if (!owner.RefKeys.TryGetValue(field.Field, out RefKey? key)) continue;
+            // The field that says where a 0 names record 0 (a Kamidori item's category), which a modder changes too.
+            if (key.Zero?.Field is { } on)
+                yield return (field.Joined == null ? tableFields : joinedFields)
+                    .First(other => other.Field == on && other.Joined == field.Joined && other.Column == null);
+            if (key.Offset != null || key.Zero != null) continue;
             if (key.Pairs)
             {
                 if (field.Column is { } column) yield return field with { Column = column + 1 };
@@ -879,12 +886,14 @@ public static class GameDataExporter
     }
 
     /// <summary>One language of the export (spec §6.4, plan §4.6): presenters as the port's, with the same catalogs
-    /// and message tables, and its report.</summary>
-    private sealed class Translation(ExportLanguage language, ITextMessageIndex? messages)
+    /// and message tables, the declarations' overrides of its table strings (<c>[export] text_overrides</c>), and its
+    /// report.</summary>
+    private sealed class Translation(ExportLanguage language, ITextMessageIndex? messages,
+                                     IReadOnlyDictionary<string, string>? overrides)
     {
         private readonly TextPresenter _strings = new(language.Text, messages: messages);
 
-        public LanguageReport Report { get; } = new(language);
+        public LanguageReport Report { get; } = new(language, overrides?.Keys ?? []);
         public string Tag => language.Tag;
 
         /// <summary>A presenter that logs to <paramref name="misses"/>, for one description run.</summary>
@@ -895,6 +904,12 @@ public static class GameDataExporter
         public string? String(string text, TextSite origin)
         {
             Report.Strings++;
+            // An override is the declarations' text, not the package's: it stands wherever the string does.
+            if (overrides?.GetValueOrDefault(text) is { } overridden)
+            {
+                Report.Overridden(text);
+                return overridden;
+            }
             if (_strings.Present(text, origin, origin) is { Entry: not null } presented)
             {
                 Report.StringsTranslated++;
@@ -1002,17 +1017,32 @@ public static class GameDataExporter
     /// null for a reference without <c>any</c>. With <c>bases</c> (<see cref="RefKey.Bases"/>), a value names its base
     /// plus the plus field's value, and another value none. With an offset (<c>{ table, offset }</c>,
     /// <see cref="RefKey.Offset"/>), a value above 0 names itself plus the offset, and one that names no record above 0
-    /// none.</summary>
+    /// none. With <c>zero</c> (<see cref="RefKey.Zero"/>), on a plain or an offset reference, a 0 so named is record 0
+    /// where the zero's field holds one of its values (everywhere for <c>zero = true</c>), and none is -1: a value of 0
+    /// or below before the offset or below 0 after it, and a 0 elsewhere. The zero's field withheld withholds the 0.
+    /// </summary>
     private static (long?[] Ids, long?[]? Rows) KeyedIds(FieldLayout field, IReadOnlyList<FieldLayout> tableFields,
                                                        RefKey key, Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
     {
-        if (key.Offset is { } offset)
+        if (key.Offset is not null || key.Zero is not null)
         {
+            long offset = key.Offset ?? 0;
+            // Whether a 0 names record 0 on this record: true, false, or null where the zero's field is withheld.
+            bool? zeroNames = null;
+            if (key.Zero is not { Field: { } on } zero) zeroNames = key.Zero is not null;
+            else if (at(tableFields.First(other => other.Field == on && other.Column == null), 0) is var (onCell, onRefused)
+                     && !onRefused)
+                zeroNames = zero.Values.Contains(onCell.Number);
             var named = new long?[field.Elements];
             for (int element = 0; element < field.Elements; element++)
             {
                 var (value, refused) = at(field, element);
-                named[element] = refused ? null : value.Number <= 0 ? value.Number : Math.Max(value.Number + offset, 0);
+                long? id = refused ? null
+                    : key.Offset is null ? value.Number
+                    : value.Number <= 0 ? (key.Zero is null ? value.Number : -1)
+                    : Math.Max(value.Number + offset, key.Zero is null ? 0 : -1);
+                if (key.Zero is not null && id == 0) id = zeroNames switch { true => 0, false => -1, null => null };
+                named[element] = id;
             }
             return (named, null);
         }
@@ -1052,7 +1082,7 @@ public static class GameDataExporter
         var ids = kinds.ToDictionary(kind => kind.Declaration.Id, kind => kind.Entities.Select(entity => entity.Id).ToHashSet(),
                                      StringComparer.Ordinal);
         void Link(ExportKind kind, ExportEntity entity, string table, string name, int first, long?[] values,
-                  long?[]? rows = null, int times = 0)
+                  long?[]? rows = null, int times = 0, bool zero = false)
         {
             // A row reference's element names every record of its row that is an entity (export plan §5): an item that
             // every card of a row may carry refers to each of them, under the one element.
@@ -1081,8 +1111,9 @@ public static class GameDataExporter
             for (int element = 0; element < values.Length; element++)
             {
                 // 0 is none, and so is a negative value: no record has a negative id, and the games write -1 for none
-                // too (Kamidori's stage_required_party_unit_ids; export plan §5).
-                if (values[element] is not { } id || id <= 0) continue;
+                // too (Kamidori's stage_required_party_unit_ids; export plan §5). A reference with zero has named its
+                // nones -1 (KeyedIds), so its 0 is record 0: a Kamidori weapon's attack element 0, 無属.
+                if (values[element] is not { } id || id < 0 || id == 0 && !zero) continue;
                 if (!kindOfTable.TryGetValue(table, out string? toKind))
                 {
                     var unpublished = (kind.Declaration.Id, name, table);
@@ -1102,11 +1133,11 @@ public static class GameDataExporter
             foreach (FieldLayout field in kind.Published)
             {
                 if (!kind.TableOf(field).Refs.TryGetValue(field.Field, out string? target) || target == "picture") continue;
-                int times = kind.TableOf(field).RefKeys.GetValueOrDefault(field.Field)?.Times ?? 0;
+                RefKey? key = kind.TableOf(field).RefKeys.GetValueOrDefault(field.Field);
                 foreach (ExportEntity entity in kind.Entities)
                     Link(kind, entity, target, field.Name, 0, entity.KeyedRefs.GetValueOrDefault(field.Name)
                                                               ?? entity.Values.First(value => value.Field == field.Name).Values,
-                         entity.KeyedRows.GetValueOrDefault(field.Name), times);
+                         entity.KeyedRows.GetValueOrDefault(field.Name), key?.Times ?? 0, key?.Zero is not null);
             }
             // A loaded table's references are the key entity's (export plan §4.2): its field written <table>.<field>,
             // its index the record times the field's width plus the element.
@@ -1122,13 +1153,13 @@ public static class GameDataExporter
                         && table.Joins.Values.Any(join => join.Through.Name == field.Name))
                         continue;
                     string name = $"{table.Declaration.Name}.{field.Name}";
-                    int times = table.TableOf(field).RefKeys.GetValueOrDefault(field.Field)?.Times ?? 0;
+                    RefKey? key = table.TableOf(field).RefKeys.GetValueOrDefault(field.Field);
                     foreach (ExportEntity entity in kind.Entities)
                         foreach (ExportLoadedRow row in entity.Loaded.Where(row => row.Table == table.Declaration.Name))
                             Link(kind, entity, target, name, row.Record * field.Elements,
                                  row.KeyedRefs.GetValueOrDefault(field.Name)
                                  ?? row.Values.First(value => value.Field == field.Name).Values,
-                                 row.KeyedRows.GetValueOrDefault(field.Name), times);
+                                 row.KeyedRows.GetValueOrDefault(field.Name), key?.Times ?? 0, key?.Zero is not null);
                 }
         }
     }

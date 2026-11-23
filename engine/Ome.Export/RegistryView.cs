@@ -96,7 +96,11 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
 /// reference (<see cref="Offset"/>) names the value plus the offset.</summary>
 public sealed record RefKey(int Times, string? Plus)
 {
-    public bool Pairs => Plus is null && Offset is null;
+    public bool Pairs => Plus is null && Offset is null && Zero is null;
+
+    /// <summary>Where a 0 names record 0 instead of none (<c>zero</c>), or null for nowhere: a plain or offset reference
+    /// may have one. A Kamidori skill's attack element 1, less 1, is element 0, 無属, and so is a weapon's 0.</summary>
+    public RefZero? Zero { get; init; }
 
     /// <summary>What a value above 0 adds to name its record (<c>offset</c>), or null: a Himegari unit's summon flag
     /// less 1901 is its summoning stone's item id.</summary>
@@ -112,6 +116,11 @@ public sealed record RefKey(int Times, string? Plus)
     /// payload, one of type 33 from table 100 plus it, and another type from none.</summary>
     public IReadOnlyDictionary<long, long>? Bases { get; init; }
 }
+
+/// <summary>Where a reference's 0 names record 0 (<c>zero</c>): on every record (<paramref name="Field"/> null,
+/// <c>zero = true</c>), or on those whose one-cell field <paramref name="Field"/> holds one of
+/// <paramref name="Values"/> (a Kamidori item of a category that attacks).</summary>
+public sealed record RefZero(string? Field, IReadOnlySet<long> Values);
 
 /// <summary>A field as a declaration names it (<c>stats</c>, or one column, <c>graphic.face_CA_AA</c>): the cells it
 /// covers in each record. A field of a table the kind joins (<see cref="Joined"/>) is named <c>table.field</c>.</summary>
@@ -219,6 +228,10 @@ public sealed class RegistryView
                                     basePair => long.Parse(basePair.Name, CultureInfo.InvariantCulture),
                                     basePair => basePair.Value.GetInt64())
                                 : null,
+                            Zero = !pair.Value.TryGetProperty("zero", out JsonElement zero) ? null
+                                : zero.ValueKind == JsonValueKind.True ? new RefZero(null, new HashSet<long>())
+                                : new RefZero(zero.GetProperty("field").GetString(),
+                                              zero.GetProperty("values").EnumerateArray().Select(v => v.GetInt64()).ToHashSet()),
                         },
                         StringComparer.Ordinal)
                     : new Dictionary<string, RefKey>(StringComparer.Ordinal);

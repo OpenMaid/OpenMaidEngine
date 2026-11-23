@@ -1270,6 +1270,34 @@ public class GameDataExportTests
     }
 
     [Fact]
+    public void ATextOverrideGivesAStringItsTextInPlaceOfThePackagesAndOneUnusedIsReported()
+    {
+        // [export] text_overrides (export plan §5): English's 剣 is Blade wherever the string is, not the package's
+        // Sword; the source text stays, and French, which has no override, keeps its own. 杖 names no published string.
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportInputs game = WithDeclarations(Game(), Declarations.Replace(
+                "\"explicit_pictures\": [\"ICON07*\", \"NOPE*\"]}",
+                "\"explicit_pictures\": [\"ICON07*\", \"NOPE*\"], \"text_overrides\": {\"en\": {\"剣\": \"Blade\", \"杖\": \"Staff\"}}}",
+                StringComparison.Ordinal));
+            ExportResult result = GameDataExporter.Run(WithLanguages(game, Languages(root, game)));
+            ExportEntity sword = Entity(result, "item", 1);
+            Assert.Equal(("Blade", "剣", "Épée"), (Text(sword, "name", language: "en"), Text(sword, "name"),
+                                                   Text(sword, "name", language: "fr")));
+            LanguageReport english = result.Report.Languages[0], french = result.Report.Languages[1];
+            Assert.Equal((5, 1, 1), (english.Strings, english.StringsTranslated, english.StringsOverridden));
+            Assert.Equal(["杖"], english.UnusedOverrides);
+            Assert.Equal((0, 0), (french.StringsOverridden, french.UnusedOverrides.Count));
+            Assert.DoesNotContain(english.Misses, miss => miss.Source == "剣");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TheDatabaseHoldsEachLanguagesTextAndItsPackages()
     {
         string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
@@ -1468,6 +1496,39 @@ public class GameDataExportTests
         Assert.Empty(Entity(result, "item", 3).Refs);
         Assert.Equal([0L], Entity(result, "item", 1).KeyedRefs["granted_skill"]);
         Assert.Equal([-1L], Entity(result, "item", 3).KeyedRefs["granted_skill"]);
+    }
+
+    [Fact]
+    public void AReferenceWithZeroNamesRecordZeroWhereItsFieldHoldsOneOfItsValues()
+    {
+        ExportResult Run(RefKey key)
+        {
+            ExportInputs game = Game();
+            return GameDataExporter.Run(new ExportInputs
+            {
+                GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+                ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = Registry(skillKey: key),
+                Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+            });
+        }
+        // With offset -1 and zero = true (export plan §5): item 1's skill 1 names record 0, item 2's skill 2 skill 1, and
+        // item 3's -1 is none. A Kamidori skill's attack element 1 is element 0, 無属. Skill 0 is no entity: its link
+        // is a missing one, as any other's would be.
+        ExportResult always = Run(new RefKey(1, null) { Offset = -1, Zero = new RefZero(null, new HashSet<long>()) });
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 0)], Entity(always, "item", 1).Refs);
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], Entity(always, "item", 2).Refs);
+        Assert.Empty(Entity(always, "item", 3).Refs);
+        Assert.Equal([-1L], Entity(always, "item", 3).KeyedRefs["granted_skill"]);
+        // With offset -2 and zero where the category is 3: item 2 (category 3, skill 2) names record 0; item 1's skill
+        // 1, which the offset takes below 0, is none. Where the category is 2, item 2's 0 is none (a Kamidori garment's
+        // attack element 0).
+        ExportResult where = Run(new RefKey(1, null) { Offset = -2, Zero = new RefZero("category", new HashSet<long> { 3 }) });
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 0)], Entity(where, "item", 2).Refs);
+        Assert.Equal([-1L], Entity(where, "item", 1).KeyedRefs["granted_skill"]);
+        Assert.Equal([-1L], Entity(where, "item", 3).KeyedRefs["granted_skill"]);
+        ExportResult elsewhere = Run(new RefKey(1, null) { Offset = -2, Zero = new RefZero("category", new HashSet<long> { 2 }) });
+        Assert.Empty(Entity(elsewhere, "item", 2).Refs);
+        Assert.Equal([-1L], Entity(elsewhere, "item", 2).KeyedRefs["granted_skill"]);
     }
 
     // The loot whose skill is on skill 1's side (export plan §5): a part, which the site shows apart.

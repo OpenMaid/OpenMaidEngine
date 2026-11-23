@@ -366,8 +366,9 @@ where it is read; the game data export publishes it so, as a unit's title change
 | `0x545da[unit][3]` | current HP/SP/FS |
 
 The 14 stat columns are the same as EBINIT's (see Characters). The element and affinity columns are:
-1 物理, 2 地脈, 3 冷却, 4 火炎, 5 電撃, 6 神聖, 7 暗黒. Column 0 is unused. The orb items (each raises exactly one
-column) and the growth stones hard-coded in USEITEM@`0x16` prove both layouts.
+1 物理, 2 地脈, 3 冷却, 4 火炎, 5 電撃, 6 神聖, 7 暗黒. Column 0 is 無属's, element 0, which nothing sets (see
+"無属" under Combat pipeline). The orb items (each raises exactly one column) and the growth stones hard-coded in
+USEITEM@`0x16` prove both layouts.
 
 ### Items (ITINIT)
 
@@ -610,6 +611,24 @@ and the appends only add new ones.
 | CALCBTPARAM | per-side attack, defense, agility, hit and crit, then the affinity damage scale |
 | CALCDMG | picks the animation and the on-hit conditions |
 | CALCSCOPE | builds the list of usable skills |
+
+**無属 (element 0; the English patch's Omni) is resisted by no unit.** It is what an attack deals when its skill's
+element is 1 (`skill_attack_element_encoded` less 1) or, for a skill with none, when the weapon slot's item has 0
+(CALCBTPARAM@`0x16a`, `0x1ae`). That is 66 skills, the 76 weapons of categories 11 to 25 whose short descriptions say
+無属, and the 40 innate attacks of category 0 whose descriptions say 無 (ティアン頭① to ⑤ are category 0 too, but
+SC6990 puts them on Tian through CHANGECOS, as costumes). The battle code does not single it out: CALCBTPARAM@`0x78c`
+reads the defender's grade for the attack's element, column 0 included, and scales the attack by
+`affinity_damage_percent_by_level` (`0x7a3`). Nothing ever gives that column a grade other than the neutral 5:
+
+- SETEN@`0x501` sets an enemy's from `unit_element_resistance_levels`, 0 on every unit.
+- SETCH@`0x1ca` sets a party member's from `character_resistances`. UNITECH@`0x20f` copies that row from the unit
+  table, GAMESTART and GAMECLEAR carry it over in the shared profile, and CALCCC@`0x1df` adds a class change's
+  `class_change_resistance_deltas`, whose column 0 (`0x2d2017`) no script writes.
+- CALCREVISE@`0x26b` and `0x30f` add the equipment's rows: no item's `item_affinity_level_deltas` sets column 0, and
+  the growth bonuses are never authored.
+
+So every unit takes 無属 at 100%, neither resisting it nor weak to it, and the status screen leaves the column out
+(INFO5@`0xf2a` draws 1 to 7). A mod that sets column 0 would give it a grade like any other element's.
 
 **Open questions:**
 

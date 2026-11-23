@@ -412,6 +412,30 @@ def test_table_refs():
     check(any("icon offset 0, which must be a whole number other than 0" in e for e in errors),
           "lint_tables flags an offset of 0")
     check(any("rank an offset reference to picture" in e for e in errors), "lint_tables flags an offset to a picture")
+    # With zero, a 0 names record 0: everywhere, or where another field holds one of some values (a Kamidori weapon's
+    # attack element 0 is element 0, 無属, and a garment's is none).
+    keyed[0]["refs"] = {"rank": {"table": "weapon", "zero": {"field": "icon", "values": [0, 3, 4, 5]}},
+                        "icon": {"table": "weapon", "offset": -1, "zero": True}}
+    check(G.lint_tables(keyed, entries) == [], f"references with zero lint clean ({G.lint_tables(keyed, entries)})")
+    table = G.table_json(keyed[0])
+    check(table.get("refs") == {"icon": "weapon", "rank": "weapon"}
+          and table.get("ref_keys") == {"icon": {"offset": -1, "zero": True},
+                                        "rank": {"zero": {"field": "icon", "values": [0, 3, 4, 5]}}},
+          f"the JSON writes a reference's zero ({table})")
+    doc = G.emit_reference_md(merged, [keyed[0]], [])
+    check("`weapon` (value − 1) (1 names record 0)" in doc and "`weapon` (0 names record 0 where icon is 0, 3 to 5)" in doc,
+          "the reference doc says where 0 names record 0")
+    keyed[0]["refs"] = {"rank": {"table": "weapon", "zero": {"field": "weapon", "values": []}},
+                        "icon": {"table": "picture", "zero": "yes"},
+                        "slot": {"table": "weapon", "times": 3, "plus": "rank", "zero": True},
+                        "weapon": {"table": "weapon", "zero": {"field": "rank", "values": [1, 1]}}}
+    errors = G.lint_tables(keyed, entries)
+    for needle in ("rank zero on weapon, whose global hero_weapons is not one integer cell a record",
+                   "rank zero values [], which must be a list of whole numbers",
+                   "icon zero to picture, whose 0 is no picture", "icon zero 'yes', which must be true or",
+                   "slot zero beside plus, times; zero is for a reference of one cell",
+                   "weapon zero values [1, 1], which must be a list of whole numbers, each once"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
     keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 0, "plus": "rank"},
                         "icon": {"table": "picture", "times": 3, "plus": "icon"},
                         "rank": {"table": "weapon", "plus": "name"}}

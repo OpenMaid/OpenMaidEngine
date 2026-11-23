@@ -21,6 +21,12 @@ public sealed record ExportDeclarations(
     /// extension, a <c>*</c> matching any run of characters (<c>[export] explicit_pictures</c>).</summary>
     public IReadOnlyList<string> ExplicitPictures { get; init; } = [];
 
+    /// <summary>The export's text of a game string in a language, by language tag, in place of the language package's
+    /// (<c>[export] text_overrides</c>, export plan §5): Kamidori's 無属 is Omni in English, as the user chose, where
+    /// the English patch names the element " --".</summary>
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> TextOverrides { get; init; }
+        = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
+
     /// <summary>The derived scripts (<c>[export] derived</c>, export plan §5): what they write during the boot is play
     /// state worked out from the tables, withheld without a refusal.</summary>
     public IReadOnlyList<string> Derived { get; init; } = [];
@@ -52,6 +58,13 @@ public sealed record ExportDeclarations(
             root.GetProperty("kinds").EnumerateArray().Select(KindDeclaration.Parse).ToList())
         {
             ExplicitPictures = Strings(export, "explicit_pictures"),
+            TextOverrides = export.TryGetProperty("text_overrides", out JsonElement overrides)
+                ? overrides.EnumerateObject().ToDictionary(
+                    language => language.Name,
+                    language => (IReadOnlyDictionary<string, string>)language.Value.EnumerateObject()
+                        .ToDictionary(pair => pair.Name, pair => pair.Value.GetString()!, StringComparer.Ordinal),
+                    StringComparer.Ordinal)
+                : new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal),
             Derived = Strings(export, "derived"),
             Loaders = root.TryGetProperty("loaders", out JsonElement loaders)
                 ? loaders.EnumerateArray().Select(LoaderDeclaration.Parse).ToList()

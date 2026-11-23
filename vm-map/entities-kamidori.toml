@@ -39,6 +39,9 @@ text_scripts = ["ITMES", "SKMES", "VIMES", "CIMES", "FAMES"]
 # at every picture the declarations publish: the eleven clothing-damaged battle pictures (`CB…AAB`) and three of the
 # base battle art. Suggestive but covered art (CB551AAA, CB311AAA, CB016AAA) is not on the list.
 explicit_pictures = ["CB*AAB", "CB052AAA", "CB504AAA", "CB505AAA"]
+# The site's English for 無属, element 0, is Omni (the user, 2026-11-23): the English patch names the element " --", as
+# its status screens show it, but says "Omni" in every description of a weapon or skill that deals it.
+text_overrides = { en = { "無属" = "Omni" } }
 
 [[kind]]
 id = "item"
@@ -62,6 +65,7 @@ qualifiers = ["category"]
 pictures = { icon = "icon_asset_id", furniture = "furniture_sprite_asset_id" }
 
 [kind.notes]
+attack_element = "The element its attack deals. Omni (無属) is the one no unit resists or is weak to: it always deals full damage."
 price = "Buy is what a shop charges for it, sell what a vendor pays for it, and retail the base price it sells for in the player's own shop."
 affinity_level_deltas = "How it changes each element's resistance while equipped. The game names a change by the grade that many steps past the middle one, as it names a unit's resistance."
 condition_level_deltas = "The level it changes each condition by: -5 clears the condition, and a positive number inflicts it or raises it."
@@ -179,6 +183,7 @@ pictures = { icon = "icon_asset_id" }
 
 [kind.notes]
 required_weapon_category_mask = "The skill is offered only to a unit whose weapon is one of these."
+attack_element_encoded = "The element it attacks with; a skill without one takes its weapon's. Omni (無属) is the one no unit resists or is weak to: it always deals full damage."
 condition_levels = "The level of each condition it inflicts."
 resource_deltas = "HP (the amount healed, on a healing skill), SP (a negative number is its cost) and FS."
 
@@ -442,12 +447,11 @@ seed = { current_vocabulary_id = "key" }
 [[kind]]
 id = "element"
 table = "element"
-about = "The elements: the items and skills that attack with each, the equipment that changes its resistance, and its terrain."
+# Element 0, 無属 (Omni), is the one no unit resists or is weak to (docs/kamidori-data-tables.md, Combat pipeline).
+# A weapon's or an innate attack's 0 names it, and a skill's 1; see the registry's item and skill refs.
+about = "The elements: the items and skills that attack with each, the equipment that changes its resistance, and its terrain. No unit resists Omni or is weak to it."
 exists = "name"
 title = "name"
-# Element 0, 無属, the non-elemental, is one no reference reaches (a value of 0 is none): an item's 0 is 無属 on the
-# items that attack and nothing on the rest, and a skill's 無属 shows as the word. Backlog, "Kamidori's field tables".
-key_range = [1, 7]
 
 [[kind]]
 id = "terrain"

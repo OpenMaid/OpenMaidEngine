@@ -24,7 +24,10 @@ item that any card of a row may carry: `{ table, times, plus, any = 0 }`); one w
 start is `{ table, bases, plus }`: a value that `bases` lists names its base plus the plus field's value, and another
 value names none (a Kamidori map object of type 32 or 33 uses dig table 0 or 100 plus its payload); one
 whose two cells are a pair of elements of one field is `{ table, times, pairs = true }`: element 2k's value times
-`times`, plus element 2k + 1's, names a record (a battle's leader cards, a row and a slot for each side). The JSON
+`times`, plus element 2k + 1's, names a record (a battle's leader cards, a row and a slot for each side). A reference of
+one cell, `{ table }` or `{ table, offset }`, may add `zero`, for a 0 that names record 0 instead of none: `zero = true`
+on every record, `zero = { field, values }` on the records whose one-cell field `field` holds one of `values`, a 0
+elsewhere still none (a Kamidori weapon's attack element 0 is element 0, 無属, and a garment's is none). The JSON
 writes its table under `refs` and the rest under `ref_keys`. A table's `records_of` names the table whose record r its
 record r belongs to (Arterial's `party_member`, kept for each character by its character id); the JSON and the reference
 doc carry it.
@@ -327,15 +330,63 @@ def ref_target(value) -> str | None:
 
 def split_refs(refs: dict) -> tuple[dict, dict]:
     """A table's references as the JSON writes them: field = target table under `refs`, and a two-field reference's
-    `{ times, plus }` under `ref_keys`, and an offset reference's `{ offset }`."""
+    `{ times, plus }` under `ref_keys`, an offset reference's `{ offset }`, and a reference's `zero` beside them (a plain
+    reference with `zero` has only it)."""
     targets = {field: ref_target(value) for field, value in refs.items()}
     keys = {field: ({"offset": value.get("offset")} if "offset" in value
+                    else {} if "zero" in value
                     else {"times": value.get("times"), "pairs": True} if value.get("pairs")
                     else {"bases": value.get("bases"), "plus": value.get("plus")} if "bases" in value
                     else {"times": value.get("times"), "plus": value.get("plus")}
                     | ({"any": value["any"]} if "any" in value else {}))
+                   | ({"zero": value["zero"]} if "zero" in value else {})
             for field, value in refs.items() if isinstance(value, dict)}
     return targets, keys
+
+
+def spans(values: list[int]) -> str:
+    """Whole numbers as a reader reads them, runs of three or more joined: [0, 11, 12, 13] -> "0, 11 to 13"."""
+    out: list[str] = []
+    ordered = sorted(values)
+    start = 0
+    while start < len(ordered):
+        end = start
+        while end + 1 < len(ordered) and ordered[end + 1] == ordered[end] + 1:
+            end += 1
+        if end - start >= 2:
+            out.append(f"{ordered[start]} to {ordered[end]}")
+        else:
+            out += [str(v) for v in ordered[start:end + 1]]
+        start = end + 1
+    return ", ".join(out)
+
+
+def zero_errors(tag: str, field: str, zero, target, fields: dict, type_of, records) -> list[str]:
+    """A reference's `zero`: `true`, or `{ field, values }`, another field of the table of one integer cell a record and
+    the whole numbers it holds on the records where 0 names record 0. Not for a picture, whose 0 is none."""
+    errors: list[str] = []
+    if target == REF_PICTURE:
+        errors.append(f"{tag}: refs gives {field} zero to {REF_PICTURE}, whose 0 is no picture")
+    if zero is True:
+        return errors
+    if not isinstance(zero, dict) or set(zero) != {"field", "values"}:
+        errors.append(f"{tag}: refs gives {field} zero {zero!r}, which must be true or {{ field, values }}: the field "
+                      f"whose value says where 0 names record 0, and those values")
+        return errors
+    on, values = zero["field"], zero["values"]
+    if not isinstance(on, str) or on not in fields or on == field:
+        errors.append(f"{tag}: refs gives {field} zero on {on!r}, which must be another field of the table")
+    else:
+        type_ = type_of(on)
+        dims = record_dims(type_, records) if isinstance(records, int) else None
+        if bank_of(type_) != "G" or type_.startswith("float") or dims is None or len(dims) != 1:
+            errors.append(f"{tag}: refs gives {field} zero on {on}, whose global {fields[on]} is not one integer cell a "
+                          f"record ({type_ or 'no type'})")
+    if not isinstance(values, list) or not values or not all(
+            isinstance(v, int) and not isinstance(v, bool) for v in values) or len(set(values)) != len(values):
+        errors.append(f"{tag}: refs gives {field} zero values {values!r}, which must be a list of whole numbers, each "
+                      f"once")
+    return errors
 
 
 def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
@@ -346,7 +397,8 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
     number above 0 and `plus` another integer field of the table, as wide as the field; a paired one is
     `{ table, times, pairs = true }`, its field a row of cells of an even width, each pair of elements one record. An
     offset reference is `{ table, offset }`, `offset` a whole number other than 0 that a value above 0 adds to name
-    its record (a Himegari unit's summon flag is its stone's item id plus 1901)."""
+    its record (a Himegari unit's summon flag is its stone's item id plus 1901). Either may add `zero` (`zero_errors`).
+    """
     errors: list[str] = []
     names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
     for t in tables:
@@ -369,6 +421,17 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
                 errors.append(f"{tag}: refs names {field!r}, which is not a field of the table")
                 continue
             target = ref_target(value)
+            # `zero`: a 0 that names record 0, everywhere or where another field holds one of some values (a Kamidori
+            # weapon's attack element 0 is 無属, element 0). Only beside a reference of one cell, plain or offset.
+            if isinstance(value, dict) and "zero" in value:
+                errors += zero_errors(tag, field, value["zero"], target, fields, type_of, t.get("records"))
+                value = {key: part for key, part in value.items() if key != "zero"}
+                if set(value) not in ({"table"}, {"table", "offset"}):
+                    errors.append(f"{tag}: refs gives {field} zero beside {', '.join(sorted(set(value) - {'table'}))}; "
+                                  f"zero is for a reference of one cell, {{ table, zero }} or {{ table, offset, zero }}")
+                    continue
+                if set(value) == {"table"}:
+                    value = target
             # `offset`: a value above 0 plus the offset names the record (a Himegari unit's summon flag less 1901 is its
             # summoning stone's item id, SALLY@0x189c).
             if isinstance(value, dict) and set(value) == {"table", "offset"}:
@@ -810,6 +873,10 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 if refs:
                     value = refs.get(field)
                     target = ref_target(value)
+                    zero = value.get("zero") if isinstance(value, dict) else None
+                    if zero is not None:
+                        value = {part: v for part, v in value.items() if part != "zero"}
+                        value = value if "offset" in value else value["table"]
                     key = ("" if not isinstance(value, dict)
                            else f" (value {'+' if value['offset'] > 0 else '−'} {abs(value['offset'])})"
                            if "offset" in value
@@ -820,6 +887,12 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                                 f"every record from × {value['times']} to × {value['times']} + {value['times'] - 1})"
                            if "any" in value
                            else f" (× {value['times']} + {value['plus']})")
+                    # The stored value that names record 0: 0, or with an offset the value the offset takes to 0.
+                    stored = -value["offset"] if isinstance(value, dict) and "offset" in value else 0
+                    if zero is True:
+                        key += f" ({stored} names record 0)"
+                    elif zero is not None:
+                        key += f" ({stored} names record 0 where {zero['field']} is {spans(zero['values'])})"
                     row += " pictures |" if target == REF_PICTURE else f" `{target}`{key} |" if target else " |"
                 L.append(row)
             L.append("")

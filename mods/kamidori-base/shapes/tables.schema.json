@@ -1285,7 +1285,7 @@
           "type": "object",
           "properties": {
             "0": {
-              "description": "column 0 is named: write unused",
+              "description": "column 0 is named: write omni",
               "type": "null"
             },
             "1": {
@@ -1352,14 +1352,14 @@
               "minimum": -2147483648,
               "maximum": 4294967295
             },
-            "physical": {
-              "description": "item.affinity_level_deltas.physical: column 1 of item_affinity_level_deltas, a whole number",
+            "omni": {
+              "description": "item.affinity_level_deltas.omni: column 0 of item_affinity_level_deltas, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
             },
-            "unused": {
-              "description": "item.affinity_level_deltas.unused: column 0 of item_affinity_level_deltas, a whole number",
+            "physical": {
+              "description": "item.affinity_level_deltas.physical: column 1 of item_affinity_level_deltas, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295

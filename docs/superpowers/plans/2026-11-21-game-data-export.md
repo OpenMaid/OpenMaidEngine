@@ -1071,11 +1071,24 @@ authors.
     `attack_element_encoded` by `{ table = "element", offset = -1 }`, and an item's `affinity_level_deltas` names its
     columns by element (`columns_ref`), so an element's page lists the items and skills that attack with it, the
     equipment that changes its resistance and its terrain. A unit's resistances keep `columns_from`.
-  - **A kind's `key_range`.** Element 0, 無属, is one no reference reaches, since a value of 0 or below is none. A
-    skill's 1 names it, and so does an item's 0 on the weapons and innate attacks, whose descriptions say 無属 (on the
-    items that do not attack, 0 is nothing). The kind
-    publishes elements 1 to 7 (`key_range = [1, 7]`, which a loader already had), and the site shows a reference that
-    names no entity by the value's word where the field has one (a skill's 無属), else as missing as before.
+  - **A kind's `key_range`.** A kind may publish a range of its records (`key_range = [first, last]`, as a loader
+    already could). It was made to leave out Kamidori's element 0, 無属, while no reference reached it; the next bullet
+    links that 0, and no kind uses a range now.
+  - **無属, element 0, is Omni.** The user asked for a deeper look and a way to show it, and named it Omni in English,
+    the English patch's word in its descriptions (the patch names the element " --"). The battle scripts settle what
+    it does: no unit resists it or is weak to it, since nothing sets its column (`docs/kamidori-data-tables.md`,
+    "Combat pipeline"). What the export gained:
+    - A reference's `zero` (`[table.refs]`) makes a 0 name record 0: `true` everywhere, or `{ field, values }` where
+      another one-cell field holds one of the values, a 0 elsewhere staying none. Its nones are -1 among the keyed
+      ids, so `Link` takes its 0. A skill's attack element is `{ table = "element", offset = -1, zero = true }`, and an
+      item's is `zero = { field = "category", values = [...] }`, the innate attacks (0) and the weapons (11 to 25).
+      ティアン頭① to ⑤, Tian's costume heads, are of category 0 and link it too.
+    - The element kind publishes all eight.
+    - `[export] text_overrides` gives a game string the declarations' text in a language, in place of the package's,
+      wherever the export publishes the string: Kamidori's `{ en = { "無属" = "Omni" } }` names the element's page,
+      its value names and its columns. The report counts the strings overridden and names an override no string used.
+    - The site shows a reference's 0 when the export linked it (`format.mjs` `noneIn`); the registry's word for
+      column 0 of an item's resistances is `omni`, no longer `unused`.
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
-    doors' keys, 無属 (what it does and a page for it), INIT2's 98 unnamed cells (the element kind makes INIT2 a
+    doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a
     builder) and the fields read at medium or low confidence.

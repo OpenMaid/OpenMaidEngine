@@ -580,21 +580,6 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     (ADDITEM sets flag 9000 plus the id, CHECKOBJ@`0x3f` tests flag − 1) and a story flag on 封鎖された扉 and 飛行結界,
     so it is not published; the doors' descriptions name the key. Done when a door's page links its key, or the field
     is shown as a flag where it is one.
-  - **無属.** Element 0 is, as the user has it, the element resistances do not touch (the English patch's "Omni"). It
-    has no page, and the site does not say what it does (user, 2026-11-23: a deeper look, then a way to show it).
-    - What attacks with it: 116 items and 66 skills. The 76 weapons of categories 11 to 25 whose `item_attack_element`
-      is 0 all say 無属 in their short description, and the 40 innate attacks of category 0 whose element is 0 say 無.
-      Skills have `skill_attack_element_encoded` 1. An item's 0 means nothing only on the items that do not attack,
-      categories 1 to 10. A value of 0 is never linked, so no item links 無属 and an item page shows no attack
-      element.
-    - What it does, by the tables: no unit's `unit_element_resistance_levels` and no item's
-      `item_affinity_level_deltas` sets its column, and the status screen draws columns 1 to 7 only (INFO5@`0xf2a`).
-      So it always deals 100% (`affinity_damage_percent_by_level`, CALCBTPARAM@`0x7a3`). Not read: whether anything
-      in battle changes that column, or whether CALCBTPARAM skips the lookup for it.
-    - Its English: the patch names element 0 " --" (a skill page reads "--") but says "Omni" in the descriptions.
-    - Done when the battle code settles what 無属 does and the site shows it. That means a page for element 0 that
-      lists the weapons, innate attacks and skills attacking with it (an item's 0 counted only where the item
-      attacks), an English name chosen for it, and the items' 無属 shown.
   - **Unnamed cells.** The element kind made INIT2 a builder, and the export reports 98 integer cells it writes that
     the registry does not name: resource ids at `0x3d40e0` to `0x3d42a0` and `0xfd43b` to `0xfd443`, the inline
     arrays at `0x2a2da4`, `0x2a2db5`, `0x2a2dc3`, `0x13ec57`, `0x13ec5b`, `0x13ec5f` and `0x3c9be9`

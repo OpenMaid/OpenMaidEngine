@@ -259,14 +259,26 @@ public sealed class ExportReport
 
 /// <summary>What one language's translation of the export found (spec §6.4, plan §4.6): its strings and
 /// descriptions, and the misses of the text it exports, each as the port's miss log gives it.</summary>
-public sealed class LanguageReport(ExportLanguage language)
+public sealed class LanguageReport(ExportLanguage language, IEnumerable<string>? overrides = null)
 {
     private readonly HashSet<(string Source, string Script, int Offset)> _misses = [];
+    private readonly HashSet<string> _unusedOverrides = [.. overrides ?? []];
 
     public ExportLanguage Language { get; } = language;
     /// <summary>Published table strings, and those an entry translated.</summary>
     public int Strings { get; internal set; }
     public int StringsTranslated { get; internal set; }
+    /// <summary>Published table strings the declarations' overrides gave their text (<c>[export] text_overrides</c>).
+    /// </summary>
+    public int StringsOverridden { get; private set; }
+    /// <summary>The overrides no published string used, in order: one the declarations should drop or correct.</summary>
+    public IReadOnlyList<string> UnusedOverrides => [.. _unusedOverrides.Order(StringComparer.Ordinal)];
+
+    internal void Overridden(string source)
+    {
+        StringsOverridden++;
+        _unusedOverrides.Remove(source);
+    }
     /// <summary>Descriptions with text, those whose every run was presented, and those with a run presented and a run
     /// missed.</summary>
     public int Descriptions { get; internal set; }

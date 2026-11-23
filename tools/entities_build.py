@@ -49,7 +49,10 @@ KEY = "key"
 STEP = "step"
 EVERY = "*"
 
-EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures"}
+EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures",
+               "text_overrides"}
+# A language tag as a language package declares one (`en`, `pt-BR`).
+LANGUAGE_TAG = re.compile(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})*")
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "key_range", "title", "text", "fields", "filters", "pictures",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
              "joins", "marks"}
@@ -393,6 +396,7 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
             errors.append(f"{source}: [export] derived script {name} is also a text script")
     text_scripts = set(export.get("text_scripts") or [])
     check_picture_patterns(export.get("explicit_pictures", []), f"{source}: [export] explicit_pictures", errors)
+    check_text_overrides(export.get("text_overrides", {}), f"{source}: [export] text_overrides", errors)
 
     kinds = data.get("kind", [])
     if not isinstance(kinds, list):
@@ -437,6 +441,25 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
     for relation in data.get("script_relation", []):
         lint_relation(game, relation, source, ids, relation_ids, errors)
     return errors
+
+
+def check_text_overrides(overrides, where: str, errors: list[str]) -> None:
+    """[export] text_overrides: a table of language tag = { "game string" = "its text" }, the export's text of a game
+    string in that language in place of the language package's (game data export plan §5). Each string and text a
+    line that is not empty."""
+    if not isinstance(overrides, dict):
+        errors.append(f"{where} must be a table of language tag = {{ \"game string\" = \"its text\" }}")
+        return
+    for tag, texts in overrides.items():
+        if not LANGUAGE_TAG.fullmatch(tag):
+            errors.append(f"{where}: {tag!r} is not a language tag (en, pt-BR)")
+        if not isinstance(texts, dict) or not texts:
+            errors.append(f"{where}: {tag} must be a table of \"game string\" = \"its text\"")
+            continue
+        for text, shown in texts.items():
+            if not text.strip() or not isinstance(shown, str) or not shown.strip() or "\n" in text + shown:
+                errors.append(f"{where}: {tag} gives {text!r} {shown!r}; a game string and its text are each a line "
+                              f"that is not empty")
 
 
 def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: dict[str, str],
@@ -1292,7 +1315,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "excluded_builders": export.get("excluded_builders", []),
                    "derived": export.get("derived", []),
                    "text_scripts": export.get("text_scripts", []),
-                   "explicit_pictures": export.get("explicit_pictures", [])},
+                   "explicit_pictures": export.get("explicit_pictures", []),
+                   "text_overrides": export.get("text_overrides", {})},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
                    "skip": k.get("skip", {}), "key_range": k.get("key_range"), "title": k.get("title"), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),

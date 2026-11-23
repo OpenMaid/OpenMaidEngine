@@ -689,7 +689,7 @@ address = "0x2b7264"
 name = "unit_element_resistance_levels"
 category = "data-table"
 type = "int[1000][8]"
-value_domain = "-5..+6: -5激弱 -4強弱 -3弱点 -2軽弱 -1微弱 0－－ 1微減 2軽減 3強減 4激減 5無効 6吸収 (labels 0x621a+5+v); col 0 (無属) unused"
+value_domain = "-5..+6: -5激弱 -4強弱 -3弱点 -2軽弱 -1微弱 0－－ 1微減 2軽減 3強減 4激減 5無効 6吸収 (labels 0x621a+5+v); col 0 (無属) is 0 on every unit"
 values_from = { global = "affinity_level_names", first = -5 }
 usage = "INFO5@0x00f2a draws 0x621a[5+v] for k=1..7 beside element names 0x6212+k; SETEN@0x00501 stores 5+v in battle slot 0x53d42; UNITECH@0x0020f seeds character_resistances (0x643f5)."
 source = "investigation"
@@ -1269,7 +1269,7 @@ name = "element_names"
 category = "string-table"
 type = "string[8]"
 value_domain = "element 0 無属 (non-elemental), 1 物理 (physical), 2 地脈 (earth), 3 冷却 (cold), 4 火炎 (fire), 5 電撃 (lightning), 6 神聖 (holy), 7 暗黒 (dark)"
-usage = "INIT2@0x000db..0x000fe writes the eight names. INFO6@0x01008 draws GStr[0x6212 + skill_attack_element_encoded - 1] (when it is not 0), so element e is element e of the list; STATUS@0x01ff9, SELSEWUP@0x0081b and DRAWTOOLTIP@0x004a6 read it too."
+usage = "INIT2@0x000db..0x000fe writes the eight names. INFO6@0x01008 draws GStr[0x6212 + skill_attack_element_encoded - 1] (when it is not 0), so element e is element e of the list; STATUS@0x01ff9, SELSEWUP@0x0081b and DRAWTOOLTIP@0x004a6 read it too. Element 0, 無属 (Omni), is the one no unit resists: nothing gives a unit a grade for it (docs/kamidori-data-tables.md, Combat pipeline)."
 source = "investigation"
 confidence = "high"
 
@@ -1579,7 +1579,7 @@ value_domain = "CALCARM output"
 usage = "CALCARM@0x00010 seeds it from item_affinity_level_deltas and adds enhancements, gems and upgrade steps. CALCREVISE@0x00264 adds it to the unit affinity levels."
 source = "investigation"
 confidence = "high"
-columns = { "0" = "unused", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns = { "0" = "omni", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
 columns_from = { global = "element_names", first = 0 }
 
 [[global]]
@@ -1774,10 +1774,10 @@ category = "data-table"
 type = "int[2000][8]"
 columns_ref = "element"
 value_domain = "signed affinity-level delta per element; +1 = one step more resistant"
-usage = "CALCARM@0x00000 copies the row into work 0x2a9b71. CALCREVISE@0x002f9 adds each equipped item's row to the unit affinity levels 0x53d42[8], then clamps them to 0..11. INFO3@0x017a4 shows GStr[0x621a+5+delta] (affinity_level_names). Orb items 286..292 prove the columns, e.g. 地脈の宝珠 writes column 2 = +1 and 万能の宝珠 writes columns 1..5. Column 0 is never written."
+usage = "CALCARM@0x00000 copies the row into work 0x2a9b71. CALCREVISE@0x002f9 adds each equipped item's row to the unit affinity levels 0x53d42[8], then clamps them to 0..11. INFO3@0x017a4 shows GStr[0x621a+5+delta] (affinity_level_names). Orb items 286..292 prove the columns, e.g. 地脈の宝珠 writes column 2 = +1 and 万能の宝珠 writes columns 1..5. Column 0 is 無属's (Omni), which no item writes."
 source = "investigation"
 confidence = "high"
-columns = { "0" = "unused", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
+columns = { "0" = "omni", "1" = "physical", "2" = "earth", "3" = "ice", "4" = "fire", "5" = "lightning", "6" = "holy", "7" = "dark" }
 values_from = { global = "affinity_level_names", first = -5 }
 
 [[global]]
@@ -6698,8 +6698,10 @@ growth_mastery_story_flag = "item_growth_mastery_story_flags"
 
 [table.refs]
 granted_skill_id = "skill"
-# An item's attack element is an element id; it keeps its names (values_from), which a value no element has shows.
-attack_element = "element"
+# An item's attack element is an element id; it keeps its names (values_from), which a value no element has shows. Its
+# 0 is element 0, 無属, on the categories that attack: the innate attacks (0) and the weapons (11 to 25), whose
+# descriptions say 無 or 無属; on the others it is none (CALCBTPARAM@0x1ae reads the weapon slot's item).
+attack_element = { table = "element", zero = { field = "category", values = [0, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25] } }
 garden_product_item_id = "item"
 growth_mastery_reward_items = "item"
 icon_asset_id = "picture"
@@ -6745,9 +6747,9 @@ area_effect_blend_mode = "skill_area_effect_blend_mode"
 [table.refs]
 bundled_skill_ids = "skill"
 upgrade_family_id = "skill"
-# A skill's attack element less one is an element id (INFO6@0x1008, CALCBTPARAM@0x16a); 0 takes the weapon's. Its 1 is
-# 無属, element 0, which no reference reaches: the skill keeps the names (values_from), and the site shows the name.
-attack_element_encoded = { table = "element", offset = -1 }
+# A skill's attack element less one is an element id (INFO6@0x1008, CALCBTPARAM@0x16a); 0 takes the weapon's, none of
+# its own. Its 1 is element 0, 無属 (zero).
+attack_element_encoded = { table = "element", offset = -1, zero = true }
 icon_asset_id = "picture"
 area_effect_texture_asset_id = "picture"
 

@@ -139,6 +139,7 @@ builders = ["INIT2", "*INIT"]
 excluded_builders = ["CGINIT"]
 text_scripts = ["HEROMES"]
 explicit_pictures = ["HR*B", "HR001A"]
+text_overrides = { en = { "剣" = "Sword" } }
 
 [[kind]]
 id = "hero"
@@ -251,6 +252,7 @@ def test_good_declarations():
           "a relation keeps its where")
     check(len(data.get("source_sha256", "")) == 64, "the JSON records the source's hash")
     check(data.get("export", {}).get("explicit_pictures") == ["HR*B", "HR001A"], "the JSON keeps the explicit pictures")
+    check(data.get("export", {}).get("text_overrides") == {"en": {"剣": "Sword"}}, "the JSON keeps the text overrides")
     check(hero.get("groups") == [{"name": "arms", "fields": ["weapon", "weapon_level"], "labels": None,
                                   "row_label": None}],
           "the JSON keeps a kind's groups")
@@ -277,12 +279,15 @@ builders = ["init*"]
 excluded_builders = ["CG*"]
 text_scripts = ["CG*", "HEROMES"]
 explicit_pictures = ["hr*b", "HR1.PNG", "HR2", "HR2"]
+text_overrides = { English = { "剣" = "Sword" }, en = { "盾" = "", " " = "Air" }, fr = {} }
 extra = 1
 ''')
     for needle in ("boot script: 'init2' must be a script name", "reads at 'demo.nowhere', which is no patch point",
                    "builders: 'init*' must be", "excluded_builders: 'CG*' must be", "unknown key 'extra'",
                    "explicit_pictures: 'hr*b' must be a picture's catalog name",
-                   "explicit_pictures: 'HR1.PNG' must be", "explicit_pictures: HR2 is named twice"):
+                   "explicit_pictures: 'HR1.PNG' must be", "explicit_pictures: HR2 is named twice",
+                   "text_overrides: 'English' is not a language tag", "text_overrides: en gives '盾' ''",
+                   "text_overrides: en gives ' ' 'Air'", "text_overrides: fr must be a table"):
         check(needle in output, f"the lint flags {needle!r}")
     output = errors_of('[export]\nboot = { script = "INIT2", read_at = "demo.boot.data_ready" }\nbuilders = []\n'
                        'excluded_builders = ["HEROMES"]\ntext_scripts = ["HEROMES"]\n')

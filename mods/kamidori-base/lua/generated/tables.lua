@@ -107,7 +107,7 @@ return {
             records = 2000,
             built_by = "boot",
             fields = {
-                affinity_level_deltas = { global = "item_affinity_level_deltas", kind = "integer", width = 8, columns = { unused = 0, physical = 1, earth = 2, ice = 3, fire = 4, lightning = 5, holy = 6, dark = 7 } },
+                affinity_level_deltas = { global = "item_affinity_level_deltas", kind = "integer", width = 8, columns = { omni = 0, physical = 1, earth = 2, ice = 3, fire = 4, lightning = 5, holy = 6, dark = 7 } },
                 attack_element = { global = "item_attack_element", kind = "integer" },
                 battle_animation_id = { global = "item_battle_animation_id", kind = "integer" },
                 category = { global = "item_category", kind = "integer" },

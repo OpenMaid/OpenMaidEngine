@@ -371,9 +371,13 @@ internal static class DataExportCommand
                 $"{package.Id} {package.Version}, "
                 + (package.Authors.Count == 0 ? "no authors given" : "by " + string.Join(", ", package.Authors))));
             Console.WriteLine($"  language {language.Language.Tag} ({packages}): {language.StringsTranslated} of "
-                              + $"{language.Strings} strings, {language.DescriptionsTranslated} of {language.Descriptions} "
+                              + $"{language.Strings} strings and {language.StringsOverridden} overridden, "
+                              + $"{language.DescriptionsTranslated} of {language.Descriptions} "
                               + $"descriptions and {language.DescriptionsPartly} partly, {language.Misses.Count} misses, "
                               + $"{language.DescriptionHalts.Count} halts");
+            // An override no published string used is one the declarations should drop or correct.
+            foreach (string unused in language.UnusedOverrides)
+                Console.WriteLine($"    text override {unused} ({language.Language.Tag}) matched no published string");
         }
         int snippets = result.Kinds.SelectMany(kind => kind.Entities).Count(entity => entity.Snippet != null);
         Console.WriteLine($"  snippets: {snippets}, {report.SnippetProblems.Count} problems");
