@@ -540,7 +540,7 @@ class GithubApiTests(unittest.TestCase):
             publish_github_release.GithubApi("owner/name", "bad token\n")
 
     def test_upload_keeps_token_off_the_command_line(self) -> None:
-        api = publish_github_release.GithubApi("concopuffs/OpenMaidEngine", self.TOKEN)
+        api = publish_github_release.GithubApi("OpenMaid/OpenMaidEngine", self.TOKEN)
         with tempfile.TemporaryDirectory() as temporary:
             asset = Path(temporary) / publish_github_release.LINUX_ARCHIVE
             asset.write_bytes(b"payload")
@@ -558,7 +558,7 @@ class GithubApiTests(unittest.TestCase):
         self.assertEqual(["curl", "--config", "-"], command[:3])
         self.assertIn("--data-binary", command)
         self.assertEqual(
-            "https://uploads.github.com/repos/concopuffs/OpenMaidEngine/releases/42/assets"
+            "https://uploads.github.com/repos/OpenMaid/OpenMaidEngine/releases/42/assets"
             f"?name={publish_github_release.LINUX_ARCHIVE}",
             command[-1],
         )

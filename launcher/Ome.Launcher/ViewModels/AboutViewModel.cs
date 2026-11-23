@@ -10,7 +10,7 @@ public sealed record LicenceFile(string Name, string? Path, Command Open);
 public sealed class AboutViewModel : ViewModel
 {
     /// <summary>The project's home (AGENTS.md, "One home: GitHub").</summary>
-    public const string Repository = "https://github.com/concopuffs/OpenMaidEngine";
+    public const string Repository = "https://github.com/OpenMaid/OpenMaidEngine";
 
     private readonly MainViewModel _main;
 

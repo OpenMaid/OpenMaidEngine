@@ -22,7 +22,7 @@ from pathlib import Path
 
 DEFAULT_WINDOW = 8 * 1024 * 1024
 HTTP_HEADERS = {
-    "User-Agent": "OpenMaidEngine-build/1.0 (+https://github.com/concopuffs/OpenMaidEngine)",
+    "User-Agent": "OpenMaidEngine-build/1.0 (+https://github.com/OpenMaid/OpenMaidEngine)",
     "Accept": "application/octet-stream,*/*;q=0.8",
 }
 

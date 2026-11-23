@@ -1310,7 +1310,9 @@ do not mix mechanical moves with semantic changes.
    out of scope.
 
    **GitHub becomes the single home; CI/CD refit (2026-10-05/06):** the project moved its only repository home to
-   GitHub (`concopuffs/OpenMaidEngine`); the former Gitea host is frozen and no longer kept in sync. The refit
+   GitHub (`concopuffs/OpenMaidEngine`, transferred on 2026-11-23 to the Open Maid organization as
+   `OpenMaid/OpenMaidEngine`, where GitHub redirects the old addresses); the former Gitea host is frozen and no longer
+   kept in sync. The refit
    (`docs/superpowers/plans/2026-10-05-github-cicd-refit.md`) replaced each Gitea piece rather than duplicating it.
    The core gate returns as `.github/workflows/core-validation.yml`; the release workflow is
    `.github/workflows/release-build.yml`; every action is pinned to a full commit SHA, kept current by Dependabot,

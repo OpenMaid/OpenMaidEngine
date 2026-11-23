@@ -316,7 +316,7 @@ public sealed class LinksTests : IDisposable
         about.Licences[0].Open.Execute(null);
         Assert.Contains($"Open {Path.Combine(folder, "LICENSE")}", host.Calls);
         about.OpenRepository.Execute(null);
-        Assert.Contains("Open https://github.com/concopuffs/OpenMaidEngine", host.Calls);
+        Assert.Contains("Open https://github.com/OpenMaid/OpenMaidEngine", host.Calls);
         about.Close.Execute(null);
 
         File.WriteAllText(Path.Combine(folder, "THIRD_PARTY_NOTICES.md"), "notices");

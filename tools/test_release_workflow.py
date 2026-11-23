@@ -81,7 +81,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
             "win64": json.loads(WINDOWS_FFMPEG_MANIFEST.read_text(encoding="utf-8")),
         }
         release = (
-            "https://github.com/concopuffs/OpenMaidEngine/releases/download/"
+            "https://github.com/OpenMaid/OpenMaidEngine/releases/download/"
             f"deps-ffmpeg-{source['mirror_version']}"
         )
         self.assertRegex(source["mirror_version"], r"^ome-\d+\.\d+\.\d+-mpeg1-r\d+$")
