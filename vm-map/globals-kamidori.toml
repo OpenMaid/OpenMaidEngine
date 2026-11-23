@@ -636,7 +636,7 @@ name = "unit_race"
 category = "data-table"
 type = "int[1000]"
 value_domain = "1..16 -> race name base 0x61fe: 1人間 2亜人 3一般 4鬼 5巨人 6妖精 7精霊 8天使 9悪魔 10魔獣 11幻獣 12霊体 13不死 14創造 15魔神 16半魔人"
-values_from = { global = "species_names", first = 1 }
+values_from = { global = "species_names", first = 0 }
 usage = "INFO5@0x00d38 draws 0x61fe[race]; SETARMSTATE@0x00124 tests item race mask 0x2e60c8 bit race; CALCDMG/CALCILL/ADDILLSUB read it for race-dependent effects."
 source = "investigation"
 confidence = "high"
@@ -1244,12 +1244,12 @@ confidence = "high"
 columns = { "0" = "level_1", "1" = "level_2", "2" = "level_3", "3" = "level_4", "4" = "level_5" }
 
 [[global]]
-address = "0x61ff"
+address = "0x61fe"
 name = "species_names"
 category = "string-table"
-type = "string[16]"
-value_domain = "人間, 亜人, 一般, 鬼, 巨人, 妖精, 精霊, 天使, 悪魔, 魔獣, 幻獣, 霊体, 不死, 創造, 魔神, 半魔人"
-usage = "AFINIT writes 16 names. INFO5@0x00d3f and FELLOWSTATUS@0x01638 draw GStr[0x61fe + unit_race[unit]], one cell before this list, so race r (1 to 16) is element r - 1."
+type = "string[17]"
+value_domain = "race r's name at element r: 1 人間, 2 亜人, 3 一般, 4 鬼, 5 巨人, 6 妖精, 7 精霊, 8 天使, 9 悪魔, 10 魔獣, 11 幻獣, 12 霊体, 13 不死, 14 創造, 15 魔神, 16 半魔人; element 0 is empty"
+usage = "AFINIT writes the 16 names from 0x61ff (AFINIT@0x0 onward); nothing writes 0x61fe, element 0. INFO5@0x00d3f and FELLOWSTATUS@0x01638 draw GStr[0x61fe + unit_race[unit]], so the list starts where the game indexes it, race r at element r (the race table's names)."
 source = "investigation"
 confidence = "med"
 
@@ -2587,8 +2587,9 @@ address = "0x3b2a98"
 name = "species_condition_susceptibility_percent"
 category = "data-table"
 type = "int[17][10]"
-value_domain = "percent chance per species row and condition group (0 = immune, 100 = always)"
-usage = "ADDILLSUB@0x0001a and CALCILL@0x00090 index [species 0x2b5edc][condition_susceptibility_group]. AFINIT fills rows 1..16 with copy-inline-int-array."
+columns = { "1" = "curse", "2" = "death_and_fear", "3" = "charm_and_confusion", "4" = "paralysis_and_poison", "5" = "drains", "6" = "water_acid_and_inflammation", "7" = "buffs_and_others" }
+value_domain = "percent chance per race row (unit_race) and condition group column (condition_susceptibility_group, 1..7), 0 = immune, 100 = always"
+usage = "ADDILLSUB@0x0001a and CALCILL@0x00090 index [race 0x2b5edc][condition_susceptibility_group]. AFINIT fills rows 1..16 with copy-inline-int-array. CALCILL inflicts a condition (a level change above 0) only when its roll, 0x4f9dc's next number, is below the cell (CALCILL@0x6b-0xa2), and ADDILLSUB skips a condition whose cell is 0 (ADDILLSUB@0x25): the race is immune to that group. The race table's condition chances."
 source = "investigation"
 confidence = "high"
 
@@ -2626,9 +2627,9 @@ confidence = "low"
 address = "0x3b2b95"
 name = "shop_level_scaled_table"
 category = "data-table"
-type = "int[20]"
+type = "int[21]"
 value_domain = "1-based; 5..50 then 4 at index 20"
-usage = "CALCSETTLE@0x00014 copies [0x7ea49] into 0x13fba7, and CALCSETTLE@0x000cd adds index 20 (0x3b2ba9). Probably a shop-level settlement table."
+usage = "CALCSETTLE@0x00014 copies [0x7ea49] into 0x13fba7, and CALCSETTLE@0x000cd adds index 20 (0x3b2ba9) for each roster member it counts. Probably a shop-level settlement table. AFINIT writes index 1 on from an inline array (AFINIT@0x554) and index 20 alone (AFINIT@0x559), so the table is 21 cells."
 source = "investigation"
 confidence = "low"
 
@@ -6625,6 +6626,7 @@ large_battle_sprite = "unit_large_battle_sprite"
 habitat_area = "unit_habitat_area_ids"
 
 [table.refs]
+race = "race"
 default_attack_item_id = "item"
 default_costume_item_id = "item"
 drop_item = "item"
@@ -7049,6 +7051,16 @@ usage = "The elements, keyed by element id: INIT2 writes the eight names (INIT2@
 
 [table.fields]
 name = "element_names"
+
+[[table]]
+name = "race"
+records = 17
+built_by = "boot"
+usage = "AFINIT's races, keyed by race id, 1 to 16 named: a unit's race (unit_race). Each row is the percent chance a condition of each group takes hold on a unit of the race, 0 meaning immune (species_condition_susceptibility_percent; a condition's group is condition_susceptibility_group)."
+
+[table.fields]
+name = "species_names"
+condition_chance_percent = "species_condition_susceptibility_percent"
 
 [[table]]
 name = "terrain"

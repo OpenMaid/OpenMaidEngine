@@ -144,6 +144,7 @@ display_name = "Short name"
 boss_class = "Boss"
 
 [kind.referenced_as]
+race = "Units of this race"
 skill = "Units that have it"
 drop_item = { heading = "Dropped by", details = ["drop_chance"] }
 default_attack_item_id = "Default attack of"
@@ -317,7 +318,7 @@ step = [16, 16]
 size = [15, 15]
 
 [kind.notes]
-susceptibility_group = "Which of a race's resistances the chance to catch it is rolled against: each race has a percent chance for each group, 0 meaning immune."
+susceptibility_group = "The group of a race's condition chances it is rolled against: each race's page gives its chance for each group, 0 meaning immune."
 levels = "Each level's turns, its stat changes, and its HP, SP and FS changes each turn: a drain's are the percent it steals, poison's and acid's are losses."
 critical_rate_delta = "The change at level 5; a lower level gives its share (level / 5)."
 
@@ -464,6 +465,22 @@ columns = 8
 origin = [646, 645]
 step = [21, 21]
 size = [20, 20]
+
+# The races: AFINIT's names and condition chances (the registry's race table). A condition's group picks the column
+# of its target's race that CALCILL rolls against (CALCILL@0x90); ADDILLSUB skips a group whose chance is 0.
+[[kind]]
+id = "race"
+table = "race"
+about = "The races a unit belongs to: the units of each, and the chance of each group of conditions to take hold on it, 0 meaning immune."
+exists = "name"
+title = "name"
+fields = ["condition_chance_percent"]
+
+[kind.notes]
+condition_chance_percent = "The percent chance a condition of each group takes hold on a unit of this race when inflicted, 0 making it immune. The groups hold: Curse; Death and Fear; Charm and Confuse; Shock and Poison; the drains; Chill, Acid and Burn; the regens, buffs and the rest."
+
+[kind.labels]
+condition_chance_percent = "Condition chance"
 
 [[kind]]
 id = "terrain"

@@ -27,7 +27,7 @@ EBINIT unit records keyed by unit id, with the per-unit runtime arrays (history 
 | graphic | unit_graphic_asset_ids | `0x2b10bc` | `int[1000][17]` | pictures |
 | sort_key | unit_sort_key | `0x2b570c` | `int[1000]` | |
 | bestiary_listed | unit_bestiary_listed | `0x2b5af4` | `int[1000]` | |
-| race | unit_race | `0x2b5edc` | `int[1000]` | |
+| race | unit_race | `0x2b5edc` | `int[1000]` | `race` |
 | sex | unit_sex | `0x2b62c4` | `int[1000]` | |
 | boss_class | unit_boss_class | `0x2b66ac` | `int[1000]` | |
 | canonical_character_id | unit_canonical_character_id | `0x2b6a94` | `int[1000]` | |
@@ -423,6 +423,17 @@ The elements, keyed by element id: INIT2 writes the eight names (INIT2@0xdb-0xfe
 | field | global | address | type |
 |---|---|---|---|
 | name | element_names | `GS 0x6212` | `string[8]` |
+
+### race[17]
+
+Built by: `boot`.
+
+AFINIT's races, keyed by race id, 1 to 16 named: a unit's race (unit_race). Each row is the percent chance a condition of each group takes hold on a unit of the race, 0 meaning immune (species_condition_susceptibility_percent; a condition's group is condition_susceptibility_group).
+
+| field | global | address | type |
+|---|---|---|---|
+| name | species_names | `GS 0x61fe` | `string[17]` |
+| condition_chance_percent | species_condition_susceptibility_percent | `0x3b2a98` | `int[17][10]` |
 
 ### terrain[40]
 
@@ -824,7 +835,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2b10bc` | unit_graphic_asset_ids | med | investigation | SETEN@0x00103 copies cols 0..14 to battle slot 0x538c4; SETCH@0x00155 does the same but prefers the costume item's own 17-col row ITINIT 0x2d3018[costume][k] when nonzero (cross-join). INFO5/INFO3/TOWN/DRAWBUILD read col 7 (bestiary/town sprite); FELLOW/ORGANIZE/SALE/SHOP col 4 (face); CGMODE/ROOM col 3; BTL@0x04725/0x04801 cols 15/16 (costume-overridable); BTL uses battle-slot cols 8, 9, 10, 14. Columns: 0=status_art_a_CS_AZA, 1=status_art_b_CS_AZB, 2=status_art_c_CS_AZC, 3=room_art_CS_AYA, 4=face_CA_AA, 5=face_CA_AB, 6=face_CA_AC, 7=map_sprite_compact_CP_AA, 8=map_sprite_directional_CP_AB, 9=cutin_CIC_AA, 10=cutin_CIC_AB, 11=battle_sprite_1_CB_AAA, 12=battle_sprite_2_CB_AAA_or_AAB, 13=battle_sprite_3_CB_AAA_or_AAB, 14=battle_sprite_CB_AB, 15=cutin_CIC_AC, 16=cutin_CIC_AD. |
 | `0x2b570c` | unit_sort_key | high | investigation | INFO3@0x00ade and INFO5@0x006d5 sort-indices-by-key over 1000 ids; SETUNITLIST@0x0005c, SELSTAGE, SETSTUDIOCH, ENHANCE order unit lists by it. |
 | `0x2b5af4` | unit_bestiary_listed | high | investigation | INFO3@0x00b10 and INFO5@0x00707 include only ids with this flag in the bestiary list. Values: 1 Yes. |
-| `0x2b5edc` | unit_race | high | investigation | INFO5@0x00d38 draws 0x61fe[race]; SETARMSTATE@0x00124 tests item race mask 0x2e60c8 bit race; CALCDMG/CALCILL/ADDILLSUB read it for race-dependent effects. Names: `species_names`, element 0 naming 1. |
+| `0x2b5edc` | unit_race | high | investigation | INFO5@0x00d38 draws 0x61fe[race]; SETARMSTATE@0x00124 tests item race mask 0x2e60c8 bit race; CALCDMG/CALCILL/ADDILLSUB read it for race-dependent effects. Names: `species_names`, element 0 naming 0. |
 | `0x2b62c4` | unit_sex | high | investigation | SETARMSTATE@0x00161 checks bit <sex> of the item gender mask 0x2e6898 (Will's clothes mask 2 = bit1, Yuela's 4 = bit2); HISTORY@0x0097b: a backlog line is replayable when the voice slot preview is nonzero and (slot>0 or sex==2), i.e. unregistered female speakers fall back to the extra slot 0. Values: 1 Male, 2 Female, 3 Other or none. |
 | `0x2b66ac` | unit_boss_class | high | investigation | Every reader takes nonzero as a boss. DRAWCHSTATE@0x000f5 draws the boss marker. CALCILL@0x0002e lets a condition whose condition_can_affect_bosses is 0 pass a boss by. CALCDMG@0x00821 adds passive skill 58's bonus against a boss (skill_combat_stat_deltas[58]). FIELD@0x08d6b takes the larger abs() of the two combatants' classes for the battle's music, which BTL@0x00fdd plays: 4 plays BGM 8, 1 to 3 play BGM 0x20 + class (33 to 35), and 0 the common battle music (32 or 31). FIELD@0x0abef: a stage whose stage_victory_defeat_unit is -2 is won when no hostile unit with a class above 0 is left, so a unit of -1 is a boss that victory does not wait for. Values: -1 Boss not needed to win, BGM 33, 1 Boss, BGM 33, 2 Boss, BGM 34, 3 Boss, BGM 35, 4 Boss, BGM 8. 0 means none. |
 | `0x2b6a94` | unit_canonical_character_id | high | investigation | Variant-to-character normalization used before every persistent-character index: UNITECH@0x0002a, SETCH@0x0000c, ADDEXP@0x0000c, COMMITBTL@0x00130, BTL@0x04703, INFO5@0x01100 etc. (~45 scripts). Result is stored in 0x2d2845. |
@@ -972,14 +983,14 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x3b28ac` | condition_critical_rate_deltas | high | investigation | CALCREVISE@0x0069a adds it into unit critical 0x54670. Values: curse -25, exaltation +10, 痛打 +10. |
 | `0x3b28ca` | condition_resource_deltas | med | investigation | Read by CALCDMG@0x01481 (drain on hit) and FIELD@0x09775 (per-turn ticks). Regeneration 14..16 give +1..5. Columns: 0=level_1_hp, 1=level_1_sp, 2=level_1_fs, 3=level_2_hp, 4=level_2_sp, 5=level_2_fs, 6=level_3_hp, 7=level_3_sp, 8=level_3_fs, 9=level_4_hp, 10=level_4_sp, 11=level_4_fs, 12=level_5_hp, 13=level_5_sp, 14=level_5_fs. |
 | `0x3b2a8c` | affinity_damage_percent_by_level | high | investigation | CALCBTPARAM@0x007a3 multiplies attack power by [defender affinity level for the attack element]; a negative value (吸収) heals. BTRTN@0x0012e, SELACT and the RTN_M05x scripts use it to estimate damage. |
-| `0x3b2a98` | species_condition_susceptibility_percent | high | investigation | ADDILLSUB@0x0001a and CALCILL@0x00090 index [species 0x2b5edc][condition_susceptibility_group]. AFINIT fills rows 1..16 with copy-inline-int-array. |
+| `0x3b2a98` | species_condition_susceptibility_percent | high | investigation | ADDILLSUB@0x0001a and CALCILL@0x00090 index [race 0x2b5edc][condition_susceptibility_group]. AFINIT fills rows 1..16 with copy-inline-int-array. CALCILL inflicts a condition (a level change above 0) only when its roll, 0x4f9dc's next number, is below the cell (CALCILL@0x6b-0xa2), and ADDILLSUB skips a condition whose cell is 0 (ADDILLSUB@0x25): the race is immune to that group. The race table's condition chances. Columns: 1=curse, 2=death_and_fear, 3=charm_and_confusion, 4=paralysis_and_poison, 5=drains, 6=water_acid_and_inflammation, 7=buffs_and_others. |
 | `0x3b2b60` | weapon_rank_exp_thresholds | high | investigation | ADDEXP@0x004c8 raises character weapon rank 0x7e1a1 (max 6) while weapon EXP 0x7e205 reaches the next threshold. FELLOWSTATUS displays it. item_rank is compared against this rank. |
 | `0x3b2b67` | alchemy_synthesis_rank_exp_thresholds | high | investigation | ALCHEMY@0xc53 and DRAWSTUDIOLV@0xe6. Also observed: [items decode, named studio_level_exp_thresholds] ALCHEMY@0x00c53 levels the workshop (0x7ea4a) from studio EXP 0x7ea3f. DRAWSTUDIOLV@0x000e6 and INFO1 draw the progress bar. |
 | `0x3b2b6e` | alchemy_synthesis_rank_up_evaluation_bonus | high | investigation | ALCHEMY@0xc7b adds it to the rank-up evaluation award. Also observed: [items decode, named studio_level_up_rewards] ALCHEMY@0x00c7b accumulates these per level gained. The receiving resource is not identified. |
 | `0x3b2b75` | alchemy_item_rank_exp | high | investigation | ALCHEMY@0xa63/0xb00. Also observed: [items decode, named alchemy_exp_by_item_rank] ALCHEMY@0x00a63 adds [item_rank of the crafted item] plus a scaled bonus to the alchemy result. |
 | `0x3b2b7d` | event_delta_scalars | low | investigation | Individual cells are loaded into the generic delta argument 0xfec0c by FIELD (@0x04c6f, 0x09b6c, 0x07707, 0x077c3, 0x07b25, 0x0cc28..0x0cd39) and COMMITBTL (@0x00175, 0x0022b). They are reward/penalty tuning constants with unconfirmed targets. |
 | `0x3b2b90` | affinity_tuning_percent_table | low | investigation | Indexed by 0xfd42d in STATUS@0x01a2f, ORGANIZE, SETCH and SHOWCC as a percent multiplier on a character value. Purpose not identified. |
-| `0x3b2b95` | shop_level_scaled_table | low | investigation | CALCSETTLE@0x00014 copies [0x7ea49] into 0x13fba7, and CALCSETTLE@0x000cd adds index 20 (0x3b2ba9). Probably a shop-level settlement table. |
+| `0x3b2b95` | shop_level_scaled_table | low | investigation | CALCSETTLE@0x00014 copies [0x7ea49] into 0x13fba7, and CALCSETTLE@0x000cd adds index 20 (0x3b2ba9) for each roster member it counts. Probably a shop-level settlement table. AFINIT writes index 1 on from an inline array (AFINIT@0x554) and index 20 alone (AFINIT@0x559), so the table is 21 cells. |
 | `0x3b2bb6` | battle_triggered_passive_skill_flags | med | investigation | BTL@0x00ccc sets it after skill_proc_chance_percent succeeds and later clears it. |
 | `0x3b3b63` | battle_animation_effect_ids | high | investigation | BTANINIT2 writes it at boot. BTANINIT@0x00071 materializes each slot through its effect dispatch. Same layout as Himegari 0x15288e. |
 | `0x3b52d3` | battle_animation_effect_start_delays_ms | med | investigation | Pair of battle_animation_effect_ids, at +6000 cells (same as Himegari). |
@@ -1068,7 +1079,6 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x36ff` | — | low | auto-shape | array |
 | `0x3713` | — | low | auto-shape | array |
 | `0x3727` | — | low | auto-shape | array |
-| `GS 0x61fe` | — | low | auto-shape | array |
 | `0x4f9a9` | — | low | auto-shape | array |
 | `0x4fdd1` | — | low | auto-shape | array |
 | `0x4fdd6` | — | low | auto-shape | array |
@@ -1265,7 +1275,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `GS 0x5998` | skill_names | high | investigation | SKINIT writes GStr[0x5998+id]. INFO3@0x0192a and DRAWTOOLTIP show the name of item_granted_skill_id; BTL, SELACT, SELBOMB, FELLOW, STATUS and others also draw it. |
 | `GS 0x5d80` | skill_short_descriptions | med | investigation | SKINIT writes GStr[0x5d80+id]. Read by STATUS and FELLOWSTATUS. |
 | `GS 0x6168` | condition_level_names | high | investigation | ILINIT writes level names for ids 1..28. Same layout as Himegari condition_level_names (0x25fa). Columns: 0=level_1, 1=level_2, 2=level_3, 3=level_4, 4=level_5. |
-| `GS 0x61ff` | species_names | med | investigation | AFINIT writes 16 names. INFO5@0x00d3f and FELLOWSTATUS@0x01638 draw GStr[0x61fe + unit_race[unit]], one cell before this list, so race r (1 to 16) is element r - 1. |
+| `GS 0x61fe` | species_names | med | investigation | AFINIT writes the 16 names from 0x61ff (AFINIT@0x0 onward); nothing writes 0x61fe, element 0. INFO5@0x00d3f and FELLOWSTATUS@0x01638 draw GStr[0x61fe + unit_race[unit]], so the list starts where the game indexes it, race r at element r (the race table's names). |
 | `GS 0x6212` | element_names | high | investigation | INIT2@0x000db..0x000fe writes the eight names. INFO6@0x01008 draws GStr[0x6212 + skill_attack_element_encoded - 1] (when it is not 0), so element e is element e of the list; STATUS@0x01ff9, SELSEWUP@0x0081b and DRAWTOOLTIP@0x004a6 read it too. Element 0, 無属 (Omni), is the one no unit resists: nothing gives a unit a grade for it (docs/kamidori-data-tables.md, Combat pipeline). |
 | `GS 0x621a` | affinity_level_names | high | investigation | INFO3@0x017b6 prints GStr[0x621a + 5 + item_affinity_level_deltas], so level 5 is neutral. |
 | `GS 0x6226` | craftsman_rank_names | high | investigation | INIT2@0x00103..0x00135 writes the eleven names. DRAWSETTLE@0x000d4 and others draw GStr[0x6226 + protagonist_craftsman_rank], so rank r is element r. |
@@ -6997,6 +7007,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `GS 0x61ee` | — | med | auto-shape | string-table (written by ILINIT) |
 | `GS 0x61ef` | — | med | auto-shape | string-table (written by ILINIT) |
 | `GS 0x61f4` | — | med | auto-shape | string-table (written by ILINIT) |
+| `GS 0x61ff` | — | med | auto-shape | string-table (written by AFINIT) |
 | `GS 0x6200` | — | med | auto-shape | string-table (written by AFINIT) |
 | `GS 0x6201` | — | med | auto-shape | string-table (written by AFINIT) |
 | `GS 0x6202` | — | med | auto-shape | string-table (written by AFINIT) |

@@ -1102,6 +1102,12 @@ authors.
     page lists the skills and items that attack with it. The table's columns have OME's words too, column 0 being
     `no_element`: an attack whose skill, equipped item and default attack item all have none, 100 in every row, which
     the site showed as "#0". The element's note names the conditions of each resistance group (抵抗1 to 7).
+  - **Kamidori's races.** The user asked where a race's resistance to each condition could be read: a unit named its
+    race and a condition its group, but nothing joined them. The registry gains a `race` table (AFINIT's names and its
+    race by group chances, which CALCILL rolls a condition against and ADDILLSUB reads as immune at 0), a unit's race
+    refers to it, and the race kind publishes its sixteen races, their chances by the groups' names, and the units of
+    each. The names now start at 0x61fe, where the game indexes them (`GStr[0x61fe + race]`), race r at element r.
+    AFINIT's one unnamed cell, the settlement table's index 20, was past that table's end; the table is 21 cells.
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
     doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a
     builder) and the fields read at medium or low confidence.

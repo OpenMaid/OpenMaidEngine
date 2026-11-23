@@ -270,7 +270,7 @@ A row of condition levels is indexed by ILINIT's condition ids, column c being c
 
 | list | address | written by | names |
 |---|---|---|---|
-| races | `0x61ff[16]` | AFINIT | race r is element r − 1 (INFO5@`0xd3f` draws `0x61fe + race`) |
+| races | `0x61fe[17]` | AFINIT | race r is element r (INFO5@`0xd3f` draws `0x61fe + race`; AFINIT writes from `0x61ff`, and nothing writes element 0) |
 | affinity levels | `0x621a[12]` | AFINIT | resistance step s is element s + 5 (INFO3@`0x17b6`); an item's change d is element d + 5 too (INFO3@`0x017a4`) |
 | elements | `0x6212[8]` | INIT2@`0xdb` | element e is element e; a skill stores e + 1 (INFO6@`0x1008`); column e of an element row too (`columns_from`: a unit's resistances, INFO5@`0x00f2a`) |
 | craftsman ranks | `0x6226[11]` | INIT2@`0x103` | rank r is element r (DRAWSETTLE@`0xd4`) |
@@ -543,8 +543,10 @@ Kamidori's AFINIT bundles several unrelated tables:
 - **Affinity scale.** Level names are at `0x621a+L`, and damage percents at `0x3b2a8c[12]`:
   150/140/130/120/110/100/90/75/50/25/0/−100, where −100 means absorb. CALCBTPARAM@`0x7a3` multiplies attack
   power by this percent.
-- **Condition susceptibility.** `0x3b2a98[species][10]` gives the percent chance per condition group; 0 means
-  immune.
+- **Condition susceptibility.** `0x3b2a98[race][10]` gives the percent chance per condition group (columns 1 to 7,
+  a condition's group being `0x3b223a`); 0 means immune. CALCILL inflicts a condition only when its roll is below the
+  cell (CALCILL@`0x90`), and ADDILLSUB skips a group whose cell is 0 (ADDILLSUB@`0x25`). The registry's `race` table
+  holds the names and the chances, which the data export publishes as the race kind.
 - **Costume-enhancement catalog** (30 entries):
   - effect type `0x3a0e8d[3]`: 1 affinity, 2 stat, 3 gem socket;
   - effect target `0x3a0ee7[3]` and amount `0x3a0f41[3]`;

@@ -4180,12 +4180,11 @@
         "costume_enhancement_material_quantities": [0, 14, 0],
         "costume_enhancement_tiers": [0, 26, 0],
         "event_delta_scalars": [0, 12, 0],
-        "shop_level_scaled_table": [0, 0, 1],
+        "shop_level_scaled_table": [0, 1, 1],
         "species_condition_susceptibility_percent": [0, 0, 16],
         "species_names": [0, 16, 0],
         "weapon_rank_exp_thresholds": [0, 0, 1]
-      },
-      "unnamed": [0, 1, 0]
+      }
     },
     "AIM.BIN": {
       "id": 17524,
@@ -5444,7 +5443,7 @@
         "protagonist_craftsman_rank": [1, 0, 0],
         "roster_flags": [0, 0, 1],
         "roster_unit_ids": [0, 0, 1],
-        "shop_level_scaled_table": [0, 0, 1],
+        "shop_level_scaled_table": [1, 0, 1],
         "studio_room_level_index": [1, 4, 0],
         "studio_room_levels": [4, 0, 0],
         "studio_room_upkeep_costs": [0, 0, 1],
@@ -5453,7 +5452,7 @@
         "studio_shop_visitor_rate": [1, 0, 0],
         "unit_canonical_character_id": [0, 0, 2]
       },
-      "unnamed": [15, 9, 24]
+      "unnamed": [14, 9, 24]
     },
     "CALCSUPPORT.BIN": {
       "id": 13370,
@@ -7360,6 +7359,7 @@
         "shared_loop_index": [1, 5, 0],
         "skill_names": [0, 0, 2],
         "skill_short_descriptions": [0, 0, 1],
+        "species_names": [0, 0, 2],
         "synthesis_rank_names": [0, 0, 1],
         "unit_canonical_character_id": [0, 0, 4],
         "unit_condition_levels": [0, 0, 3],
@@ -7369,7 +7369,7 @@
         "unit_skill_possessed_flags": [0, 0, 1],
         "weapon_rank_exp_thresholds": [0, 0, 1]
       },
-      "unnamed": [28, 17, 11],
+      "unnamed": [28, 17, 9],
       "waits": {
         "sleep": 1
       }
@@ -8786,6 +8786,7 @@
         "item_names": [0, 0, 2],
         "item_sort_key": [0, 0, 1],
         "skill_names": [0, 0, 1],
+        "species_names": [0, 0, 2],
         "story_event_flags": [0, 0, 2],
         "unit_base_stats": [0, 0, 13],
         "unit_bestiary_description_lines": [0, 0, 1],
@@ -8810,7 +8811,7 @@
         "world_area_state_flags": [0, 0, 2],
         "world_area_visited_profile_flags": [0, 0, 2]
       },
-      "unnamed": [9, 6, 16],
+      "unnamed": [9, 6, 14],
       "waits": {
         "sleep": 1
       }
@@ -23224,6 +23225,7 @@
         "shared_loop_index": [1, 5, 0],
         "skill_names": [0, 0, 4],
         "skill_short_descriptions": [0, 0, 1],
+        "species_names": [0, 0, 2],
         "stage_object_persistent_state": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 1],
         "stage_object_tile_x": [0, 0, 1],
@@ -23240,7 +23242,7 @@
         "unit_race": [0, 0, 2],
         "unit_skill_possessed_flags": [0, 0, 1]
       },
-      "unnamed": [55, 5, 18],
+      "unnamed": [55, 5, 16],
       "waits": {
         "sleep": 1
       }

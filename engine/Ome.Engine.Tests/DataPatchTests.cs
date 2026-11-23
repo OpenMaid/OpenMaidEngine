@@ -195,7 +195,7 @@ public sealed partial class DataPatchTests : IDisposable
         { "} }, item = { [\"12\"] = { name = \"Lily 한\"", "item.12.name", "a string cell holds text the save can encode (code page 932); U+D55C is not in it" },
         { "} }, stage_enemy = { [\"3\"] = { unit_id = 761", "stage_enemy", "stage_enemy is reached through its scope: write stage.<id>.enemy" },
         { "} }, stage = { [\"0\"] = { enemy = 1", "stage.0", "stage has ids 1 to 999" },
-        { "} }, units = { [\"3\"] = { level = 1", "units", "no record table is named units (tables: card, character_profile, condition, dig_table, element, glossary_entry, item, object_type, objective, quest, recipe, skill, stage_catalog, terrain, unit, world_area; scopes: stage)" },
+        { "} }, units = { [\"3\"] = { level = 1", "units", "no record table is named units (tables: card, character_profile, condition, dig_table, element, glossary_entry, item, object_type, objective, quest, race, recipe, skill, stage_catalog, terrain, unit, world_area; scopes: stage)" },
     };
 
     [Theory]

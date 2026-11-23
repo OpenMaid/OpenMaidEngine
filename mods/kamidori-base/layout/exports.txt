@@ -658,6 +658,7 @@ table item
 table object_type
 table objective
 table quest
+table race
 table recipe
 table skill
 table stage_catalog
@@ -819,6 +820,8 @@ field quest.reward_item_ids
 field quest.reward_item_quantities
 field quest.reward_money
 field quest.sort_key
+field race.condition_chance_percent
+field race.name
 field recipe.evaluation_reward
 field recipe.ingredient_item_ids
 field recipe.ingredient_quantities

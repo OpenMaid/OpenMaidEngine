@@ -37,6 +37,9 @@
     "quest": {
       "$ref": "#/definitions/records.quest"
     },
+    "race": {
+      "$ref": "#/definitions/records.race"
+    },
     "recipe": {
       "$ref": "#/definitions/records.recipe"
     },
@@ -3446,6 +3449,112 @@
       },
       "additionalProperties": false
     },
+    "record.race": {
+      "description": "race: one record's fields, by name; write race.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "condition_chance_percent": {
+          "description": "race.condition_chance_percent: species_condition_susceptibility_percent, a row of 10 columns by name where a column has one and by number where it has none; write condition_chance_percent.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "race.condition_chance_percent.0: column 0 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "1": {
+              "description": "column 1 is named: write curse",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write death_and_fear",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write charm_and_confusion",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write paralysis_and_poison",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write drains",
+              "type": "null"
+            },
+            "6": {
+              "description": "column 6 is named: write water_acid_and_inflammation",
+              "type": "null"
+            },
+            "7": {
+              "description": "column 7 is named: write buffs_and_others",
+              "type": "null"
+            },
+            "8": {
+              "description": "race.condition_chance_percent.8: column 8 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "9": {
+              "description": "race.condition_chance_percent.9: column 9 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "buffs_and_others": {
+              "description": "race.condition_chance_percent.buffs_and_others: column 7 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "charm_and_confusion": {
+              "description": "race.condition_chance_percent.charm_and_confusion: column 3 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "curse": {
+              "description": "race.condition_chance_percent.curse: column 1 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "death_and_fear": {
+              "description": "race.condition_chance_percent.death_and_fear: column 2 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "drains": {
+              "description": "race.condition_chance_percent.drains: column 5 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "paralysis_and_poison": {
+              "description": "race.condition_chance_percent.paralysis_and_poison: column 4 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "water_acid_and_inflammation": {
+              "description": "race.condition_chance_percent.water_acid_and_inflammation: column 6 of species_condition_susceptibility_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "name": {
+          "description": "race.name: species_names, text the save's code page (932) can encode",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "record.recipe": {
       "description": "recipe: one record's fields, by name; write recipe.<id>.<field> = ...",
       "type": "object",
@@ -6645,6 +6754,17 @@
       },
       "additionalProperties": {
         "$ref": "#/definitions/record.quest"
+      }
+    },
+    "records.race": {
+      "description": "race: records by id, 0 to 16; write race.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 16
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.race"
       }
     },
     "records.recipe": {

@@ -226,6 +226,14 @@ return {
             },
             old_fields = { requester_icon_asset_id = "journal_icon_asset_id" },
         },
+        race = {
+            records = 17,
+            built_by = "boot",
+            fields = {
+                condition_chance_percent = { global = "species_condition_susceptibility_percent", kind = "integer", width = 10, columns = { curse = 1, death_and_fear = 2, charm_and_confusion = 3, paralysis_and_poison = 4, drains = 5, water_acid_and_inflammation = 6, buffs_and_others = 7 } },
+                name = { global = "species_names", kind = "string" },
+            },
+        },
         recipe = {
             records = 2000,
             built_by = "boot",
