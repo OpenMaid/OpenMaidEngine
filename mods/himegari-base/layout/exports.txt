@@ -440,6 +440,7 @@ unit_experience_reward
 unit_full_names
 unit_icon_id
 unit_initial_class_titles
+unit_joined_flags
 unit_large_battle_sprite
 unit_level_cap
 unit_map_sprite_asset_ids
@@ -447,6 +448,7 @@ unit_movement_routine_set_ids
 unit_power_tier
 unit_roster_state_flag_base_index
 unit_roster_variant_ids
+unit_sally_action_counts
 unit_sally_action_unlock_requirements
 unit_sally_event_ids
 unit_sex_category

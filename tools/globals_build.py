@@ -327,9 +327,10 @@ def ref_target(value) -> str | None:
 
 def split_refs(refs: dict) -> tuple[dict, dict]:
     """A table's references as the JSON writes them: field = target table under `refs`, and a two-field reference's
-    `{ times, plus }` under `ref_keys`."""
+    `{ times, plus }` under `ref_keys`, and an offset reference's `{ offset }`."""
     targets = {field: ref_target(value) for field, value in refs.items()}
-    keys = {field: ({"times": value.get("times"), "pairs": True} if value.get("pairs")
+    keys = {field: ({"offset": value.get("offset")} if "offset" in value
+                    else {"times": value.get("times"), "pairs": True} if value.get("pairs")
                     else {"bases": value.get("bases"), "plus": value.get("plus")} if "bases" in value
                     else {"times": value.get("times"), "plus": value.get("plus")}
                     | ({"any": value["any"]} if "any" in value else {}))
@@ -343,7 +344,9 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
     a table of the registry nor `picture`, and a field whose global is not an integer array, since an id is an
     integer. A two-field reference is `{ table, times, plus }`, its table a table of the registry, `times` a whole
     number above 0 and `plus` another integer field of the table, as wide as the field; a paired one is
-    `{ table, times, pairs = true }`, its field a row of cells of an even width, each pair of elements one record."""
+    `{ table, times, pairs = true }`, its field a row of cells of an even width, each pair of elements one record. An
+    offset reference is `{ table, offset }`, `offset` a whole number other than 0 that a value above 0 adds to name
+    its record (a Himegari unit's summon flag is its stone's item id plus 1901)."""
     errors: list[str] = []
     names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
     for t in tables:
@@ -353,7 +356,7 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
         tag = f"table {name!r}"
         if not isinstance(refs, dict) or not all(isinstance(v, (str, dict)) for v in refs.values()):
             errors.append(f"{tag}: refs must be a table of field = the table its values name, {REF_PICTURE}, "
-                          f"{{ table, times, plus }} or {{ table, times, pairs = true }}")
+                          f"{{ table, times, plus }}, {{ table, times, pairs = true }} or {{ table, offset }}")
             continue
         fields = t.get("fields") if isinstance(t.get("fields"), dict) else {}
 
@@ -366,13 +369,23 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
                 errors.append(f"{tag}: refs names {field!r}, which is not a field of the table")
                 continue
             target = ref_target(value)
-            if isinstance(value, dict):
+            # `offset`: a value above 0 plus the offset names the record (a Himegari unit's summon flag less 1901 is its
+            # summoning stone's item id, SALLY@0x189c).
+            if isinstance(value, dict) and set(value) == {"table", "offset"}:
+                offset = value["offset"]
+                if not isinstance(offset, int) or isinstance(offset, bool) or offset == 0:
+                    errors.append(f"{tag}: refs gives {field} offset {offset!r}, which must be a whole number other "
+                                  f"than 0, what a value adds to name its record")
+                if target == REF_PICTURE:
+                    errors.append(f"{tag}: refs gives {field} an offset reference to {REF_PICTURE}, whose value is "
+                                  f"the picture's own id")
+            elif isinstance(value, dict):
                 paired = set(value) == {"table", "times", "pairs"}
                 based = set(value) == {"table", "bases", "plus"}
                 if set(value) - {"any"} != {"table", "times", "plus"} and not paired and not based:
                     errors.append(f"{tag}: refs gives {field} a two-field reference, which must be "
-                                  f"{{ table, times, plus }}, {{ table, times, plus, any }}, {{ table, bases, plus }} "
-                                  f"or {{ table, times, pairs = true }}")
+                                  f"{{ table, times, plus }}, {{ table, times, plus, any }}, {{ table, bases, plus }}, "
+                                  f"{{ table, times, pairs = true }} or {{ table, offset }}")
                     continue
                 # `bases`: the values that name a record, each with the record its plus counts from (a Kamidori map
                 # object's type 32 or 33 picks dig table 0 or 100, which its payload adds to).
@@ -798,6 +811,8 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                     value = refs.get(field)
                     target = ref_target(value)
                     key = ("" if not isinstance(value, dict)
+                           else f" (value {'+' if value['offset'] > 0 else '−'} {abs(value['offset'])})"
+                           if "offset" in value
                            else f" (element 2k × {value['times']} + element 2k + 1)" if value.get("pairs")
                            else " (" + ", ".join(f"{v} from {base}" for v, base in value["bases"].items())
                                 + f", + {value['plus']}; another value names none)" if "bases" in value

@@ -1437,6 +1437,26 @@ public class GameDataExportTests
         Assert.Equal([0L], Entity(result, "item", 3).KeyedRefs["granted_skill"]);
     }
 
+    [Fact]
+    public void AReferenceWithAnOffsetNamesTheValuePlusTheOffset()
+    {
+        // With offset -1 (export plan §5): item 2's skill 2 names skill 1, item 1's skill 1 names 0, none, and item 3's
+        // -1 stays none. A Himegari unit's summon flag less 1901 is its summoning stone's item id.
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop,
+            Registry = Registry(skillKey: new RefKey(1, null) { Offset = -1 }),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], Entity(result, "item", 2).Refs);
+        Assert.Empty(Entity(result, "item", 1).Refs);
+        Assert.Empty(Entity(result, "item", 3).Refs);
+        Assert.Equal([0L], Entity(result, "item", 1).KeyedRefs["granted_skill"]);
+        Assert.Equal([-1L], Entity(result, "item", 3).KeyedRefs["granted_skill"]);
+    }
+
     // The loot whose skill is on skill 1's side (export plan §5): a part, which the site shows apart.
     private static readonly string Parted = Loader.Replace(
         "\"fields\": [\"skill_id\", \"count\"]}",

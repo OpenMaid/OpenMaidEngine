@@ -92,10 +92,15 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
 /// <summary>How a two-field reference names its record (export plan §5): the field's value times
 /// <paramref name="Times"/>, plus field <paramref name="Plus"/>'s value at the same element. Arterial names a card by
 /// its row and slot, row × 30 + slot. A paired reference (<paramref name="Plus"/> null) takes both from its own field:
-/// element 2k times <paramref name="Times"/>, plus element 2k + 1 (a battle's leader card for each side).</summary>
+/// element 2k times <paramref name="Times"/>, plus element 2k + 1 (a battle's leader card for each side). An offset
+/// reference (<see cref="Offset"/>) names the value plus the offset.</summary>
 public sealed record RefKey(int Times, string? Plus)
 {
-    public bool Pairs => Plus is null;
+    public bool Pairs => Plus is null && Offset is null;
+
+    /// <summary>What a value above 0 adds to name its record (<c>offset</c>), or null: a Himegari unit's summon flag
+    /// less 1901 is its summoning stone's item id.</summary>
+    public long? Offset { get; init; }
 
     /// <summary>The plus value that names every record of the value's row, value × <see cref="Times"/> to value ×
     /// <see cref="Times"/> + <see cref="Times"/> - 1 (<c>any</c>), or null: an Arterial item that every card of a row
@@ -208,6 +213,7 @@ public sealed class RegistryView
                                            pair.Value.TryGetProperty("plus", out JsonElement plus) ? plus.GetString() : null)
                         {
                             Any = pair.Value.TryGetProperty("any", out JsonElement any) ? any.GetInt64() : null,
+                            Offset = pair.Value.TryGetProperty("offset", out JsonElement offset) ? offset.GetInt64() : null,
                             Bases = pair.Value.TryGetProperty("bases", out JsonElement bases)
                                 ? bases.EnumerateObject().ToDictionary(
                                     basePair => long.Parse(basePair.Name, CultureInfo.InvariantCulture),

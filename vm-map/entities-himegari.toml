@@ -33,15 +33,15 @@ explicit_pictures = ["CB069A", "CB500A", "CB405A", "CB360A"]
 [[kind]]
 id = "unit"
 table = "unit"
-about = "Every character and monster: stats and growth, element, starting equipment and skills, what it drops, and what it costs to field, release or summon."
+about = "Every character and monster: stats and growth, element, starting gear and skills, drops, capture and recruiting, and what it costs to field, release or summon."
 exists = "full_name"
 title = "full_name"
 text = ["display_name", "initial_class_title"]
 fields = [
-    "species_category", "sex_category", "boss_class", "capturable", "defense_element", "starting_level", "level_cap",
-    "stats", "stat_growth", "starting_equipment_item_id", "default_attack_item_id", "starting_skill",
-    "deployment_cost_base", "experience_reward", "essence_yield", "summon_point_cost", "summon_knowledge_threshold",
-    "sex_magic_bonus_item_id", "drop_item", "drop_chance",
+    "species_category", "sex_category", "boss_class", "capturable", "canonical_id", "defense_element", "starting_level",
+    "level_cap", "stats", "stat_growth", "starting_equipment_item_id", "default_attack_item_id", "starting_skill",
+    "deployment_cost_base", "experience_reward", "essence_yield", "summon_unlock_flag_index", "summon_point_cost",
+    "summon_knowledge_threshold", "sex_magic_bonus_item_id", "drop_item", "drop_chance",
 ]
 filters = ["species_category", "sex_category", "boss_class", "defense_element"]
 qualifiers = ["initial_class_title", "starting_level", "level_cap"]
@@ -59,10 +59,12 @@ fields = ["drop_item", "drop_chance"]
 [kind.notes]
 stat_table = "Stats are its base values at its starting level, growth what it gains each level in hundredths of a point."
 boss_class = "Every class but none takes the boss adjustment to damage and is spared conditions; a stage won by defeating its bosses waits for every boss but those not a target."
-capturable = "A unit whose capture power is high enough for its level can capture it."
+capturable = "A unit whose capture power is at least its level can capture it. The capture joins the captives as the unit it counts as, which a contract makes a party member; one that counts as no unit cannot be contracted."
+canonical_id = "The unit the party and its menus count it as: a capture joins as it."
+summon_unlock_flag_index = "The key item that lets the summoning menu summon it."
 deployment_cost_base = "What it adds to the party's deployment total, which its capacity limits."
 essence_yield = "The essence it returns when released."
-summon_knowledge_threshold = "The progress a repeat summon needs; with none, it can be summoned once."
+summon_knowledge_threshold = "How many contracts, brainwashings, sex magic and sacrifices of its captives give its summoning stone (a release does not count, and a new game keeps the count). With none, the stone comes another way, and it can be summoned only while none is in the party or among the captives."
 sex_magic_bonus_item_id = "The item the sex magic actions give."
 drops = "Each item it can drop and its chance."
 experience_reward = "The base of the experience a fight with it gives, which the level difference scales."
@@ -77,8 +79,10 @@ initial_class_title = "Class"
 starting_equipment_item_id = "Starting equipment"
 default_attack_item_id = "Default attack"
 deployment_cost_base = "Deployment cost"
+canonical_id = "Counts as"
+summon_unlock_flag_index = "Summoning stone"
 summon_point_cost = "Summon cost"
-summon_knowledge_threshold = "Summon progress needed"
+summon_knowledge_threshold = "Stone after"
 sex_magic_bonus_item_id = "Sex magic bonus"
 
 [kind.referenced_as]
@@ -89,6 +93,8 @@ drop_item = { heading = "Dropped by", details = ["drop_chance"] }
 default_attack_item_id = "Default attack of"
 starting_equipment_item_id = "Starting equipment of"
 sex_magic_bonus_item_id = "Sex magic bonus of"
+canonical_id = { heading = "Its other forms", details = ["capturable"] }
+summon_unlock_flag_index = "Summons"
 
 # The registry names the columns from the art's file prefixes: the status art (CS, the healthy one of its three), the
 # battle bust and face (CA), the map sprite (CP) and the battle figure (CB). DRAWCH loads the map sprite with the colour

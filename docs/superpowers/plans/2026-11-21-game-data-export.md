@@ -1042,3 +1042,20 @@ authors.
     811 pictures, nothing refused and no picture unresolved. The 19 profile portraits are clothed and none is
     explicit. Card lists, where a map object stands, the unnamed cells INIT2 writes and two fields read at medium
     confidence are in the backlog's Himegari item; what a stage map needs is in its stage maps item.
+- **Capture, recruiting and the summoning stones** (2026-11-23; the user: "can you see if we can also show: whether
+  the unit can be recruited after being captured, if it can, what 'recruited' unit it links to, anything about the
+  unit's summoning stone"). The registry had named the tables; how they connect was still open, and it reads off
+  five scripts. A capture (FIELD@0x749d to 0x7518) passes the enemy to UNITECH, which joins it as its
+  `unit_canonical_id` when it has one, a captive in a slot from 50 to 99 (UNITECH@0x50 to 0x16d): every capturable
+  enemy with one counts as a summonable unit, 52 to 80, whose contract needs nothing, and the 39 with none stay
+  themselves, whose contract requirement of 0 removes the action (SALLY@0x142c). SALLY counts each action it performs
+  on a unit (`unit_sally_action_counts`, named now, as is `unit_joined_flags`); the contracts, brainwashings, sex magic
+  and sacrifices added up reach `unit_summon_knowledge_threshold`, and SALLY gives item (`unit_summon_unlock_flag_index`
+  − 1901), the unit's 喚石, items 51 to 80 (SALLY@0x17c7 to 0x18fa). ADDITEM sets a key item's flag 1900 + id, which is
+  the one SUMMON tests (ADDITEM@0x92 to 0xd2, SUMMON@0x100f). GAMECLEAR keeps both new tables in the shared profile.
+  - **A reference by offset.** `{ table, offset }` names, for a value above 0, the value plus the offset; it has no
+    second cell. `unit.summon_unlock_flag_index` is `{ table = "item", offset = -1901 }`.
+  - **The unit pages** show `canonical_id` ("Counts as", and on the unit it names "Its other forms" with whether each
+    is capturable) and the stone ("Summoning stone", and "Summons" on the stone's page), with the capture, the
+    contract and the stone's count in their notes. A unit without a threshold (ヒューリー, the bosses' forms) gets its
+    stone another way, which the export does not say yet.

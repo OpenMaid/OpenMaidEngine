@@ -732,7 +732,7 @@ public static class GameDataExporter
     /// where the registry names them and by number otherwise, as a data file must; a refused element is left out.
     /// </summary>
     /// <summary>The second cell of each published two-field reference (export plan §5): its <c>plus</c> field whole, or
-    /// for a paired one the column after the published one.</summary>
+    /// for a paired one the column after the published one. An offset reference has none.</summary>
     private static IEnumerable<FieldLayout> KeyPartners(IReadOnlyList<FieldLayout> published, IReadOnlyList<FieldLayout> tableFields,
                                                         IReadOnlyList<FieldLayout> joinedFields, TableLayout table,
                                                         IReadOnlyDictionary<string, TableLayout> joins)
@@ -740,7 +740,7 @@ public static class GameDataExporter
         foreach (FieldLayout field in published)
         {
             TableLayout owner = field.Joined is { } joined ? joins[joined] : table;
-            if (!owner.RefKeys.TryGetValue(field.Field, out RefKey? key)) continue;
+            if (!owner.RefKeys.TryGetValue(field.Field, out RefKey? key) || key.Offset != null) continue;
             if (key.Pairs)
             {
                 if (field.Column is { } column) yield return field with { Column = column + 1 };
@@ -999,10 +999,22 @@ public static class GameDataExporter
     /// either of whose cells is withheld is null. With <c>any</c> (<see cref="RefKey.Any"/>), an element whose plus is
     /// that value names its value's row instead, every record of it: its id is 0 and its row is the value. The rows are
     /// null for a reference without <c>any</c>. With <c>bases</c> (<see cref="RefKey.Bases"/>), a value names its base
-    /// plus the plus field's value, and another value none.</summary>
+    /// plus the plus field's value, and another value none. With an offset (<c>{ table, offset }</c>,
+    /// <see cref="RefKey.Offset"/>), a value above 0 names itself plus the offset, and one that names no record above 0
+    /// none.</summary>
     private static (long?[] Ids, long?[]? Rows) KeyedIds(FieldLayout field, IReadOnlyList<FieldLayout> tableFields,
                                                        RefKey key, Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
     {
+        if (key.Offset is { } offset)
+        {
+            var named = new long?[field.Elements];
+            for (int element = 0; element < field.Elements; element++)
+            {
+                var (value, refused) = at(field, element);
+                named[element] = refused ? null : value.Number <= 0 ? value.Number : Math.Max(value.Number + offset, 0);
+            }
+            return (named, null);
+        }
         FieldLayout plus = tableFields.First(other => other.Field == (key.Plus ?? field.Field) && other.Column == null);
         var ids = new long?[field.Elements];
         long?[]? rows = key.Any is null ? null : new long?[field.Elements];

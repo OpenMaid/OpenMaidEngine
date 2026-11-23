@@ -400,6 +400,18 @@ def test_table_refs():
     keyed[0]["refs"] = {"icon": {"table": "weapon", "bases": {"x": -1}, "plus": "rank"}}
     check(any("icon bases {'x': -1}, which must be a table of value" in e for e in G.lint_tables(keyed, entries)),
           "lint_tables flags bases that are not values and records")
+    # With an offset, a value above 0 plus the offset names the record (a Himegari unit's summon flag less 1901 is its
+    # summoning stone's item id).
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "offset": -1901}}
+    check(G.lint_tables(keyed, entries) == [], f"an offset reference lints clean ({G.lint_tables(keyed, entries)})")
+    check(G.table_json(keyed[0]).get("ref_keys") == {"icon": {"offset": -1901}}, "the JSON writes a reference's offset")
+    doc = G.emit_reference_md(merged, [keyed[0]], [])
+    check("`weapon` (value − 1901)" in doc, "the reference doc says the offset")
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "offset": 0}, "rank": {"table": "picture", "offset": 2}}
+    errors = G.lint_tables(keyed, entries)
+    check(any("icon offset 0, which must be a whole number other than 0" in e for e in errors),
+          "lint_tables flags an offset of 0")
+    check(any("rank an offset reference to picture" in e for e in errors), "lint_tables flags an offset to a picture")
     keyed[0]["refs"] = {"weapon": {"table": "weapon", "times": 0, "plus": "rank"},
                         "icon": {"table": "picture", "times": 3, "plus": "icon"},
                         "rank": {"table": "weapon", "plus": "name"}}

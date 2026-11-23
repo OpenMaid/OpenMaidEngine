@@ -544,8 +544,20 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     lists: 1, 11, 31, 41, 55, 61, 71, 94 and 160) each time one is used, seeded with
     `current_card_generation_list_id`; a loader would run it once a list and read at its exit (a new patch point at
     `CDINIT@0x1e9a`). No kind has list ids for its ids, so a list needs a kind of its own, or a stage's card objects
-    need a join to the list their payload names. Done when a card's page says which stages deal it, and with what
-    weight (a card's weight is its base, plus its growth for every full interval of turns the stage has lasted).
+    need a join to the list their payload names. The lists follow the chapters (STINIT's type-28 objects, 2026-11-23):
+    stage 1 deals list 1 (11 cards: the small recovery, essence and research cards, traps and warp), stages 11 to 26
+    list 11, 31 to 38 list 31, 41 to 56 list 41, 61 and 63 list 61, 71 to 108 list 71, and the EX dungeons 161 to 166
+    list 160, each holding more than the one before: the medium cards come from list 41 on and the large from 71, a
+    third of the 使い魔 cards each from lists 11, 41 and 71, the 星石 cards (72 to 81) only from list 160, and 36 cards
+    wait for story flags. Done when a card's page says which
+    stages deal it, and with what weight (a card's weight is its base, plus its growth for every full interval of
+    turns the stage has lasted).
+  - **Where the other summoning stones come from.** A unit's captives give its 喚石 once their contracts,
+    brainwashings, sex magic and sacrifices reach `unit_summon_knowledge_threshold` (SALLY@0x17c7), and training gives
+    ヒューリー's, ケルベロス's and 死王's (`training_action.awarded_item_id`). Seven units have neither: 戦姫アセンブリア
+    (54), 漂着した異界の姫 (68) and the five from 魔神ラテンニール to 玉座斬りの亡霊 (74 to 78), each a boss's canonical unit. No script
+    gives their items by a constant or sets their flags (`story_event_flags[1900 + id]`) by address, so the item is
+    computed or given by a scene (2026-11-23). Done when each stone's page says where it comes from.
   - **Where a map object stands.** `stage_object.type_id` refers to the chests' item (`bases`), so a map object's page
     cannot list the stages that place it, and the objects other than chests are not shown on a stage: their payloads
     mean another thing for each type (a teleporter's destination, a base's owner, a card object's list). The stage

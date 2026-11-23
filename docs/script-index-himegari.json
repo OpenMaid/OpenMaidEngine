@@ -3306,10 +3306,12 @@
         "unit_current_stats": [0, 0, 3],
         "unit_deployment_cost_adjustments": [0, 0, 1],
         "unit_experience_progress": [0, 0, 3],
+        "unit_joined_flags": [0, 0, 1],
+        "unit_sally_action_counts": [0, 0, 1],
         "unit_skill_ids": [0, 0, 3],
         "unit_stat_growth_fractions": [0, 0, 3]
       },
-      "unnamed": [63, 41, 16],
+      "unnamed": [63, 41, 14],
       "waits": {
         "mark-frame-yield": 3,
         "show-text": 2,
@@ -3368,13 +3370,15 @@
         "unit_deployment_cost_base": [1, 0, 0],
         "unit_display_names": [0, 12, 0],
         "unit_experience_progress": [0, 0, 2],
+        "unit_joined_flags": [0, 0, 1],
+        "unit_sally_action_counts": [0, 4, 1],
         "unit_skill_ids": [0, 0, 1],
         "unit_starting_skill_ids": [0, 0, 4],
         "unit_stat_growth_fractions": [0, 0, 2],
         "unit_story_display_names": [0, 12, 0],
         "unit_summon_unlock_flag_index": [0, 0, 1]
       },
-      "unnamed": [81, 59, 7],
+      "unnamed": [81, 55, 5],
       "waits": {
         "sleep": 1
       }
@@ -6336,6 +6340,7 @@
         "unit_icon_id": [0, 0, 1],
         "unit_roster_state_flag_base_index": [0, 0, 8],
         "unit_roster_variant_ids": [0, 0, 4],
+        "unit_sally_action_counts": [0, 0, 8],
         "unit_sally_action_unlock_requirements": [0, 0, 3],
         "unit_sally_event_ids": [0, 0, 6],
         "unit_sex_magic_bonus_item_id": [0, 0, 2],
@@ -6346,7 +6351,7 @@
         "unit_summon_knowledge_threshold": [0, 0, 2],
         "unit_summon_unlock_flag_index": [0, 0, 2]
       },
-      "unnamed": [47, 40, 14],
+      "unnamed": [47, 40, 6],
       "waits": {
         "mark-frame-yield": 1,
         "sleep": 1
@@ -9147,12 +9152,13 @@
         "stage_terrain_atlas": [0, 2, 0],
         "story_event_flags": [0, 10, 0],
         "system_flow_request": [0, 1, 0],
+        "unit_sally_action_counts": [8, 4, 0],
         "unit_story_display_names": [0, 0, 135],
         "unit_story_speaker_seen_flags": [0, 0, 405],
         "unit_voice_family_unit_ids": [0, 0, 135],
         "unit_voice_suppression_flag_ids": [0, 0, 135]
       },
-      "unnamed": [1402, 1071, 80],
+      "unnamed": [1394, 1067, 80],
       "waits": {
         "coroutine-resume": 2,
         "mark-frame-yield": 1,
@@ -21266,12 +21272,14 @@
         "story_event_flags": [0, 0, 1],
         "unit_current_levels": [0, 0, 1],
         "unit_icon_id": [0, 0, 1],
+        "unit_joined_flags": [0, 0, 1],
+        "unit_sally_action_counts": [0, 0, 6],
         "unit_sort_key": [0, 0, 1],
         "unit_summon_knowledge_threshold": [0, 0, 4],
         "unit_summon_point_cost": [0, 0, 4],
         "unit_summon_unlock_flag_index": [0, 0, 2]
       },
-      "unnamed": [26, 21, 11],
+      "unnamed": [26, 21, 4],
       "waits": {
         "fade-surface-out-to-black": 1,
         "sleep": 1
@@ -21535,6 +21543,7 @@
         "unit_current_levels": [0, 0, 5],
         "unit_current_stats": [0, 0, 5],
         "unit_experience_progress": [0, 0, 1],
+        "unit_joined_flags": [0, 0, 1],
         "unit_roster_state_flag_base_index": [0, 0, 4],
         "unit_roster_variant_ids": [0, 0, 2],
         "unit_skill_ids": [0, 0, 1],
@@ -21544,7 +21553,7 @@
         "unit_stat_growth_fractions": [0, 0, 5],
         "unit_stat_growth_rates": [0, 0, 1]
       },
-      "unnamed": [5, 2, 12]
+      "unnamed": [5, 2, 11]
     },
     "USEITEM.BIN": {
       "id": 12967,
