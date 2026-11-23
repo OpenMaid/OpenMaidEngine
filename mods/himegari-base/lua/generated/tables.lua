@@ -79,7 +79,7 @@ return {
             records = 16,
             built_by = "boot",
             fields = {
-                effectiveness_percent = { global = "attack_element_effectiveness_percent", kind = "integer", width = 20 },
+                effectiveness_percent = { global = "attack_element_effectiveness_percent", kind = "integer", width = 20, columns = { no_element = 0, physical = 1, universal = 2, fire = 3, ice = 4, lightning = 5, earth = 6, holy = 7, dark = 8, resistance_1 = 11, resistance_2 = 12, resistance_3 = 13, resistance_4 = 14, resistance_5 = 15, resistance_6 = 16, resistance_7 = 17 } },
                 name = { global = "defense_element_names", kind = "string" },
             },
         },

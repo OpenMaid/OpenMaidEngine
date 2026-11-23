@@ -1095,6 +1095,13 @@ authors.
     a unit's defense element (INFOEN@0x12b0). The skill menu draws an attack element from SO008B (SELACT@0xd2f), whose
     icons 1 to 8 are SO018's pixel for pixel, so the element kind has one icon. The site shows each as the element's
     thumbnail and before every link to an element.
+  - **Himegari's attack elements link.** The user asked that a skill's attack element link its element (skill 209's
+    冷却). An attack element is a column of the element table, not a record, but attack element n is element n: the
+    game names 1 to 8 alike in both lists, draws them with the same icons, and 火炎 to 地脈 absorb their own. So the
+    registry's skill and item tables refer to `element` by `attack_element` (60 skills, 109 items), and the element
+    page lists the skills and items that attack with it. The table's columns have OME's words too, column 0 being
+    `no_element`: an attack whose skill, equipped item and default attack item all have none, 100 in every row, which
+    the site showed as "#0". The element's note names the conditions of each resistance group (抵抗1 to 7).
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
     doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a
     builder) and the fields read at medium or low confidence.

@@ -81,7 +81,7 @@ ITINIT item records keyed by item id.
 | min_range | item_min_range | `0x8d431` | `int[1000]` | |
 | max_range | item_max_range | `0x8d819` | `int[1000]` | |
 | icon_id | item_icon_id | `0x8dc01` | `int[1000]` | |
-| attack_element | item_attack_element | `0x8dfe9` | `int[1000]` | |
+| attack_element | item_attack_element | `0x8dfe9` | `int[1000]` | `element` |
 | defense_element | item_defense_element | `0x8e3d1` | `int[1000]` | `element` |
 | character_whitelist | item_character_whitelist | `0x8e7b9` | `int[1000][5]` | `unit` |
 | sex_restriction_mask | item_sex_restriction_mask | `0x8ff29` | `int[1000]` | |
@@ -101,25 +101,25 @@ Built by: `boot`.
 
 SKINIT skill records keyed by skill id, with the per-skill acquisition state.
 
-| field | global | address | type |
-|---|---|---|---|
-| name | skill_names | `GS 0x23a2` | `string[300]` |
-| short_description | skill_short_descriptions | `GS 0x24ce` | `string[300]` |
-| acquired_flag | skill_acquired_flags | `0x65ce` | `int[300]` |
-| info_revealed_flag | skill_info_revealed_flags | `0x5660b` | `int[300]` |
-| sort_key | skill_sort_key | `0xa6e5a` | `int[300]` |
-| category | skill_category | `0xa6f86` | `int[300]` |
-| change_catalog_eligible | skill_change_catalog_eligible | `0xa70b2` | `int[300]` |
-| min_range_encoded | skill_min_range_encoded | `0xa71de` | `int[300]` |
-| max_range_encoded | skill_max_range_encoded | `0xa730a` | `int[300]` |
-| attack_element | skill_attack_element | `0xa7436` | `int[300]` |
-| status_levels | skill_status_levels | `0xa7562` | `int[300][30]` |
-| icon_id | skill_icon_id | `0xa988a` | `int[300]` |
-| combat_stat_deltas | skill_combat_stat_deltas | `0xa99b6` | `int[300][10]` |
-| resource_deltas | skill_resource_deltas | `0xaa56e` | `int[300][3]` |
-| proc_chance_percent | skill_proc_chance_percent | `0xaa8f2` | `int[300]` |
-| battle_animation_id | skill_battle_animation_id | `0xaaa1e` | `int[300]` |
-| handler_script_id | skill_handler_script_id | `0xaab4a` | `int[300]` |
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | skill_names | `GS 0x23a2` | `string[300]` | |
+| short_description | skill_short_descriptions | `GS 0x24ce` | `string[300]` | |
+| acquired_flag | skill_acquired_flags | `0x65ce` | `int[300]` | |
+| info_revealed_flag | skill_info_revealed_flags | `0x5660b` | `int[300]` | |
+| sort_key | skill_sort_key | `0xa6e5a` | `int[300]` | |
+| category | skill_category | `0xa6f86` | `int[300]` | |
+| change_catalog_eligible | skill_change_catalog_eligible | `0xa70b2` | `int[300]` | |
+| min_range_encoded | skill_min_range_encoded | `0xa71de` | `int[300]` | |
+| max_range_encoded | skill_max_range_encoded | `0xa730a` | `int[300]` | |
+| attack_element | skill_attack_element | `0xa7436` | `int[300]` | `element` |
+| status_levels | skill_status_levels | `0xa7562` | `int[300][30]` | |
+| icon_id | skill_icon_id | `0xa988a` | `int[300]` | |
+| combat_stat_deltas | skill_combat_stat_deltas | `0xa99b6` | `int[300][10]` | |
+| resource_deltas | skill_resource_deltas | `0xaa56e` | `int[300][3]` | |
+| proc_chance_percent | skill_proc_chance_percent | `0xaa8f2` | `int[300]` | |
+| battle_animation_id | skill_battle_animation_id | `0xaaa1e` | `int[300]` | |
+| handler_script_id | skill_handler_script_id | `0xaab4a` | `int[300]` | |
 
 ### stage_enemy[30]
 
@@ -207,7 +207,7 @@ ILINIT conditions keyed by condition id: 1 to 11, 13 and 14 are written ($1$ILIN
 
 Built by: `boot`.
 
-AFINIT's elements keyed by defense element id, 1 to 12 named (0 is none, whose row is 100 throughout): a unit's and a shield's defense element (unit_defense_element, item_defense_element). Each row is how that element takes each attack element's damage, and how likely it is to catch each resistance group's conditions (attack_element_effectiveness_percent). Attack elements 1 to 8 have the same names as defense elements 1 to 8; attack ids are columns of this table, not records.
+AFINIT's elements keyed by defense element id, 1 to 12 named (0 is none, whose row is 100 throughout): a unit's and a shield's defense element (unit_defense_element, item_defense_element). Each row is how that element takes each attack element's damage, and how likely it is to catch each resistance group's conditions (attack_element_effectiveness_percent). An attack element (item_attack_element, skill_attack_element) is a column of the rows, and attack element n (1 to 8) is element n: the two lists name 1 to 8 alike (attack_element_names, defense_element_names), the skill menu's attack icons are the unit screen's defense icons (SELACT@0xd2f, INFOEN@0x12b0), and the matchups pair them: 火炎, 冷却, 電撃 and 地脈 (3 to 6) absorb their own attack element (-100 where row and column meet), and 神聖 and 暗黒 take 80 of theirs.
 
 | field | global | address | type |
 |---|---|---|---|
@@ -642,7 +642,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0xa70b2` | skill_change_catalog_eligible | high | investigation | SKINIT inclusion flag for CHMENU's fourth (skill-change) catalog. CHMENU scans all 300 ids, keeps only nonzero rows, sorts acquired rows ahead of unavailable rows using skill_category and skill_sort_key, and copies the acquired prefix into catalog row 3. Eligible ids are 1, 2, 112, 130..133, 210, 228, 230, and 231. |
 | `0xa71de` | skill_min_range_encoded | high | investigation | Populated for the 94 active skills. CALCSCOPE and CALCREVISE subtract one before using it as the lower range bound; SELACT and DRAWTIP use the same encoded bound. Shown as the value − 1. 0 means none. |
 | `0xa730a` | skill_max_range_encoded | high | investigation | Populated for the same 94 active skills as skill_min_range_encoded. CALCSCOPE subtracts one to obtain the upper bound, exactly matching descriptions such as range 3 -> stored 4 and range 9 -> stored 10. Shown as the value − 1. 0 means none. |
-| `0xa7436` | skill_attack_element | high | investigation | Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it. Names: `attack_element_names`, element 0 naming 0. |
+| `0xa7436` | skill_attack_element | high | investigation | Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it. A skill with none attacks with the equipped item's element, else the unit's default attack item's (CALCBTPARAM@0x15b-0x1cb). Names: `attack_element_names`, element 0 naming 0. |
 | `0xa7562` | skill_status_levels | high | investigation | Sparse SKINIT row-major condition table consumed by CALCILL when applying a skill's effects to the target unit; column k is ILINIT condition k (CALCILL@0x42-0x83). Skill names and descriptions identify columns 1 instant death, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear; the column layout matches item_status_delta_levels. Columns: 1=instant_death, 6=charm, 7=confusion, 8=paralysis, 9=poison, 10=water_flow, 11=fear. Column k is record k of `condition`. |
 | `0xa988a` | skill_icon_id | high | investigation | SKINIT icon id for all 131 skills. INFOIT@0x15dc-0x1643 draws it from surface 0x49, the item icon sheet (item_icon_id), with the item icons' cut: id k at x = ((k-1)%10)*40, y = ((k-1)/10)*40, 40x40, so 51..56 are row 5's first six cells of SO016.AGF; CHMENU draws it the same way. The six ids group movement, defense, utility, passive, physical-special, and magic icons. |
 | `0xa99b6` | skill_combat_stat_deltas | high | investigation | Sparse SKINIT row-major table applied by CALCBTPARAM for the selected action. Descriptions and combat consumers establish columns 0 accuracy, 1 evasion, 2 physical attack, 3 physical defense, 4 magic attack, 5 magic defense, 6 speed, 7 luck, 8 critical chance, and 9 capture power. Column 7 is unpopulated in shipped SKINIT; CALCBTPARAM adds any luck and critical modifiers into the critical percentage that CALCDMG rolls after the hit check. Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=speed, 7=luck, 8=critical_chance, 9=capture_power. |
@@ -657,7 +657,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per-stage ar
 | `0xaacf0` | condition_duration_turns_by_level | high | investigation | ILINIT's five-column duration row for each condition. ADDILLSUB indexes it by the resulting condition level minus one and stores the value in entity_condition_remaining_turns (ADDILLSUB@0x174-0x1cc). FIELD counts a positive count down each turn and clears the condition at 0 (FIELD@0x7b4b-0x7bab); -1 never counts down. Columns: 0=level_1_turns, 1=level_2_turns, 2=level_3_turns, 3=level_4_turns, 4=level_5_turns. Values: -1 Until cured. |
 | `0xaad86` | condition_stat_deltas | high | investigation | ILINIT's five-level by eleven-stat matrix for each condition. CALCREVISE indexes (condition level - 1) * 11 + stat column and adds the result to entity_effective_stats columns 0..10. Shipped rows populate curse, confusion, paralysis, and exaltation. Columns: 0=level_1_accuracy, 1=level_1_evasion, 2=level_1_physical_attack, 3=level_1_physical_defense, 4=level_1_magic_attack, 5=level_1_magic_defense, 6=level_1_speed, 7=level_1_luck, 8=level_1_critical_chance, 9=level_1_capture_power, 10=level_1_movement, 11=level_2_accuracy, 12=level_2_evasion, 13=level_2_physical_attack, 14=level_2_physical_defense, 15=level_2_magic_attack, 16=level_2_magic_defense, 17=level_2_speed, 18=level_2_luck, 19=level_2_critical_chance, 20=level_2_capture_power, 21=level_2_movement, 22=level_3_accuracy, 23=level_3_evasion, 24=level_3_physical_attack, 25=level_3_physical_defense, 26=level_3_magic_attack, 27=level_3_magic_defense, 28=level_3_speed, 29=level_3_luck, 30=level_3_critical_chance, 31=level_3_capture_power, 32=level_3_movement, 33=level_4_accuracy, 34=level_4_evasion, 35=level_4_physical_attack, 36=level_4_physical_defense, 37=level_4_magic_attack, 38=level_4_magic_defense, 39=level_4_speed, 40=level_4_luck, 41=level_4_critical_chance, 42=level_4_capture_power, 43=level_4_movement, 44=level_5_accuracy, 45=level_5_evasion, 46=level_5_physical_attack, 47=level_5_physical_defense, 48=level_5_magic_attack, 49=level_5_magic_defense, 50=level_5_speed, 51=level_5_luck, 52=level_5_critical_chance, 53=level_5_capture_power, 54=level_5_movement. |
 | `0xab3f8` | condition_resource_deltas | high | investigation | ILINIT's five-level by three-resource matrix for each condition. FIELD applies the active row each turn; CALCDMG also consumes the HP/SP/FS drain condition rows during battle. Positive values restore/drain to the acting side as defined by the caller, while negative values are periodic damage or loss. Columns: 0=level_1_hp, 1=level_1_sp, 2=level_1_fs, 3=level_2_hp, 4=level_2_sp, 5=level_2_fs, 6=level_3_hp, 7=level_3_sp, 8=level_3_fs, 9=level_4_hp, 10=level_4_sp, 11=level_4_fs, 12=level_5_hp, 13=level_5_sp, 14=level_5_fs. |
-| `0xab5ba` | attack_element_effectiveness_percent | high | investigation | AFINIT-authored element matchup table with thirteen authored defense rows (0..12, AFINIT@0x87-0xc3; $1$AFINIT writes nothing) and eighteen authored cells per row, rows 20 wide (CALCILL@0xf2 and CALCBTPARAM@0x6bb index it with stride 20); sixteen rows, as item_tuning_stat_bonus_curves begins at row 16's first cell (0xab6fa). Row: the defense element (defense_element_names; a unit's unit_defense_element). Columns 1..8: the damage percent of an attack of that element: CALCBTPARAM multiplies the damage by the cell and divides by 100 (CALCBTPARAM@0x6bb-0x6db), so a negative cell turns the damage negative, which the -999..999 clamp keeps (CALCBTPARAM@0x736-0x7b5): the hit absorbs, as fire on 火炎 (-100). Columns 11..17 (抵抗1..抵抗7): the percent chance a condition of that resistance group takes (condition_effectiveness_element_ids; CALCILL@0xe6-0x10e). Columns 9 and 10 are 0 in every row. Positive values make an action eligible in SETMVWORK and RTN_M051/052; INFOAF displays eight attack columns for its selected defense rows. Column names: `attack_element_names`, element 0 naming column 0. |
+| `0xab5ba` | attack_element_effectiveness_percent | high | investigation | AFINIT-authored element matchup table with thirteen authored defense rows (0..12, AFINIT@0x87-0xc3; $1$AFINIT writes nothing) and eighteen authored cells per row, rows 20 wide (CALCILL@0xf2 and CALCBTPARAM@0x6bb index it with stride 20); sixteen rows, as item_tuning_stat_bonus_curves begins at row 16's first cell (0xab6fa). Row: the defense element (defense_element_names; a unit's unit_defense_element). Columns 1..8: the damage percent of an attack of that element: CALCBTPARAM multiplies the damage by the cell and divides by 100 (CALCBTPARAM@0x6bb-0x6db), so a negative cell turns the damage negative, which the -999..999 clamp keeps (CALCBTPARAM@0x736-0x7b5): the hit absorbs, as fire on 火炎 (-100). Column 0 is an attack with no element, 100 in every row: CALCBTPARAM takes the selected skill's element, else the equipped item's, else the unit's default attack item's (CALCBTPARAM@0x15b-0x1cb), so an attack is element 0 only when all three have none (27 unit records have no default attack item, among them エミリオ's 16 and 17, the familiars and the children). Columns 11..17 (抵抗1..抵抗7): the percent chance a condition of that resistance group takes (condition_effectiveness_element_ids; CALCILL@0xe6-0x10e). Columns 9 and 10 are 0 in every row. Positive values make an action eligible in SETMVWORK and RTN_M051/052; INFOAF displays eight attack columns for its selected defense rows. Columns: 0=no_element, 1=physical, 2=universal, 3=fire, 4=ice, 5=lightning, 6=earth, 7=holy, 8=dark, 11=resistance_1, 12=resistance_2, 13=resistance_3, 14=resistance_4, 15=resistance_5, 16=resistance_6, 17=resistance_7. Column names: `attack_element_names`, element 0 naming column 0. |
 | `0xab6fa` | item_tuning_stat_bonus_curves | high | investigation | Eighteen usable equipment-growth curves selected by item_tuning_curve_ids, plus an explicitly zeroed reserved row 19. TUNE and IMPROVE use the nonzero prefix as the available tuning-level range; CALCREVISE and DRAWTIP add the selected zero-based tuning level's bonus to the corresponding stat. Columns: 0=tuning_level_1, 1=tuning_level_2, 2=tuning_level_3, 3=tuning_level_4, 4=tuning_level_5, 5=tuning_level_6, 6=tuning_level_7, 7=tuning_level_8, 8=tuning_level_9, 9=tuning_level_10, 10=reserved. |
 | `0xab7d6` | item_tuning_point_cost_curves | high | investigation | Point-cost curves paired by curve id and tuning level with item_tuning_stat_bonus_curves. IMPROVE sums costs for newly selected levels, subtracts refunds for removed levels, checks the resulting total against the tuning-point balance, and deducts it on confirmation. Columns: 0=tuning_level_1, 1=tuning_level_2, 2=tuning_level_3, 3=tuning_level_4, 4=tuning_level_5, 5=tuning_level_6, 6=tuning_level_7, 7=tuning_level_8, 8=tuning_level_9, 9=tuning_level_10, 10=reserved. |
 | `0xab8b2` | facility_level_progress_thresholds | high | investigation | AFINIT's three facility-progression rows. IMPROVE uses row 0 for equipment tuning, ALCHEMY uses row 1, and MAGIC/USEMAGIC use row 2; each indexes the row by the current level and caps advancement at level 6. Columns: 0=level_0_to_1, 1=level_1_to_2, 2=level_2_to_3, 3=level_3_to_4, 4=level_4_to_5, 5=level_5_to_6, 6=level_6_cap. |

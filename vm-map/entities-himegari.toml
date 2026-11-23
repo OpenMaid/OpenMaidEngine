@@ -220,6 +220,7 @@ status_delta_levels = "Conditions when used"
 equipped_status_levels = "Conditions while equipped"
 
 [kind.referenced_as]
+attack_element = "Items that attack with it"
 defense_element = "Items of this element"
 granted_skill_id = "Granted by"
 status_delta_levels = "Changed by using items"
@@ -268,6 +269,7 @@ status_levels = "Conditions"
 proc_chance_percent = "Chance"
 
 [kind.referenced_as]
+attack_element = "Skills that attack with it"
 status_levels = "Inflicted by skills"
 
 [[kind]]
@@ -411,7 +413,7 @@ cleared_by_recover = "Cleared by recovery"
 [[kind]]
 id = "element"
 table = "element"
-about = "The elements a unit or a piece of equipment can have: how much of each attack element's damage it takes, and its chance to catch each group of conditions."
+about = "The elements: the items and skills that attack with each, the units and shields of each, and how each takes every attack element's damage and conditions."
 exists = "name"
 title = "name"
 fields = ["effectiveness_percent"]
@@ -430,7 +432,7 @@ step = [20, 20]
 size = [20, 20]
 
 [kind.notes]
-effectiveness_percent = "Columns 1 to 8: the percent of each attack element's damage taken, a negative one absorbed. Columns 11 to 17: the percent chance to catch a condition resisted that way."
+effectiveness_percent = "Column 0 is an attack with no element, 100 in every row. Columns 1 to 8: the percent of each attack element's damage taken, a negative one absorbed. Columns 11 to 17: the percent chance to catch a condition of that group (抵抗1 呪い; 2 即死, 恐怖; 3 魅了, 混乱; 4 麻痺, 猛毒; 5 the drains; 6 水流; 7 再生, 高揚)."
 
 [kind.labels]
 effectiveness_percent = "Damage and condition chance"

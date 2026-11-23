@@ -31,7 +31,7 @@
   {"name": "alchemy_recipe_output_item_ids", "bank": "G", "address": "0x156214", "dims": [1000]},
   {"name": "alchemy_recipe_point_costs", "bank": "G", "address": "0x157d6c", "dims": [1000]},
   {"name": "alchemy_recipe_required_story_flags", "bank": "G", "address": "0x1569e4", "dims": [1000, 2], "columns": {"required_flag_1": 0, "required_flag_2": 1}},
-  {"name": "attack_element_effectiveness_percent", "bank": "G", "address": "0xab5ba", "dims": [16, 20]},
+  {"name": "attack_element_effectiveness_percent", "bank": "G", "address": "0xab5ba", "dims": [16, 20], "columns": {"no_element": 0, "physical": 1, "universal": 2, "fire": 3, "ice": 4, "lightning": 5, "earth": 6, "holy": 7, "dark": 8, "resistance_1": 11, "resistance_2": 12, "resistance_3": 13, "resistance_4": 14, "resistance_5": 15, "resistance_6": 16, "resistance_7": 17}},
   {"name": "attack_element_names", "bank": "GS", "address": "0x2690", "dims": [20], "columns": {"physical": 1, "universal": 2, "fire": 3, "ice": 4, "lightning": 5, "earth": 6, "holy": 7, "dark": 8, "resistance_1": 11, "resistance_2": 12, "resistance_3": 13, "resistance_4": 14, "resistance_5": 15, "resistance_6": 16, "resistance_7": 17}},
   {"name": "battle_actor_hp_recovery", "bank": "G", "address": "0x15261e", "dims": []},
   {"name": "battle_actor_side_index", "bank": "G", "address": "0x15261a", "dims": []},

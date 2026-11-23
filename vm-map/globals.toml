@@ -207,7 +207,7 @@ address = "0x8dfe9"
 name = "item_attack_element"
 category = "data-table"
 type = "int[1000]"
-value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark)"
+value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark), the element of that id; 0 none"
 values_from = { global = "attack_element_names", first = 0 }
 usage = "Populated for 107 weapons/attacks. Values exactly match the AFINIT attack-attribute string table at GStr[0x2690 + value] and the Japanese item descriptions; combat scope/parameter code consumes the same array."
 source = "investigation"
@@ -609,9 +609,9 @@ address = "0xa7436"
 name = "skill_attack_element"
 category = "data-table"
 type = "int[300]"
-value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark)"
+value_domain = "1..8 (physical, universal, fire, ice, lightning, earth, holy, dark), the element of that id; 0 none"
 values_from = { global = "attack_element_names", first = 0 }
-usage = "Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it."
+usage = "Populated for 60 elemental attacks and spells. Values match the Japanese descriptions and the same eight-value attack-element enum used by item_attack_element; CALCSCOPE, CALCBTPARAM, and SELACT consume it. A skill with none attacks with the equipped item's element, else the unit's default attack item's (CALCBTPARAM@0x15b-0x1cb)."
 source = "investigation"
 confidence = "high"
 
@@ -2266,8 +2266,9 @@ name = "attack_element_effectiveness_percent"
 category = "data-table"
 type = "int[16][20]"
 columns_from = { global = "attack_element_names", first = 0 }
-value_domain = "signed percent, row a defense element id (0..12), column an attack element id (1..8) or a condition resistance group (11..17)"
-usage = "AFINIT-authored element matchup table with thirteen authored defense rows (0..12, AFINIT@0x87-0xc3; $1$AFINIT writes nothing) and eighteen authored cells per row, rows 20 wide (CALCILL@0xf2 and CALCBTPARAM@0x6bb index it with stride 20); sixteen rows, as item_tuning_stat_bonus_curves begins at row 16's first cell (0xab6fa). Row: the defense element (defense_element_names; a unit's unit_defense_element). Columns 1..8: the damage percent of an attack of that element: CALCBTPARAM multiplies the damage by the cell and divides by 100 (CALCBTPARAM@0x6bb-0x6db), so a negative cell turns the damage negative, which the -999..999 clamp keeps (CALCBTPARAM@0x736-0x7b5): the hit absorbs, as fire on 火炎 (-100). Columns 11..17 (抵抗1..抵抗7): the percent chance a condition of that resistance group takes (condition_effectiveness_element_ids; CALCILL@0xe6-0x10e). Columns 9 and 10 are 0 in every row. Positive values make an action eligible in SETMVWORK and RTN_M051/052; INFOAF displays eight attack columns for its selected defense rows."
+columns = { "0" = "no_element", "1" = "physical", "2" = "universal", "3" = "fire", "4" = "ice", "5" = "lightning", "6" = "earth", "7" = "holy", "8" = "dark", "11" = "resistance_1", "12" = "resistance_2", "13" = "resistance_3", "14" = "resistance_4", "15" = "resistance_5", "16" = "resistance_6", "17" = "resistance_7" }
+value_domain = "signed percent, row a defense element id (0..12), column an attack element id (0..8, 0 no element) or a condition resistance group (11..17)"
+usage = "AFINIT-authored element matchup table with thirteen authored defense rows (0..12, AFINIT@0x87-0xc3; $1$AFINIT writes nothing) and eighteen authored cells per row, rows 20 wide (CALCILL@0xf2 and CALCBTPARAM@0x6bb index it with stride 20); sixteen rows, as item_tuning_stat_bonus_curves begins at row 16's first cell (0xab6fa). Row: the defense element (defense_element_names; a unit's unit_defense_element). Columns 1..8: the damage percent of an attack of that element: CALCBTPARAM multiplies the damage by the cell and divides by 100 (CALCBTPARAM@0x6bb-0x6db), so a negative cell turns the damage negative, which the -999..999 clamp keeps (CALCBTPARAM@0x736-0x7b5): the hit absorbs, as fire on 火炎 (-100). Column 0 is an attack with no element, 100 in every row: CALCBTPARAM takes the selected skill's element, else the equipped item's, else the unit's default attack item's (CALCBTPARAM@0x15b-0x1cb), so an attack is element 0 only when all three have none (27 unit records have no default attack item, among them エミリオ's 16 and 17, the familiars and the children). Columns 11..17 (抵抗1..抵抗7): the percent chance a condition of that resistance group takes (condition_effectiveness_element_ids; CALCILL@0xe6-0x10e). Columns 9 and 10 are 0 in every row. Positive values make an action eligible in SETMVWORK and RTN_M051/052; INFOAF displays eight attack columns for its selected defense rows."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x2690", "0x26a4", "0x77c6e", "0x8e3d1", "0x8dfe9", "0xa7436"]
@@ -5562,6 +5563,7 @@ handler_script_id = "item_handler_script_id"
 character_whitelist = "unit"
 granted_skill_id = "skill"
 defense_element = "element"
+attack_element = "element"
 
 [[table]]
 name = "skill"
@@ -5587,6 +5589,9 @@ resource_deltas = "skill_resource_deltas"
 proc_chance_percent = "skill_proc_chance_percent"
 battle_animation_id = "skill_battle_animation_id"
 handler_script_id = "skill_handler_script_id"
+
+[table.refs]
+attack_element = "element"
 
 [[table]]
 name = "stage_enemy"
@@ -5673,7 +5678,7 @@ resource_deltas = "condition_resource_deltas"
 name = "element"
 records = 16
 built_by = "boot"
-usage = "AFINIT's elements keyed by defense element id, 1 to 12 named (0 is none, whose row is 100 throughout): a unit's and a shield's defense element (unit_defense_element, item_defense_element). Each row is how that element takes each attack element's damage, and how likely it is to catch each resistance group's conditions (attack_element_effectiveness_percent). Attack elements 1 to 8 have the same names as defense elements 1 to 8; attack ids are columns of this table, not records."
+usage = "AFINIT's elements keyed by defense element id, 1 to 12 named (0 is none, whose row is 100 throughout): a unit's and a shield's defense element (unit_defense_element, item_defense_element). Each row is how that element takes each attack element's damage, and how likely it is to catch each resistance group's conditions (attack_element_effectiveness_percent). An attack element (item_attack_element, skill_attack_element) is a column of the rows, and attack element n (1 to 8) is element n: the two lists name 1 to 8 alike (attack_element_names, defense_element_names), the skill menu's attack icons are the unit screen's defense icons (SELACT@0xd2f, INFOEN@0x12b0), and the matchups pair them: 火炎, 冷却, 電撃 and 地脈 (3 to 6) absorb their own attack element (-100 where row and column meet), and 神聖 and 暗黒 take 80 of theirs."
 
 [table.fields]
 name = "defense_element_names"

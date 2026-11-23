@@ -1258,18 +1258,195 @@
       "type": "object",
       "properties": {
         "effectiveness_percent": {
-          "description": "element.effectiveness_percent: attack_element_effectiveness_percent, a row of 20 columns by number, 0 to 19; write effectiveness_percent.<number> = ...",
+          "description": "element.effectiveness_percent: attack_element_effectiveness_percent, a row of 20 columns by name where a column has one and by number where it has none; write effectiveness_percent.<column> = ...",
           "type": "object",
-          "x-ome-decimal-keys": {
-            "minimum": 0,
-            "maximum": 19
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write no_element",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write physical",
+              "type": "null"
+            },
+            "10": {
+              "description": "element.effectiveness_percent.10: column 10 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "11": {
+              "description": "column 11 is named: write resistance_1",
+              "type": "null"
+            },
+            "12": {
+              "description": "column 12 is named: write resistance_2",
+              "type": "null"
+            },
+            "13": {
+              "description": "column 13 is named: write resistance_3",
+              "type": "null"
+            },
+            "14": {
+              "description": "column 14 is named: write resistance_4",
+              "type": "null"
+            },
+            "15": {
+              "description": "column 15 is named: write resistance_5",
+              "type": "null"
+            },
+            "16": {
+              "description": "column 16 is named: write resistance_6",
+              "type": "null"
+            },
+            "17": {
+              "description": "column 17 is named: write resistance_7",
+              "type": "null"
+            },
+            "18": {
+              "description": "element.effectiveness_percent.18: column 18 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "19": {
+              "description": "element.effectiveness_percent.19: column 19 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "2": {
+              "description": "column 2 is named: write universal",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write fire",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write ice",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write lightning",
+              "type": "null"
+            },
+            "6": {
+              "description": "column 6 is named: write earth",
+              "type": "null"
+            },
+            "7": {
+              "description": "column 7 is named: write holy",
+              "type": "null"
+            },
+            "8": {
+              "description": "column 8 is named: write dark",
+              "type": "null"
+            },
+            "9": {
+              "description": "element.effectiveness_percent.9: column 9 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "dark": {
+              "description": "element.effectiveness_percent.dark: column 8 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "earth": {
+              "description": "element.effectiveness_percent.earth: column 6 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "fire": {
+              "description": "element.effectiveness_percent.fire: column 3 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "holy": {
+              "description": "element.effectiveness_percent.holy: column 7 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "ice": {
+              "description": "element.effectiveness_percent.ice: column 4 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "lightning": {
+              "description": "element.effectiveness_percent.lightning: column 5 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "no_element": {
+              "description": "element.effectiveness_percent.no_element: column 0 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "physical": {
+              "description": "element.effectiveness_percent.physical: column 1 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_1": {
+              "description": "element.effectiveness_percent.resistance_1: column 11 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_2": {
+              "description": "element.effectiveness_percent.resistance_2: column 12 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_3": {
+              "description": "element.effectiveness_percent.resistance_3: column 13 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_4": {
+              "description": "element.effectiveness_percent.resistance_4: column 14 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_5": {
+              "description": "element.effectiveness_percent.resistance_5: column 15 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_6": {
+              "description": "element.effectiveness_percent.resistance_6: column 16 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "resistance_7": {
+              "description": "element.effectiveness_percent.resistance_7: column 17 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "universal": {
+              "description": "element.effectiveness_percent.universal: column 2 of attack_element_effectiveness_percent, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
           },
-          "additionalProperties": {
-            "description": "element.effectiveness_percent.<column>: a column of attack_element_effectiveness_percent, a whole number",
-            "type": "integer",
-            "minimum": -2147483648,
-            "maximum": 4294967295
-          }
+          "additionalProperties": false
         },
         "name": {
           "description": "element.name: defense_element_names, text the save's code page (932) can encode",
