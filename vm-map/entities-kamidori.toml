@@ -445,8 +445,8 @@ table = "element"
 about = "The elements: the items and skills that attack with each, the equipment that changes its resistance, and its terrain."
 exists = "name"
 title = "name"
-# Element 0, 無属, is the non-elemental, which no reference reaches (a value of 0 is none): an item's 0 is no attack
-# element, and a skill's 無属 shows as the word.
+# Element 0, 無属, the non-elemental, is one no reference reaches (a value of 0 is none): an item's 0 is 無属 on the
+# items that attack and nothing on the rest, and a skill's 無属 shows as the word. Backlog, "Kamidori's field tables".
 key_range = [1, 7]
 
 [[kind]]

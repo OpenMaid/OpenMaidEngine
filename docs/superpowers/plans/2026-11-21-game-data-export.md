@@ -1071,10 +1071,11 @@ authors.
     `attack_element_encoded` by `{ table = "element", offset = -1 }`, and an item's `affinity_level_deltas` names its
     columns by element (`columns_ref`), so an element's page lists the items and skills that attack with it, the
     equipment that changes its resistance and its terrain. A unit's resistances keep `columns_from`.
-  - **A kind's `key_range`.** Element 0, 無属, is a name the game gives to none: an item's 0 deals no element, and a
-    skill's 1 (無属) names element 0, which no reference reaches, since a value of 0 or below is none. The kind
+  - **A kind's `key_range`.** Element 0, 無属, is one no reference reaches, since a value of 0 or below is none. A
+    skill's 1 names it, and so does an item's 0 on the weapons and innate attacks, whose descriptions say 無属 (on the
+    items that do not attack, 0 is nothing). The kind
     publishes elements 1 to 7 (`key_range = [1, 7]`, which a loader already had), and the site shows a reference that
     names no entity by the value's word where the field has one (a skill's 無属), else as missing as before.
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
-    doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a builder) and the fields read at medium or
-    low confidence.
+    doors' keys, 無属 (what it does and a page for it), INIT2's 98 unnamed cells (the element kind makes INIT2 a
+    builder) and the fields read at medium or low confidence.
