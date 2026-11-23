@@ -1010,3 +1010,35 @@ authors.
     stages (69 with enemies and goals, 1,408 enemy rows), 422 description runs (ITMES and SKMES), nothing refused,
     no halt and no missing reference, and 424 pictures. Four battle figures are explicit, found by looking at every
     published picture.
+- **Himegari's decoded tables** (2026-11-22; the user: "spin off a subagent to do more of the RE of the himegari record
+  tables, and then take the resulting findings and also apply them to the site"). The decode playbook had closed
+  most of Himegari's `*INIT` tables (`docs/vm-mapping-plan.md`, 2.2 to 2.3s, with their writeups in
+  `build/games/himegari/data/`), and the registry named their globals, but declared only six tables. A delegated pass
+  confirmed each field against the scripts that read it and declared fifteen more: `condition`, `element`,
+  `character_profile`, `glossary_entry`, `magic_action`, `recipe`, `card`, `card_list_entry`, `training_action`,
+  `terrain`, `object_type`, `map_texture` and `class_change` from the boot or CALCCC, and `stage_object` and
+  `stage_map_texture` under `stage` (scope tables `object` and `texture`). It raised `unit_boss_class` and
+  `unit_species_category` to high, named `stage_enemy_faction_id`'s armies (all three hostile to the player and to
+  each other, so no part splits allies off as Kamidori's does), resized the element arrays to their sixteen rows
+  (which cleared the registry's two overlap warnings), and found the icon sheets. `himegari-base` goes to 1.2.0.
+  What the export needed:
+  - **A sheet's colour key and last number.** A sheet picture may name `key`, the colour the game loads it with as
+    its key, which the cut cell makes transparent as a keyed picture does (named `-key-RRGGBB`), and `last`, past which
+    a number is no picture of it and is not reported unresolved. Himegari's icons are drawn on green (READICON@0x54),
+    and an icon numbered from 501 is a cell of the append's sheet, which READICON puts beside the base one
+    (READICON@0x5e to 0x11f; INFOIT@0x12c0 to 0x1306): a kind declares both sheets, `icon` to 500 and `icon_append`
+    from 501. An append's own picture keeps its pack's prefix in the sheet's name (`$1$SO016A.AGF`), as the catalog
+    names it.
+  - **A patch point for the class changes.** `himegari.class_change.rules_run` (CALCCC@0x68) is where the rules have
+    run and nothing is applied, as Kamidori's is. A stepped loader runs CALCCC for each unit's three rule columns with
+    the others marked applied, the unit at level 99 and the familiar another unit: 73 title changes, the 71 base
+    rules and the append's two.
+  - **The rest is declarations.** Fourteen kinds: units (with icons and class changes), items, skills, stages (with
+    enemies, their army, goals, and treasure: the chests among a stage's objects, `where` type 7 or 8, whose item
+    `stage_object.type_id`'s `bases` reference names), recipes, conditions (a group of their five levels, as
+    Kamidori's), elements, terrain, map objects, cards, training actions, magic (MAMES), and the information menu's
+    character profiles (CIMES) and glossary (VIMES). The export reads 1,193 entities, 522 description runs (two of
+    them empty: MAMES has no text for the growth rituals, 10 and 11), 333 loader runs giving 2,191 rows (641 chests),
+    811 pictures, nothing refused and no picture unresolved. The 19 profile portraits are clothed and none is
+    explicit. Card lists, where a map object stands, the unnamed cells INIT2 writes and two fields read at medium
+    confidence are in the backlog's Himegari item; what a stage map needs is in its stage maps item.

@@ -66,12 +66,18 @@ experience_reward = 40     # 30
 ```
 
 - **Tables and fields** are those of `../../global-reference.md`, "Tables", by the names in its `field` column:
-  `unit` (records 0 to 999), `item` (0 to 999), `skill` (0 to 299) and `stage_catalog` (0 to 999, STINIT2's stages).
-  A field with a row takes its columns by the names the reference gives (`stat_modifiers.max_fs`), and by number only
-  where a column has no name.
-- **Saved fields are refused:** `unit.story_speaker_seen_flag`, `skill.acquired_flag` and
-  `skill.info_revealed_flag`. They lie below the saved prefix, so a load would bring the saved value back over the
-  edit.
+  `unit` (records 0 to 999), `item` (0 to 999), `skill` (0 to 299), `stage_catalog` (0 to 999, STINIT2's stages),
+  `condition` (0 to 29, ILINIT), `element` (0 to 15, AFINIT's defense elements), `character_profile` (0 to 99),
+  `glossary_entry` (0 to 199), `magic_action` (0 to 29), `recipe` (0 to 999, ALINIT), `card` (0 to 99, CDINIT2),
+  `training_action` (0 to 20, TRINIT), `terrain` (0 to 29, LAINIT), `object_type` (0 to 99, OBINIT) and `map_texture`
+  (0 to 19, LAINIT's default floor sheets). A field with a row takes its columns by the names the reference gives
+  (`stat_modifiers.max_fs`), and by number only where a column has no name. Two of the reference's tables are not
+  ones a file writes, and the shape refuses them: `class_change`, the block CALCCC's rules (CCINIT) fill for one unit
+  at a time, and `card_list_entry`, the card list CDINIT builds each time a card object is used. Their contents are
+  those scripts' code, which an OMS patch changes.
+- **Saved fields are refused:** `unit.story_speaker_seen_flag`, `skill.acquired_flag`, `skill.info_revealed_flag`,
+  `training_action.execution_count` and `training_action.unlock_flag`. They lie below the saved prefix, so a load
+  would bring the saved value back over the edit.
 - **The shape.** `himegari-base` ships the kind's shape, `shapes/tables.schema.json`, generated from the same record
   map as the tables above ([../data-files.md](../data-files.md), "Shapes"). So the link, `omp check` and `omp build`
   refuse a table, field or column the reference does not name, a saved field, an id or a column out of range and a
@@ -118,7 +124,22 @@ experience_reward = 40     # 30
   a change to `familiar_alignment`, when 配下 releases a unit (`SALLY@0xd12`, `0xd49`); `unit.experience_reward` sets
   the experience a battle awards (`BTL@0x366e`, which ADDEXP adds through `G[0x62ccb]`, unnamed), and the levels and
   growth that follow are saved; and an item of the beaten unit's `unit.drop_item` row is added to the inventory when
-  the battle drops it (`BTL@0x3939`, through ADDITEM).
+  the battle drops it (`BTL@0x3939`, through ADDITEM). The same holds for the base's actions and the map's cards:
+  a synthesis takes a `recipe`'s ingredients and `point_cost` and gives its output item (`ALCHEMY@0x13d8` to
+  `0x144e`); a `training_action` takes its `spirit_delta` and adds its `stat_deltas`, `alignment_delta` and
+  `progress_delta` to the familiar's saved stats and counters, and gives its `awarded_skill_id` and `awarded_item_id`
+  on its first execution (`TRAIN@0x7ee` to `0xdad`); a `magic_action`'s `cost` is taken from the spirit or the points
+  (`FIELD@0x86f0`, `STUDY@0x8ce`, `EVOLVE@0x933`) and its `facility_progress_gain` added to a facility's progress
+  (`USEMAGIC@0x711`, `STUDY@0x92d`); and
+  a drawn `card` adds its `clear_point_bonus` to the stage's saved bonus (`FIELD@0x68d5`), its recoveries and
+  damage to the unit's resources and the spirit, its item to the inventory and its `condition_id` to the unit
+  (`FIELD@0x6748` to `0x6998`).
+- **A class change is copied into the save.** CALCCC adds up the title-change rules that fire for a unit and copies
+  the result into its saved state: its class title, deployment cost, stats and skills (`CALCCC@0x68` to `0x1b2`).
+  The rules are CCINIT's code, not a table, so a file does not reach them.
+- **A condition's turns are copied when it takes.** ADDILLSUB copies the `condition`'s `duration_turns` for the level
+  reached into the unit's battle entity (`entity_condition_remaining_turns`, `ADDILLSUB@0x174`), which is saved with
+  the other entities; its `stat_deltas` and `resource_deltas` are read each time they apply.
 - **Every other field** is read where the game uses it, so an edit reaches a save made before it. These lists come
   from a scan of the installed scripts that follows each field's value through a script's locals and block copies
   into a cell the save keeps, and into a global it leaves for a script it calls or takes back from one, and from
@@ -145,6 +166,23 @@ experience_reward = 40     # 30
   STINIT writes them for the stage it loads. FIELD copies them into the lines the stage shows at its start
   (`FIELD@0x308`, GS `0x27a` to `0x27d`, unnamed), and a stage's handlers (READY, ROUND) rewrite both as it goes, so
   the shown lines are saved: a save made on a stage keeps the lines it showed, with the mod or without it.
+- **A stage's map objects** are the `stage_object` table, slots 0 to 49 (no stage writes slot 0), which a file names
+  through the stage as `stage.1.object.3`: `tile_x`, `tile_y`, `type_id` (an `object_type` id), the two payloads,
+  whose meaning the type gives (a chest's item and count, a teleporter's destination tile, a card object's list), the
+  reinforcement fields, `difficulty_mask`, the story gates and `use_story_flag_id`. None of them is saved, but the save
+  keeps two things by stage and slot, not by type: each slot's uses (`stage_object_use_counts`) and its state
+  (`stage_object_runtime_state`). FIELD copies `primary_payload` into that state for the types whose picture follows
+  it (bases, pillars, doors and hazards) only on a fresh entry to a stage not yet cleared (`FIELD@0x4d7` to `0x54c`),
+  so an edit to a pillar's first owner does not reach a cleared stage, and a slot whose type an edit changes keeps the
+  old slot's uses and state. A player unit's use sets the story flag `use_story_flag_id` names, which is saved
+  (`FIELD@0x5434`). The stage's floor sheets are `stage.1.texture.<slot>` (`asset_override`: a picture id, -1 for the
+  slot's `map_texture`, 0 for none), which FIELD loads after the loaders run (`FIELD@0x9106`).
+- **Terrain and object types are read where they are used:** a stage's saved terrain grid holds terrain ids, copied
+  from MPINIT's atlas on a fresh entry, and each `terrain` and `object_type` field is read by id when the game draws,
+  moves, fights or triggers an object, so an edit reaches a save made on a stage. One use is copied: on a fresh entry
+  FIELD marks the tiles of `layout_class` 1 (every class but 0 on a fully conquered stage) in two saved tile tables,
+  `tile_faction_traversal_masks` and `G[0x7a6c]` (unnamed; DRAWOBJ shows an object only on a marked tile), so an
+  edit to a class reaches those marks at the next fresh entry (`FIELD@0x404` to `0x4cf`).
 - **The names are read where they are shown,** and none is saved: an item's and a skill's `name` and
   `short_description`, and a stage's `name` and `description` (six lines, of which SELSTAGE shows the first three
   before the stage is cleared and the last three after). One copy is: FIELD copies the stage's `name` into the title

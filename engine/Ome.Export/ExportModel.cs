@@ -33,9 +33,10 @@ public interface IPictureSource
     /// sprites, DRAWCH@0x9c), named by its catalog name and <c>-key-RRGGBB</c>; or null when it names none.</summary>
     ExportPicture? ResolveKeyed(long packedId, int key) => Resolve(packedId);
 
-    /// <summary>A cell cut from the catalog picture <paramref name="sheet"/> (export plan §5), or null when there is no
-    /// such picture or the cell lies outside it.</summary>
-    ExportPicture? Cell(string sheet, int x, int y, int width, int height) => null;
+    /// <summary>A cell cut from the catalog picture <paramref name="sheet"/> (export plan §5), with every pixel of the
+    /// colour <paramref name="key"/> (0xRRGGBB) transparent where one is given, as <see cref="ResolveKeyed"/> makes a
+    /// picture; or null when there is no such picture or the cell lies outside it.</summary>
+    ExportPicture? Cell(string sheet, int x, int y, int width, int height, int? key) => null;
 }
 
 /// <summary>A package a language of the export comes from (spec §6.4): what the site credits.</summary>

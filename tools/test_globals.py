@@ -463,10 +463,12 @@ def test_scopes_lint():
                    "'upside': first and last must be", "'upside': defined twice", "'empty': needs a [scope.tables] map",
                    "table hero is named by scope 'hero' already"):
         check(any(needle in e for e in errors), f"lint_scopes flags {needle!r} ({errors})")
-    # Each registry's scopes: the two dungeon games key stage_enemy by stage, and Kamidori its objective rewards too;
+    # Each registry's scopes: the two dungeon games key stage_enemy and stage_object by stage, Himegari its goals and
+    # floor sheets and Kamidori its objective rewards too;
     # Arterial keys its area tables by area.
     expected = {
-        "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy"})],
+        "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "goal": "stage_goal", "object": "stage_object",
+                                            "texture": "stage_map_texture"})],
         "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "reward": "stage_reward",
                                                      "object": "stage_object"})],
         "globals-arterial.toml": [("area", 1, 299, {"point": "area_point", "route": "area_route", "unit": "area_unit"})],
@@ -485,7 +487,7 @@ def test_scopes_lint():
           and "Ids 1 to 999." in reference, "the reference shows a scope, its ids and its tables")
     out = __import__("json").loads(G.emit_json(merged, {}, tables, scopes))
     check([(s["name"], s["first"], s["last"], s["tables"]) for s in out["scopes"]]
-          == [("stage", 1, 999, {"enemy": "stage_enemy"})], "the JSON lists the scopes")
+          == expected["globals.toml"], "the JSON lists the scopes")
 
 def test_adv_layer_surface_slot_evidence():
     scene = sys4load.load(paths.scripts()["SC0000.BIN"])

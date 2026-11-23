@@ -217,11 +217,11 @@ internal static class DataExportCommand
     {
         private readonly Dictionary<long, ExportPicture?> _decoded = new();
         private readonly Dictionary<string, (string Stem, RgbaImage Image)?> _sheets = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<(string, int, int, int, int), ExportPicture?> _cells = new();
+        private readonly Dictionary<(string, int, int, int, int, int?), ExportPicture?> _cells = new();
 
-        public ExportPicture? Cell(string sheet, int x, int y, int width, int height)
+        public ExportPicture? Cell(string sheet, int x, int y, int width, int height, int? key)
         {
-            if (_cells.TryGetValue((sheet, x, y, width, height), out ExportPicture? known)) return known;
+            if (_cells.TryGetValue((sheet, x, y, width, height, key), out ExportPicture? known)) return known;
             ExportPicture? picture = null;
             if (Sheet(sheet) is { } decoded && x + width <= decoded.Image.Width && y + height <= decoded.Image.Height)
             {
@@ -229,11 +229,17 @@ internal static class DataExportCommand
                 for (int row = 0; row < height; row++)
                     Array.Copy(decoded.Image.Pixels, ((y + row) * decoded.Image.Width + x) * 4, pixels, row * width * 4,
                                width * 4);
-                // Named by the sheet and the cell's place and size, so two cells never share a file.
-                picture = new ExportPicture($"{decoded.Stem}-{x}-{y}-{width}x{height}",
-                                            PngWriter.Write(new RgbaImage(width, height, pixels)), width, height);
+                // The sheet's colour key, as ResolveKeyed applies it: the game draws that colour as nothing.
+                if (key is { } colour)
+                    for (int at = 0; at < pixels.Length; at += 4)
+                        if (BlendMath.ColorKeyMatches(pixels[at], pixels[at + 1], pixels[at + 2], colour))
+                            pixels[at] = pixels[at + 1] = pixels[at + 2] = pixels[at + 3] = 0;
+                // Named by the sheet, the cell's place and size and the key, so two cells never share a file.
+                picture = new ExportPicture(
+                    $"{decoded.Stem}-{x}-{y}-{width}x{height}" + (key is { } named ? $"-key-{named:x6}" : ""),
+                    PngWriter.Write(new RgbaImage(width, height, pixels)), width, height);
             }
-            _cells[(sheet, x, y, width, height)] = picture;
+            _cells[(sheet, x, y, width, height, key)] = picture;
             return picture;
         }
 

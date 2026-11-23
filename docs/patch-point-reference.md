@@ -25,6 +25,16 @@ INIT2's exit. Every data table is built: the base *INIT scripts, each mounted ap
 |---|---|
 | `sha256:00ec969c7f369f28943b0c7272c7a0b58bf145e5993e5d39e62a3d80498407fa` | `0x183` |
 
+## `himegari.class_change.rules_run`
+
+Script: `CALCCC.BIN`
+
+Every rule script of class_change_rule_script_ids has run for current_unit_id (CCINIT, then the append's $1$CCINIT), and CALCCC has applied nothing yet: the class change block (class_change_selected_level, class_change_title_output, class_change_deployment_cost_delta, class_change_stat_bonuses and class_change_skill_awards) holds what the rules that fired in this call gave, each of which has marked its column of class_change_state_work. A level of 0 means none fired, and CALCCC exits; otherwise it copies the state back into unit_class_change_state and applies the title, the cost, the stats and the skills to the unit.
+
+| Revision | Site |
+|---|---|
+| `sha256:cedd0c7a148bf0b7ab9acf63d044debd5bada77c4360531244faa9139c78352b` | `0x68` |
+
 ## `himegari.experience.after_calculation`
 
 Script: `ADDEXP.BIN`

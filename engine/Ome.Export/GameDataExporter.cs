@@ -338,12 +338,13 @@ public static class GameDataExporter
                     entity.Pictures.Add((name, explicitPictures.Mark(picture)));
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
-            // A cell of a sheet (plan §5): a number below the sheet's first is no picture.
+            // A cell of a sheet (plan §5): a number below the sheet's first, or above its last, is no picture.
             foreach ((SheetPictureDeclaration sheet, FieldLayout field) in sheets)
             {
                 var (cell, refused) = At(field, 0);
                 if (refused || inputs.Pictures == null || sheet.Cell(cell.Number) is not { } at) continue;
-                if (inputs.Pictures.Cell(sheet.Sheet, at.X, at.Y, sheet.Size.Width, sheet.Size.Height) is { } picture)
+                if (inputs.Pictures.Cell(sheet.Sheet, at.X, at.Y, sheet.Size.Width, sheet.Size.Height, sheet.Key)
+                    is { } picture)
                     entity.Pictures.Add((sheet.Name, explicitPictures.Mark(picture)));
                 else report.UnresolvedPictures.Add((kind.Id, record, sheet.Name, cell.Number));
             }

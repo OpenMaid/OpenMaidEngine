@@ -61,8 +61,11 @@ DETAIL_LIMIT = 4
 DESCRIPTION_KEYS = {"name", "script", "seed"}
 GROUP_KEYS = {"name", "fields", "labels", "row_label"}
 SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
-# A picture sheet's catalog record, with its extension (SO009.AGF).
-SHEET = re.compile(r"[A-Z0-9_]+\.[A-Z0-9]+")
+# A sheet's optional keys: the colour it is loaded with as its key, and its last number (export plan §5).
+SHEET_OPTIONAL_KEYS = {"key", "last"}
+# A picture sheet's catalog record, with its extension (SO009.AGF); an append's own picture is named with its pack's
+# prefix ($1$SO016A.AGF, Himegari's append icons).
+SHEET = re.compile(r"(\$[0-9]+\$)?[A-Z0-9_]+\.[A-Z0-9]+")
 LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables"}
 LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts", "where", "joins"}
 PART_KEYS = {"name", "field", "global", "same_as", "note"}
@@ -760,8 +763,10 @@ def check_note(note, where: str, errors: list[str]) -> None:
 
 def check_sheet(sheet: dict, check_field, where: str, errors: list[str]) -> None:
     """A picture cut from a sheet: `field` numbers a cell, the first being `first`, `columns` to a row from `origin`,
-    `step` apart, each `size` (pixels, x before y). A number below `first` is no picture."""
-    unknown_keys(sheet, SHEET_KEYS, where, errors)
+    `step` apart, each `size` (pixels, x before y). A number below `first`, or above `last` where it is given, is no
+    picture: a game whose numbers past a point are another sheet's (Himegari's icons from 501, an append's) declares
+    each sheet with its range. `key` is the colour the game loads the sheet with as its key, drawn as nothing."""
+    unknown_keys(sheet, SHEET_KEYS | SHEET_OPTIONAL_KEYS, where, errors)
     missing = sorted(SHEET_KEYS - set(sheet))
     if missing:
         errors.append(f"{where}: a sheet picture needs {', '.join(missing)}")
@@ -769,7 +774,7 @@ def check_sheet(sheet: dict, check_field, where: str, errors: list[str]) -> None
     check_field(sheet["field"])
     if not isinstance(sheet["sheet"], str) or not SHEET.fullmatch(sheet["sheet"]):
         errors.append(f"{where}: sheet {sheet['sheet']!r} must be a picture's catalog name in upper case with its "
-                      f"extension, without its `$n$` prefix")
+                      f"extension, and an append's own picture with its `$n$` prefix")
     for key, low in (("first", 0), ("columns", 1)):
         value = sheet[key]
         if not isinstance(value, int) or isinstance(value, bool) or value < low:
@@ -782,6 +787,13 @@ def check_sheet(sheet: dict, check_field, where: str, errors: list[str]) -> None
     if all(isinstance(sheet[k], list) and len(sheet[k]) == 2 for k in ("step", "size")) and \
             any(isinstance(s, int) and isinstance(c, int) and c > s for s, c in zip(sheet["step"], sheet["size"])):
         errors.append(f"{where}: size {sheet['size']} is larger than step {sheet['step']}, so cells would overlap")
+    if "key" in sheet and (not isinstance(sheet["key"], int) or isinstance(sheet["key"], bool)
+                           or not 0 <= sheet["key"] <= 0xFFFFFF):
+        errors.append(f"{where}: key must be a colour 0xRRGGBB")
+    if "last" in sheet:
+        last, first = sheet["last"], sheet["first"]
+        if not isinstance(last, int) or isinstance(last, bool) or (isinstance(first, int) and last < first):
+            errors.append(f"{where}: last must be a whole number of at least first")
 
 
 def check_group_labels(game: Game, kind: dict, loaded: dict[str, dict], where: str, errors: list[str]) -> None:

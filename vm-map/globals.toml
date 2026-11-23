@@ -187,8 +187,8 @@ address = "0x8dc01"
 name = "item_icon_id"
 category = "data-table"
 type = "int[1000]"
-value_domain = "1..360"
-usage = "ITINIT field for all 287 items. READICON sorts and indexes this array to select icon atlas entries; ALCHEMY, CHMENU, IMPROVE, and INFOIT use the same value for item-row presentation."
+value_domain = "icon cell id: 1..360 in SO016.AGF; 501 (the append's item 82) in $1$SO016A.AGF"
+usage = "ITINIT field for all 287 items; $1$ITINIT writes four more. An id numbers a 40x40 cell of the item icon sheet, which FORT@0x602 and INFO@0xe4 load into surface 0x49 through READICON with G[0x62436] = 0: READICON takes the sheet from G[0x15a75b] (INIT2@0x6d: 0x334d, SO016.AGF, 400x1440, ten by 36 cells) with the colour key 0x00ff00 (READICON@0x49-0x54). Id k is drawn from x = ((k-1)/500*10 + (k-1)%10)*40, y = ((k-1)/10 % 50)*40 (INFOIT@0x12c0-0x1306 and @0x15ef-0x1635, CHMENU, ALCHEMY, IMPROVE): ids 1..500 are SO016's cells, ten to a row from (0, 0) in steps of 40. When an id passes 500, READICON builds a wider surface and copies the sheets of G[0x15a75b] row 0's columns 1..20 beside SO016 (READICON@0x5e-0x11f); $1$AUTORUN@0x6f puts $1$SO016A.AGF (0x100001f) in column 1, so ids 501 on are $1$SO016A's cells, ten to a row from (0, 0) in steps of 40."
 source = "investigation"
 confidence = "high"
 
@@ -292,8 +292,9 @@ name = "item_status_delta_levels"
 category = "data-table"
 type = "int[1000][30]"
 columns = { "2" = "hp_drain", "3" = "sp_drain", "4" = "fs_drain", "5" = "curse", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "fear" }
+columns_ref = "condition"
 value_domain = "condition delta -5..5; zero means absent"
-usage = "Sparse ITINIT row-major table consumed by USEITEM and CALCILL when applying an item's effects. Positive values inflict or drain; -5 removes a condition (for example paralysis-removal item 108 stores -5 in column 8). Confirmed columns are 2 HP drain, 3 SP drain, 4 FS drain, 5 curse, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear."
+usage = "Sparse ITINIT row-major table consumed by USEITEM and CALCILL when applying an item's effects; column k is ILINIT condition k (CALCILL@0x42-0x83 walks condition ids 1..29 over the item's and the skill's columns). Positive values inflict or drain; -5 removes a condition (for example paralysis-removal item 108 stores -5 in column 8). Confirmed columns are 2 HP drain, 3 SP drain, 4 FS drain, 5 curse, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear."
 source = "investigation"
 confidence = "high"
 
@@ -303,6 +304,7 @@ name = "item_equipped_status_levels"
 category = "data-table"
 type = "int[1000][30]"
 columns = { "9" = "poison", "11" = "fear", "13" = "regeneration", "14" = "exaltation" }
+columns_ref = "condition"
 value_domain = "condition strength 1..5; zero means absent"
 usage = "Sparse ITINIT row-major table added to a unit's 30-column condition state by CALCREVISE. Item descriptions identify populated columns 9 poison, 11 fear, 13 regeneration, and 14 exaltation; these are passive equipped effects, distinct from item_status_delta_levels."
 source = "investigation"
@@ -387,7 +389,7 @@ name = "character_profile_names"
 category = "string-table"
 type = "string[100]"
 value_domain = "CIINIT display name indexed by character profile id; 24 populated shipped ids"
-usage = "CIINIT writes the character-information screen's 24 display names. INFOCH lists them by profile id, masks unrevealed rows, and uses the same id to select the backing unit metadata and CIMES biography."
+usage = "CIINIT writes the character-information screen's 24 display names ($1$CIINIT writes none). INFOCH lists every profile id whose unit id is nonzero and shows its name once unit_story_speaker_seen_flags[unit] is set, read from the shared profile, masking the row otherwise (INFOCH@0x9c1-0xa45, 0xce2-0xd18), and uses the same id to select the backing unit metadata and CIMES biography (INFOCH@0xedf, 0x1156)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x15a117", "0x15a118"]
@@ -476,10 +478,43 @@ category = "data-table"
 type = "int[200][3]"
 columns = { "0" = "unlock_seen_decision_1", "1" = "unlock_seen_decision_2", "2" = "unlock_seen_decision_3" }
 value_domain = "one-based scene decision id; zero means no prerequisite in that slot"
-usage = "VIINIT's three unlock prerequisites per glossary topic. INFOVO subtracts one from each positive value and exposes the topic when any referenced scene_decision_seen_flags cell is set; debug modes expose the same populated topics unconditionally."
+usage = "VIINIT's three unlock prerequisites per glossary topic. INFOVO subtracts one from each positive value and exposes the topic when any referenced scene_decision_seen_flags cell is set, read from the shared profile (INFOVO@0x9aa-0x9f9); debug modes expose the same populated topics unconditionally."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x5f0ed", "0x15a2a8"]
+
+[[global]]
+address = "0x15a501"
+name = "glossary_topic_picture_asset_ids"
+category = "data-table"
+type = "int[200]"
+value_domain = "SYS4 graphics resource id; zero means no picture (every shipped topic)"
+usage = "An optional picture for a glossary topic, indexed by topic id. INFOVO draws it when nonzero, at x 110 - width / 2 + glossary_topic_picture_x_offsets and y 600 - height + glossary_topic_picture_y_offsets (INFOVO@0xe61-0xec3), as INFOCH places a character profile's portrait. VIINIT writes none; the indexed reader and the 200-cell spacing after glossary_topic_unlock_seen_decision_ids establish it."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x15a2a8", "0x15a5c9", "0x15a691"]
+
+[[global]]
+address = "0x15a5c9"
+name = "glossary_topic_picture_x_offsets"
+category = "data-table"
+type = "int[200]"
+value_domain = "signed horizontal draw offset in pixels; VIINIT leaves every cell zero"
+usage = "INFOVO adds the selected topic's cell to its picture's centred x (INFOVO@0xea0-0xea7)."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x15a2a8", "0x15a501"]
+
+[[global]]
+address = "0x15a691"
+name = "glossary_topic_picture_y_offsets"
+category = "data-table"
+type = "int[200]"
+value_domain = "signed vertical draw offset in pixels; VIINIT leaves every cell zero"
+usage = "INFOVO adds the selected topic's cell to its picture's bottom-aligned y (INFOVO@0xeb5-0xebc)."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x15a2a8", "0x15a501"]
 
 [[global]]
 address = "0x5f0ed"
@@ -586,8 +621,9 @@ name = "skill_status_levels"
 category = "data-table"
 type = "int[300][30]"
 columns = { "1" = "instant_death", "6" = "charm", "7" = "confusion", "8" = "paralysis", "9" = "poison", "10" = "water_flow", "11" = "fear" }
+columns_ref = "condition"
 value_domain = "condition strength 1..4; zero means absent"
-usage = "Sparse SKINIT row-major condition table consumed by CALCILL when applying a skill's effects to the target unit. Skill names and descriptions identify columns 1 instant death, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear; the column layout matches item_status_delta_levels."
+usage = "Sparse SKINIT row-major condition table consumed by CALCILL when applying a skill's effects to the target unit; column k is ILINIT condition k (CALCILL@0x42-0x83). Skill names and descriptions identify columns 1 instant death, 6 charm, 7 confusion, 8 paralysis, 9 poison, 10 water-flow, and 11 fear; the column layout matches item_status_delta_levels."
 source = "investigation"
 confidence = "high"
 
@@ -596,8 +632,8 @@ address = "0xa988a"
 name = "skill_icon_id"
 category = "data-table"
 type = "int[300]"
-value_domain = "51..56"
-usage = "SKINIT icon id for all 131 skills. CHMENU and INFOIT translate it into the shared icon atlas; the six ids group movement, defense, utility, passive, physical-special, and magic icons."
+value_domain = "51..56: a cell of the item icon sheet SO016.AGF"
+usage = "SKINIT icon id for all 131 skills. INFOIT@0x15dc-0x1643 draws it from surface 0x49, the item icon sheet (item_icon_id), with the item icons' cut: id k at x = ((k-1)%10)*40, y = ((k-1)/10)*40, 40x40, so 51..56 are row 5's first six cells of SO016.AGF; CHMENU draws it the same way. The six ids group movement, defense, utility, passive, physical-special, and magic icons."
 source = "investigation"
 confidence = "high"
 
@@ -733,12 +769,12 @@ address = "0x72296"
 name = "unit_boss_class"
 category = "data-table"
 type = "int[1000]"
-value_domain = "0=ordinary; signed boss class ±1..±4: 1=named/story character, 2=monster/special encounter, 3=demon-lord class, 4=final boss; positive values are defeat-boss victory targets and negative values are exempt"
-values = { "1" = "Story character", "2" = "Special encounter", "3" = "Demon lord", "4" = "Final boss", "-1" = "Story character, not a target", "-2" = "Special encounter, not a target", "-3" = "Demon lord, not a target", "-4" = "Final boss, not a target" }
+value_domain = "0 ordinary; a signed boss class ±1..±4: any nonzero class is a boss, a positive one is a target of the defeat-the-bosses victory rule, and ±4 is a final boss; no script tells 1, 2 and 3 apart"
+values = { "1" = "Boss, class 1", "2" = "Boss, class 2", "3" = "Boss, class 3", "4" = "Final boss", "-1" = "Boss, class 1, not a target", "-2" = "Boss, class 2, not a target", "-3" = "Boss, class 3, not a target", "-4" = "Final boss, not a target" }
 none = 0
-usage = "Nonzero for 112 bosses, special encounters, summoned adds, and map hazards. CALCDMG grants every nonzero class the boss adjustment, CALCILL grants condition immunity, and FIELD/MAGIC/USEMAGIC exclude nonzero classes from ordinary-unit rules. FIELD draws the normal faction-colored unit banner for classes 0 and ±1..±3, then adds the separate yellow boss marker below it when this value is nonzero; class ±4 suppresses both standard markers for its special presentation. On stages whose clear rule is defeat-boss targets, FIELD blocks victory only while a positive-class enemy remains; negative peers keep boss treatment but are ignored, as with Octavia beside Bridget, Deirdre's shadows, EX-8 adds beside Tiamat, and the final boss's three organs. Classes 1..3 are otherwise authoring categories with no distinct shipped-script branch. Either sign of class 4 selects the final-boss battle BGM and special tactical-map presentation."
+usage = "Nonzero for 112 EBINIT units: bosses, special encounters, summoned adds and map hazards. What the scripts tell apart is zero, nonzero, the sign, and ±4. Any nonzero class: the passive skill 大物殺し (skill 50, ボス系の敵に強い) adds 10 to its bonus against it (CALCDMG@0x63c-0x651); a condition whose condition_can_affect_bosses is 0 does not take (CALCILL@0xa6-0xd7); FIELD@0x32f1-0x331f and MAGIC@0x6f0-0x71e only offer a unit of class 0 with more than 1 HP; the battle plays boss music 0x15 (FIELD@0x72a9-0x72e1); and FIELD draws the yellow boss marker under the unit's faction banner (FIELD@0xa5ab-0xa5ce). A positive class: under the defeat-the-bosses victory rule (STINIT's 0xe7308 = -2) FIELD waits while any non-player unit of a positive class lives (FIELD@0x8f35-0x8fad), so a negative class keeps the boss treatment and is not a target, as with Octavia beside Bridget, Deirdre's shadows, the EX-8 adds beside Tiamat, and the final boss's three organs. ±4: the final battle music 0x16 (FIELD@0x7223-0x72a1), and no banner or marker on the map (FIELD@0xa546-0xa577). Classes 1, 2 and 3 are authoring groups no script branches on: 1 the story's named characters (34 units, such as エステル and ブリジット as bosses), 2 monster and dragon bosses (40, such as オーク/BOSS and 地竜バマス/BOSS), 3 the demon gods, the demon lord and the spirit princess (4: 魔神ラテンニール, 魔神ハルファス, 魔王モーヌ, 精霊王女フィファ)."
 source = "investigation"
-confidence = "med"
+confidence = "high"
 
 [[global]]
 address = "0x7267e"
@@ -930,8 +966,8 @@ address = "0x716de"
 name = "unit_icon_id"
 category = "data-table"
 type = "int[1000]"
-value_domain = "1..103"
-usage = "EBINIT icon selector populated for all 277 units. READICON returns it for unit ids; CHMENU, DRAWCHP, EXILE, SALLY, and SUMMON convert the value into icon-atlas page and cell coordinates."
+value_domain = "icon cell id: 1..103 in SO009.AGF; 501..504 (the append's units) in $1$SO009A.AGF"
+usage = "EBINIT icon selector populated for all 277 units; $1$EBINIT writes seven more. An id numbers a 40x40 face cell of the unit icon sheet, which FORT@0x60f and INFO@0xf1 load into surface 0x4a through READICON with G[0x62436] = 1: the sheet is G[0x15a75b] row 1 column 0 (INIT2@0x72: 0x334e, SO009.AGF, 400x440, ten by eleven cells), with the colour key 0x00ff00. Id k is drawn from x = ((k-1)/500*10 + (k-1)%10)*40, y = ((k-1)/10 % 50)*40 (SALLY@0x1d5b-0x1db6, CHMENU@0x2a85, DRAWCHP, EXILE, SUMMON): ids 1..500 are SO009's cells, ten to a row from (0, 0) in steps of 40, and ids 501 on are the cells of $1$SO009A.AGF (0x1000020, row 1 column 1, $1$AUTORUN@0x74), which READICON copies beside SO009 (READICON@0x5e-0x11f)."
 source = "investigation"
 confidence = "high"
 
@@ -940,11 +976,11 @@ address = "0x71ac6"
 name = "unit_species_category"
 category = "data-table"
 type = "int[1000]"
-value_domain = "1..3"
+value_domain = "1 人間 (human), 2 魔族 (demon), 3 魔物 (monster); 0 unset, which the information screens show as ？"
 values = { "1" = "Human", "2" = "Demon", "3" = "Monster" }
-usage = "Broad EBINIT species/allegiance category for 198 units: value 1 covers humans and allied heroines, 2 covers demons including Emilio and Lily as well as many demonic monsters, and 3 covers other monsters, dragons, and elementals. CHMENU uses it for equipment restrictions, CALCDMG for category-sensitive effects, and INFOCH/INFOEN for display."
+usage = "EBINIT species for 198 units. INFOEN@0x134a-0x13a1 and INFOCH@0x107e-0x10cd draw the game's word for it: 1 人間, 2 魔族, 3 魔物, anything else ？. The passive skills 人類殺し, 魔族殺し and 怪物殺し (skills 28, 29 and 30, 人間系/魔族系/怪物系の敵に強い) add 10 to their bonus against a target whose species is the skill id minus 27 (CALCDMG@0x5b6-0x608). Value 1 covers the humans and most allied heroines (and the angels), 2 Emilio, Lily, Bridget and Octavia as well as orcs, werewolves, gargoyles and the demon gods, 3 other monsters, dragons and elementals. CHMENU@0x2395-0x23cd also tests it against a per-item species mask at G[0x8fb41], which no script writes, so that check never refuses an item."
 source = "investigation"
-confidence = "med"
+confidence = "high"
 
 [[global]]
 address = "0x71eae"
@@ -1645,7 +1681,7 @@ category = "string-table"
 type = "string[30][5]"
 columns = { "0" = "level_1", "1" = "level_2", "2" = "level_3", "3" = "level_4", "4" = "level_5" }
 value_domain = "ILINIT-authored display strings for condition ids 1..11, 13, and 14"
-usage = "ILINIT's row-major five-name matrix. Runtime condition UI selects the row by condition id and the column by current level minus one; id 1 has only the unnumbered instant-death label, id 12 and ids 15..29 are reserved."
+usage = "ILINIT's row-major five-name matrix (ILINIT@0x5 on; $1$ILINIT writes nothing). Runtime condition UI selects the row by condition id and the column by current level minus one (DRAWENP); a condition is named by its levels (ＨＰ吸1 to ＨＰ吸5), so its level 1 names it: 1 即死, 2 ＨＰ吸1, 3 ＳＰ吸1, 4 ＦＳ吸1, 5 呪い1, 6 魅了1, 7 混乱1, 8 麻痺1, 9 猛毒1, 10 水流1, 11 恐怖1, 13 再生1 and 14 高揚1. Id 1 has only the unnumbered instant-death label; id 12 and ids 15..29 are reserved."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x52383"]
@@ -1879,8 +1915,9 @@ address = "0xaac78"
 name = "condition_effectiveness_element_ids"
 category = "data-table"
 type = "int[30]"
-value_domain = "element id 11..17 for shipped condition definitions"
-usage = "ILINIT condition metadata. CALCILL uses the selected condition's value as the element-table column for its application-chance effectiveness calculation."
+value_domain = "attack-element column 11..17 (抵抗1..抵抗7) of attack_element_effectiveness_percent"
+values_from = { global = "attack_element_names", first = 0 }
+usage = "ILINIT writes it for all thirteen conditions. CALCILL takes the target's defense element's row of attack_element_effectiveness_percent at this column as the percent chance the condition takes: it rolls 0..99 and applies the condition when the roll is below it (CALCILL@0xe6-0x10e). AFINIT names columns 11..17 抵抗1..抵抗7, so it is the resistance group a unit's element resists the condition by."
 source = "investigation"
 confidence = "high"
 depends_on = ["0xaac76"]
@@ -1891,7 +1928,7 @@ name = "condition_can_affect_bosses"
 category = "data-table"
 type = "int[30]"
 value_domain = "boolean; nonzero for HP/SP/FS drain, regeneration, and exaltation"
-usage = "ILINIT policy vector. CALCILL rejects a condition against a boss-class target when this cell is zero; nonzero cells bypass that boss immunity gate."
+usage = "ILINIT policy vector. CALCILL rejects a condition against a target whose unit_boss_class is nonzero when this cell is zero (CALCILL@0xa6-0xd7); nonzero cells (the HP/SP/FS drains, regeneration and exaltation) bypass that boss immunity gate."
 source = "investigation"
 confidence = "high"
 depends_on = ["0xaac76"]
@@ -1902,7 +1939,7 @@ name = "condition_cleared_by_recover"
 category = "data-table"
 type = "int[30]"
 value_domain = "boolean; shipped nonzero ids are 6..11"
-usage = "ILINIT recovery-policy vector. RECOVER and DISARM use it to identify charm, confusion, paralysis, poison, water-flow, and fear as removable conditions; RECOVER resets each eligible current level to its equipment/passive baseline."
+usage = "ILINIT recovery-policy vector. RECOVER resets each marked condition's current level to its equipment/passive baseline (RECOVER@0x5f-0xd1), and DISARM and USEMAGIC test it too (DISARM@0x8d, USEMAGIC@0x1dc); 浄化's cost counts the marked conditions' levels (FIELD@0x86c3). Shipped: charm, confusion, paralysis, poison, water flow and fear (6..11)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x52383", "0x52f3b", "0x5295f"]
@@ -1913,7 +1950,7 @@ name = "condition_icon_ids"
 category = "data-table"
 type = "int[30]"
 value_domain = "condition icon id 1..10; zero means no icon"
-usage = "ILINIT display metadata. DRAWENP and FIELD use these ids to deduplicate active-condition indicators and select the corresponding status-icon atlas entry."
+usage = "ILINIT display metadata. DRAWENP and FIELD use these ids to deduplicate active-condition indicators and draw a 15x15 cell of surface 0x4b, SO024.AGF (0x32de, loaded with the colour key 0x00ff00 at FIELD@0x90ff and MENU@0x147; 150x150): id k at x = ((k-1)%10)*15, y = ((k-1)/10)*15, ten to a row from (0, 0) in steps of 15 (DRAWENP@0x2f8-0x35a, FIELD@0xa667-0xa6bb). Instant death and the three drains have no icon."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x52383"]
@@ -1925,7 +1962,8 @@ category = "data-table"
 type = "int[30][5]"
 columns = { "0" = "level_1_turns", "1" = "level_2_turns", "2" = "level_3_turns", "3" = "level_4_turns", "4" = "level_5_turns" }
 value_domain = "-1 permanent or a positive turn count"
-usage = "ILINIT's five-column duration row for each condition. ADDILLSUB indexes it by the resulting condition level minus one and stores the value in entity_condition_remaining_turns."
+values = { "-1" = "Until cured" }
+usage = "ILINIT's five-column duration row for each condition. ADDILLSUB indexes it by the resulting condition level minus one and stores the value in entity_condition_remaining_turns (ADDILLSUB@0x174-0x1cc). FIELD counts a positive count down each turn and clears the condition at 0 (FIELD@0x7b4b-0x7bab); -1 never counts down."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x5295f", "0x52383"]
@@ -2202,9 +2240,10 @@ depends_on = ["0x8dfe9", "0xa7436", "0xcc9f4"]
 address = "0xab5ba"
 name = "attack_element_effectiveness_percent"
 category = "data-table"
-type = "int[20][20]"
-value_domain = "signed effectiveness percentage indexed by defense element then attack element"
-usage = "AFINIT-authored element matchup table with thirteen authored defense rows and eighteen authored cells per row inside the reserved 20-by-20 layout. Positive values make an action eligible in SETMVWORK and RTN_M051/052; CALCBTPARAM multiplies battle parameters by the selected percentage and handles negative values as special/immunity cases. INFOAF displays eight attack columns for its selected defense rows."
+type = "int[16][20]"
+columns_from = { global = "attack_element_names", first = 0 }
+value_domain = "signed percent, row a defense element id (0..12), column an attack element id (1..8) or a condition resistance group (11..17)"
+usage = "AFINIT-authored element matchup table with thirteen authored defense rows (0..12, AFINIT@0x87-0xc3; $1$AFINIT writes nothing) and eighteen authored cells per row, rows 20 wide (CALCILL@0xf2 and CALCBTPARAM@0x6bb index it with stride 20); sixteen rows, as item_tuning_stat_bonus_curves begins at row 16's first cell (0xab6fa). Row: the defense element (defense_element_names; a unit's unit_defense_element). Columns 1..8: the damage percent of an attack of that element: CALCBTPARAM multiplies the damage by the cell and divides by 100 (CALCBTPARAM@0x6bb-0x6db), so a negative cell turns the damage negative, which the -999..999 clamp keeps (CALCBTPARAM@0x736-0x7b5): the hit absorbs, as fire on 火炎 (-100). Columns 11..17 (抵抗1..抵抗7): the percent chance a condition of that resistance group takes (condition_effectiveness_element_ids; CALCILL@0xe6-0x10e). Columns 9 and 10 are 0 in every row. Positive values make an action eligible in SETMVWORK and RTN_M051/052; INFOAF displays eight attack columns for its selected defense rows."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x2690", "0x26a4", "0x77c6e", "0x8e3d1", "0x8dfe9", "0xa7436"]
@@ -2358,7 +2397,7 @@ name = "class_change_title_output"
 category = "string-table"
 type = "string"
 value_domain = "CCINIT-awarded Japanese title; empty for Lily form-transition rules"
-usage = "CCINIT writes the title selected by each eligible class-change rule. CALCCC copies it to unit_class_titles for a successful promotion, and ADDEXP includes the same string in the level-up notification."
+usage = "CCINIT writes the title selected by each eligible class-change rule, with class_change_selected_level (CCINIT@0x185-0x18a). CALCCC does not clear it (only the level, CALCCC@0x0), so it holds a title only while that level is nonzero; then CALCCC copies it into the saved unit_class_titles[current_unit_id] (CALCCC@0x76-0x7d), and ADDEXP includes the same string in the level-up notification."
 source = "investigation"
 confidence = "high"
 
@@ -3079,7 +3118,7 @@ name = "class_change_selected_level"
 category = "unknown"
 type = "int"
 value_domain = "-1 Lily form transition, 0 no promotion, otherwise selected threshold 10..90"
-usage = "CALCCC clears this accumulator before invoking the class-change rule scripts. Each eligible CCINIT rule replaces it only when its threshold is higher than the current selection; nonzero then signals CALCCC and ADDEXP to apply and report the chosen promotion."
+usage = "CALCCC clears this accumulator before invoking the class-change rule scripts (CALCCC@0x0). A rule fires when current_unit_id is its unit, the unit's unit_current_levels row reaches its threshold, and its column of unit_class_change_state is 0 (CCINIT@0x12d-0x162); it replaces this value and class_change_title_output only when the value is 0 or below its threshold (CCINIT@0x169-0x18a), and adds its bonuses whether or not it takes the title. The two Lily rules (units 3 and 4) have no level test and set -1 with an empty title, and fire only for a unit that is not Lily's current form G[0x32f0] (CCINIT@0x0-0x5f). Nonzero then signals CALCCC (CALCCC@0x68) and ADDEXP (ADDEXP@0x35d) to apply and report the chosen promotion."
 source = "investigation"
 confidence = "high"
 
@@ -3089,7 +3128,7 @@ name = "class_change_deployment_cost_delta"
 category = "unknown"
 type = "int"
 value_domain = "nonnegative deployment-cost increment"
-usage = "Shared class-change output initialized by CALCCC and incremented by the selected CCINIT rule. CALCCC adds it to unit_deployment_cost_adjustments and ADDEXP reports the signed cost change."
+usage = "Shared class-change output initialized by CALCCC (CALCCC@0x5) and incremented by each CCINIT rule that fires (CCINIT@0x1b9). CALCCC adds it to the saved unit_deployment_cost_adjustments (CALCCC@0x82-0x90) and ADDEXP reports the signed cost change."
 source = "investigation"
 confidence = "high"
 
@@ -3100,7 +3139,7 @@ category = "unknown"
 type = "int[14]"
 columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "speed", "7" = "luck", "8" = "critical_chance", "9" = "capture_power", "10" = "movement", "11" = "max_hp", "12" = "max_sp", "13" = "max_fs" }
 value_domain = "nonnegative promotion deltas"
-usage = "Fourteen-cell class-change accumulator using the unit stat column order. CALCCC zeroes it, CCINIT adds the selected rule's bonuses, and CALCCC adds the result to unit_current_stats with per-column caps. EVOLVE separately clears it and calls CCINIT to preview the next Lily form's movement bonus."
+usage = "Fourteen-cell class-change accumulator using the unit stat column order. CALCCC zeroes it (CALCCC@0xa), each CCINIT rule that fires adds its bonuses (CCINIT@0x18f-0x1b2), and CALCCC adds the result to the saved unit_current_stats, capped at G[0xccbdc]'s row 0 (CALCCC@0xb4-0x112). EVOLVE separately clears it and calls CCINIT to preview the next Lily form's movement bonus."
 source = "investigation"
 confidence = "high"
 
@@ -3111,7 +3150,7 @@ category = "unknown"
 type = "int[4]"
 columns = { "0" = "skill_slot_1", "1" = "skill_slot_2", "2" = "skill_slot_3", "3" = "skill_slot_4" }
 value_domain = "SKINIT skill id; zero means no award"
-usage = "Four-cell class-change skill output. CALCCC zeroes the buffer, CCINIT writes awarded skill ids, and CALCCC copies positive values from the first three cells into unit_skill_ids before ADDEXP reports the changes."
+usage = "Four-cell class-change skill output. CALCCC zeroes the buffer (CALCCC@0xf), CCINIT writes awarded skill ids (CCINIT@0x1c0: skill 202 into cell 2), and CALCCC copies positive values from the first three cells into the same columns of the saved unit_skill_ids, replacing the skill there (CALCCC@0x11a-0x15e), and marks each skill_info_revealed_flags and the shared profile (CALCCC@0x166-0x1b2) before ADDEXP reports the changes. No rule writes cell 3."
 source = "investigation"
 confidence = "high"
 
@@ -3187,7 +3226,7 @@ name = "magic_action_names"
 category = "string-table"
 type = "string[30]"
 value_domain = "MAINIT magic, research, and growth-ritual names"
-usage = "MAINIT's one-based action-name array: eleven shipped records occupy ids 1..11 in a reserved 30-cell span. MAGIC, STUDY, and EVOLVE render the selected entry."
+usage = "MAINIT's one-based action-name array: eleven shipped records occupy ids 1..11 in a reserved 30-cell span (1..6 field magics, 7..9 research, 10..11 growth rituals; $1$MAINIT writes nothing). No shipped script reads it: MAGIC draws an action's name as the 155x25 strip of SO020.AGF at y = id x 25 (MAGIC@0xa0b-0xa27), and STUDY and EVOLVE draw their own. The names match those strips and MAMES's descriptions."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1560e7"]
@@ -3198,10 +3237,113 @@ name = "magic_action_information_handler_script_ids"
 category = "data-table"
 type = "int[30]"
 value_domain = "packed script id; shipped ids 1..11 all equal 0x31a6 (MAMES.BIN)"
-usage = "MAINIT handler column indexed by current_magic_action_id. MAGIC and STUDY call the selected packed script id; every shipped action routes to MAMES, whose text dispatcher has authored descriptions for ids 1..9 only."
+usage = "MAINIT handler column indexed by current_magic_action_id. MAGIC (MAGIC@0xd20) and STUDY call the selected packed script id; every shipped action routes to MAMES, whose text dispatcher has authored descriptions for ids 1..9 only (MAMES@0x6-0x104)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1560e7", "0x45b9"]
+
+[[global]]
+address = "0x1560e8"
+name = "magic_action_icon_ids"
+category = "data-table"
+type = "int[30]"
+value_domain = "icon id in the item icon sheet (SO016.AGF, ten 40-pixel cells to a row); 221..226 for the six field magics, 0 for the rituals"
+usage = "MAINIT's icon for each action, indexed by action id. MAGIC draws it for each listed magic (MAGIC@0x97e-0x9ec) and for the selected one (MAGIC@0xd2a-0xd91) from surface 0x49, which READICON loads with SO016 (FIELD@0x90f7, INFO@0xe4): the cell at ((id - 1) % 10 * 40, (id - 1) / 10 * 40), 40 by 40, as INFOIT cuts item_icon_id."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x8dc01"]
+
+[[global]]
+address = "0x156106"
+name = "magic_action_menu_kinds"
+category = "data-table"
+type = "int[30]"
+value_domain = "1 base ritual, 2 field magic"
+values = { "1" = "Base ritual", "2" = "Field magic" }
+none = 0
+usage = "MAINIT's menu for each action. MAGIC, which FIELD opens on the map (FIELD@0x24b7), lists the actions of kind 2 in id order (MAGIC@0x4bc-0x510), at most six (MAGIC@0x513). Kind 1 are the base's rituals, which MAGIC2 reaches from FORT (FORT@0x486, MAGIC2@0x21-0x2d): STUDY's research rows are actions 7..9 (STUDY@0x8c7, row - 5) and EVOLVE's growth rituals 10 and 11 (EVOLVE@0x18, row + 8); neither reads the kind."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7"]
+
+[[global]]
+address = "0x156124"
+name = "magic_action_target_modes"
+category = "data-table"
+type = "int[30]"
+value_domain = "1 no target, 2 an allied unit, 3 an enemy unit, 4 an allied unit then a tile; 0 for the rituals"
+values = { "1" = "No target", "2" = "An allied unit", "3" = "An enemy unit", "4" = "An allied unit, then a tile" }
+none = 0
+usage = "How a field magic picks its target. After MAGIC returns, FIELD reads the selected action's mode (FIELD@0x24bd): 2 to 4 start a map selection, 2 setting selection bit 9 (FIELD@0x24fc), 3 bit 10 (FIELD@0x2519) and 4 bits 9 and 11 (FIELD@0x2521, 0x2526), which the map cursor tests against the tile masks (FIELD@0x185b-0x1891); 1 casts at once. The words follow MAMES: 闇の治癒, 浄化 and 強制帰還 (2) act on an allied unit, 暗黒槍 (3) on one enemy, 兵士転移 (4) moves a deployed unit to a tile of the occupied area, and 邪神招聘 (1) strikes every unit on the stage (MAMES@0x14-0xa9). Which units bits 9 to 11 admit is not decoded, so the words rest on MAMES."
+source = "investigation"
+confidence = "med"
+depends_on = ["0x1560e7"]
+
+[[global]]
+address = "0x156142"
+name = "magic_action_costs"
+category = "data-table"
+type = "int[30]"
+value_domain = "spirit for a field magic, points for a base ritual; 0 for 浄化, whose cost FIELD computes"
+usage = "MAINIT's cost for each action. A field magic costs this much spirit, halved once magic_facility_level is 5 or more (MAGIC@0x43b-0x455, FIELD@0x86f0-0x870a), and MAGIC refuses it beyond current_spirit (MAGIC@0x45c-0x487). 浄化 (id 2) has 0: FIELD makes its cost twice the sum of the target's levels of the conditions condition_cleared_by_recover marks (FIELD@0x8693-0x86e3), and MAGIC draws a placeholder for a 0 cost (MAGIC@0xdb6-0xe09). A ritual takes it from shared_spendable_points (STUDY@0x8ce-0x91a, EVOLVE@0x933-0x97f)."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x671e", "0x671b"]
+
+[[global]]
+address = "0x156160"
+name = "magic_action_facility_progress_gains"
+category = "data-table"
+type = "int[30]"
+value_domain = "nonnegative facility progress"
+usage = "What an action adds to a facility's progress. USEMAGIC adds a field magic's value to magic_facility_progress while magic_facility_level is below 6 and raises the level past facility_level_progress_thresholds row 2 (USEMAGIC@0x711-0x732). STUDY adds a research action's value to the progress of facility action - 7 (STUDY@0x8a2, row - 12; STUDY@0x92d-0x934), refusing a facility at level 6 (STUDY@0x8b0)."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x6721", "0x671f", "0xab8b2"]
+
+[[global]]
+address = "0x15617e"
+name = "magic_action_required_magic_facility_levels"
+category = "data-table"
+type = "int[30]"
+value_domain = "magic facility level 1..6; 0 means none"
+usage = "MAGIC lists a field magic as usable only when magic_facility_level is at least this value (MAGIC@0x58a-0x598). Shipped: 浄化 1, 強制帰還 2, 兵士転移 3, 暗黒槍 4, 邪神招聘 6."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x671e"]
+
+[[global]]
+address = "0x15619c"
+name = "magic_action_required_story_flag_ids"
+category = "data-table"
+type = "int[30]"
+value_domain = "one-based story_event_flags index; 0 means none (every shipped action)"
+usage = "MAGIC lists a field magic as usable only when story_event_flags[value - 1] is 1, where the value is nonzero (MAGIC@0x52c-0x556). MAINIT writes none."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x6d3"]
+
+[[global]]
+address = "0x1561ba"
+name = "magic_action_required_maximum_spirit"
+category = "data-table"
+type = "int[30]"
+value_domain = "maximum spirit; 0 means none (every shipped action)"
+usage = "MAGIC lists a field magic as usable only when maximum_spirit is at least this value (MAGIC@0x55e-0x56c). MAINIT writes none."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x20534"]
+
+[[global]]
+address = "0x1561d8"
+name = "magic_action_required_training_progress"
+category = "data-table"
+type = "int[30]"
+value_domain = "familiar training progress; 0 means none; shipped 15 and 40 for the growth rituals 10 and 11"
+usage = "The familiar_training_progress an action needs: MAGIC refuses a field magic below it (MAGIC@0x574-0x582), and EVOLVE allows a growth ritual from it (EVOLVE@0x18-0x3b) and draws the progress against it (EVOLVE@0xe11-0xe55)."
+source = "investigation"
+confidence = "high"
+depends_on = ["0x1560e7", "0x6724"]
 
 [[global]]
 address = "0x15a094"
@@ -3332,7 +3474,7 @@ address = "0x26f1"
 name = "object_type_names"
 category = "string-table"
 type = "string[100]"
-value_domain = "OBINIT object definition names for ids 1..46"
+value_domain = "OBINIT object definition names for ids 1..46, and $1$OBINIT's 50..61 (保管財宝, 散乱した物品, 本棚, 衣装棚, 武器庫, 机, 飾棚 and the five 整理された ones)"
 usage = "OBINIT writes the authoritative object names. FIELD, SETOBJ, and DRAWOBJ use STINIT's object type id to select these definitions; extract_init joins the names to stage object placements."
 source = "investigation"
 confidence = "high"
@@ -3342,7 +3484,7 @@ address = "0x2755"
 name = "object_type_descriptions"
 category = "string-table"
 type = "string[100]"
-value_domain = "optional OBINIT player-facing object behavior/effect descriptions for ids 1..46"
+value_domain = "optional OBINIT player-facing object behavior/effect descriptions for ids 1..46, and $1$OBINIT's 50..61"
 usage = "OBINIT writes the short object descriptions displayed by the field object-information path. extract_init joins populated descriptions to STINIT object placements by type id."
 source = "investigation"
 confidence = "high"
@@ -3352,8 +3494,131 @@ address = "0xe6dee"
 name = "object_sprite_state_row_mode"
 category = "data-table"
 type = "int[100]"
-value_domain = "{1,2}; 1 selects a vertical sprite row from runtime object state, 2 fixes source Y at row 0"
-usage = "OBINIT metadata indexed by object type. FIELD copies the type-tagged initial payload into stage_object_runtime_state only for mode 1; DRAWOBJ likewise multiplies that runtime state by the object sprite height to select source Y only for mode 1."
+value_domain = "{0,1,2}; 1 selects a vertical sprite row from runtime object state; 0 and 2 fix source Y at row 0 (types 6, 15, 16, 27 and 36 leave it 0)"
+usage = "OBINIT metadata indexed by object type. FIELD copies the type-tagged initial payload into stage_object_runtime_state only for mode 1 (FIELD@0x4d7-0x54c); DRAWOBJ likewise multiplies that runtime state by the object sprite height to select source Y only for mode 1 (DRAWOBJ@0x99-0xc7)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6c5e"
+name = "object_type_sprite_asset_ids"
+category = "data-table"
+type = "int[100]"
+value_domain = "picture id of the type's sprite sheet (12711, MO001A.AGF, for type 1; 10970, MO009A.AGF, for the event points; $1$OBINIT's packed 0x100003c..0x1000045); 0 for type 27, which has none"
+usage = "OBINIT, by object type id. FIELD loads the sheet of each type the stage places into a surface from 0x66 up, with no colour key (-1), and keeps the surface in 0xccb66[type]; a type whose sheet is 0 gets -1 there and is not drawn (FIELD@0x91ab-0x921a). The object information panel shows nothing for such a type (FIELD@0xb175)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6cc2"
+name = "object_type_sprite_widths"
+category = "data-table"
+type = "int[100]"
+value_domain = "pixels: 100 for bases, pillars, chests, doors and teleporters, 60 for hazards, feathers and 魔物の渦, 80 for event points, 300 or 500 for the bosses"
+usage = "DRAWOBJ's frame width, and its centring on the tile at x*100+50-w/2 (DRAWOBJ@0xcf-0x13f). A sheet holds its frames side by side: MO005A.AGF, 960x60, is 魔物の渦's 16 frames of 60."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6d26"
+name = "object_type_sprite_heights"
+category = "data-table"
+type = "int[100]"
+value_domain = "pixels"
+usage = "DRAWOBJ's frame height and centring (DRAWOBJ@0xcf-0x13f); for an object_sprite_state_row_mode 1 type also the step between state rows, source y = runtime state * height (DRAWOBJ@0x99-0xc7). MO001A.AGF, 100x400, is the base's four rows."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6d8a"
+name = "object_type_animation_frame_counts"
+category = "data-table"
+type = "int[100]"
+value_domain = "frames: 1 (still), 16, 20 or 30"
+usage = "DRAWOBJ@0x53-0x90 animates the source rectangle over this many frames at 100 ms each (animate-gfx-srcrect-loop)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6e52"
+name = "object_type_available_glow_mode"
+category = "data-table"
+type = "int[100]"
+value_domain = "gfx-draw-color mode: 1 (additive) for 治癒の羽 and 治癒の羽／赤 (types 15, 16), 0 for every other type"
+usage = "DRAWOBJ draws every object at alpha 0 first, then, when its runtime flag bit 1 is set and its tile's bit of 0x7a6c is set, at alpha 255 with this mode (DRAWOBJ@0x157-0x1b0). Mode 1 is the additive glow of op 0x203."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6eb6"
+name = "object_type_interaction_class"
+category = "data-table"
+type = "int[100]"
+value_domain = "1, or 2 for 転移門, 扉, 銅の扉, 銀の扉, 金の扉 and 歪移門 (types 6, 11 to 14, 36)"
+usage = "FIELD@0x5535-0x5566: a type with bit 1 (value 2) does nothing while bit 2 (value 4) of 0x7679 is set. Using any object sets that bit (FIELD@0x5495) and FIELD writes 0x7679 = 0 at 0x2b52, 0x2d53 and 0x756f, so a unit a teleporter or door has just moved is probably not moved again by the next one before then; the resets were not traced."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xe6f1a"
+name = "object_type_use_limit"
+category = "data-table"
+type = "int[100]"
+value_domain = "uses per placed object, 0 for no limit: 1 for types 5, 7, 8, 16, 26, 28 to 31 and 33, and $1$OBINIT's 50"
+none = 0
+usage = "The trigger gate refuses a slot whose stage_object_use_counts cell has reached it (FIELD@0x6bf0), and SETOBJ leaves such a slot unplaced (SETOBJ@0x17d-0x1ab)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6f7e"
+name = "object_type_required_story_flag"
+category = "data-table"
+type = "int[100]"
+value_domain = "one-based story_event_flags id, 0 none: 1701 for 封鎖された扉 (type 10); 1902, 1903 and 1904 for 銅の扉, 銀の扉 and 金の扉 (12 to 14), the flags ADDITEM sets while 銅の鍵, 白銀の鍵 or 黄金の鍵 is held (ADDITEM@0x92-0xd9)"
+usage = "The trigger gate refuses the type unless story_event_flags[id - 1] is 1 (FIELD@0x6c1f). Type 10 also requires the flag its slot's primary payload names, when it is not 0 (FIELD@0x6e10-0x6e57)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe6fe2"
+name = "object_type_allowed_unit_ids"
+category = "data-table"
+type = "int[100][3]"
+columns = { "0" = "unit_1", "1" = "unit_2", "2" = "unit_3" }
+value_domain = "unit ids, any one of which may trigger the type; 0 none: 使い魔イベント 2, 3, 4 (リリィ's three ages), コレットイベント 10, ブリジットイベント 8, 解除地点 5 (シルフィーヌ), $1$OBINIT's 保管財宝 904"
+usage = "When column 0 is set, the trigger gate refuses a unit whose unit id is none of the three (FIELD@0x6c51-0x6cb9)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe710e"
+name = "object_type_required_skill_id"
+category = "data-table"
+type = "int[100]"
+value_domain = "SKINIT skill id, 0 none: 22 (開錠) for 宝箱 and the four doors (types 7, 11 to 14)"
+usage = "The trigger gate refuses a unit without the skill (FIELD@0x6cba); the object information panel shows it as '<skill>必須' (FIELD@0xb162-0xb1d6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe7172"
+name = "object_type_immunity_skill_id"
+category = "data-table"
+type = "int[100]"
+value_domain = "SKINIT skill id that spares a unit, 0 none: 1 (飛行) for 針, 4 (耐熱) for 炎, 2 (潜水) for 水沼 (types 17, 18, 21)"
+usage = "The trigger gate refuses a unit that has the skill, so the hazard does not act on it (FIELD@0x6cee); the object information panel shows it as '<skill>回避' (FIELD@0xb162-0xb1d6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe71d6"
+name = "object_type_turn_resource_deltas"
+category = "data-table"
+type = "int[100][3]"
+columns = { "0" = "hp", "1" = "sp", "2" = "fs" }
+value_domain = "signed HP, SP and FS changes: 拠点 +3 each, the three 魔力の柱 +2 each, 針 HP -2, 炎 HP -3, 電流, 毒沼 and 水沼 HP -1, 泥沼 FS -1, 技力拡散結界 SP -2, 意気消沈結界 FS -5"
+usage = "Applied to a unit at each turn it stands on the object, past the trigger gate; a negative change skips a unit whose faction is the slot's stage_object_runtime_state, a hazard's owner (FIELD@0x79c8-0x7ab9). The hazards' handler also applies it when a unit triggers one (FIELD@0x654c-0x6579). The descriptions ＨＰ-2, SＰ-2 and ＦＳ-5 fix the columns."
 source = "investigation"
 confidence = "high"
 
@@ -3363,9 +3628,29 @@ name = "stage_object_runtime_state"
 category = "data-table"
 type = "int[][50]"
 value_domain = "type-dependent small integer state; initial values observed 1..3"
-usage = "Per-stage, per-object-slot runtime state. FIELD initializes mode-1 objects from STINIT's first tagged payload on a fresh stage and updates capturable-object ownership; DRAWOBJ uses it as the vertical sprite-row index. RTN_M015 treats the state of Magic Pillar types 2..4 as their controlling faction and targets pillars whose value differs from the acting entity's faction."
+usage = "Per-stage, per-object-slot runtime state. FIELD initializes mode-1 objects from STINIT's first tagged payload on a fresh entry while the stage is not yet cleared (FIELD@0x4d7-0x54c) and updates capturable-object ownership; DRAWOBJ uses it as the vertical sprite-row index. Chests and treasure set it to 1 once taken (FIELD@0x611a); the door handler sets 1 on open or unlock (FIELD@0x6498, 0x64d9) and 0 on lock (FIELD@0x63d3); for a hazard it is the owner whose negative turn changes it skips (FIELD@0x7a6f-0x7a8f). RTN_M015 treats the state of Magic Pillar types 2..4 as their controlling faction and targets pillars whose value differs from the acting entity's faction."
 source = "investigation"
 confidence = "high"
+
+[[global]]
+address = "0x7e54"
+name = "stage_object_use_counts"
+category = "data-table"
+type = "int[1000][50]"
+value_domain = "uses so far, by stage id and object slot"
+usage = "Saved. FIELD adds one when any unit uses the slot's object (FIELD@0x5478-0x548e), and sets it to 0 for 魔物の渦 and 出撃の旗 (types 5, 26) on each fresh entry (FIELD@0x27b-0x2c8). The trigger gate and SETOBJ compare it with object_type_use_limit (FIELD@0x6bfe, SETOBJ@0x18b)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x617fe"
+name = "stage_full_conquest_flags"
+category = "data-table"
+type = "int[1000]"
+value_domain = "1 once the stage is fully conquered, by stage id"
+usage = "Saved. At a clear FIELD sets it when 0x55e3b[stage], which it fills from 0x20540, is 100 and the story flags 0xe730e[0..2] name are all set, then for every stage of the same stage_unlock_group_ids (FIELD@0xbbe4-0xbcf7). SETOBJ places 歪移門 (type 36, 完全制圧おまけ機能) only while it is set and the shared clear record 0x32f2 is not 0 (SETOBJ@0x6a-0xa2). On a fresh entry it makes FIELD set every tile of a layout class in 0x7a6c and traversal mask 2 (FIELD@0x469-0x49c). GAMESTART and GAMECLEAR read it. The inputs 0x55e3b, 0x20540 and 0xe730e are not traced."
+source = "investigation"
+confidence = "med"
 
 [[global]]
 address = "0xaba64"
@@ -3445,6 +3730,16 @@ category = "data-table"
 type = "int"
 value_domain = "{0,1}; 0 defeat on expiry, 1 forced-retreat clear on expiry"
 usage = "STINIT mode paired with stage_turn_limit. Stage 1 stores 0 and describes 50-turn expiry as defeat; stage 2 stores 1 and explicitly describes 15-turn expiry as a forced-retreat clear."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32f0"
+name = "familiar_unit_id"
+category = "index-pointer"
+type = "int"
+value_domain = "EBINIT unit id 2..4: リリィ：幼少時代, リリィ：少女時代, リリィ：成女時代; 0 at boot"
+usage = "The familiar's current form. UNITECH@0xd7 sets it to the joining unit when that unit is 2..4 (UNITECH@0xb6-0xcb), and EVOLVE@0xa7b advances it by one when she grows up, after copying her skills to the next form (EVOLVE@0xa51-0xa71). TRAIN reads that unit's level and stats (TRAIN@0x5ae, TRAIN@0x6c3), changes its stats, and pages the training actions by it: page familiar_unit_id - 2 holds actions 7 x page to 7 x page + 6 (TRAIN@0x434-0x43b). CALCCC's Lily rules (CCINIT) apply only to a unit other than this one; CHMENU, ADDSKILL, SAVE and GAMESTART read it too."
 source = "investigation"
 confidence = "high"
 
@@ -3600,6 +3895,8 @@ name = "terrain_layout_classes"
 category = "data-table"
 type = "int[30]"
 value_domain = "{0=blocked_or_boundary, 1=open_area, 2=passage, 3=hidden}"
+values = { "1" = "Open area", "2" = "Passage", "3" = "Hidden" }
+none = 0
 usage = "LAINIT terrain class. Zero cells are rejected by map rendering, occupancy, and pathfinding; ordinary areas, passages, and hidden spaces take distinct DRAWMAP/CALCOCC/MVSEEK paths. Combined with terrain_area_fill_flags, it distinguishes hidden rooms from hidden passages."
 source = "investigation"
 confidence = "high"
@@ -3910,8 +4207,9 @@ address = "0xe7389"
 name = "stage_object_type_id"
 category = "data-table"
 type = "int[50]"
-value_domain = "object definition id 1..46"
-usage = "Object-definition id for each current-stage object slot. SETOBJ decides whether the slot exists, while DRAWOBJ and FIELD use the id to select shared object graphics, dimensions, animation, collision, and behavior metadata."
+value_domain = "object_type id: 1 to 46 from OBINIT, 50 to 61 from $1$OBINIT; 0 is an empty slot"
+values_from = { global = "object_type_names", first = 0 }
+usage = "Object-definition id for each current-stage object slot. SETOBJ decides whether the slot exists, while DRAWOBJ and FIELD use the id to select shared object graphics, dimensions, animation, collision, and behavior metadata. $1$STINIT places types 50 to 61 on stages 201 and 203."
 source = "investigation"
 confidence = "high"
 
@@ -4007,8 +4305,9 @@ address = "0xe7799"
 name = "stage_enemy_faction_id"
 category = "data-table"
 type = "int[30]"
-value_domain = "{0,2,3}"
-usage = "Per-spawn faction/team selector. FIELD and ADDEN copy it into the runtime unit's faction field, use it to choose the entity-index band, and test the same value against map occupancy masks."
+value_domain = "the slot's army: 0 gray, 2 blue, 3 green (current_faction_id's colours); 1, the player's red, is never written"
+values = { "0" = "Gray army", "2" = "Blue army", "3" = "Green army" }
+usage = "Per-spawn faction. FIELD and ADDEN copy it into the runtime unit's entity_faction_ids (FIELD@0x93c-0x94a) and choose the entity band by it: 2 and 3 take entities faction * 10 - 9 on (11..20, 21..30), 0 takes 31 on (FIELD@0x8c8-0x926); the player's units are 1..10. Every army is hostile to every other: an offensive action and the AI's targeting take a unit whose faction differs from the actor's (SETMVWORK@0x66-0x89, RTN_M051@0x80-0x95), so no slot is the player's ally, and the rout victory rule (STINIT's 0xe7308 = -1) waits while factions 0, 2 or 3 have a unit left (FIELD@0x8f1c-0x8f31). Each army moves in its own phase: current_faction_id runs 1, 2, 3, 0. Over STINIT's stages faction 2 has 1,065 slots and is the stage's main enemy (stage 1's orcs), 0 has 242 and mostly holds the dungeon's stray monsters, and 3 has 71, a third side such as stage 104's knights and angels beside the demon lord's army."
 source = "investigation"
 confidence = "high"
 
@@ -4033,6 +4332,8 @@ usage = "Per-spawn replay gate. FIELD rejects a populated enemy slot when this v
 source = "investigation"
 confidence = "high"
 depends_on = ["0x7684"]
+values = { "2" = "Yes" }
+none = 0
 
 [[global]]
 address = "0xe77f3"
@@ -4141,7 +4442,7 @@ name = "alchemy_recipe_output_item_ids"
 category = "data-table"
 type = "int[1000]"
 value_domain = "ITINIT item ids; zero means no recipe"
-usage = "Output item id indexed by sparse alchemy recipe id. ALCHEMY scans recipe ids 0..999, treats a nonzero cell as a populated recipe, and adds one copy of this item after a successful synthesis."
+usage = "Output item id indexed by sparse recipe id. ALINIT writes recipes 1 to 15, 100 to 110, 200 to 204, 210 to 214, 220 to 224, 230 to 234, 240 to 245, 250 to 254, 260 to 264, 270 to 274, 280 to 285, 300 to 303, 400 to 411 and 450 to 467 (107; $1$ALINIT writes none). ALCHEMY scans ids 0 to 999 and lists, in id order, each recipe whose cell is nonzero and whose gates pass (ALCHEMY@0x1004-0x1049). Synthesis refuses an output already held 99 times (ALCHEMY@0xe72-0xea4) and adds one copy through ADDITEM (ALCHEMY@0x1417-0x143d)."
 source = "investigation"
 confidence = "high"
 
@@ -4151,7 +4452,7 @@ name = "alchemy_recipe_minimum_levels"
 category = "data-table"
 type = "int[1000]"
 value_domain = "0..6"
-usage = "Minimum alchemy level indexed by recipe id. ALCHEMY exposes a populated recipe only when this value is less than or equal to alchemy_level."
+usage = "Minimum alchemy level indexed by recipe id. ALCHEMY lists a recipe only when this is at most alchemy_level (ALCHEMY@0x1127-0x113c). alchemy_level runs 0 to 6: a synthesis below level 6 adds one progress, and progress reaching row 1 of facility_level_progress_thresholds raises the level (ALCHEMY@0x1377-0x13b6)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x156214", "0x671d"]
@@ -4163,7 +4464,7 @@ category = "data-table"
 type = "int[1000][2]"
 columns = { "0" = "required_flag_1", "1" = "required_flag_2" }
 value_domain = "one-based story_event_flags ids; zero means no requirement"
-usage = "Two positive story prerequisites per recipe. ALCHEMY subtracts one from every populated id and hides the recipe unless the corresponding story_event_flags cell equals 1; shipped ALINIT data populates only the first column."
+usage = "Two story prerequisites per recipe. ALCHEMY subtracts one from each nonzero id and hides the recipe unless that story_event_flags cell is 1 (ALCHEMY@0x115a-0x119a). ALINIT writes column 0 only, for 8 recipes."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6d3", "0x156214"]
@@ -4175,7 +4476,7 @@ category = "data-table"
 type = "int[1000][2]"
 columns = { "0" = "forbidden_flag_1", "1" = "forbidden_flag_2" }
 value_domain = "one-based story_event_flags ids; zero means no exclusion"
-usage = "Two negative story prerequisites per recipe. ALCHEMY subtracts one from every populated id and hides the recipe when the corresponding story_event_flags cell equals 1; shipped ALINIT data populates only the first column."
+usage = "Two story exclusions per recipe. ALCHEMY subtracts one from each nonzero id and hides the recipe when that story_event_flags cell is 1 (ALCHEMY@0x11bb-0x11fb). ALINIT writes column 0 only, for 13 recipes."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6d3", "0x156214"]
@@ -4186,7 +4487,8 @@ name = "alchemy_recipe_point_costs"
 category = "data-table"
 type = "int[1000]"
 value_domain = "5..100"
-usage = "Spendable point cost indexed by recipe id. ALCHEMY checks recipe availability against its point-capacity condition, then requires and deducts this value from shared_spendable_points on synthesis."
+unit = "points"
+usage = "Point cost indexed by recipe id (5 to 100). ALCHEMY lists a recipe only while its cost is at most maximum_spirit (ALCHEMY@0x11ff-0x1222; a zero cost skips the test), refuses synthesis with 「ポイントが不足しています。」 when the cost exceeds shared_spendable_points (ALCHEMY@0xe34-0xe5f), and deducts it from them (ALCHEMY@0x1440-0x144e). Why the listing tests maximum_spirit is not established."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x156214", "0x671b"]
@@ -4198,7 +4500,7 @@ category = "data-table"
 type = "int[1000][4]"
 columns = { "0" = "ingredient_1", "1" = "ingredient_2", "2" = "ingredient_3", "3" = "ingredient_4" }
 value_domain = "ITINIT item ids; zero means unused slot"
-usage = "Up to four ingredient item ids per recipe. ALCHEMY checks total inventory for each populated slot and removes the paired alchemy_recipe_ingredient_quantities amount during synthesis."
+usage = "Up to four ingredient item ids per recipe; the slots are independent (recipe 1 uses slots 2 and 3). ALCHEMY greys a recipe out when a nonzero slot's inventory count, less a per-item count the menu keeps in L[0x803], is below its quantity (ALCHEMY@0x1280-0x12d7), and synthesis then refuses with 「素材が不足しています。」 (ALCHEMY@0xdf6-0xe21). Synthesis removes each slot's quantity through ADDITEM with a negative count (ALCHEMY@0x13d8-0x1411)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x156214", "0x1590f4"]
@@ -4210,7 +4512,7 @@ category = "data-table"
 type = "int[1000][4]"
 columns = { "0" = "ingredient_1", "1" = "ingredient_2", "2" = "ingredient_3", "3" = "ingredient_4" }
 value_domain = "positive item count; shipped values are 1, 2, 3, or 5"
-usage = "Required ingredient quantities paired cell-for-cell with alchemy_recipe_ingredient_item_ids. ALCHEMY requires and consumes this many copies of each populated ingredient."
+usage = "Ingredient quantities paired cell for cell with alchemy_recipe_ingredient_item_ids (1, 2, 3 or 5): ALCHEMY requires them (ALCHEMY@0x12b7-0x12c2) and removes them (ALCHEMY@0x13fa-0x1411)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x158154"]
@@ -4231,10 +4533,9 @@ depends_on = ["0x8dfe9", "0xa7436", "0xab5ba"]
 address = "0x26a4"
 name = "defense_element_names"
 category = "string-table"
-type = "string[20]"
-columns = { "1" = "physical", "2" = "universal", "3" = "fire", "4" = "ice", "5" = "lightning", "6" = "earth", "7" = "holy", "8" = "dark", "9" = "divinity", "10" = "demon", "11" = "spirit", "12" = "undead" }
-value_domain = "Japanese defense-affinity display strings; unused cells are empty"
-usage = "AFINIT defense-side affinity vocabulary. DRAWENP and DRAWTIP index it with unit/item defense element ids; the same id selects a row of attack_element_effectiveness_percent."
+type = "string[16]"
+value_domain = "Japanese defense-affinity display strings for ids 1..12 (1 physical, 2 universal, 3 fire, 4 ice, 5 lightning, 6 earth, 7 holy, 8 dark, 9 divinity, 10 demon, 11 spirit, 12 undead); unused cells are empty"
+usage = "AFINIT defense-side affinity vocabulary (AFINIT@0x4b-0x82). DRAWENP and DRAWTIP index it with unit/item defense element ids; the same id selects a row of attack_element_effectiveness_percent. Sixteen cells: GS 0x26b4, its cell 16, is class_change_title_output, and terrain_type_names starts at 0x26b5."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x77c6e", "0x8e3d1", "0xab5ba"]
@@ -4292,7 +4593,7 @@ category = "data-table"
 type = "string[21][6]"
 columns = { "0" = "description_line_1", "1" = "description_line_2", "2" = "description_line_3", "3" = "locked_hint_line_1", "4" = "locked_hint_line_2", "5" = "locked_hint_line_3" }
 value_domain = "player-facing Japanese text; empty cells are unused lines"
-usage = "TRINIT's six-string row for each of 21 training/sexual-magic actions. TRAIN renders columns 0..2 for the action description and cost/reward summary, or columns 3..5 for the unmet-condition hint."
+usage = "TRINIT's six lines for each of its 21 actions (ids 0 to 20; $1$TRINIT writes none): TRAIN draws lines 0 to 2 for an action (TRAIN@0x10c8-0x10d3) and lines 3 to 5, the hint, for one never unlocked whose gates fail (TRAIN@0x103c-0x108e). An action has no name string; its button is a cell of SO019.AGF, at x = slot x 113, y = (familiar_unit_id - 2) x 85, 113 by 85 (TRAIN@0xdd3, 0xe93-0xe9a)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x53edd", "0x53ede"]
@@ -4304,7 +4605,7 @@ category = "data-table"
 type = "int[21][3]"
 columns = { "0" = "required_story_flag_id_1", "1" = "required_story_flag_id_2", "2" = "required_story_flag_id_3" }
 value_domain = "one-based story flag id; zero means no requirement"
-usage = "Up to three prerequisite story flags per TRINIT action. TRAIN subtracts one before indexing story_event_flags and rejects the action unless every populated flag equals one."
+usage = "Up to three story prerequisites per action: TRAIN subtracts one from each nonzero id and requires that story_event_flags cell to be 1 (TRAIN@0x509-0x542)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6d3"]
@@ -4316,7 +4617,7 @@ category = "data-table"
 type = "int[21][3]"
 columns = { "0" = "forbidden_story_flag_id_1", "1" = "forbidden_story_flag_id_2", "2" = "forbidden_story_flag_id_3" }
 value_domain = "one-based story flag id; zero means no exclusion"
-usage = "Reserved three-slot exclusion table paired with training_action_required_story_flag_ids. TRAIN rejects an action when any populated flag equals one; shipped TRINIT leaves all 63 cells zero."
+usage = "Three story exclusions per action: TRAIN rejects it when a nonzero id's story_event_flags cell (id - 1) is 1 (TRAIN@0x563-0x59c). TRINIT writes none."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6d3"]
@@ -4327,7 +4628,8 @@ name = "training_action_minimum_unit_levels"
 category = "data-table"
 type = "int[21]"
 value_domain = "unit level; zero means no lower bound"
-usage = "Minimum familiar level for each TRINIT action. TRAIN compares the selected unit's level and rejects values below the populated threshold."
+none = 0
+usage = "Lowest level of the familiar (unit_current_levels[familiar_unit_id]) the action takes (TRAIN@0x5a0-0x5bc). Only action 0 has one (3)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6930"]
@@ -4338,7 +4640,8 @@ name = "training_action_maximum_unit_levels"
 category = "data-table"
 type = "int[21]"
 value_domain = "unit level; zero means no upper bound"
-usage = "Maximum familiar level for each TRINIT action. TRAIN rejects levels above a populated threshold; shipped TRINIT leaves this reserved family empty."
+none = 0
+usage = "Maximum familiar level for each TRINIT action. TRAIN rejects levels above a populated threshold; shipped TRINIT leaves this reserved family empty. (TRAIN@0x5cb-0x5e0)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6930"]
@@ -4349,7 +4652,9 @@ name = "training_action_minimum_alignment_thresholds_encoded"
 category = "data-table"
 type = "int[21]"
 value_domain = "100 + signed alignment threshold; zero means no lower bound"
-usage = "Encoded lower alignment/personality gates. TRAIN subtracts 100 from a populated value and requires familiar_alignment to be at least that signed threshold; the five shipped gates correspond to the locked hints' kind-personality requirements."
+offset = -100
+none = 0
+usage = "Lowest familiar_alignment the action takes, stored plus 100: TRAIN subtracts 100 and rejects a lower alignment (TRAIN@0x5f6-0x620). Five actions have one (10 to 35)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6722"]
@@ -4360,7 +4665,9 @@ name = "training_action_maximum_alignment_thresholds_encoded"
 category = "data-table"
 type = "int[21]"
 value_domain = "100 + signed alignment threshold; zero means no upper bound"
-usage = "Encoded upper alignment/personality gates. TRAIN subtracts 100 and requires familiar_alignment not to exceed the signed threshold; the five shipped gates correspond to evil-personality requirements."
+offset = -100
+none = 0
+usage = "Highest familiar_alignment the action takes, stored plus 100 (TRAIN@0x621-0x63d). Five actions have one (-20 to -99)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6722"]
@@ -4371,7 +4678,8 @@ name = "training_action_minimum_progress"
 category = "data-table"
 type = "int[21]"
 value_domain = "familiar training progress 0..99; zero means no lower bound"
-usage = "Minimum familiar_training_progress required by each TRINIT action. TRAIN rejects the action when the current value is below a populated threshold."
+none = 0
+usage = "Minimum familiar_training_progress required by each TRINIT action. TRAIN rejects the action when the current value is below a populated threshold. (TRAIN@0x64c-0x661)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6724"]
@@ -4382,7 +4690,8 @@ name = "training_action_maximum_progress"
 category = "data-table"
 type = "int[21]"
 value_domain = "familiar training progress 0..99; zero means no upper bound"
-usage = "Upper training-progress gate paired with training_action_minimum_progress. TRAIN enforces populated values; shipped TRINIT leaves all 21 cells zero."
+none = 0
+usage = "Upper training-progress gate paired with training_action_minimum_progress. TRAIN enforces populated values; shipped TRINIT leaves all 21 cells zero. (TRAIN@0x670-0x685)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6724"]
@@ -4394,7 +4703,7 @@ category = "data-table"
 type = "int[21][10]"
 columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "speed", "7" = "luck", "8" = "critical_chance", "9" = "capture_power" }
 value_domain = "minimum unit stat; zero means no lower bound"
-usage = "Ten-column minimum-stat gate using the first ten unit-stat ABI columns. TRAIN compares each populated cell with the selected familiar's current stat; shipped TRINIT leaves the table empty."
+usage = "Ten-column minimum-stat gate using the first ten unit-stat ABI columns. TRAIN compares each populated cell with the selected familiar's current stat; shipped TRINIT leaves the table empty. (TRAIN@0x6b1-0x6ce, against unit_current_stats[familiar_unit_id])"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x69f8"]
@@ -4406,7 +4715,7 @@ category = "data-table"
 type = "int[21][10]"
 columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "speed", "7" = "luck", "8" = "critical_chance", "9" = "capture_power" }
 value_domain = "maximum unit stat; zero means no upper bound"
-usage = "Ten-column maximum-stat gate paired with training_action_minimum_unit_stats. TRAIN enforces populated cells; shipped TRINIT leaves the table empty."
+usage = "Ten-column maximum-stat gate paired with training_action_minimum_unit_stats. TRAIN enforces populated cells; shipped TRINIT leaves the table empty. (TRAIN@0x6e8-0x705, against unit_current_stats[familiar_unit_id])"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x69f8"]
@@ -4417,7 +4726,7 @@ name = "training_action_required_item_ids"
 category = "data-table"
 type = "int[21]"
 value_domain = "ITINIT item id; zero means no item requirement"
-usage = "Optional item prerequisite for each TRINIT action. TRAIN requires a nonzero inventory count and displays the joined item name; the item is a gate, not consumed by this path."
+usage = "An item the player must hold (item_inventory_counts nonzero) for the action, not used up (TRAIN@0x722-0x74c); TRAIN prints its name, or なし (TRAIN@0x100b-0x1033)."
 source = "investigation"
 confidence = "high"
 
@@ -4427,7 +4736,7 @@ name = "training_action_required_skill_ids"
 category = "data-table"
 type = "int[21]"
 value_domain = "SKINIT skill id; zero means no skill requirement"
-usage = "Optional acquired-skill prerequisite. TRAIN requires the corresponding skill_acquired_flags cell; shipped TRINIT leaves all 21 cells zero."
+usage = "Optional acquired-skill prerequisite. TRAIN requires the corresponding skill_acquired_flags cell; shipped TRINIT leaves all 21 cells zero. (TRAIN@0x74d-0x777)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x65ce"]
@@ -4438,7 +4747,8 @@ name = "training_action_spirit_deltas"
 category = "data-table"
 type = "int[21]"
 value_domain = "negative 精気 cost; shipped values -90..-20"
-usage = "Signed current_spirit delta for each TRINIT action. TRAIN rejects an action whose post-delta spirit would be negative, displays the negated value as its cost, and applies the delta before scene dispatch."
+unit = "spirit"
+usage = "The action's spirit change, its cost (-20 to -90). TRAIN refuses it with 「精気が不足しています。」 when current_spirit plus it is below G[0x20538], which ADDEXP and FIELD add the deployed units' spirit to (ADDEXP@0x6f0, FIELD@0xbba) (TRAIN@0x7ee-0x82c), adds it to current_spirit held to 0..maximum_spirit (TRAIN@0x833-0x86a), and draws it negated as the cost (TRAIN@0x10f7-0x117d)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x20530"]
@@ -4450,7 +4760,7 @@ category = "data-table"
 type = "int[21][14]"
 columns = { "0" = "accuracy", "1" = "evasion", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "speed", "7" = "luck", "8" = "critical_chance", "9" = "capture_power", "10" = "movement", "11" = "max_hp", "12" = "max_sp", "13" = "max_fs" }
 value_domain = "signed additive unit stat delta; zero means unchanged"
-usage = "Fourteen-column familiar stat effects for each TRINIT action. TRAIN adds populated values through the unit stat-growth ABI, carries fractional growth, applies caps, and invokes SHOWGROW when any stat changes."
+usage = "The familiar's stat changes: TRAIN adds each column through unit_stat_growth_fractions into unit_current_stats of familiar_unit_id, under the stat caps (TRAIN@0x8ef-0xa1a), and shows SHOWGROW when one changed."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x69f8"]
@@ -4461,7 +4771,8 @@ name = "training_action_alignment_deltas_hundredths"
 category = "data-table"
 type = "int[21]"
 value_domain = "signed hundredths of familiar alignment; shipped -2000..300"
-usage = "Alignment/personality change for each TRINIT action in hundredths. TRAIN combines it with familiar_alignment_fraction, applies the integral and stochastic fractional change to familiar_alignment, and clamps the result to -99..99."
+scale = 0.01
+usage = "Alignment/personality change for each TRINIT action in hundredths. TRAIN combines it with familiar_alignment_fraction, applies the integral and stochastic fractional change to familiar_alignment, and clamps the result to -99..99. (TRAIN@0xa32-0xafe; the clamp at TRAIN@0xad3-0xaf9)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6722", "0x6723"]
@@ -4472,7 +4783,8 @@ name = "training_action_progress_deltas_hundredths"
 category = "data-table"
 type = "int[21]"
 value_domain = "positive hundredths of training progress; shipped 100..300"
-usage = "Training-progress gain for each TRINIT action in hundredths. TRAIN combines it with familiar_training_progress_fraction, advances familiar_training_progress with fractional probability, and clamps the result to 99."
+scale = 0.01
+usage = "Training-progress gain for each TRINIT action in hundredths. TRAIN combines it with familiar_training_progress_fraction, advances familiar_training_progress with fractional probability, and clamps the result to 99. (TRAIN@0xb28-0xb78)"
 source = "investigation"
 confidence = "high"
 depends_on = ["0x6724", "0x6725"]
@@ -4483,7 +4795,7 @@ name = "training_action_awarded_skill_ids"
 category = "data-table"
 type = "int[21]"
 value_domain = "SKINIT skill id; zero means no award"
-usage = "Optional skill granted by a TRINIT action. TRAIN checks whether it is new, marks the reward path, and passes the id to ADDSKILL; the extractor joins all eight populated ids to SKINIT names."
+usage = "A skill the action gives on its first execution (TRAIN@0xb9c) when the familiar lacks it (TRAIN@0xc0f-0xc40), through ADDSKILL (TRAIN@0xda1-0xdad). Eight actions give one."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x65ce", "0xa6e59"]
@@ -4494,7 +4806,7 @@ name = "training_action_awarded_item_ids"
 category = "data-table"
 type = "int[21]"
 value_domain = "ITINIT item id; zero means no award"
-usage = "Optional item granted by a TRINIT action. TRAIN suppresses already-owned key/story rewards, displays the joined item name, and calls ADDITEM for the three populated shipped actions."
+usage = "An item the action gives on its first execution (TRAIN@0xb9c); one of item_category 1 is skipped once story_event_flags[item + 1900] is set (TRAIN@0xbcb-0xc0a). ADDITEM gives one (TRAIN@0xd54-0xd90). Actions 6, 13 and 20 give the 喚石 summoning stones."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x8c877"]
@@ -4506,7 +4818,7 @@ category = "data-table"
 type = "int[21][10]"
 columns = { "0" = "execution_1", "1" = "execution_2", "2" = "execution_3", "3" = "execution_4", "4" = "execution_5", "5" = "execution_6", "6" = "execution_7", "7" = "execution_8", "8" = "execution_9", "9" = "execution_10" }
 value_domain = "story flag / SCINIT decision id; zero ends the action's execution sequence"
-usage = "Per-action event sequence selected by the prior execution count. TRAIN copies the chosen id to scjump_decision_out and dispatches it through SCINIT; GAMESTART marks every slot below a restored count in story_event_flags. Repeated ids intentionally reuse a scene, and the first zero defines the execution cap."
+usage = "The scene each execution plays: TRAIN takes the column at the action's execution count, writes it to scjump_decision_out and the scene's script to next_script_resource_id (TRAIN@0x877-0x895). A zero at the count marks the action used up (TRAIN@0x45f-0x486, 「実行回数が上限に達しています。」 at TRAIN@0x7c5). GAMESTART sets story_event_flags[id] for each completed execution (GAMESTART@0x8bf-0x8d1). The first zero is the action's limit: 1 to 6 executions."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x53edd", "0x62ccf", "0x6727", "0x6d3", "0x87a57"]
@@ -4583,7 +4895,7 @@ name = "card_definition_names"
 category = "string-table"
 type = "string[100]"
 value_domain = "CDINIT2 display name by one-based card id"
-usage = "Card names populated by CDINIT2. FIELD indexes this table with current_card_id when presenting the card selected from CDINIT's weighted generation list."
+usage = "Card names populated by CDINIT2. FIELD indexes this table with current_card_id when presenting the card selected from CDINIT's weighted generation list. CDINIT2 writes cards 1 to 81 ($1$CDINIT2 writes none). FIELD shows the drawn card's name, then its result message, in a message box after its effect (FIELD@0x6b86-0x6bb3). Names repeat: the 36 familiar cards are all 使い魔のカード."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8"]
@@ -4806,7 +5118,7 @@ name = "card_definition_result_messages"
 category = "string-table"
 type = "string[100]"
 value_domain = "CDINIT2 result text by one-based card id"
-usage = "Short player-facing result text paired with card_definition_names. FIELD displays the selected card's row after applying its CDINIT2 effect."
+usage = "The drawn card's second message line, after its name (FIELD@0x6ba0-0x6bb3); an item card's names the item (『治癒の水・小を獲得した』)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8"]
@@ -4829,7 +5141,7 @@ category = "data-table"
 type = "int[100][3]"
 columns = { "0" = "required_flag_1", "1" = "required_flag_2", "2" = "engine_dead_required_flag_3" }
 value_domain = "story flag id; zero means no requirement"
-usage = "CDINIT2 card eligibility rows. FIELD checks only columns 0 and 1 before admitting a card to weighted selection. CDINIT2 nevertheless authors column 2 for eighteen cards; those third requirements are engine-dead in the shipped FIELD loop and are retained separately by the extractor."
+usage = "Story prerequisites per card. FIELD admits a card to the draw only when each nonzero id of columns 0 and 1 has its story_event_flags cell (id - 1) at 1 (FIELD@0x6f25-0x6f80; the loop bound is 2 at FIELD@0x6f39), so column 2, which CDINIT2 writes for 18 cards, is never read."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8", "0x6d3"]
@@ -4841,7 +5153,7 @@ category = "data-table"
 type = "int[100][3]"
 columns = { "0" = "forbidden_flag_1", "1" = "forbidden_flag_2", "2" = "reserved_forbidden_flag_3" }
 value_domain = "story flag id; zero means no exclusion"
-usage = "CDINIT2 card exclusion rows. FIELD checks columns 0 and 1 and rejects a card when either populated flag is set; the shipped definitions populate only column 0."
+usage = "Story exclusions per card. FIELD drops a card from the draw when a nonzero id of columns 0 and 1 has its story_event_flags cell (id - 1) at 1 (FIELD@0x6f84-0x6fda); CDINIT2 writes column 0 only."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8", "0x6d3"]
@@ -4863,10 +5175,31 @@ name = "stage_object_primary_payload"
 category = "data-table"
 type = "int[50]"
 value_domain = "object-type-tagged payload"
-usage = "STINIT's primary per-object payload array. FIELD interprets it by the parallel object type: initial faction for Magic Pillars, teleport destination X, item id, card-generation list id for type 28, non-triggering faction for hazards/barriers, or initial object state for the consumer-proven stateful types."
+usage = "STINIT's primary per-object payload array. FIELD interprets it by the parallel object type (FIELD@0x5574): initial faction for bases and Magic Pillars (1 to 4), teleport destination X (6, 36; FIELD@0x5d7b-0x5e0b), item id for a chest or treasure (7, 8; FIELD@0x5fc5-0x601a), card-generation list id for type 28 (FIELD@0x65ee), non-triggering faction for hazards/barriers (17 to 25), or initial object state for the consumer-proven stateful types."
 source = "investigation"
 confidence = "high"
 depends_on = []
+
+[[global]]
+address = "0xe73ed"
+name = "stage_object_secondary_payload"
+category = "data-table"
+type = "int[50]"
+value_domain = "object-type-tagged second payload: a teleporter's destination tile y (types 6, 36), a chest's or a treasure's item count (7, 8); 0 otherwise"
+usage = "STINIT's second per-object payload, beside stage_object_primary_payload. FIELD moves a unit to (primary, secondary) through a teleporter (FIELD@0x5d7b-0x5e0b), and RTN_M004 matches a teleporter by it (RTN_M004@0xd6); the chest and treasure handlers give that many of the item (FIELD@0x5f93-0x601a, 0x6179-0x61c0)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe770d"
+name = "stage_object_use_story_flag_ids"
+category = "data-table"
+type = "int[50]"
+value_domain = "one-based story_event_flags id, 0 none; 509, 510, 1746 to 1757, 1791, 1859 to 1864 and 1890 on bases, teleporters, event points, seal and release devices and retreat points (types 1, 6, 9, 34, 35, 37)"
+none = 0
+usage = "When a player unit (faction 1) uses the slot's object, FIELD sets story_event_flags[id - 1] to 1 (FIELD@0x5434-0x5473)."
+source = "investigation"
+confidence = "high"
 
 [[global]]
 address = "0x152486"
@@ -4875,7 +5208,7 @@ category = "data-table"
 type = "int[100][3]"
 columns = { "0" = "base_weight", "1" = "growth_interval_turns", "2" = "growth_weight" }
 value_domain = "nonnegative weighted-selection parameters"
-usage = "CDINIT's selector-specific candidate weights, parallel to card_generation_card_ids. FIELD computes base_weight + floor(current_stage_turn / growth_interval_turns) * growth_weight, with a zero interval selecting the fixed base path. The shipped lists populate 11..75 one-based slots."
+usage = "Each slot's weight: base_weight + floor(current_stage_turn / growth_interval_turns) x growth_weight, the base alone when the interval is 0 (FIELD@0x6648-0x668e). FIELD skips a card that fails its story gates or whose weight is not positive, draws a number below the weights' total, and takes the first card whose running total exceeds it (FIELD@0x6695-0x6719); with nothing eligible no card comes (FIELD@0x66cc). Every shipped slot has a nonzero interval (5, 7, 8 or 10 turns) and a positive growth."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x152485", "0x1525b2", "0x204f4"]
@@ -4886,7 +5219,7 @@ name = "card_generation_card_ids"
 category = "data-table"
 type = "int[100]"
 value_domain = "CDINIT2 card id; zero means empty candidate slot"
-usage = "Card ids parallel to card_generation_weight_schedules. FIELD scans slots 0..99, filters each nonzero id through the CDINIT2 story-flag rows, and performs cumulative weighted random selection. CDINIT clears only the first 50 slots even though its largest authored list reaches slot 75."
+usage = "The card list CDINIT builds for current_card_generation_list_id, slot by slot from 1 (CDINIT@0x1f on). CDINIT zeroes slots 0 to 49 first (CDINIT@0x0-0xc) and writes one of nine lists: 1, 11, 31, 41, 55, 61, 71, 94 and 160, with 11, 36, 38, 51, 26, 52, 64, 30 and 75 slots; any other id writes nothing (the fallback comment at CDINIT@0x1e96). FIELD calls it when a type-28 card object is used, with that object's stage_object_primary_payload (FIELD@0x65ee-0x65fa), then draws from slots 0 to 99 (FIELD@0x6616-0x66c9). As CDINIT clears only 50 slots, a shorter list loaded after a longer one keeps the longer one's slots 50 on."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8", "0x152485", "0x152486"]
@@ -4908,7 +5241,9 @@ name = "card_definition_type_ids"
 category = "data-table"
 type = "int[100]"
 value_domain = "1=story event, 2=item award, 3=stage-clear point bonus, 4=recovery, 5=trap, 6=random warp"
-usage = "CDINIT2 behavior class by card id. FIELD applies the common populated effect arrays, uses type 6 for the random valid-tile warp path, and uses type 1 to dispatch the card's event after showing its result."
+values = { "1" = "Event", "2" = "Item", "3" = "Clear point bonus", "4" = "Recovery", "5" = "Trap", "6" = "Warp" }
+none = 0
+usage = "What a card does, by card id. FIELD applies every effect array of the drawn card whatever its type (FIELD@0x6748-0x6998); only two types branch: 6 moves the card's taker to a random tile found by the movement search (FIELD@0x699b-0x69cd), and 1 plays the card's event after its message (FIELD@0x6bb9-0x6bdf). CDINIT2 writes 40 events, 24 items, 3 clear point bonuses, 6 recoveries, 7 traps and 1 warp."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8"]
@@ -4919,7 +5254,7 @@ name = "card_definition_awarded_item_ids"
 category = "data-table"
 type = "int[100]"
 value_domain = "ITINIT item id; zero means no item award"
-usage = "Optional item granted by FIELD through ADDITEM after card selection. All 24 populated ids resolve through ITINIT."
+usage = "Item a card gives, one copy through ADDITEM (FIELD@0x68ac-0x68cb). The 24 item cards: the three coins (91 to 93), consumables and the star stones (701 to 711)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8", "0x8c877"]
@@ -4930,7 +5265,7 @@ name = "card_definition_event_story_flag_ids"
 category = "data-table"
 type = "int[100]"
 value_domain = "story flag / SCINIT decision id; zero means no event"
-usage = "Event dispatched for type-1 cards after FIELD displays the card result. All 40 populated ids resolve through SCINIT."
+usage = "The SCJUMP decision a type-1 card plays: FIELD writes it to scjump_decision_out and dispatches it after the card's message, then restores the stage BGM (FIELD@0x6bce-0x6be2). All 40 resolve through SCINIT."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8", "0x62ccf"]
@@ -4941,7 +5276,8 @@ name = "card_definition_stage_clear_point_bonuses"
 category = "data-table"
 type = "int[100]"
 value_domain = "nonnegative shared-spendable-point bonus"
-usage = "Type-3 card reward accumulated into stage_card_spendable_point_bonus. STAGECLEAR adds it to the normal performance-adjusted award before updating shared_spendable_points; shipped small/medium/large values are 5, 10, and 15."
+unit = "points"
+usage = "Points a card adds to stage_card_spendable_point_bonus (FIELD@0x68ce-0x68dc), which STAGECLEAR adds to the stage's clear award before shared_spendable_points. The three 研究のカード give 5, 10 and 15."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x4dfbb", "0x671b"]
@@ -4953,7 +5289,7 @@ category = "data-table"
 type = "int[100][3]"
 columns = { "0" = "hp", "1" = "sp", "2" = "fs" }
 value_domain = "nonnegative minimum HP/SP/FS recovery"
-usage = "Lower bounds for type-4 HP/SP/FS card recovery. FIELD starts each resource delta at this value and, when the paired upper bound is larger, adds a random value below their difference."
+usage = "Lower bounds of a card's HP, SP and FS recovery. FIELD starts each delta at this value and, when the upper bound is larger, adds a random value below their difference (FIELD@0x6748-0x67ce); the deltas go into the taker's entity_current_resources, held under its maximum (FIELD@0xa90a-0xa9f6)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x151f0d"]
@@ -4976,7 +5312,7 @@ name = "card_definition_minimum_spirit_recovery"
 category = "data-table"
 type = "int[100]"
 value_domain = "nonnegative minimum familiar spirit recovery"
-usage = "Lower bound for type-4 familiar-spirit recovery. FIELD selects the value with the same minimum/exclusive-upper algorithm as HP/SP/FS and clamps current_spirit to maximum_spirit."
+usage = "Lower bound of a card's spirit recovery, drawn as the resources are and added to current_spirit, held to 0..maximum_spirit (FIELD@0x68e1-0x6968)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x15209d", "0x20530", "0x20534"]
@@ -4999,7 +5335,7 @@ category = "data-table"
 type = "int[100][3]"
 columns = { "0" = "hp", "1" = "sp", "2" = "fs" }
 value_domain = "nonnegative minimum HP/SP/FS loss"
-usage = "Lower bounds for type-5 trap damage. FIELD subtracts these randomized HP/SP/FS amounts from the active entity through the same resource-delta path used for recovery."
+usage = "Lower bounds of a trap card's HP, SP and FS loss, drawn as recovery is and subtracted from the deltas (FIELD@0x67d5-0x685b)."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x15222d"]
@@ -5022,7 +5358,7 @@ name = "card_definition_condition_ids"
 category = "data-table"
 type = "int[100]"
 value_domain = "ILINIT condition id; zero means no condition"
-usage = "Condition applied by type-5 trap cards through ADDILL. The three populated rows resolve to paralysis, poison, and water_flow."
+usage = "Condition a trap card inflicts on its taker through ADDILL (FIELD@0x696d-0x6998): 8 麻痺, 9 猛毒, 10 水流."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1523bd"]
@@ -5033,7 +5369,7 @@ name = "card_definition_condition_levels"
 category = "data-table"
 type = "int[100]"
 value_domain = "ILINIT condition level; zero means no condition"
-usage = "Condition level paired with card_definition_condition_ids and passed to ADDILL. All three shipped condition traps use level 1."
+usage = "Levels the card's condition rises by, passed to ADDILL as current_condition_delta_levels (FIELD@0x698c-0x6993); the three shipped traps give 1."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x152359"]
@@ -5043,8 +5379,8 @@ address = "0x152421"
 name = "card_definition_visual_asset_ids"
 category = "data-table"
 type = "int[100]"
-value_domain = "SYS4INI AGF resource id"
-usage = "Card-result visual selected by FIELD before applying and presenting the effect. All 81 authored rows resolve to MVS*.AGF assets, with related card families sharing artwork."
+value_domain = "SYS4INI resource id of an MVS*.AGF movie (an MPEG program stream despite its extension); not a picture"
+usage = "The movie FIELD plays for a drawn card, with play-movie-to-surface into surface 0x2a (FIELD@0xa7ca, FIELD@0xa8b4) in a 120 by 120 frame (FIELD@0xa7c1). All 81 authored rows resolve to MVS*.AGF files (0x2bf1 = MVS001, 0x2c00 = MVS058 for the warp card, 0x2c01 = MVS107, which the 24 item cards share); MVS001 begins with an MPEG pack header (00 00 01 BA), and the others are assumed alike."
 source = "investigation"
 confidence = "high"
 depends_on = ["0x1519f8"]
@@ -5161,6 +5497,7 @@ default_attack_item_id = "item"
 starting_equipment_item_id = "item"
 starting_skill = "skill"
 drop_item = "item"
+defense_element = "element"
 status_art_asset_ids = "picture"
 map_sprite_asset_ids = "picture"
 battle_sprite_asset_id = "picture"
@@ -5199,6 +5536,7 @@ handler_script_id = "item_handler_script_id"
 [table.refs]
 character_whitelist = "unit"
 granted_skill_id = "skill"
+defense_element = "element"
 
 [[table]]
 name = "skill"
@@ -5290,6 +5628,289 @@ victory_condition_2 = "stage_victory_condition_2"
 defeat_condition_1 = "stage_defeat_condition_1"
 defeat_condition_2 = "stage_defeat_condition_2"
 
+[[table]]
+name = "condition"
+records = 30
+built_by = "boot"
+usage = "ILINIT conditions keyed by condition id: 1 to 11, 13 and 14 are written ($1$ILINIT writes none), each with five levels. A unit's level of each is battle state (entity_condition_levels); an item's and a skill's condition columns are indexed by these ids (item_status_delta_levels, item_equipped_status_levels, skill_status_levels). CALCILL applies one; ADDILLSUB sets its turns; CALCREVISE and FIELD apply its stat and resource changes."
+
+[table.fields]
+level_names = "condition_level_names"
+resisted_as = "condition_effectiveness_element_ids"
+can_affect_bosses = "condition_can_affect_bosses"
+cleared_by_recover = "condition_cleared_by_recover"
+icon_id = "condition_icon_ids"
+duration_turns = "condition_duration_turns_by_level"
+stat_deltas = "condition_stat_deltas"
+resource_deltas = "condition_resource_deltas"
+
+[[table]]
+name = "element"
+records = 16
+built_by = "boot"
+usage = "AFINIT's elements keyed by defense element id, 1 to 12 named (0 is none, whose row is 100 throughout): a unit's and a shield's defense element (unit_defense_element, item_defense_element). Each row is how that element takes each attack element's damage, and how likely it is to catch each resistance group's conditions (attack_element_effectiveness_percent). Attack elements 1 to 8 have the same names as defense elements 1 to 8; attack ids are columns of this table, not records."
+
+[table.fields]
+name = "defense_element_names"
+effectiveness_percent = "attack_element_effectiveness_percent"
+
+[[table]]
+name = "class_change"
+records = 1
+built_by = "class_change"
+usage = "What a class change gives, as CALCCC adds it up for current_unit_id: it zeroes the block (not the title), copies the unit's unit_class_change_state row to class_change_state_work, runs every rule script of class_change_rule_script_ids (CCINIT, then $1$CCINIT: 71 base rules over 33 units, two more for unit 81), and applies the block when class_change_selected_level is not 0 (CALCCC@0x0-0x68). A rule fires once (its column of unit_class_change_state is 0) when its unit's level reaches its threshold; the Lily rules (units 3 and 4) have no level test and apply only to a unit other than familiar_unit_id. No data file edits it: it is the sum of the rules that fire, rebuilt on every call, which himegari-base refuses as a table no format edits. The rules themselves are CCINIT's code, which an OMS patch changes."
+
+[table.fields]
+title = "class_change_title_output"
+title_level = "class_change_selected_level"
+deployment_cost_delta = "class_change_deployment_cost_delta"
+stat_bonuses = "class_change_stat_bonuses"
+skill_awards = "class_change_skill_awards"
+
+[table.refs]
+skill_awards = "skill"
+
+[[table]]
+name = "character_profile"
+records = 100
+built_by = "boot"
+usage = "CIINIT's character profiles keyed by profile id, ids 1 to 24 ($1$CIINIT writes none), which the information screen's first tab (INFOCH) lists: a profile exists when it names a unit, and shows its name once that unit has spoken in a story scene (unit_story_speaker_seen_flags). Its biography is CIMES, which reads current_character_profile_id (CIMES@0x0-0x150)."
+
+[table.fields]
+name = "character_profile_names"
+unit_id = "character_profile_unit_ids"
+portrait_asset_id = "character_profile_portrait_asset_ids"
+portrait_x_offset = "character_profile_portrait_x_offsets"
+portrait_y_offset = "character_profile_portrait_y_offsets"
+
+[table.refs]
+unit_id = "unit"
+portrait_asset_id = "picture"
+
+[[table]]
+name = "glossary_entry"
+records = 200
+built_by = "boot"
+usage = "VIINIT's glossary keyed by topic id, 65 written (1 to 36, 50 to 56, 70 to 77, 100 to 112 and 120; $1$VIINIT writes none), which the information screen's third tab (INFOVO) lists once a story scene of its unlock decisions has been seen. Its explanation is VIMES, which reads current_glossary_topic_id."
+
+[table.fields]
+name = "glossary_topic_titles"
+unlock_seen_decision_ids = "glossary_topic_unlock_seen_decision_ids"
+picture_asset_id = "glossary_topic_picture_asset_ids"
+picture_x_offset = "glossary_topic_picture_x_offsets"
+picture_y_offset = "glossary_topic_picture_y_offsets"
+
+[table.refs]
+picture_asset_id = "picture"
+
+[[table]]
+name = "magic_action"
+records = 30
+built_by = "boot"
+usage = "MAINIT's actions keyed by action id, 11 written ($1$MAINIT writes none): the field magics 1 to 6, which MAGIC lists on the map, and the base's rituals, research 7 to 9 (STUDY) and growth 10 and 11 (EVOLVE). current_magic_action_id selects one; its description is the script information_handler_script_id names (MAMES, which has text for 1 to 9)."
+
+[table.fields]
+name = "magic_action_names"
+icon_id = "magic_action_icon_ids"
+menu_kind = "magic_action_menu_kinds"
+target_mode = "magic_action_target_modes"
+cost = "magic_action_costs"
+facility_progress_gain = "magic_action_facility_progress_gains"
+required_magic_facility_level = "magic_action_required_magic_facility_levels"
+required_story_flag_id = "magic_action_required_story_flag_ids"
+required_maximum_spirit = "magic_action_required_maximum_spirit"
+required_training_progress = "magic_action_required_training_progress"
+information_handler_script_id = "magic_action_information_handler_script_ids"
+
+[[table]]
+name = "recipe"
+records = 1000
+built_by = "boot"
+usage = "ALINIT alchemy recipes keyed by recipe id; 107 are written (1 to 467 with gaps), none by $1$ALINIT. A recipe exists when it names an output item. ALCHEMY lists those whose level, story and cost gates pass, in id order, and makes one output item from up to four ingredients for its point cost."
+
+[table.fields]
+output_item_id = "alchemy_recipe_output_item_ids"
+minimum_level = "alchemy_recipe_minimum_levels"
+required_story_flags = "alchemy_recipe_required_story_flags"
+forbidden_story_flags = "alchemy_recipe_forbidden_story_flags"
+point_cost = "alchemy_recipe_point_costs"
+ingredient_item_ids = "alchemy_recipe_ingredient_item_ids"
+ingredient_quantities = "alchemy_recipe_ingredient_quantities"
+
+[table.refs]
+output_item_id = "item"
+ingredient_item_ids = "item"
+
+[[table]]
+name = "card"
+records = 100
+built_by = "boot"
+usage = "CDINIT2's cards keyed by card id, 1 to 81 written ($1$CDINIT2 writes none). A map's card object (OBINIT type 28) draws one from the card list its payload names (card_list_entry), and FIELD applies it to the unit that used the object."
+
+[table.fields]
+name = "card_definition_names"
+result_message = "card_definition_result_messages"
+type_id = "card_definition_type_ids"
+required_story_flags = "card_definition_required_story_flag_ids"
+forbidden_story_flags = "card_definition_forbidden_story_flag_ids"
+awarded_item_id = "card_definition_awarded_item_ids"
+event_decision_id = "card_definition_event_story_flag_ids"
+clear_point_bonus = "card_definition_stage_clear_point_bonuses"
+minimum_resource_recovery = "card_definition_minimum_resource_recovery"
+maximum_resource_recovery = "card_definition_maximum_resource_recovery"
+minimum_spirit_recovery = "card_definition_minimum_spirit_recovery"
+maximum_spirit_recovery = "card_definition_maximum_spirit_recovery"
+minimum_resource_damage = "card_definition_minimum_resource_damage"
+maximum_resource_damage = "card_definition_maximum_resource_damage"
+condition_id = "card_definition_condition_ids"
+condition_level = "card_definition_condition_levels"
+movie_id = "card_definition_visual_asset_ids"
+
+[table.refs]
+awarded_item_id = "item"
+condition_id = "condition"
+
+[[table]]
+name = "card_list_entry"
+records = 100
+built_by = "card_list"
+usage = "The card list CDINIT builds for current_card_generation_list_id, slots 1 to 75: FIELD calls it when a card object is used, with the object's payload as the list (FIELD@0x65ee-0x65fa), and draws one eligible card by weight. Nine lists exist (1, 11, 31, 41, 55, 61, 71, 94, 160). No data file edits it: CDINIT writes it on each use, and its lists are CDINIT's code, which an OMS patch changes."
+
+[table.fields]
+card_id = "card_generation_card_ids"
+weight_schedule = "card_generation_weight_schedules"
+
+[table.refs]
+card_id = "card"
+
+[[table]]
+name = "training_action"
+records = 21
+built_by = "boot"
+usage = "TRINIT's familiar training actions keyed by action id 0 to 20, all written ($1$TRINIT writes none): 0 to 6 for リリィ：幼少時代 (unit 2), 7 to 13 for 少女時代 (3), 14 to 20 for 成女時代 (4), as TRAIN pages them by familiar_unit_id. An action costs spirit, changes the familiar's stats, alignment and training progress, may give a skill or an item on its first execution, and plays one scene per execution, up to its limit. execution_count and unlock_flag are saved state."
+
+[table.fields]
+text = "training_action_text"
+required_story_flags = "training_action_required_story_flag_ids"
+forbidden_story_flags = "training_action_forbidden_story_flag_ids"
+minimum_level = "training_action_minimum_unit_levels"
+maximum_level = "training_action_maximum_unit_levels"
+minimum_alignment = "training_action_minimum_alignment_thresholds_encoded"
+maximum_alignment = "training_action_maximum_alignment_thresholds_encoded"
+minimum_progress = "training_action_minimum_progress"
+maximum_progress = "training_action_maximum_progress"
+minimum_stats = "training_action_minimum_unit_stats"
+maximum_stats = "training_action_maximum_unit_stats"
+required_item_id = "training_action_required_item_ids"
+required_skill_id = "training_action_required_skill_ids"
+spirit_delta = "training_action_spirit_deltas"
+stat_deltas = "training_action_unit_stat_deltas"
+alignment_delta = "training_action_alignment_deltas_hundredths"
+progress_delta = "training_action_progress_deltas_hundredths"
+awarded_skill_id = "training_action_awarded_skill_ids"
+awarded_item_id = "training_action_awarded_item_ids"
+event_decision_ids = "training_action_event_story_flag_ids"
+execution_count = "training_action_execution_counts"
+unlock_flag = "training_action_unlock_flags"
+
+[table.refs]
+required_item_id = "item"
+required_skill_id = "skill"
+awarded_skill_id = "skill"
+awarded_item_id = "item"
+
+[[table]]
+name = "terrain"
+records = 30
+built_by = "boot"
+usage = "LAINIT terrain records keyed by terrain id: 1 to 19 written, with 5 and 6 left blank; $1$LAINIT writes none. A stage's map is a grid of terrain ids: MPINIT's stage_terrain_atlas (and $1$MPINIT's rows from grid row 1601), which FIELD copies into the saved current_stage_terrain_grid for the stage's rectangle on a fresh entry (FIELD@0x2e61). Tile (x, y) is cell (2x, 2y); the odd cells are the joins between tiles. DRAWMAP draws a tile from its terrain's layout class, area fill and texture slot (DRAWMAP@0x1d0-0x36a); CALCBTPARAM adds its combat deltas for a unit standing on it (CALCBTPARAM@0x570-0x687); MVSEEK and FIELD refuse it to a unit without its required skill. The six 部屋 and the two 通路 differ only in their tiles."
+
+[table.fields]
+name = "terrain_type_names"
+effect_description = "terrain_effect_descriptions"
+texture_slot = "terrain_texture_slot_indices"
+area_fill = "terrain_area_fill_flags"
+layout_class = "terrain_layout_classes"
+combat_stat_deltas = "terrain_combat_stat_deltas"
+required_skill_id = "terrain_required_skill_ids"
+
+[table.refs]
+required_skill_id = "skill"
+
+[[table]]
+name = "object_type"
+records = 100
+built_by = "boot"
+usage = "OBINIT map object types keyed by type id: 1 to 46, and $1$OBINIT's 50 to 61 (the append's furniture and stored treasure). A stage places them in its object slots (stage_object's type_id). FIELD loads each placed type's sheet (FIELD@0x91ab), gates a trigger on the type's limits (FIELD@0x6beb-0x6f24) and acts by type (FIELD@0x5574-0x55f7): 1 to 4 are captured, 5 and 26 sealed, 6 and 36 teleport, 7 and 8 give an item, 10 to 14 are doors, 15 and 16 heal, 17 to 22, 24 and 25 harm, 28 deals a card; the rest have no action of their own. DRAWOBJ draws them."
+
+[table.fields]
+name = "object_type_names"
+description = "object_type_descriptions"
+sprite = "object_type_sprite_asset_ids"
+sprite_width = "object_type_sprite_widths"
+sprite_height = "object_type_sprite_heights"
+animation_frames = "object_type_animation_frame_counts"
+sprite_state_row_mode = "object_sprite_state_row_mode"
+glow_mode = "object_type_available_glow_mode"
+interaction_class = "object_type_interaction_class"
+use_limit = "object_type_use_limit"
+required_story_flag = "object_type_required_story_flag"
+allowed_unit_ids = "object_type_allowed_unit_ids"
+required_skill_id = "object_type_required_skill_id"
+immunity_skill_id = "object_type_immunity_skill_id"
+resource_deltas = "object_type_turn_resource_deltas"
+
+[table.refs]
+sprite = "picture"
+allowed_unit_ids = "unit"
+required_skill_id = "skill"
+immunity_skill_id = "skill"
+
+[[table]]
+name = "stage_object"
+records = 50
+built_by = "stage"
+usage = "The current stage's map objects, slots 1 to 49: SETOBJ, DRAWOBJ and FIELD walk 1 to 49, and no stage writes slot 0. STINIT, the stage loader FIELD calls (FIELD@0x200), zeroes all 50 slots of each array (STINIT@0x0-0x4f) and writes the stage's: 2,312 objects on its 66 map stages. $1$STINIT does the same for stages 200 to 203. A slot's type is an object_type record, and its two payloads mean what the type makes them (FIELD@0x5574): a base's or pillar's first owner (1 to 4), a teleporter's destination tile (6, 36), a chest's or treasure's item and count (7, 8), a hazard's owner (17 to 25), a card's generation list (28). A data file reaches it through the stage scope; the saved use counts and runtime state are kept by slot, so a slot that changes type keeps them."
+
+[table.fields]
+tile_x = "stage_object_tile_x"
+tile_y = "stage_object_tile_y"
+type_id = "stage_object_type_id"
+primary_payload = "stage_object_primary_payload"
+secondary_payload = "stage_object_secondary_payload"
+reinforcement_interval_turns = "stage_object_reinforcement_interval_turns"
+reinforcement_spawn_limit = "stage_object_reinforcement_spawn_limit"
+difficulty_mask = "stage_object_difficulty_mask"
+required_story_flags = "stage_object_required_story_flags"
+forbidden_story_flags = "stage_object_forbidden_story_flags"
+use_story_flag_id = "stage_object_use_story_flag_ids"
+
+[table.refs]
+# A chest's (type 7) or a treasure's (type 8) item is its primary payload: FIELD sets current_item_id to it and
+# calls ADDITEM (FIELD@0x5fc5-0x601a). Every placed chest's item is a named ITINIT item (10 to 711).
+type_id = { table = "item", bases = { 7 = 0, 8 = 0 }, plus = "primary_payload" }
+
+[[table]]
+name = "map_texture"
+records = 20
+built_by = "boot"
+usage = "LAINIT's default floor sheet for each texture slot (slots 1, 2, 3, 5 and 8 to 13 are MP000A, B, C, E, H, I, J, K, L and N), which terrain's texture_slot names. FIELD loads slot s into surface 0x52+s when the stage's override is -1 (FIELD@0x9106-0x9181)."
+
+[table.fields]
+default_asset = "stage_map_texture_default_asset_ids"
+
+[table.refs]
+default_asset = "picture"
+
+[[table]]
+name = "stage_map_texture"
+records = 20
+built_by = "stage"
+usage = "The current stage's floor sheet for each texture slot: above 0 a picture id, -1 the slot's default (map_texture), 0 not loaded (FIELD@0x9106-0x9181). STINIT sets all 20 slots (STINIT@0xa) and gives every map stage its own MP<stage>A in slot 1 and MP<stage>H in slot 8, 10 stages slot 5 and one stage each of slots 10 to 13; slots 2, 3 and 9 stay -1. A data file reaches it through the stage scope."
+
+[table.fields]
+asset_override = "stage_map_texture_asset_overrides"
+
 [[scope]]
 name = "stage"
 first = 1
@@ -5299,3 +5920,5 @@ usage = "A stage, by current_stage_id. STINIT's stages are 1 to 170, and the per
 [scope.tables]
 enemy = "stage_enemy"
 goal = "stage_goal"
+object = "stage_object"
+texture = "stage_map_texture"

@@ -7,8 +7,11 @@
 # the story flags that gate a record left to the modder data; a field published when it means something to a player;
 # and a note only where the label and value leave a reader guessing.
 #
-# The section is as small as the registry's understood tables (the user, 2026-11-22): units, items, skills and the
-# stages with their enemies and goals. A kind, a field or a reference joins it as the reverse engineering names more.
+# The section grows with the registry's understood tables (the user, 2026-11-22): units, items, skills and the stages
+# with their enemies, goals and treasure first; then the tables the decode playbook had closed and the registry now
+# declares (recipes, conditions, elements, terrain, map objects, cards, training, magic, the information menu's
+# profiles and glossary), and each unit's class changes. A kind, a field or a reference joins it as the reverse
+# engineering names more.
 
 [export]
 # The tables as the game plays with them: INIT2's exit, after every layer and TUNE (himegari.boot.data_ready).
@@ -18,8 +21,9 @@ boot = { script = "INIT2", read_at = "himegari.boot.data_ready" }
 builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
 # Never builders, whatever matches them: the CG gallery and the H-scene gallery.
 excluded_builders = ["CGINIT", "SPINIT"]
-# The information screens whose shown text is data: item and skill descriptions.
-text_scripts = ["ITMES", "SKMES"]
+# The information screens whose shown text is data: item and skill descriptions, the magic's, and the information
+# menu's character biographies and glossary explanations.
+text_scripts = ["ITMES", "SKMES", "MAMES", "CIMES", "VIMES"]
 # The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
 # declarations publish (2026-11-22): three battle figures, the succubus (CB069A, and CB500A, her twin) and the harpy
 # (CB405A), are nude, and the lamia (CB360A) topless. Revealing but covered art (CB071A, CB072A and their twins CB510A
@@ -78,7 +82,9 @@ summon_knowledge_threshold = "Summon progress needed"
 sex_magic_bonus_item_id = "Sex magic bonus"
 
 [kind.referenced_as]
+defense_element = "Units of this element"
 starting_skill = "Units that start with it"
+"title_change.skill_awards" = "Learned on a class change"
 drop_item = { heading = "Dropped by", details = ["drop_chance"] }
 default_attack_item_id = "Default attack of"
 starting_equipment_item_id = "Starting equipment of"
@@ -94,6 +100,60 @@ face = "battle_portrait_asset_ids.compact_face"
 sprite = { field = "map_sprite_asset_ids.normal_compact", key = 0x00ff00 }
 battle = "battle_sprite_asset_id"
 
+# The unit's face icon: icon_id numbers a 40-pixel cell of SO009, ten to a row, which READICON loads with the colour key
+# 0x00ff00 (unit_icon_id; READICON@0x26 to 0x54). Numbers from 501 are the append's sheet, SO009A, which READICON puts
+# beside it (READICON@0x5e to 0x11f): units 81 and 901 to 905. An append's own picture keeps its pack's prefix.
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO009.AGF"
+first = 1
+last = 500
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
+
+[kind.pictures.icon_append]
+field = "icon_id"
+sheet = "$1$SO009A.AGF"
+first = 501
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
+
+# The class changes: CCINIT's rules (and the append's), as CALCCC adds them up. A run for each rule column of a unit:
+# every other column marked applied (1), this one not (0), the unit at level 99 and the familiar another unit, so that
+# only that column's rule fires (every rule tests its column for 0, 69 a least level, and Lily's two form changes
+# that the unit is not the familiar; no two rules share a unit and column, columns 0 to 2; 2026-11-22). What it gives
+# is read before CALCCC applies it (himegari.class_change.rules_run). No scope: no data file edits what a class change
+# gives (the registry's class_change table).
+[[loader]]
+keys = "unit"
+key_range = [1, 99]
+steps = 3
+script = "CALCCC"
+seed = [
+    { global = "current_unit_id", value = "key" },
+    { global = "familiar_unit_id", value = 0 },
+    { global = "unit_current_levels", index = ["key"], value = 99 },
+    { global = "unit_class_change_state", index = ["key", "*"], value = 1 },
+    { global = "unit_class_change_state", index = ["key", "step"], value = 0 },
+]
+read_at = "himegari.class_change.rules_run"
+# CALCCC zeroes the block before the rules add to it, so a change no rule makes is CALCCC's zero.
+builders = ["CALCCC"]
+
+[loader.tables.title_change]
+table = "class_change"
+exists = "title_level"
+text = ["title"]
+fields = ["title_level", "deployment_cost_delta", "stat_bonuses", "skill_awards"]
+labels = { title_level = "Level", deployment_cost_delta = "Deployment cost", stat_bonuses = "Stat bonuses", skill_awards = "Skills gained" }
+notes = { title_level = "The level it comes at; -1 is Lily's change of form, which gives no title." }
+
 [[kind]]
 id = "item"
 table = "item"
@@ -108,6 +168,29 @@ fields = [
 ]
 filters = ["category", "attack_element"]
 qualifiers = ["category"]
+
+# The item's icon: icon_id numbers a 40-pixel cell of SO016, ten to a row, loaded with the colour key 0x00ff00
+# (item_icon_id; INFOIT@0x12c0 to 0x1336). From 501 the cells are the append's SO016A (item 82).
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO016.AGF"
+first = 1
+last = 500
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
+
+[kind.pictures.icon_append]
+field = "icon_id"
+sheet = "$1$SO016A.AGF"
+first = 501
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
 
 [[kind.description]]
 name = "description"
@@ -131,7 +214,10 @@ status_delta_levels = "Conditions when used"
 equipped_status_levels = "Conditions while equipped"
 
 [kind.referenced_as]
+defense_element = "Items of this element"
 granted_skill_id = "Granted by"
+status_delta_levels = "Changed by using items"
+equipped_status_levels = "Given while equipped"
 character_whitelist = "Items only it may equip"
 
 [[kind]]
@@ -146,6 +232,18 @@ fields = [
     "resource_deltas", "proc_chance_percent",
 ]
 filters = ["category", "attack_element"]
+
+# The skill's icon: a cell of the item icons' sheet (skill_icon_id; INFOIT@0x15dc to 0x1643), 51 to 56.
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO016.AGF"
+first = 1
+last = 500
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
 
 [[kind.description]]
 name = "description"
@@ -162,6 +260,9 @@ min_range_encoded = "Min range"
 max_range_encoded = "Max range"
 status_levels = "Conditions"
 proc_chance_percent = "Chance"
+
+[kind.referenced_as]
+status_levels = "Inflicted by skills"
 
 [[kind]]
 id = "stage"
@@ -197,6 +298,7 @@ main_progression_flag = "Main stage"
 clear_base_spendable_point_reward = "Points for a clear"
 clear_coin_quantities = "Coins for a clear"
 goal = "Goal"
+object = "Treasure"
 
 # The stage's loader: FIELD calls stage_loader_script_ids[current_stage_id] (STINIT for every shipped stage) and the
 # enemy slots and the goals hold the stage as authored at himegari.stage.after_loader, before FIELD places anything.
@@ -209,9 +311,19 @@ read_at = "himegari.stage.after_loader"
 
 [loader.tables.enemy]
 exists = "unit_id"
-fields = ["unit_id", "min_level", "max_level", "first_clear_only"]
-labels = { unit_id = "Unit", first_clear_only = "First clear only" }
-notes = { first_clear_only = "The slot is not placed once the stage has been cleared." }
+fields = ["unit_id", "min_level", "max_level", "faction_id", "first_clear_only"]
+labels = { unit_id = "Unit", faction_id = "Army", first_clear_only = "First clear only" }
+notes = { faction_id = "Every army is hostile to the player and to the others (SETMVWORK@0x66); the blue army is the usual enemy.", first_clear_only = "The slot is not placed once the stage has been cleared." }
+
+# A stage's treasure: its map objects of type 7 and 8, the chests, whose primary payload is the item and secondary
+# payload how many (FIELD@0x5f93 to 0x601a, 0x6179 to 0x61c0). The other objects' payloads mean another thing for each
+# type, and a slot's tile is a tile of the shared terrain atlas, not of the stage, so both wait for the stage maps
+# (backlog).
+[loader.tables.object]
+exists = "type_id"
+where = { type_id = [7, 8] }
+fields = ["type_id", "secondary_payload"]
+labels = { type_id = "Item", secondary_payload = "How many" }
 
 [loader.tables.goal]
 exists = "victory_condition_1"
@@ -220,3 +332,287 @@ labels = { victory_condition_1 = "Victory", victory_condition_2 = "Victory, also
 
 [kind.referenced_as]
 "enemy.unit_id" = { heading = "Enemy on stages", details = ["number_major", "number_minor", "enemy.min_level", "enemy.max_level"] }
+"object.type_id" = { heading = "Treasure on stages", details = ["number_major", "number_minor", "object.secondary_payload"] }
+
+[[kind]]
+id = "recipe"
+table = "recipe"
+about = "Alchemy recipes: the item each makes, its ingredients, and the alchemy level and points it takes."
+exists = "output_item_id"
+# A recipe has no name of its own: ALCHEMY lists it by the item it makes.
+title = "output_item_id"
+fields = ["output_item_id", "ingredient_item_ids", "ingredient_quantities", "minimum_level", "point_cost"]
+filters = ["minimum_level"]
+
+[[kind.group]]
+name = "ingredients"
+fields = ["ingredient_item_ids", "ingredient_quantities"]
+
+[kind.notes]
+minimum_level = "The base's alchemy level, 0 to 6, at which ALCHEMY lists it; each synthesis below level 6 counts toward the next."
+point_cost = "The points a synthesis spends; ALCHEMY lists the recipe only while it is at most the maximum spirit."
+
+[kind.labels]
+output_item_id = "Makes"
+ingredient_item_ids = "Item"
+ingredient_quantities = "Quantity"
+minimum_level = "Alchemy level"
+point_cost = "Points"
+
+[kind.referenced_as]
+output_item_id = "Made by alchemy"
+ingredient_item_ids = { heading = "Ingredient in", details = ["ingredient_quantities"] }
+
+[[kind]]
+id = "condition"
+table = "condition"
+about = "The conditions a unit can have in battle, each with five levels: what each level changes, how long it lasts, and what resists it."
+exists = "level_names.level_1"
+# A condition is named by its levels (毒1 to 毒5); the first names it.
+title = "level_names.level_1"
+text = ["level_names"]
+fields = ["resisted_as", "can_affect_bosses", "cleared_by_recover", "duration_turns", "stat_deltas", "resource_deltas"]
+filters = ["resisted_as"]
+
+# A row for each of the five levels: its turns, its eleven stat changes and its three resource changes.
+[[kind.group]]
+name = "levels"
+fields = ["duration_turns", "stat_deltas", "resource_deltas"]
+
+# The status icon: icon_id numbers a 15-pixel cell of SO024, ten to a row, which READICON's caller loads with the colour
+# key 0x00ff00 (condition_icon_ids; DRAWENP@0x2f8).
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO024.AGF"
+first = 1
+columns = 10
+origin = [0, 0]
+step = [15, 15]
+size = [15, 15]
+key = 0x00ff00
+
+[kind.notes]
+resisted_as = "The column of the target's element row that gives the percent chance it takes (CALCILL@0xe6): the element's resistance to it."
+can_affect_bosses = "Without it, a boss is immune."
+cleared_by_recover = "Recovery items and magic reset it to what the unit's equipment and skills give."
+levels = "Each level's turns, its stat changes, and its HP, SP and FS changes each turn: a drain's are what it takes, poison's a loss."
+
+[kind.labels]
+resisted_as = "Resisted as"
+can_affect_bosses = "Affects bosses"
+cleared_by_recover = "Cleared by recovery"
+
+[[kind]]
+id = "element"
+table = "element"
+about = "The elements a unit or a piece of equipment can have: how much of each attack element's damage it takes, and its chance to catch each group of conditions."
+exists = "name"
+title = "name"
+fields = ["effectiveness_percent"]
+
+[kind.notes]
+effectiveness_percent = "Columns 1 to 8: the percent of each attack element's damage taken, a negative one absorbed. Columns 11 to 17: the percent chance to catch a condition resisted that way."
+
+[kind.labels]
+effectiveness_percent = "Damage and condition chance"
+
+[[kind]]
+id = "terrain"
+table = "terrain"
+about = "The kinds of ground a stage's tiles are: their battle stat changes and the skill a unit needs to enter."
+exists = "name"
+title = "name"
+text = ["effect_description"]
+fields = ["layout_class", "combat_stat_deltas", "required_skill_id"]
+filters = ["layout_class"]
+
+[kind.notes]
+required_skill_id = "A unit without this skill cannot enter it; a hidden passage or room needs exploring to be found."
+combat_stat_deltas = "What a unit standing on it gains or loses in battle."
+
+[kind.labels]
+effect_description = "Effect"
+layout_class = "Kind"
+combat_stat_deltas = "Battle stat changes"
+required_skill_id = "Needs skill"
+
+[kind.referenced_as]
+required_skill_id = "Lets a unit enter"
+
+[[kind]]
+id = "map_object"
+table = "object_type"
+about = "The objects a stage's map can hold: chests, bases, teleporters, traps and the rest, with what triggers each."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = ["use_limit", "required_skill_id", "immunity_skill_id", "allowed_unit_ids", "resource_deltas"]
+
+[kind.notes]
+use_limit = "How many times it acts before it stays as it is."
+allowed_unit_ids = "Only these units trigger it."
+resource_deltas = "What a unit standing on it gains or loses each turn."
+
+[kind.labels]
+use_limit = "Uses"
+required_skill_id = "Needs skill"
+immunity_skill_id = "Spared by skill"
+allowed_unit_ids = "Triggered only by"
+resource_deltas = "HP, SP and FS each turn"
+
+[kind.referenced_as]
+required_skill_id = "Needed for map objects"
+immunity_skill_id = "Spares a unit from map objects"
+allowed_unit_ids = "Map objects only it triggers"
+
+[[kind]]
+id = "card"
+table = "card"
+about = "The cards a stage's card objects deal: an item, points for the clear, recovery, a trap, a warp or a scene."
+exists = "name"
+title = "name"
+text = ["result_message"]
+fields = [
+    "type_id", "awarded_item_id", "clear_point_bonus", "minimum_resource_recovery", "maximum_resource_recovery",
+    "minimum_resource_damage", "maximum_resource_damage", "minimum_spirit_recovery", "maximum_spirit_recovery",
+    "condition_id", "condition_level",
+]
+filters = ["type_id"]
+
+# HP, SP and FS, each with its least and most recovery and damage.
+[[kind.group]]
+name = "resources"
+fields = ["minimum_resource_recovery", "maximum_resource_recovery", "minimum_resource_damage", "maximum_resource_damage"]
+
+[kind.notes]
+type_id = "Every card applies all its effects; an event card also plays a scene, and a warp card moves the unit to a random tile."
+resources = "What the unit that takes it recovers or loses: a number from the least to the most."
+clear_point_bonus = "Added to the stage's points for a clear."
+condition_level = "The levels of the condition it adds."
+
+[kind.labels]
+result_message = "Message"
+type_id = "Effect"
+awarded_item_id = "Gives"
+clear_point_bonus = "Points for the clear"
+minimum_resource_recovery = "Recovery, least"
+maximum_resource_recovery = "Recovery, most"
+minimum_resource_damage = "Damage, least"
+maximum_resource_damage = "Damage, most"
+minimum_spirit_recovery = "Spirit recovery, least"
+maximum_spirit_recovery = "Spirit recovery, most"
+condition_id = "Condition"
+
+[kind.referenced_as]
+awarded_item_id = "Given by a card"
+condition_id = "Inflicted by a card"
+
+[[kind]]
+id = "training_action"
+table = "training_action"
+about = "The familiar's training: what each action costs and changes, what it gives the first time, and what it needs."
+exists = "text.description_line_1"
+# An action has no name: its button is a picture, so the first line of its description names it.
+title = "text.description_line_1"
+text = ["text"]
+fields = [
+    "spirit_delta", "stat_deltas", "alignment_delta", "progress_delta", "awarded_skill_id", "awarded_item_id",
+    "required_item_id", "minimum_level", "minimum_alignment", "maximum_alignment", "minimum_progress",
+]
+
+# TRAIN draws lines 0 to 2, and for an action not yet unlocked whose gates fail, lines 3 to 5, its hint.
+[kind.text_blocks.text]
+description = [0, 2]
+hint = [3, 5]
+
+[kind.notes]
+stat_deltas = "Added to the familiar's stats, in hundredths of a point toward the next."
+awarded_skill_id = "Given on the first time, when the familiar lacks it."
+awarded_item_id = "Given on the first time."
+required_item_id = "Must be held; it is not used up."
+minimum_alignment = "The familiar's alignment, from -99 to 99, at least this."
+maximum_alignment = "The familiar's alignment at most this."
+
+[kind.labels]
+spirit_delta = "Spirit"
+stat_deltas = "Stat changes"
+alignment_delta = "Alignment"
+progress_delta = "Training progress"
+awarded_skill_id = "Teaches"
+awarded_item_id = "Gives"
+required_item_id = "Needs item"
+minimum_level = "Least level"
+minimum_alignment = "Least alignment"
+maximum_alignment = "Most alignment"
+minimum_progress = "Least training progress"
+
+[kind.referenced_as]
+awarded_skill_id = "Taught by training"
+awarded_item_id = "Given by training"
+required_item_id = "Needed for training"
+
+[[kind]]
+id = "magic_action"
+table = "magic_action"
+about = "The magic the player casts on the map and the rituals of the base: what each costs and what it needs."
+exists = "name"
+title = "name"
+fields = ["menu_kind", "cost", "facility_progress_gain", "required_magic_facility_level", "required_training_progress"]
+filters = ["menu_kind"]
+
+[[kind.description]]
+name = "description"
+script = { field = "information_handler_script_id" }   # MAMES, as MAGIC and STUDY call it
+seed = { current_magic_action_id = "key" }
+
+# The icon: a cell of the item icons' sheet (magic_action_icon_ids; MAGIC@0x97e to 0x9ec), 221 to 226.
+[kind.pictures.icon]
+field = "icon_id"
+sheet = "SO016.AGF"
+first = 1
+last = 500
+columns = 10
+origin = [0, 0]
+step = [40, 40]
+size = [40, 40]
+key = 0x00ff00
+
+[kind.notes]
+cost = "A field magic costs spirit, halved from magic facility level 5; 浄化 costs twice the target's levels of the conditions it clears."
+facility_progress_gain = "What a use adds to its facility's progress."
+required_training_progress = "The familiar's training progress it needs."
+
+[kind.labels]
+menu_kind = "Menu"
+facility_progress_gain = "Facility progress"
+required_magic_facility_level = "Magic facility level"
+required_training_progress = "Training progress"
+
+[[kind]]
+id = "character_profile"
+table = "character_profile"
+about = "The character profiles of the game's information menu: each one's portrait and biography."
+exists = "name"
+title = "name"
+fields = ["unit_id"]
+labels = { unit_id = "Unit" }
+referenced_as = { unit_id = "Character profile" }
+# The portrait the information screen draws (INFOCH); a profile without one shows its unit's map sprite.
+pictures = { portrait = "portrait_asset_id" }
+
+[[kind.description]]
+name = "biography"
+script = { name = "CIMES" }                     # as INFOCH calls it, keyed by the profile
+seed = { current_character_profile_id = "key" }
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary_entry"
+about = "The glossary of the game's information menu, each entry with its explanation."
+exists = "name"
+title = "name"
+
+[[kind.description]]
+name = "explanation"
+script = { name = "VIMES" }                     # as INFOVO calls it
+seed = { current_glossary_topic_id = "key" }

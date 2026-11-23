@@ -1416,7 +1416,7 @@ public sealed class ModLuaLinkTests : IDisposable
             end
             """), []);
         Assert.True(result.Succeeded, result.Report.Render());
-        Assert.Contains(result.Report.Lua, line => line.StartsWith("mod himegari-base 1.1.0: ", StringComparison.Ordinal)
+        Assert.Contains(result.Report.Lua, line => line.StartsWith("mod himegari-base 1.2.0: ", StringComparison.Ordinal)
                                                    && line.EndsWith("; calls ADDITEM", StringComparison.Ordinal));
 
         using var scripting = new Scripting(new ScriptMemory(), new ScriptingSetup

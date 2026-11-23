@@ -169,10 +169,13 @@ public class GameDataExportTests
             ? picture with { Name = $"{picture.Name}-key-{key:x6}" }
             : null;
 
-        // A sheet's cells (export plan §5): SHEET.AGF holds one row of cells, so a cell below it is none.
-        public ExportPicture? Cell(string sheet, int x, int y, int width, int height) => sheet == "SHEET.AGF" && y < 18
-            ? new ExportPicture($"SHEET-{x}-{y}", Encoding.ASCII.GetBytes($"png {x} {y}"), width, height)
-            : null;
+        // A sheet's cells (export plan §5): SHEET.AGF holds one row of cells, so a cell below it is none; a keyed cell
+        // is named by its key too.
+        public ExportPicture? Cell(string sheet, int x, int y, int width, int height, int? key)
+            => sheet == "SHEET.AGF" && y < 18
+                ? new ExportPicture($"SHEET-{x}-{y}" + (key is { } k ? $"-key-{k:x6}" : ""),
+                                    Encoding.ASCII.GetBytes($"png {x} {y}"), width, height)
+                : null;
     }
 
     private static Script Asm(string name, IReadOnlyList<(int, Operand[])> code, params string[] strings)
@@ -1565,6 +1568,23 @@ public class GameDataExportTests
         Assert.Null(Badge(3));                                                         // category 4: the next row, off it
         Assert.Contains(("item", 3, "badge", 4L), result.Report.UnresolvedPictures);
         Assert.Equal(7, Entity(result, "item", 1).Pictures.Single(p => p.Name == "badge").Picture.Width);
+    }
+
+    [Fact]
+    public void ASheetWithALastNumberAndAKeyCutsOnlyItsOwnNumbersWithItsKey()
+    {
+        // Himegari's icons (export plan §5): numbers past a sheet's last are another sheet's, so they are no picture of
+        // this one and no unresolved picture; the sheet's key asks for its cells keyed.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["pictures"]!["badge"] = JsonNode.Parse("""
+            {"field": "category", "sheet": "SHEET.AGF", "first": 1, "columns": 3, "origin": [0, 10], "step": [8, 8],
+             "size": [7, 7], "key": 65280, "last": 2}
+            """);
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        string? Badge(int id) => Entity(result, "item", id).Pictures.SingleOrDefault(p => p.Name == "badge").Picture?.Name;
+        Assert.Equal("SHEET-8-10-key-00ff00", Badge(1));                               // category 2
+        Assert.Null(Badge(2));                                                         // category 3: past the last
+        Assert.DoesNotContain(result.Report.UnresolvedPictures, unresolved => unresolved.Item3 == "badge");
     }
 
     [Fact]

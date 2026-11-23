@@ -576,6 +576,8 @@ columns = 4
 origin = [0, 100]
 step = [16, 16]
 size = [15, 15]
+key = 0x00ff00
+last = 40
 
 [kind.notes]
 class = "1 knight, 2 archer."
@@ -811,6 +813,8 @@ def test_design_pass_features():
     check(hero.get("notes") == {"class": "1 knight, 2 archer.", "arms": "Each weapon slot and its level."},
           "the JSON keeps a kind's notes")
     check(hero.get("pictures", {}).get("badge", {}).get("sheet") == "BADGES.AGF", "the JSON keeps a sheet picture")
+    check((hero["pictures"]["badge"].get("key"), hero["pictures"]["badge"].get("last")) == (0x00ff00, 40),
+          "the JSON keeps a sheet's key and last number")
     check(hero.get("text_blocks") == {"bio": [{"name": "summary", "first": 0, "last": 0},
                                               {"name": "detail", "first": 1, "last": 1}]},
           "the JSON keeps a text field's blocks in their order")
@@ -844,6 +848,7 @@ def test_design_pass_features():
                        .replace('sheet = "BADGES.AGF"', 'sheet = "badges"\nshade = 1')
                        .replace('summary = [0, 0]\ndetail = [1, 1]', 'Summary = [1, 1]\ndetail = [0, 2]')
                        .replace('size = [15, 15]', 'size = [17, 15]')
+                       .replace('key = 0x00ff00\nlast = 40', 'key = -1\nlast = 0')
                        .replace('key_range = [0, 3]', 'key_range = [3, 0]')
                        .replace('steps = 5', 'steps = 0')
                        .replace('literals = [{ record = 0, field = "name", script = "AIM", offset = 0x10 }]',
@@ -861,6 +866,7 @@ def test_design_pass_features():
                    "labels 'foe.hero': 'hero' is no text field of table foe",
                    "picture badge: unknown key 'shade'", "sheet 'badges' must be a picture's catalog name",
                    "size [17, 15] is larger than step [16, 16]",
+                   "picture badge: key must be a colour 0xRRGGBB", "picture badge: last must be a whole number of at least first",
                    "key_range must be [first, last]", "steps must be a whole number from 1 to 1000",
                    "literal: 'hero' is not one of the table's text fields", "literal: record 7 is not one of table foe",
                    "literal: script: 'aim' must be", "literal: offset must be the instruction's dword offset",

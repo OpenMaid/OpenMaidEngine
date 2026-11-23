@@ -268,10 +268,16 @@
       ],
       "globals": {
         "object_sprite_state_row_mode": [0, 12, 0],
+        "object_type_allowed_unit_ids": [0, 1, 0],
+        "object_type_animation_frame_counts": [0, 12, 0],
         "object_type_descriptions": [0, 11, 0],
-        "object_type_names": [0, 12, 0]
-      },
-      "unnamed": [0, 62, 0]
+        "object_type_interaction_class": [0, 12, 0],
+        "object_type_names": [0, 12, 0],
+        "object_type_sprite_asset_ids": [0, 12, 0],
+        "object_type_sprite_heights": [0, 12, 0],
+        "object_type_sprite_widths": [0, 12, 0],
+        "object_type_use_limit": [0, 1, 0]
+      }
     },
     "$1$READY.BIN": {
       "id": 16777241,
@@ -720,9 +726,11 @@
         "stage_object_reinforcement_interval_turns": [0, 6, 1],
         "stage_object_reinforcement_spawn_limit": [0, 6, 1],
         "stage_object_required_story_flags": [0, 10, 1],
+        "stage_object_secondary_payload": [0, 15, 1],
         "stage_object_tile_x": [0, 67, 1],
         "stage_object_tile_y": [0, 67, 1],
         "stage_object_type_id": [0, 67, 1],
+        "stage_object_use_story_flag_ids": [0, 1, 1],
         "stage_replay_rules_disabled": [0, 4, 0],
         "stage_target_clear_turns": [0, 4, 0],
         "stage_turn_limit": [0, 4, 0],
@@ -730,7 +738,7 @@
         "stage_victory_condition_1": [0, 4, 0],
         "stage_victory_condition_2": [0, 4, 0]
       },
-      "unnamed": [0, 22, 4]
+      "unnamed": [0, 6, 2]
     },
     "$1$STINIT2.BIN": {
       "id": 16777230,
@@ -1039,6 +1047,7 @@
         "current_skill_id": [7, 0, 0],
         "entity_faction_ids": [0, 0, 1],
         "entity_runtime_flags": [0, 0, 1],
+        "familiar_unit_id": [6, 0, 0],
         "modal_message_line_count": [10, 3, 0],
         "modal_message_lines": [0, 0, 3],
         "party_slot_flags": [1, 0, 0],
@@ -1050,7 +1059,7 @@
         "skill_sort_key": [0, 0, 2],
         "unit_skill_ids": [0, 0, 6]
       },
-      "unnamed": [8, 9, 3]
+      "unnamed": [2, 9, 3]
     },
     "AFINIT.BIN": {
       "id": 13108,
@@ -1525,7 +1534,10 @@
         "unit_deployment_cost_adjustments": [0, 0, 2],
         "unit_skill_ids": [0, 0, 1]
       },
-      "unnamed": [0, 0, 2]
+      "unnamed": [0, 0, 2],
+      "patch_points": {
+        "himegari.class_change.rules_run": "0x68"
+      }
     },
     "CALCDMG.BIN": {
       "id": 10977,
@@ -1820,10 +1832,10 @@
         "class_change_state_work": [0, 71, 0],
         "class_change_title_output": [0, 71, 0],
         "current_unit_id": [213, 0, 0],
+        "familiar_unit_id": [2, 0, 0],
         "unit_class_change_state": [0, 0, 71],
         "unit_current_levels": [0, 0, 69]
-      },
-      "unnamed": [2, 0, 0]
+      }
     },
     "CDINIT.BIN": {
       "id": 13014,
@@ -1943,6 +1955,7 @@
         "entity_faction_ids": [0, 0, 2],
         "entity_runtime_flags": [0, 0, 2],
         "entity_unit_definition_ids": [1, 1, 0],
+        "familiar_unit_id": [7, 0, 0],
         "game_mode": [3, 3, 0],
         "item_category": [0, 0, 7],
         "item_character_whitelist": [0, 0, 2],
@@ -1978,7 +1991,7 @@
         "unit_species_category": [0, 0, 1],
         "unit_weapon_item_category": [0, 0, 2]
       },
-      "unnamed": [67, 31, 22],
+      "unnamed": [60, 31, 22],
       "waits": {
         "fade-surface-out-to-black": 1,
         "sleep": 1
@@ -2305,9 +2318,10 @@
         "scjump_decision_out": [0, 1, 0],
         "shared_spendable_points": [0, 1, 0],
         "skill_acquired_flags": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 1],
         "system_flow_request": [0, 1, 0]
       },
-      "unnamed": [18, 65, 18]
+      "unnamed": [18, 65, 17]
     },
     "DEBUGMAP2.BIN": {
       "id": 13197,
@@ -2334,9 +2348,10 @@
         "scjump_decision_out": [0, 1, 0],
         "shared_spendable_points": [0, 1, 0],
         "skill_acquired_flags": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 1],
         "system_flow_request": [0, 1, 0]
       },
-      "unnamed": [11, 76, 11]
+      "unnamed": [11, 76, 10]
     },
     "DEBUGMAP3.BIN": {
       "id": 13200,
@@ -2678,6 +2693,10 @@
       "globals": {
         "current_stage_id": [1, 0, 0],
         "object_sprite_state_row_mode": [0, 0, 1],
+        "object_type_animation_frame_counts": [0, 0, 3],
+        "object_type_available_glow_mode": [0, 0, 1],
+        "object_type_sprite_heights": [0, 0, 3],
+        "object_type_sprite_widths": [0, 0, 2],
         "stage_clear_state": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 2],
         "stage_object_runtime_state": [0, 0, 1],
@@ -2685,7 +2704,7 @@
         "stage_object_tile_y": [0, 0, 2],
         "stage_object_type_id": [0, 0, 1]
       },
-      "unnamed": [0, 0, 11]
+      "unnamed": [0, 0, 2]
     },
     "DRAWTIP.BIN": {
       "id": 12964,
@@ -2847,9 +2866,12 @@
         "current_unit_id": [5, 1, 0],
         "familiar_alignment": [1, 0, 0],
         "familiar_training_progress": [4, 0, 0],
+        "familiar_unit_id": [21, 1, 0],
         "game_mode": [1, 1, 0],
         "item_inventory_counts": [0, 0, 1],
         "lily_form_a": [0, 0, 1],
+        "magic_action_costs": [0, 0, 6],
+        "magic_action_required_training_progress": [0, 0, 3],
         "modal_message_line_count": [8, 4, 0],
         "modal_message_lines": [0, 0, 4],
         "next_script_resource_id": [0, 3, 0],
@@ -2869,7 +2891,7 @@
         "unit_skill_ids": [0, 0, 2],
         "unit_stat_growth_fractions": [0, 0, 2]
       },
-      "unnamed": [44, 22, 14],
+      "unnamed": [23, 21, 5],
       "waits": {
         "fade-surface-in-from-black": 1,
         "fade-surface-out-to-black": 2,
@@ -3028,7 +3050,6 @@
         "current_stage_terrain_grid": [0, 0, 18],
         "current_stage_turn": [7, 3, 0],
         "current_unit_id": [0, 2, 0],
-        "defense_element_names": [0, 0, 1],
         "difficulty_index": [3, 0, 0],
         "entity_battle_routine_random_rolls": [0, 0, 1],
         "entity_carried_item_counts": [0, 0, 8],
@@ -3051,6 +3072,8 @@
         "game_mode": [2, 2, 0],
         "healing_action_scope_masks": [0, 0, 1],
         "item_names": [0, 0, 2],
+        "magic_action_costs": [0, 0, 1],
+        "magic_action_target_modes": [0, 0, 4],
         "magic_facility_level": [1, 0, 0],
         "map_target_tile_x": [0, 2, 0],
         "map_target_tile_y": [0, 2, 0],
@@ -3059,8 +3082,16 @@
         "modal_message_lines": [0, 0, 17],
         "movement_search_mode": [0, 1, 0],
         "object_sprite_state_row_mode": [0, 0, 1],
+        "object_type_allowed_unit_ids": [0, 0, 2],
         "object_type_descriptions": [0, 0, 1],
+        "object_type_immunity_skill_id": [0, 0, 4],
+        "object_type_interaction_class": [0, 0, 1],
         "object_type_names": [0, 0, 6],
+        "object_type_required_skill_id": [0, 0, 4],
+        "object_type_required_story_flag": [0, 0, 2],
+        "object_type_sprite_asset_ids": [0, 0, 3],
+        "object_type_turn_resource_deltas": [0, 0, 3],
+        "object_type_use_limit": [0, 0, 2],
         "offensive_action_scope_masks": [2, 0, 2],
         "party_reference_level": [4, 5, 0],
         "party_slot_character_id": [0, 0, 3],
@@ -3084,7 +3115,7 @@
         "skill_resource_deltas": [0, 0, 8],
         "stage_bgm_id": [9, 3, 0],
         "stage_card_spendable_point_bonus": [1, 2, 0],
-        "stage_clear_state": [0, 0, 28],
+        "stage_clear_state": [0, 0, 24],
         "stage_defeat_condition_1": [0, 1, 0],
         "stage_defeat_condition_2": [0, 1, 0],
         "stage_display_names": [0, 0, 1],
@@ -3102,6 +3133,7 @@
         "stage_enemy_spawn_tile_y": [0, 0, 1],
         "stage_enemy_unit_id": [0, 0, 4],
         "stage_event_handler_script_ids": [0, 0, 2],
+        "stage_full_conquest_flags": [0, 0, 6],
         "stage_loader_script_ids": [0, 0, 1],
         "stage_map_max_tile_x": [0, 0, 10],
         "stage_map_max_tile_y": [0, 0, 10],
@@ -3115,9 +3147,12 @@
         "stage_object_reinforcement_spawn_limit": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 22],
         "stage_object_runtime_state": [0, 0, 30],
+        "stage_object_secondary_payload": [0, 0, 10],
         "stage_object_tile_x": [1, 0, 20],
         "stage_object_tile_y": [1, 0, 20],
         "stage_object_type_id": [0, 0, 30],
+        "stage_object_use_counts": [0, 0, 4],
+        "stage_object_use_story_flag_ids": [0, 0, 2],
         "stage_replay_rules_disabled": [3, 0, 0],
         "stage_result": [25, 7, 0],
         "stage_scjump_decision_ids": [0, 0, 6],
@@ -3135,6 +3170,7 @@
         "terrain_effect_descriptions": [0, 0, 1],
         "terrain_layout_classes": [0, 0, 14],
         "terrain_required_skill_ids": [0, 0, 5],
+        "terrain_type_names": [0, 0, 1],
         "tile_faction_traversal_masks": [0, 0, 8],
         "unit_boss_class": [0, 0, 11],
         "unit_capturable": [0, 0, 2],
@@ -3145,7 +3181,7 @@
         "unit_voice_family_unit_ids": [0, 0, 1],
         "unit_voice_suppression_flag_ids": [0, 0, 1]
       },
-      "unnamed": [419, 226, 222],
+      "unnamed": [419, 226, 178],
       "patch_points": {
         "himegari.stage.after_loader": "0x20a",
         "himegari.stage.after_ready_handlers": "0xa27",
@@ -3189,6 +3225,7 @@
         "current_skill_id": [0, 1, 0],
         "current_stage_id": [16, 1, 0],
         "current_unit_id": [0, 1, 0],
+        "familiar_unit_id": [4, 0, 0],
         "field_map_continue_mode": [0, 1, 0],
         "game_mode": [2, 2, 0],
         "item_inventory_counts": [0, 0, 2],
@@ -3213,7 +3250,7 @@
         "unit_current_stats": [0, 0, 1],
         "unit_starting_skill_ids": [0, 0, 2]
       },
-      "unnamed": [29, 34, 6],
+      "unnamed": [25, 34, 6],
       "waits": {
         "fade-surface-out-to-black": 1
       }
@@ -3248,6 +3285,7 @@
         "familiar_alignment_fraction": [1, 0, 0],
         "familiar_training_progress": [1, 0, 0],
         "familiar_training_progress_fraction": [1, 0, 0],
+        "familiar_unit_id": [9, 0, 0],
         "item_inventory_counts": [0, 0, 1],
         "item_tuning_facility_level": [0, 0, 1],
         "item_tuning_facility_progress": [0, 0, 1],
@@ -3257,6 +3295,7 @@
         "shared_spendable_points": [1, 0, 0],
         "skill_acquired_flags": [0, 0, 1],
         "stage_clear_state": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 1],
         "story_event_flags": [0, 0, 1],
         "training_action_execution_counts": [0, 0, 1],
         "training_action_total_execution_count": [1, 0, 0],
@@ -3270,7 +3309,7 @@
         "unit_skill_ids": [0, 0, 3],
         "unit_stat_growth_fractions": [0, 0, 3]
       },
-      "unnamed": [72, 41, 17],
+      "unnamed": [63, 41, 16],
       "waits": {
         "mark-frame-yield": 3,
         "show-text": 2,
@@ -3297,10 +3336,12 @@
         "familiar_alignment_fraction": [0, 1, 0],
         "familiar_training_progress": [2, 3, 0],
         "familiar_training_progress_fraction": [0, 1, 0],
+        "familiar_unit_id": [5, 0, 0],
         "game_started": [0, 1, 0],
         "item_inventory_counts": [0, 0, 2],
         "item_tuning_facility_level": [0, 1, 0],
         "item_tuning_facility_progress": [0, 1, 0],
+        "magic_action_required_training_progress": [4, 0, 0],
         "magic_facility_level": [0, 1, 0],
         "magic_facility_progress": [0, 1, 0],
         "party_slot_character_id": [0, 0, 2],
@@ -3311,6 +3352,7 @@
         "skill_acquired_flags": [2, 0, 2],
         "skill_info_revealed_flags": [0, 0, 2],
         "stage_clear_state": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 2],
         "story_event_flags": [0, 0, 2],
         "system_flow_request": [0, 1, 0],
         "training_action_event_story_flag_ids": [0, 0, 1],
@@ -3332,7 +3374,7 @@
         "unit_story_display_names": [0, 12, 0],
         "unit_summon_unlock_flag_index": [0, 0, 1]
       },
-      "unnamed": [90, 59, 9],
+      "unnamed": [81, 59, 7],
       "waits": {
         "sleep": 1
       }
@@ -4304,12 +4346,15 @@
         "adv_hover_read_message_skip": [1, 0, 0],
         "current_glossary_topic_id": [6, 1, 0],
         "game_mode": [2, 2, 0],
+        "glossary_topic_picture_asset_ids": [0, 0, 2],
+        "glossary_topic_picture_x_offsets": [0, 0, 1],
+        "glossary_topic_picture_y_offsets": [0, 0, 1],
         "glossary_topic_titles": [0, 0, 2],
         "glossary_topic_unlock_seen_decision_ids": [0, 0, 2],
         "information_tab_index": [1, 1, 0],
         "scene_decision_seen_flags": [0, 0, 4]
       },
-      "unnamed": [20, 10, 4],
+      "unnamed": [20, 10, 0],
       "waits": {
         "sleep": 1
       }
@@ -4400,6 +4445,7 @@
       ],
       "globals": {
         "current_item_id": [0, 1, 0],
+        "familiar_unit_id": [2, 0, 0],
         "game_mode": [2, 2, 0],
         "modal_message_line_count": [2, 1, 0],
         "modal_message_lines": [0, 0, 1],
@@ -4408,7 +4454,7 @@
         "unit_display_names": [0, 12, 1],
         "unit_story_display_names": [0, 12, 1]
       },
-      "unnamed": [29, 3, 0],
+      "unnamed": [27, 3, 0],
       "waits": {
         "crossfade-surfaces": 2,
         "edit-fullwidth-string-dialog": 1,
@@ -4467,7 +4513,6 @@
         "INIT2.BIN"
       ],
       "globals": {
-        "defense_element_names": [0, 2, 0],
         "stage_map_texture_default_asset_ids": [0, 10, 0],
         "terrain_area_fill_flags": [0, 14, 0],
         "terrain_combat_stat_deltas": [0, 13, 0],
@@ -4475,7 +4520,7 @@
         "terrain_layout_classes": [0, 17, 0],
         "terrain_required_skill_ids": [0, 5, 0],
         "terrain_texture_slot_indices": [0, 16, 0],
-        "terrain_type_names": [0, 15, 0]
+        "terrain_type_names": [0, 17, 0]
       }
     },
     "LOADCONFIG.BIN": {
@@ -4618,7 +4663,14 @@
         "facility_level_progress_thresholds": [0, 0, 3],
         "familiar_training_progress": [1, 0, 0],
         "game_mode": [1, 1, 0],
+        "magic_action_costs": [0, 0, 5],
+        "magic_action_icon_ids": [0, 0, 2],
         "magic_action_information_handler_script_ids": [0, 0, 1],
+        "magic_action_menu_kinds": [0, 0, 1],
+        "magic_action_required_magic_facility_levels": [0, 0, 1],
+        "magic_action_required_maximum_spirit": [0, 0, 1],
+        "magic_action_required_story_flag_ids": [0, 0, 2],
+        "magic_action_required_training_progress": [0, 0, 1],
         "magic_facility_level": [8, 0, 0],
         "magic_facility_progress": [2, 0, 0],
         "maximum_spirit": [1, 0, 0],
@@ -4633,7 +4685,7 @@
         "tile_faction_traversal_masks": [0, 0, 1],
         "unit_boss_class": [0, 0, 1]
       },
-      "unnamed": [4, 0, 13],
+      "unnamed": [4, 0, 0],
       "waits": {
         "sleep": 1
       }
@@ -4660,10 +4712,16 @@
         "INIT2.BIN"
       ],
       "globals": {
+        "magic_action_costs": [0, 10, 0],
+        "magic_action_facility_progress_gains": [0, 8, 0],
+        "magic_action_icon_ids": [0, 6, 0],
         "magic_action_information_handler_script_ids": [0, 11, 0],
-        "magic_action_names": [0, 11, 0]
-      },
-      "unnamed": [0, 48, 0]
+        "magic_action_menu_kinds": [0, 11, 0],
+        "magic_action_names": [0, 11, 0],
+        "magic_action_required_magic_facility_levels": [0, 5, 0],
+        "magic_action_required_training_progress": [0, 2, 0],
+        "magic_action_target_modes": [0, 6, 0]
+      }
     },
     "MAMES.BIN": {
       "id": 12710,
@@ -5138,10 +5196,21 @@
       ],
       "globals": {
         "object_sprite_state_row_mode": [0, 41, 0],
+        "object_type_allowed_unit_ids": [0, 6, 0],
+        "object_type_animation_frame_counts": [0, 45, 0],
+        "object_type_available_glow_mode": [0, 2, 0],
         "object_type_descriptions": [0, 34, 0],
-        "object_type_names": [0, 46, 0]
-      },
-      "unnamed": [0, 276, 0]
+        "object_type_immunity_skill_id": [0, 3, 0],
+        "object_type_interaction_class": [0, 46, 0],
+        "object_type_names": [0, 46, 0],
+        "object_type_required_skill_id": [0, 5, 0],
+        "object_type_required_story_flag": [0, 4, 0],
+        "object_type_sprite_asset_ids": [0, 45, 0],
+        "object_type_sprite_heights": [0, 45, 0],
+        "object_type_sprite_widths": [0, 45, 0],
+        "object_type_turn_resource_deltas": [0, 20, 0],
+        "object_type_use_limit": [0, 10, 0]
+      }
     },
     "OP.BIN": {
       "id": 13154,
@@ -5205,13 +5274,14 @@
         "stage_bgm_id": [0, 1, 0],
         "stage_defeat_condition_1": [0, 22, 0],
         "stage_defeat_condition_2": [0, 22, 0],
+        "stage_full_conquest_flags": [3, 0, 0],
         "stage_object_runtime_state": [1, 0, 0],
         "stage_terrain_atlas": [0, 17, 0],
         "stage_victory_condition_1": [0, 22, 0],
         "stage_victory_condition_2": [0, 22, 0],
         "story_event_flags": [71, 0, 0]
       },
-      "unnamed": [90, 504, 4]
+      "unnamed": [87, 504, 4]
     },
     "RECOVER.BIN": {
       "id": 13013,
@@ -5365,10 +5435,11 @@
         "current_stage_terrain_grid": [0, 0, 1],
         "scjump_decision_out2": [1, 0, 0],
         "stage_clear_state": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 1],
         "stage_terrain_atlas": [0, 0, 1],
         "terrain_layout_classes": [0, 0, 2]
       },
-      "unnamed": [4, 1, 1]
+      "unnamed": [4, 1, 0]
     },
     "ROOM.BIN": {
       "id": 13195,
@@ -5585,11 +5656,12 @@
         "stage_map_min_tile_y": [0, 0, 1],
         "stage_object_primary_payload": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 1],
+        "stage_object_secondary_payload": [0, 0, 1],
         "stage_object_tile_x": [0, 0, 2],
         "stage_object_tile_y": [0, 0, 2],
         "stage_object_type_id": [0, 0, 1]
       },
-      "unnamed": [0, 2, 1]
+      "unnamed": [0, 2, 0]
     },
     "RTN_M005.BIN": {
       "id": 13056,
@@ -5624,11 +5696,12 @@
         "stage_map_min_tile_y": [0, 0, 1],
         "stage_object_primary_payload": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 1],
+        "stage_object_secondary_payload": [0, 0, 1],
         "stage_object_tile_x": [0, 0, 1],
         "stage_object_tile_y": [0, 0, 1],
         "stage_object_type_id": [0, 0, 1]
       },
-      "unnamed": [0, 2, 1]
+      "unnamed": [0, 2, 0]
     },
     "RTN_M006.BIN": {
       "id": 13057,
@@ -5844,11 +5917,12 @@
         "stage_map_min_tile_y": [0, 0, 1],
         "stage_object_primary_payload": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 1],
+        "stage_object_secondary_payload": [0, 0, 1],
         "stage_object_tile_x": [0, 0, 1],
         "stage_object_tile_y": [0, 0, 1],
         "stage_object_type_id": [0, 0, 1]
       },
-      "unnamed": [0, 2, 1]
+      "unnamed": [0, 2, 0]
     },
     "RTN_M012.BIN": {
       "id": 13063,
@@ -5883,11 +5957,12 @@
         "stage_map_min_tile_y": [0, 0, 1],
         "stage_object_primary_payload": [0, 0, 1],
         "stage_object_runtime_flags": [0, 0, 1],
+        "stage_object_secondary_payload": [0, 0, 1],
         "stage_object_tile_x": [0, 0, 1],
         "stage_object_tile_y": [0, 0, 1],
         "stage_object_type_id": [0, 0, 1]
       },
-      "unnamed": [0, 2, 1]
+      "unnamed": [0, 2, 0]
     },
     "RTN_M013.BIN": {
       "id": 13064,
@@ -6225,6 +6300,7 @@
         "entity_tile_y": [0, 0, 1],
         "entity_unit_definition_ids": [0, 0, 1],
         "familiar_alignment": [12, 9, 0],
+        "familiar_unit_id": [3, 0, 0],
         "field_map_continue_mode": [1, 0, 0],
         "item_names": [0, 0, 1],
         "item_short_descriptions": [0, 0, 1],
@@ -6270,7 +6346,7 @@
         "unit_summon_knowledge_threshold": [0, 0, 2],
         "unit_summon_unlock_flag_index": [0, 0, 2]
       },
-      "unnamed": [50, 40, 14],
+      "unnamed": [47, 40, 14],
       "waits": {
         "mark-frame-yield": 1,
         "sleep": 1
@@ -6300,6 +6376,7 @@
         "difficulty_index": [1, 0, 0],
         "familiar_alignment": [1, 0, 0],
         "familiar_training_progress": [1, 0, 0],
+        "familiar_unit_id": [2, 0, 0],
         "gallery_image_assets": [0, 0, 3],
         "game_mode": [5, 5, 0],
         "modal_message_line_count": [48, 12, 0],
@@ -6319,7 +6396,7 @@
         "unit_current_levels": [0, 0, 1],
         "unit_story_display_names": [1, 0, 0]
       },
-      "unnamed": [51, 32, 8],
+      "unnamed": [49, 32, 8],
       "waits": {
         "sleep": 3
       }
@@ -13666,6 +13743,7 @@
         "difficulty_index": [1, 0, 0],
         "familiar_alignment": [1, 0, 0],
         "familiar_training_progress": [1, 0, 0],
+        "familiar_unit_id": [2, 0, 0],
         "gallery_image_assets": [0, 0, 3],
         "game_mode": [4, 4, 0],
         "item_category": [0, 0, 1],
@@ -13692,6 +13770,7 @@
         "stage_display_number_minor": [0, 0, 4],
         "stage_extra_dungeon_flags": [0, 0, 4],
         "stage_forbidden_story_flag_ids": [0, 0, 2],
+        "stage_full_conquest_flags": [0, 0, 1],
         "stage_map_max_tile_x": [0, 0, 1],
         "stage_map_max_tile_y": [0, 0, 3],
         "stage_map_min_tile_x": [0, 0, 1],
@@ -13704,7 +13783,7 @@
         "unit_current_levels": [0, 0, 1],
         "unit_story_display_names": [1, 0, 0]
       },
-      "unnamed": [75, 38, 12],
+      "unnamed": [73, 38, 11],
       "waits": {
         "fade-surface-in-from-black": 1,
         "fade-surface-out-to-black": 1,
@@ -13837,10 +13916,11 @@
         "current_stage_terrain_grid": [0, 0, 1],
         "scjump_decision_out2": [1, 0, 0],
         "stage_clear_state": [0, 0, 1],
+        "stage_full_conquest_flags": [0, 0, 1],
         "stage_terrain_atlas": [3, 0, 0],
         "terrain_layout_classes": [0, 0, 2]
       },
-      "unnamed": [4, 1, 1]
+      "unnamed": [4, 1, 0]
     },
     "SETMVWORK.BIN": {
       "id": 13051,
@@ -13894,15 +13974,17 @@
         "current_stage_turn": [1, 0, 0],
         "difficulty_index": [1, 0, 0],
         "field_map_continue_mode": [1, 0, 0],
-        "stage_clear_state": [0, 0, 1],
+        "object_type_use_limit": [0, 0, 2],
+        "stage_full_conquest_flags": [0, 0, 1],
         "stage_object_difficulty_mask": [0, 0, 1],
         "stage_object_forbidden_story_flags": [0, 0, 2],
         "stage_object_required_story_flags": [0, 0, 2],
         "stage_object_runtime_flags": [0, 0, 6],
         "stage_object_type_id": [0, 0, 3],
+        "stage_object_use_counts": [0, 0, 1],
         "story_event_flags": [0, 0, 2]
       },
-      "unnamed": [1, 0, 4]
+      "unnamed": [1, 0, 1]
     },
     "SETOCC.BIN": {
       "id": 4298,
@@ -13972,6 +14054,7 @@
         "current_unit_id": [16, 0, 0],
         "familiar_alignment": [14, 0, 0],
         "familiar_training_progress": [5, 0, 0],
+        "familiar_unit_id": [1, 0, 0],
         "system_flow_request": [2, 0, 0],
         "unit_current_levels": [0, 0, 4],
         "unit_current_stats": [0, 0, 8],
@@ -13979,7 +14062,7 @@
         "unit_voice_family_unit_ids": [0, 0, 1],
         "unit_voice_suppression_flag_ids": [0, 0, 1]
       },
-      "unnamed": [19, 0, 7],
+      "unnamed": [18, 0, 7],
       "waits": {
         "run-timed-callback-sequence": 1,
         "sleep": 2
@@ -21045,9 +21128,11 @@
         "stage_object_reinforcement_interval_turns": [0, 604, 1],
         "stage_object_reinforcement_spawn_limit": [0, 604, 1],
         "stage_object_required_story_flags": [0, 118, 1],
+        "stage_object_secondary_payload": [0, 855, 1],
         "stage_object_tile_x": [0, 2312, 1],
         "stage_object_tile_y": [0, 2312, 1],
         "stage_object_type_id": [0, 2312, 1],
+        "stage_object_use_story_flag_ids": [0, 43, 1],
         "stage_replay_rules_disabled": [0, 74, 0],
         "stage_target_clear_turns": [0, 74, 0],
         "stage_turn_limit": [0, 74, 0],
@@ -21055,7 +21140,7 @@
         "stage_victory_condition_1": [0, 74, 0],
         "stage_victory_condition_2": [0, 74, 0]
       },
-      "unnamed": [0, 984, 4]
+      "unnamed": [0, 86, 2]
     },
     "STINIT2.BIN": {
       "id": 13116,
@@ -21107,10 +21192,13 @@
         "current_magic_action_id": [8, 3, 0],
         "current_stage_id": [8, 0, 0],
         "facility_level_progress_thresholds": [0, 0, 6],
+        "familiar_unit_id": [2, 0, 0],
         "game_mode": [2, 2, 0],
         "item_inventory_counts": [0, 0, 1],
         "item_tuning_facility_level": [0, 0, 9],
         "item_tuning_facility_progress": [0, 0, 8],
+        "magic_action_costs": [0, 0, 6],
+        "magic_action_facility_progress_gains": [0, 0, 1],
         "magic_action_information_handler_script_ids": [0, 0, 1],
         "modal_message_line_count": [8, 4, 0],
         "modal_message_lines": [0, 0, 4],
@@ -21122,7 +21210,7 @@
         "stage_display_number_minor": [0, 0, 1],
         "stage_extra_dungeon_flags": [0, 0, 2]
       },
-      "unnamed": [22, 15, 11],
+      "unnamed": [20, 15, 4],
       "waits": {
         "fade-surface-in-from-black": 1,
         "fade-surface-out-to-black": 1,
@@ -21160,6 +21248,7 @@
         "entity_condition_remaining_turns": [0, 0, 1],
         "entity_faction_ids": [0, 0, 1],
         "entity_unit_definition_ids": [0, 0, 1],
+        "familiar_unit_id": [2, 0, 0],
         "game_mode": [1, 1, 0],
         "item_inventory_counts": [0, 0, 1],
         "modal_message_line_count": [10, 5, 0],
@@ -21182,7 +21271,7 @@
         "unit_summon_point_cost": [0, 0, 4],
         "unit_summon_unlock_flag_index": [0, 0, 2]
       },
-      "unnamed": [28, 21, 11],
+      "unnamed": [26, 21, 11],
       "waits": {
         "fade-surface-out-to-black": 1,
         "sleep": 1
@@ -21297,6 +21386,7 @@
         "familiar_alignment_fraction": [6, 4, 0],
         "familiar_training_progress": [6, 3, 0],
         "familiar_training_progress_fraction": [5, 3, 0],
+        "familiar_unit_id": [23, 0, 0],
         "field_map_continue_mode": [2, 0, 0],
         "game_mode": [1, 1, 0],
         "item_category": [0, 0, 1],
@@ -21339,7 +21429,7 @@
         "unit_current_stats": [0, 0, 10],
         "unit_stat_growth_fractions": [0, 0, 8]
       },
-      "unnamed": [28, 13, 5],
+      "unnamed": [5, 13, 5],
       "waits": {
         "mark-frame-yield": 1,
         "sleep": 1
@@ -21432,6 +21522,7 @@
         "current_item_count_change": [0, 1, 0],
         "current_item_id": [0, 1, 0],
         "current_unit_id": [41, 3, 0],
+        "familiar_unit_id": [1, 1, 0],
         "lily_form_a": [0, 0, 1],
         "modal_message_line_count": [4, 2, 0],
         "modal_message_lines": [0, 0, 2],
@@ -21453,7 +21544,7 @@
         "unit_stat_growth_fractions": [0, 0, 5],
         "unit_stat_growth_rates": [0, 0, 1]
       },
-      "unnamed": [6, 3, 12]
+      "unnamed": [5, 2, 12]
     },
     "USEITEM.BIN": {
       "id": 12967,
@@ -21528,6 +21619,7 @@
         "entity_unit_definition_ids": [0, 0, 1],
         "facility_level_progress_thresholds": [0, 0, 3],
         "item_equipped_status_levels": [0, 0, 1],
+        "magic_action_facility_progress_gains": [0, 0, 1],
         "magic_facility_level": [3, 1, 0],
         "magic_facility_progress": [3, 3, 0],
         "map_target_tile_x": [1, 0, 0],
@@ -21538,7 +21630,7 @@
         "terrain_layout_classes": [0, 0, 1],
         "unit_boss_class": [0, 0, 1]
       },
-      "unnamed": [15, 4, 5],
+      "unnamed": [15, 4, 4],
       "waits": {
         "run-timed-callback-sequence": 1,
         "sleep": 1

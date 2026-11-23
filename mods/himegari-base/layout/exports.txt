@@ -162,6 +162,7 @@ familiar_alignment
 familiar_alignment_fraction
 familiar_training_progress
 familiar_training_progress_fraction
+familiar_unit_id
 field_map_continue_mode
 gallery_image_assets
 gallery_thumbnail_sheet_asset_ids
@@ -170,6 +171,9 @@ gallery_thumbnail_slot_ids
 gallery_variant_ordinals
 game_mode
 game_started
+glossary_topic_picture_asset_ids
+glossary_topic_picture_x_offsets
+glossary_topic_picture_y_offsets
 glossary_topic_titles
 glossary_topic_unlock_seen_decision_ids
 h_scene_gallery_script_ids
@@ -207,8 +211,17 @@ item_weapon_class
 lily_form_a
 lily_form_b
 lily_form_c
+magic_action_costs
+magic_action_facility_progress_gains
+magic_action_icon_ids
 magic_action_information_handler_script_ids
+magic_action_menu_kinds
 magic_action_names
+magic_action_required_magic_facility_levels
+magic_action_required_maximum_spirit
+magic_action_required_story_flag_ids
+magic_action_required_training_progress
+magic_action_target_modes
 magic_facility_level
 magic_facility_progress
 map_target_tile_x
@@ -234,8 +247,20 @@ movement_search_mode
 name_entry_character_palette
 next_script_resource_id
 object_sprite_state_row_mode
+object_type_allowed_unit_ids
+object_type_animation_frame_counts
+object_type_available_glow_mode
 object_type_descriptions
+object_type_immunity_skill_id
+object_type_interaction_class
 object_type_names
+object_type_required_skill_id
+object_type_required_story_flag
+object_type_sprite_asset_ids
+object_type_sprite_heights
+object_type_sprite_widths
+object_type_turn_resource_deltas
+object_type_use_limit
 offensive_action_attack_elements
 offensive_action_scope_masks
 party_reference_level
@@ -319,6 +344,7 @@ stage_enemy_unit_id
 stage_event_handler_script_ids
 stage_extra_dungeon_flags
 stage_forbidden_story_flag_ids
+stage_full_conquest_flags
 stage_loader_script_ids
 stage_main_progression_flags
 stage_map_max_tile_x
@@ -336,9 +362,12 @@ stage_object_reinforcement_spawn_limit
 stage_object_required_story_flags
 stage_object_runtime_flags
 stage_object_runtime_state
+stage_object_secondary_payload
 stage_object_tile_x
 stage_object_tile_y
 stage_object_type_id
+stage_object_use_counts
+stage_object_use_story_flag_ids
 stage_replay_rules_disabled
 stage_required_story_flag_ids
 stage_result
@@ -443,12 +472,71 @@ unit_voice_suppression_flag_ids
 unit_weapon_item_category
 usable_action_max_range
 usable_action_min_range
+table card
+table card_list_entry
+table character_profile
+table class_change
+table condition
+table element
+table glossary_entry
 table item
+table magic_action
+table map_texture
+table object_type
+table recipe
 table skill
 table stage_catalog
 table stage_enemy
 table stage_goal
+table stage_map_texture
+table stage_object
+table terrain
+table training_action
 table unit
+field card.awarded_item_id
+field card.clear_point_bonus
+field card.condition_id
+field card.condition_level
+field card.event_decision_id
+field card.forbidden_story_flags
+field card.maximum_resource_damage
+field card.maximum_resource_recovery
+field card.maximum_spirit_recovery
+field card.minimum_resource_damage
+field card.minimum_resource_recovery
+field card.minimum_spirit_recovery
+field card.movie_id
+field card.name
+field card.required_story_flags
+field card.result_message
+field card.type_id
+field card_list_entry.card_id
+field card_list_entry.weight_schedule
+field character_profile.name
+field character_profile.portrait_asset_id
+field character_profile.portrait_x_offset
+field character_profile.portrait_y_offset
+field character_profile.unit_id
+field class_change.deployment_cost_delta
+field class_change.skill_awards
+field class_change.stat_bonuses
+field class_change.title
+field class_change.title_level
+field condition.can_affect_bosses
+field condition.cleared_by_recover
+field condition.duration_turns
+field condition.icon_id
+field condition.level_names
+field condition.resisted_as
+field condition.resource_deltas
+field condition.stat_deltas
+field element.effectiveness_percent
+field element.name
+field glossary_entry.name
+field glossary_entry.picture_asset_id
+field glossary_entry.picture_x_offset
+field glossary_entry.picture_y_offset
+field glossary_entry.unlock_seen_decision_ids
 field item.attack_element
 field item.category
 field item.character_whitelist
@@ -470,6 +558,40 @@ field item.stat_modifiers
 field item.status_delta_levels
 field item.tuning_curve_ids
 field item.weapon_class
+field magic_action.cost
+field magic_action.facility_progress_gain
+field magic_action.icon_id
+field magic_action.information_handler_script_id
+field magic_action.menu_kind
+field magic_action.name
+field magic_action.required_magic_facility_level
+field magic_action.required_maximum_spirit
+field magic_action.required_story_flag_id
+field magic_action.required_training_progress
+field magic_action.target_mode
+field map_texture.default_asset
+field object_type.allowed_unit_ids
+field object_type.animation_frames
+field object_type.description
+field object_type.glow_mode
+field object_type.immunity_skill_id
+field object_type.interaction_class
+field object_type.name
+field object_type.required_skill_id
+field object_type.required_story_flag
+field object_type.resource_deltas
+field object_type.sprite
+field object_type.sprite_height
+field object_type.sprite_state_row_mode
+field object_type.sprite_width
+field object_type.use_limit
+field recipe.forbidden_story_flags
+field recipe.ingredient_item_ids
+field recipe.ingredient_quantities
+field recipe.minimum_level
+field recipe.output_item_id
+field recipe.point_cost
+field recipe.required_story_flags
 field skill.acquired_flag
 field skill.attack_element
 field skill.battle_animation_id
@@ -525,6 +647,47 @@ field stage_goal.defeat_condition_1
 field stage_goal.defeat_condition_2
 field stage_goal.victory_condition_1
 field stage_goal.victory_condition_2
+field stage_map_texture.asset_override
+field stage_object.difficulty_mask
+field stage_object.forbidden_story_flags
+field stage_object.primary_payload
+field stage_object.reinforcement_interval_turns
+field stage_object.reinforcement_spawn_limit
+field stage_object.required_story_flags
+field stage_object.secondary_payload
+field stage_object.tile_x
+field stage_object.tile_y
+field stage_object.type_id
+field stage_object.use_story_flag_id
+field terrain.area_fill
+field terrain.combat_stat_deltas
+field terrain.effect_description
+field terrain.layout_class
+field terrain.name
+field terrain.required_skill_id
+field terrain.texture_slot
+field training_action.alignment_delta
+field training_action.awarded_item_id
+field training_action.awarded_skill_id
+field training_action.event_decision_ids
+field training_action.execution_count
+field training_action.forbidden_story_flags
+field training_action.maximum_alignment
+field training_action.maximum_level
+field training_action.maximum_progress
+field training_action.maximum_stats
+field training_action.minimum_alignment
+field training_action.minimum_level
+field training_action.minimum_progress
+field training_action.minimum_stats
+field training_action.progress_delta
+field training_action.required_item_id
+field training_action.required_skill_id
+field training_action.required_story_flags
+field training_action.spirit_delta
+field training_action.stat_deltas
+field training_action.text
+field training_action.unlock_flag
 field unit.auto_level_scale_divisor
 field unit.battle_cutin_asset_ids
 field unit.battle_portrait_asset_ids
@@ -577,3 +740,5 @@ field unit.weapon_item_category
 scope stage
 scope stage.enemy
 scope stage.goal
+scope stage.object
+scope stage.texture

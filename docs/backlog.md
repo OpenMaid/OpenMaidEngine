@@ -512,6 +512,18 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     `spawn_tile_x` and `spawn_tile_y`, which the export publishes).
   - **Arterial:** an area is a background picture with points and the routes between them (MPINIT and ROINIT,
     `arterial-data-tables.md`, "On-demand tables").
+  - **Himegari:** a stage is a rectangle (`stage_catalog`'s `map_min_tile_x` to `map_max_tile_y`) of one shared
+    terrain atlas (`stage_terrain_atlas`, MPINIT, 53 cells to a row; the append's `$1$MPINIT` adds rows from grid row
+    1601 for its stages), on a doubled grid: tile (x, y) is cell (2x, 2y), and the odd cells join tiles
+    (`FIELD@0x2e61`). DRAWMAP draws each tile 100 pixels square from its `terrain`: its layout class, area fill and
+    texture slot, the slot naming the stage's `stage_map_texture` or the default `map_texture`, 500×500 MP sheets
+    (`FIELD@0x9106`, `DRAWMAP@0x1d0` to `0x36a`), with walls and borders from SO005, SO007 and SO008A
+    (`FIELD@0x9091`). Map objects are `stage.object` at `tile_x` and `tile_y`, drawn from their `object_type`'s
+    sheet, its first frame, width by height, centred (`DRAWOBJ@0xcf`); the enemies stand at `stage.enemy`'s spawn
+    tiles, or on the object slot they spawn from (`spawn_object_slot`). RENDERMAP draws DRAWMAP, SETOBJ, DRAWOBJ,
+    DRAWCH, then DRAWMINIMAP. A slot's difficulty mask and story flags decide whether it is placed, which a drawing
+    would show as markers. The decoded tables' writeups are `build/games/himegari/data/` (`MPINIT-field-profile.md`
+    and the rest; `tools/extract_init.py`, `tools/init_table_profile.py`).
   - Done when the export declares a map for a kind in a form both games fit (a background or a grid, its nodes or
     tiles, the links between them, and the markers placed on them, each with an icon), the exporter writes it, and the
     site draws it on the entity's page.
@@ -524,14 +536,26 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   CALCARM sums them. What a node costs in materials is not in the registry yet. Done when a `costume` kind (or the
   costume items' pages) shows each costume's board: its nodes, what each gives and what it costs, read through a
   loader that runs COINIT for each costume.
-- **Himegari's section grows with its registry.** The section publishes the four understood tables and STINIT2's
-  stages (2026-11-22). What the registry already holds that it could add next: the item and skill icons
-  (`item_icon_id` 1 to 360 and `skill_icon_id` 51 to 56 number cells of an icon sheet the registry does not name yet,
-  so a sheet picture can cut them once it does); the class change rules (CCINIT, `class_change_title_output`); the map
-  objects (OBINIT, `object_type_names` and `object_type_descriptions`); and the meaning of `stage_enemy_faction_id`
-  (0, 2 or 3), which would split a stage's enemies from its allies as Kamidori's parts do. `unit_boss_class` and
-  `unit_species_category` are read at medium confidence. Done when each is a kind, a field or a part on the site, or
-  the registry says why it is not.
+- **Himegari's section grows with its registry.** The section publishes fourteen kinds (2026-11-22; export plan §5):
+  units with their icons and class changes, items, skills, stages with their enemies, goals and treasure, recipes,
+  conditions, elements, terrain, map objects, cards, training actions, magic and the information menu's profiles and
+  glossary. What is open:
+  - **A card object's cards.** CDINIT builds the card list a type-28 object deals from (`card_list_entry`, nine
+    lists: 1, 11, 31, 41, 55, 61, 71, 94 and 160) each time one is used, seeded with
+    `current_card_generation_list_id`; a loader would run it once a list and read at its exit (a new patch point at
+    `CDINIT@0x1e9a`). No kind has list ids for its ids, so a list needs a kind of its own, or a stage's card objects
+    need a join to the list their payload names. Done when a card's page says which stages deal it, and with what
+    weight (a card's weight is its base, plus its growth for every full interval of turns the stage has lasted).
+  - **Where a map object stands.** `stage_object.type_id` refers to the chests' item (`bases`), so a map object's page
+    cannot list the stages that place it, and the objects other than chests are not shown on a stage: their payloads
+    mean another thing for each type (a teleporter's destination, a base's owner, a card object's list). The stage
+    maps item below would place them all. Done when a map object's page lists its stages, or the stage maps show them.
+  - **Unnamed cells.** The export reports 65 integer cells INIT2 writes that the registry does not name
+    (`0x6246a` to `0x62485`, beside `adv_gfx_surface_slot_work`, and READICON's sheet table at `0x15a75b`, 21 cells a
+    row: a base sheet and up to twenty append sheets, row 0 the item icons' and row 1 the units'; the append's
+    AUTORUN writes rows past them too, `$1$AUTORUN@0x79` to `0xa1`).
+  - **Read at medium confidence, so not shown:** `magic_action_target_modes` (how FIELD's selection bits 9 to 11
+    choose targets) and `object_type_interaction_class`.
 
 ## Platform and project
 

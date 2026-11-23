@@ -54,8 +54,8 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Port saves | enabled, in `games/himegari/` |
 | OMS modules | `himegari.globals`, `himegari.scripts` (generated); `himegari.adv` (`oms/himegari/adv.oms`) |
 | Speakers | 274 in `himegari.adv`'s `enum speaker` |
-| Tables | `unit[1000]` (49 fields), `item[1000]` (21 fields), `skill[300]` (17 fields), `stage_enemy[30]` (15 fields), `stage_catalog[1000]` (19 fields), `stage_goal[1]` (4 fields) ([reference](../../global-reference.md)) |
-| Named patch points | `himegari.experience.after_calculation`, `himegari.boot.data_layered`, `himegari.boot.data_ready`, `himegari.stage.after_loader`, `himegari.stage.after_ready_handlers`, `himegari.stage.after_round_handlers`, `himegari.stage.after_close_handlers_won`, `himegari.stage.after_close_handlers_lost` ([reference](../../patch-point-reference.md)) |
+| Tables | `unit[1000]` (49 fields), `item[1000]` (21 fields), `skill[300]` (17 fields), `stage_enemy[30]` (15 fields), `stage_catalog[1000]` (19 fields), `stage_goal[1]` (4 fields), `condition[30]` (8 fields), `element[16]` (2 fields), `class_change[1]` (5 fields), `character_profile[100]` (5 fields), `glossary_entry[200]` (5 fields), `magic_action[30]` (11 fields), `recipe[1000]` (7 fields), `card[100]` (17 fields), `card_list_entry[100]` (2 fields), `training_action[21]` (22 fields), `terrain[30]` (7 fields), `object_type[100]` (15 fields), `stage_object[50]` (11 fields), `map_texture[20]` (1 fields), `stage_map_texture[20]` (1 fields) ([reference](../../global-reference.md)) |
+| Named patch points | `himegari.experience.after_calculation`, `himegari.boot.data_layered`, `himegari.boot.data_ready`, `himegari.stage.after_loader`, `himegari.stage.after_ready_handlers`, `himegari.stage.after_round_handlers`, `himegari.stage.after_close_handlers_won`, `himegari.stage.after_close_handlers_lost`, `himegari.class_change.rules_run` ([reference](../../patch-point-reference.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [himegari.md](himegari.md) |
 

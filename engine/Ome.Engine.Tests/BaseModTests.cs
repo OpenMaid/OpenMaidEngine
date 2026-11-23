@@ -139,7 +139,7 @@ public sealed class BaseModTests : IDisposable
         ModDiscovery with = ModLaunch.Discover(mods, [], report);
         ModPackage shipped = Assert.Single(with.Packages, package => package.Id == "himegari-base");
         Assert.Equal(ShippedPackages.LocationOf("himegari-base"), shipped.Location);
-        Assert.Contains(report.Lines, line => line.Message.Contains("the engine's own himegari-base 1.1.0 is mounted: needs-base requires it"));
+        Assert.Contains(report.Lines, line => line.Message.Contains("the engine's own himegari-base 1.2.0 is mounted: needs-base requires it"));
         // The resolver finds the requirement met, and the base mod loads before the mod that requires it.
         var order = new ModLinkReport();
         IReadOnlyList<ModPackage> resolved = StackResolver.Resolve(with.Packages, SyntheticBase(), with.UserOrder, order);
@@ -159,12 +159,12 @@ public sealed class BaseModTests : IDisposable
         Directory.CreateDirectory(mods);
         Directory.Move(Folder("needs-base", Manifest("needs-base", extra: RequiresBase)), Path.Combine(mods, "needs-base"));
         string installed = Path.Combine(mods, "himegari-base");
-        Directory.Move(Folder("himegari-base", Manifest("himegari-base", "1.2.0"), new Dictionary<string, string> { ["layout/globals.json"] = Layout }),
+        Directory.Move(Folder("himegari-base", Manifest("himegari-base", "1.3.0"), new Dictionary<string, string> { ["layout/globals.json"] = Layout }),
                   installed);
         var report = new ModLinkReport();
         ModDiscovery discovery = ModLaunch.Discover(mods, [], report);
         ModPackage used = Assert.Single(discovery.Packages, package => package.Id == "himegari-base");
-        Assert.Equal("1.2.0", used.Manifest.Version.ToString());
+        Assert.Equal("1.3.0", used.Manifest.Version.ToString());
         Assert.Contains(report.Lines, line => line.Message.Contains("is used instead of the engine's own himegari-base"));
     }
 

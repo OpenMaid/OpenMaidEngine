@@ -229,14 +229,16 @@ public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields)
 
 /// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture
 /// <see cref="Sheet"/>, <see cref="First"/> being the first, <see cref="Columns"/> to a row from the origin, a step
-/// apart, each of the size; a number below the first is no picture.</summary>
+/// apart, each of the size; a number below the first, or above <see cref="Last"/> where it is given, is no picture.
+/// <see cref="Key"/> is the colour the game loads the sheet with as its key (0xRRGGBB), drawn as nothing.</summary>
 public sealed record SheetPictureDeclaration(string Name, string Field, string Sheet, int First, int Columns,
-                                             (int X, int Y) Origin, (int X, int Y) Step, (int Width, int Height) Size)
+                                             (int X, int Y) Origin, (int X, int Y) Step, (int Width, int Height) Size,
+                                             int? Key = null, long? Last = null)
 {
     /// <summary>The cell's left and top in the sheet for number <paramref name="number"/>, or null for none.</summary>
     public (int X, int Y)? Cell(long number)
     {
-        if (number < First) return null;
+        if (number < First || number > Last) return null;
         long index = number - First;
         return ((int)(Origin.X + index % Columns * Step.X), (int)(Origin.Y + index / Columns * Step.Y));
     }
@@ -251,7 +253,9 @@ public sealed record SheetPictureDeclaration(string Name, string Field, string S
         return new SheetPictureDeclaration(name, sheet.GetProperty("field").GetString()!,
                                            sheet.GetProperty("sheet").GetString()!, sheet.GetProperty("first").GetInt32(),
                                            sheet.GetProperty("columns").GetInt32(), Pair("origin"), Pair("step"),
-                                           Pair("size"));
+                                           Pair("size"),
+                                           sheet.TryGetProperty("key", out JsonElement key) ? key.GetInt32() : null,
+                                           sheet.TryGetProperty("last", out JsonElement last) ? last.GetInt64() : null);
     }
 }
 
