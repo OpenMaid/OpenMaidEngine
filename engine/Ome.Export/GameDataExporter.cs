@@ -250,9 +250,12 @@ public static class GameDataExporter
         var textArrays = new HashSet<string>(textFields.Select(field => field.Field), StringComparer.Ordinal);
         var pictures = kind.Pictures.Select(picture => (picture.Name, Field: registry.Resolve(table, picture.Field), picture.Key))
             .ToList();
-        var sheets = kind.Sheets.Select(sheet => (Sheet: sheet, Field: registry.Resolve(table, sheet.Field))).ToList();
+        // A sheet without a field is numbered by the record's own id.
+        var sheets = kind.Sheets
+            .Select(sheet => (Sheet: sheet, Field: sheet.Field is null ? null : registry.Resolve(table, sheet.Field))).ToList();
+        IReadOnlyList<FieldLayout> sheetFields = [.. sheets.Select(pair => pair.Field).OfType<FieldLayout>()];
         foreach ((string name, FieldLayout field) in pictures.Select(picture => (picture.Name, picture.Field))
-                     .Concat(sheets.Select(pair => (pair.Sheet.Name, pair.Field))))
+                     .Concat(sheets.Where(pair => pair.Field is not null).Select(pair => (pair.Sheet.Name, pair.Field!))))
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
@@ -261,7 +264,7 @@ public static class GameDataExporter
         // (a card's slot beside its row).
         IReadOnlyList<FieldLayout> snippetFields = [.. published, .. KeyPartners(published, tableFields, joinedFields, table, joins),
                                                     .. textFields, .. pictures.Select(picture => picture.Field),
-                                                    .. sheets.Select(sheet => sheet.Field)];
+                                                    .. sheetFields];
         var entities = new List<ExportEntity>();
         (int first, int last) = kind.KeyRange ?? (0, table.Records - 1);
         for (int record = first; record <= Math.Min(last, table.Records - 1); record++)
@@ -341,14 +344,15 @@ public static class GameDataExporter
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
             // A cell of a sheet (plan §5): a number below the sheet's first, or above its last, is no picture.
-            foreach ((SheetPictureDeclaration sheet, FieldLayout field) in sheets)
+            foreach ((SheetPictureDeclaration sheet, FieldLayout? field) in sheets)
             {
-                var (cell, refused) = At(field, 0);
-                if (refused || inputs.Pictures == null || sheet.Cell(cell.Number) is not { } at) continue;
+                (ExportCell? cell, bool refused) = field is null ? (null, false) : At(field, 0);
+                long number = cell?.Number ?? record;
+                if (refused || inputs.Pictures == null || sheet.Cell(number) is not { } at) continue;
                 if (inputs.Pictures.Cell(sheet.Sheet, at.X, at.Y, sheet.Size.Width, sheet.Size.Height, sheet.Key)
                     is { } picture)
                     entity.Pictures.Add((sheet.Name, explicitPictures.Mark(picture)));
-                else report.UnresolvedPictures.Add((kind.Id, record, sheet.Name, cell.Number));
+                else report.UnresolvedPictures.Add((kind.Id, record, sheet.Name, number));
             }
             foreach (DescriptionDeclaration description in kind.Descriptions)
                 Describe(inputs, boot, kind, entity, description, At, table, languages, report);
@@ -370,7 +374,7 @@ public static class GameDataExporter
             entities.Add(entity);
         }
         var declared = published.Concat(textFields).Concat(pictures.Select(picture => picture.Field))
-            .Concat(sheets.Select(sheet => sheet.Field)).Concat(skips.Select(skip => skip.Field)).Append(exists)
+            .Concat(sheetFields).Concat(skips.Select(skip => skip.Field)).Append(exists)
             .DistinctBy(field => field.Name).ToList();
         return new ExportKind(kind, table, tableFields, published, declared, entities)
         {

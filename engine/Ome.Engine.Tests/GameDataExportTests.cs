@@ -1665,6 +1665,21 @@ public class GameDataExportTests
     }
 
     [Fact]
+    public void ASheetWithoutAFieldIsNumberedByTheRecordsId()
+    {
+        // An element's icon (export plan §5): the game draws the cell its id numbers.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["pictures"]!["badge"] = JsonNode.Parse("""
+            {"sheet": "SHEET.AGF", "first": 1, "columns": 3, "origin": [0, 10], "step": [8, 8], "size": [7, 7]}
+            """);
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        string? Badge(int id) => Entity(result, "item", id).Pictures.SingleOrDefault(p => p.Name == "badge").Picture?.Name;
+        Assert.Equal("SHEET-0-10", Badge(1));
+        Assert.Equal("SHEET-8-10", Badge(2));
+        Assert.Equal("SHEET-16-10", Badge(3));
+    }
+
+    [Fact]
     public void ASheetWithALastNumberAndAKeyCutsOnlyItsOwnNumbersWithItsKey()
     {
         // Himegari's icons (export plan §5): numbers past a sheet's last are another sheet's, so they are no picture of

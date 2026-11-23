@@ -453,6 +453,18 @@ about = "The elements: the items and skills that attack with each, the equipment
 exists = "name"
 title = "name"
 
+# The element's icon, as the status screen draws a terrain's: cell 646 + 21 x element, 645, of slot 0x40, 20 by 20
+# (STATUS@0x1f9c to 0x1fb1), which SETMAPTEX@0x23 fills with SO009.AGF (0x3430) and no colour key; SHOP and ARENA draw
+# from the same row. Its eight icons are the elements' 0 to 7.
+[kind.pictures.icon]
+sheet = "SO009.AGF"
+first = 0
+last = 7
+columns = 8
+origin = [646, 645]
+step = [21, 21]
+size = [20, 20]
+
 [[kind]]
 id = "terrain"
 table = "terrain"

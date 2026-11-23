@@ -1089,6 +1089,12 @@ authors.
       its value names and its columns. The report counts the strings overridden and names an override no string used.
     - The site shows a reference's 0 when the export linked it (`format.mjs` `noneIn`); the registry's word for
       column 0 of an item's resistances is `omni`, no longer `unused`.
+  - **The elements' icons.** The user asked for them (2026-11-23). A sheet picture may leave out `field`: the record's
+    own id numbers its cell, as the game draws an element's icon. Kamidori's eight are a row of SO009, where the status
+    screen draws a terrain's element (STATUS@0x1f9c); Himegari's twelve are a row of SO018, where the unit screen draws
+    a unit's defense element (INFOEN@0x12b0). The skill menu draws an attack element from SO008B (SELACT@0xd2f), whose
+    icons 1 to 8 are SO018's pixel for pixel, so the element kind has one icon. The site shows each as the element's
+    thumbnail and before every link to an element.
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
     doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a
     builder) and the fields read at medium or low confidence.

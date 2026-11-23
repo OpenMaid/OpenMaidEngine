@@ -416,6 +416,19 @@ exists = "name"
 title = "name"
 fields = ["effectiveness_percent"]
 
+# The element's icon, as the unit screen draws a unit's defense element: cell 735 + 20 x element, 450, of slot 0x10, 20
+# by 20 (INFOEN@0x129b to 0x12b0, none for 0), which INFO@0xcf and MENU@0x118 fill with SO018.AGF (0x332c) and no colour
+# key. The skill menu draws an attack element from SO008B.AGF's row at 527 + 20 x element, 804 (SELACT@0xd05 to 0xd2f),
+# whose icons 1 to 8 are these, pixel for pixel.
+[kind.pictures.icon]
+sheet = "SO018.AGF"
+first = 1
+last = 12
+columns = 12
+origin = [755, 450]
+step = [20, 20]
+size = [20, 20]
+
 [kind.notes]
 effectiveness_percent = "Columns 1 to 8: the percent of each attack element's damage taken, a negative one absorbed. Columns 11 to 17: the percent chance to catch a condition resisted that way."
 

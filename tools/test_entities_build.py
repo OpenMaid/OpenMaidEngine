@@ -591,6 +591,14 @@ size = [15, 15]
 key = 0x00ff00
 last = 40
 
+[kind.pictures.crest]
+sheet = "BADGES.AGF"
+first = 0
+columns = 8
+origin = [0, 200]
+step = [21, 21]
+size = [20, 20]
+
 [kind.notes]
 class = "1 knight, 2 archer."
 arms = "Each weapon slot and its level."
@@ -827,6 +835,8 @@ def test_design_pass_features():
     check(hero.get("pictures", {}).get("badge", {}).get("sheet") == "BADGES.AGF", "the JSON keeps a sheet picture")
     check((hero["pictures"]["badge"].get("key"), hero["pictures"]["badge"].get("last")) == (0x00ff00, 40),
           "the JSON keeps a sheet's key and last number")
+    check("field" not in hero["pictures"].get("crest", {"field": 0}),
+          "a sheet picture without a field, numbered by the record's id, lints clean and keeps none")
     check(hero.get("text_blocks") == {"bio": [{"name": "summary", "first": 0, "last": 0},
                                               {"name": "detail", "first": 1, "last": 1}]},
           "the JSON keeps a text field's blocks in their order")

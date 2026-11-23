@@ -248,10 +248,10 @@ public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields)
 }
 
 /// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture
-/// <see cref="Sheet"/>, <see cref="First"/> being the first, <see cref="Columns"/> to a row from the origin, a step
+/// <see cref="Sheet"/>, or the record's own id where it is null (an element's icon), <see cref="First"/> being the first, <see cref="Columns"/> to a row from the origin, a step
 /// apart, each of the size; a number below the first, or above <see cref="Last"/> where it is given, is no picture.
 /// <see cref="Key"/> is the colour the game loads the sheet with as its key (0xRRGGBB), drawn as nothing.</summary>
-public sealed record SheetPictureDeclaration(string Name, string Field, string Sheet, int First, int Columns,
+public sealed record SheetPictureDeclaration(string Name, string? Field, string Sheet, int First, int Columns,
                                              (int X, int Y) Origin, (int X, int Y) Step, (int Width, int Height) Size,
                                              int? Key = null, long? Last = null)
 {
@@ -270,7 +270,8 @@ public sealed record SheetPictureDeclaration(string Name, string Field, string S
             JsonElement[] pair = [.. sheet.GetProperty(key).EnumerateArray()];
             return (pair[0].GetInt32(), pair[1].GetInt32());
         }
-        return new SheetPictureDeclaration(name, sheet.GetProperty("field").GetString()!,
+        return new SheetPictureDeclaration(name,
+                                           sheet.TryGetProperty("field", out JsonElement field) ? field.GetString() : null,
                                            sheet.GetProperty("sheet").GetString()!, sheet.GetProperty("first").GetInt32(),
                                            sheet.GetProperty("columns").GetInt32(), Pair("origin"), Pair("step"),
                                            Pair("size"),

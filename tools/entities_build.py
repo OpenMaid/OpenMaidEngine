@@ -63,9 +63,10 @@ QUALIFIER_LIMIT = 3
 DETAIL_LIMIT = 4
 DESCRIPTION_KEYS = {"name", "script", "seed"}
 GROUP_KEYS = {"name", "fields", "labels", "row_label"}
-SHEET_KEYS = {"field", "sheet", "first", "columns", "origin", "step", "size"}
-# A sheet's optional keys: the colour it is loaded with as its key, and its last number (export plan §5).
-SHEET_OPTIONAL_KEYS = {"key", "last"}
+SHEET_KEYS = {"sheet", "first", "columns", "origin", "step", "size"}
+# A sheet's optional keys: the field numbering its cell (else the record's id), the colour it is loaded with as its key,
+# and its last number (export plan §5).
+SHEET_OPTIONAL_KEYS = {"field", "key", "last"}
 # A picture sheet's catalog record, with its extension (SO009.AGF); an append's own picture is named with its pack's
 # prefix ($1$SO016A.AGF, Himegari's append icons).
 SHEET = re.compile(r"(\$[0-9]+\$)?[A-Z0-9_]+\.[A-Z0-9]+")
@@ -800,16 +801,17 @@ def check_note(note, where: str, errors: list[str]) -> None:
 
 
 def check_sheet(sheet: dict, check_field, where: str, errors: list[str]) -> None:
-    """A picture cut from a sheet: `field` numbers a cell, the first being `first`, `columns` to a row from `origin`,
-    `step` apart, each `size` (pixels, x before y). A number below `first`, or above `last` where it is given, is no
-    picture: a game whose numbers past a point are another sheet's (Himegari's icons from 501, an append's) declares
-    each sheet with its range. `key` is the colour the game loads the sheet with as its key, drawn as nothing."""
+    """A picture cut from a sheet: `field` numbers a cell, or the record's own id where it is left out (an element's
+    icon), the first being `first`, `columns` to a row from `origin`, `step` apart, each `size` (pixels, x before y). A
+    number below `first`, or above `last` where it is given, is no picture: a game whose numbers past a point are
+    another sheet's (Himegari's icons from 501, an append's) declares each sheet with its range. `key` is the colour the game loads the sheet with as its key, drawn as nothing."""
     unknown_keys(sheet, SHEET_KEYS | SHEET_OPTIONAL_KEYS, where, errors)
     missing = sorted(SHEET_KEYS - set(sheet))
     if missing:
         errors.append(f"{where}: a sheet picture needs {', '.join(missing)}")
         return
-    check_field(sheet["field"])
+    if "field" in sheet:
+        check_field(sheet["field"])
     if not isinstance(sheet["sheet"], str) or not SHEET.fullmatch(sheet["sheet"]):
         errors.append(f"{where}: sheet {sheet['sheet']!r} must be a picture's catalog name in upper case with its "
                       f"extension, and an append's own picture with its `$n$` prefix")
