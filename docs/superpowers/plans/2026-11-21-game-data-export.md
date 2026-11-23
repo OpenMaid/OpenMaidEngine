@@ -9,7 +9,8 @@ since the spec was accepted (§5).
 milestone 4 in §4.3, milestone 5 in §4.4, milestone 6 in §4.5, milestone 7 in §4.6).
 §4 gets each later milestone's section before it starts.
 **Branch:** `feature/data-export`, off `develop` at `fcfc12a2` (rebased onto it on 2026-11-21, when the backlog
-batch was merged); its first commit (`0848b00a`) is the spec.
+batch was merged); its first commit (`0848b00a`) is the spec. Merged into `develop` by fast-forward on 2026-11-23
+(`8dfa38f7`), when the user called the batch, with the site's, a first version.
 
 Paths are relative to `age-reimpl/`.
 
