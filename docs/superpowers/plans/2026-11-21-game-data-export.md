@@ -1059,3 +1059,22 @@ authors.
     is capturable) and the stone ("Summoning stone", and "Summons" on the stone's page), with the capture, the
     contract and the stone's count in their notes. A unit without a threshold (ヒューリー, the bosses' forms) gets its
     stone another way, which the export does not say yet.
+- **Kamidori's field tables** (2026-11-23; the user: Kamidori has the cards, terrain, map objects and elements that
+  Himegari's section shows, and for elements: "keep the references to things that use it as an attack or modify that
+  particular resistance", not the units, each of which has a grade for every element). The registry had named the
+  globals; four tables declare them (`element`, `terrain`, `object_type`, `card`), and four kinds publish 7 elements,
+  31 terrains, 50 map objects and 85 cards. What reading them settled: each card fills only its type's effects, so
+  the type has its words; a card's `visual_asset_id` is a movie, the animation FIELD plays (`play-movie-to-surface`,
+  FIELD@0xbc91), so cards have no picture; a map object's seven battle columns are a skill's first seven, as
+  CALCBTPARAM reads both (@0x6c9 and @0x512), where columns 2 to 5 had been taken for display-only.
+  - **The elements' links.** An item's `attack_element` and a terrain's `element_id` refer to the element, a skill's
+    `attack_element_encoded` by `{ table = "element", offset = -1 }`, and an item's `affinity_level_deltas` names its
+    columns by element (`columns_ref`), so an element's page lists the items and skills that attack with it, the
+    equipment that changes its resistance and its terrain. A unit's resistances keep `columns_from`.
+  - **A kind's `key_range`.** Element 0, 無属, is a name the game gives to none: an item's 0 deals no element, and a
+    skill's 1 (無属) names element 0, which no reference reaches, since a value of 0 or below is none. The kind
+    publishes elements 1 to 7 (`key_range = [1, 7]`, which a loader already had), and the site shows a reference that
+    names no entity by the value's word where the field has one (a skill's 無属), else as missing as before.
+  - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
+    doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a builder) and the fields read at medium or
+    low confidence.

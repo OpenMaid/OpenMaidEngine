@@ -169,6 +169,7 @@ id = "weapon"
 table = "weapon"
 exists = "price"
 title = "name"
+key_range = [1, 2]
 
 [[loader]]
 scope = "stage"
@@ -226,6 +227,8 @@ def test_good_declarations():
     check(code == 0, f"good declarations lint clean ({output.strip()})")
     data = json.loads(written or "{}")
     check([k["id"] for k in data.get("kinds", [])] == ["hero", "weapon"], "the JSON lists the kinds in order")
+    check([k.get("key_range") for k in data.get("kinds", [])] == [None, [1, 2]],
+          "a kind's key_range is written as it is, and is null for a kind without one")
     hero = data["kinds"][0] if data.get("kinds") else {}
     check(hero.get("descriptions", [{}])[0].get("seed") == {"current_hero_id": "key", "current_weapon_id": 0},
           "a description keeps its seed")
@@ -308,6 +311,7 @@ fields = ["name", "level", "art.face", "weapon"]
 filters = ["weapon", "bio"]
 pictures = { icon = "class", face = "art.0", far = "art.7", Bad = "art.1" }
 colour = "red"
+key_range = [1, 4]
 
 [[kind]]
 id = "heroes"
@@ -317,6 +321,7 @@ table = "monster"
 [[kind]]
 id = "picture"
 table = "hero"
+key_range = [2, 1]
 
 [[kind]]
 id = "search"
@@ -335,7 +340,9 @@ table = "hero"
             "column 0 of art is named: write art.face", "art has no column '7'",
             "picture name 'Bad' must be a lowercase identifier",
             "kind 'heroes': tooltips is also the id of kind 'tooltips'",
-            "table 'monster' is not a [[table]] of the registry"):
+            "table 'monster' is not a [[table]] of the registry",
+            "kind 'tooltips': key_range ends at 4, past table hero's 4 records",
+            "kind 'picture': key_range must be [first, last]"):
         check(needle in output, f"the lint flags {needle!r}")
 
 

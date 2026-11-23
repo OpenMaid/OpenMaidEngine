@@ -262,7 +262,8 @@ public static class GameDataExporter
                                                     .. textFields, .. pictures.Select(picture => picture.Field),
                                                     .. sheets.Select(sheet => sheet.Field)];
         var entities = new List<ExportEntity>();
-        for (int record = 0; record < table.Records; record++)
+        (int first, int last) = kind.KeyRange ?? (0, table.Records - 1);
+        for (int record = first; record <= Math.Min(last, table.Records - 1); record++)
         {
             if (Read(boot, exists, record, 0).IsDefault) continue;
             if (skips.Any(skip => Read(boot, skip.Field, record, 0).Number == skip.Value)) continue;

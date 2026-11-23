@@ -84,6 +84,9 @@ garden_production_period = "Garden points per product"
 [kind.referenced_as]
 granted_skill_id = "Granted by items"
 character_whitelist = "Restricted items it may use"
+attack_element = "Items that attack with it"
+# A row of cells by element (columns_ref): each element whose cell is not 0 lists the item.
+affinity_level_deltas = "Items that change its resistance"
 garden_product_item_id = { heading = "Produced in the garden by", details = ["garden_production_period"] }
 # A row of cells by condition (columns_ref): each condition whose cell is not 0 lists the item (site plan §13, C2).
 condition_level_deltas = "Changed by items"
@@ -189,6 +192,7 @@ proc_chance_percent = "Proc chance"
 [kind.referenced_as]
 bundled_skill_ids = "Part of"
 condition_levels = "Inflicted by skills"
+attack_element_encoded = "Skills that attack with it"
 
 [[kind.description]]
 name = "description"
@@ -431,6 +435,124 @@ title = "name"
 name = "explanation"
 script = { field = "message_script_id" }        # VIMES, as INFO8 calls it
 seed = { current_vocabulary_id = "key" }
+
+# The field's other tables (2026-11-23; the user: Kamidori's cards, terrain, map objects and elements, as Himegari's are
+# published).
+
+[[kind]]
+id = "element"
+table = "element"
+about = "The elements: the items and skills that attack with each, the equipment that changes its resistance, and its terrain."
+exists = "name"
+title = "name"
+# Element 0, 無属, is the non-elemental, which no reference reaches (a value of 0 is none): an item's 0 is no attack
+# element, and a skill's 無属 shows as the word.
+key_range = [1, 7]
+
+[[kind]]
+id = "terrain"
+table = "terrain"
+about = "The ground a floor's tiles are: what it costs to cross, the skills a unit needs to enter it, and its element."
+exists = "name"
+title = "name"
+fields = ["visibility_class", "element_id", "move_cost", "required_skill_ids"]
+filters = ["visibility_class"]
+# Each ground comes as a known and an unexplored terrain of one name, and 平地 five times.
+qualifiers = ["visibility_class"]
+
+[kind.notes]
+visibility_class = "A known tile is shown when the floor is entered, an unexplored one as the floor is explored, and a hidden one can be crossed only once it is revealed or by a unit with 探索."
+element_id = "A unit with the element's guardian skill (地の守護者 for 地脈 to 闇の守護者 for 暗黒) or with 魔神特性 gains that skill's stat changes standing on it."
+move_cost = "The movement points it takes to enter a tile; 1 for a unit with 飛行 or 転移."
+required_skill_ids = "A unit needs one of these to enter it; 進行不可 is a skill no unit has."
+
+[kind.labels]
+visibility_class = "On the map"
+element_id = "Element"
+move_cost = "Move cost"
+required_skill_ids = "Needs one of"
+
+[kind.referenced_as]
+element_id = "Terrain of this element"
+required_skill_ids = "Lets a unit enter"
+
+[[kind]]
+id = "map_object"
+table = "object_type"
+about = "The objects a floor's map can hold: bases, gates, chests, doors, traps, dig points and event points, with who may use each."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "use_limit", "use_count_resets_on_entry", "player_only", "required_skill_id", "immunity_skill_ids", "allowed_unit_ids",
+    "turn_resource_deltas", "battle_stat_deltas",
+]
+
+[kind.notes]
+use_limit = "How many times one of them acts before it stays as it is."
+use_count_resets_on_entry = "Its uses start again each time the floor is entered."
+player_only = "Only the player's units may use it."
+required_skill_id = "It acts only for a unit with this skill: 開錠 opens a chest or a door, and 飛行結界 stops a unit with 飛行."
+immunity_skill_ids = "A unit with one of these is spared what it does."
+allowed_unit_ids = "Only these units trigger it."
+turn_resource_deltas = "What a unit standing on it gains or loses each turn."
+battle_stat_deltas = "What a unit standing on it gains in battle."
+
+[kind.labels]
+use_limit = "Uses"
+use_count_resets_on_entry = "Uses again on entry"
+player_only = "Player's units only"
+required_skill_id = "Needs skill"
+immunity_skill_ids = "Spared by skills"
+allowed_unit_ids = "Triggered only by"
+turn_resource_deltas = "HP, SP and FS each turn"
+battle_stat_deltas = "Battle stat changes"
+
+[kind.referenced_as]
+required_skill_id = "Needed for map objects"
+immunity_skill_ids = "Spares a unit from map objects"
+allowed_unit_ids = "Map objects only it triggers"
+
+[[kind]]
+id = "card"
+table = "card"
+about = "The cards a floor's card points deal: an item, money, recovery, a trap or a warp."
+exists = "name"
+title = "name"
+text = ["result_message"]
+fields = [
+    "type_id", "awarded_item_id", "minimum_money", "maximum_money", "minimum_resource_recovery",
+    "maximum_resource_recovery", "minimum_resource_damage", "maximum_resource_damage", "condition_levels",
+]
+filters = ["type_id"]
+# A card's visual_asset_id is a movie, the animation FIELD plays when the card is dealt, so the kind has no picture.
+# The item cards share a few names (アイテムのカード, 素材のカード); the item tells them apart.
+qualifiers = ["awarded_item_id"]
+
+[[kind.group]]
+name = "resources"
+fields = ["minimum_resource_recovery", "maximum_resource_recovery", "minimum_resource_damage", "maximum_resource_damage"]
+
+[kind.notes]
+type_id = "A card applies all of its effects, and a warp card moves the unit. The three 精気のカード have no effect, and no floor deals them."
+resources = "What the unit that takes it recovers or loses: a number from the least to the most."
+condition_levels = "The level of each condition it inflicts."
+
+[kind.labels]
+result_message = "Message"
+type_id = "Effect"
+awarded_item_id = "Gives"
+minimum_money = "Money, least"
+maximum_money = "Money, most"
+minimum_resource_recovery = "Recovery, least"
+maximum_resource_recovery = "Recovery, most"
+minimum_resource_damage = "Damage, least"
+maximum_resource_damage = "Damage, most"
+condition_levels = "Conditions"
+
+[kind.referenced_as]
+awarded_item_id = "Given by cards"
+condition_levels = "Inflicted by cards"
 
 # The stage loaders (export plan §4.2): FIELD runs a stage's loaders (STINIT and its layers' $n$STINIT) just before
 # kamidori.stage.after_loader. party_on_field 1 skips the arrival block, whose scenes can leave FIELD first

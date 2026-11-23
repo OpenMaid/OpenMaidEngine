@@ -156,11 +156,21 @@ drop_chance.drop_1 = 100   # 30
   | `character_profile` | the character profiles (CIINIT) | 0 to 199 | 43 |
   | `objective` | the chapter objectives (FAINIT) | 0 to 1999 | 126 |
   | `glossary_entry` | the glossary (VIINIT) | 0 to 999 | 163 |
+  | `element` | the elements' names (INIT2) | 0 to 7 | 8 |
+  | `terrain` | the ground of a floor's tiles (LAINIT) | 0 to 39 | 31 |
+  | `object_type` | the map objects a floor places (OBINIT) | 0 to 99 | 50 |
+  | `card` | the cards a floor's card points deal (CDINIT2) | 0 to 99 | 85 |
 
   The stage list's table is `stage_catalog`, since `stage` names a floor's enemies and objective texts (below). A
   field with a row takes its columns by the names the reference gives (`stats.max_hp`, `level_names.level_1`), and by
   number only where a column has no name. The reference's `class_change` table, the block the title-change rules
   fill, is not one a file writes: `kamidori.tables` does not edit it, and the shape refuses it.
+- **The field's tables are not saved.** `element`, `terrain`, `object_type` and `card` lie past the saved prefix, and no
+  script copies their values into a save: an edit holds while the mod is on and is gone when it is removed. One field
+  decides what a save keeps: a map object type whose `state_mode` is 1 has FIELD seed the saved
+  `stage_object_persistent_state` of each such object from its `primary_param` on the floor's first visit (below). A map
+  object's `battle_stat_deltas` has the columns of a skill's `combat_stat_deltas` up to `agility`; a card's
+  `visual_asset_id` is a movie, the animation FIELD plays when the card is dealt.
 - **Saved fields are refused:** `item.inventory_count`, `item.growth_exp`, `item.growth_level`,
   `item.costume_enhancement_grid` and `item.costume_gem_sockets`. They lie below the saved prefix, so a load would
   bring the saved value back over the edit.

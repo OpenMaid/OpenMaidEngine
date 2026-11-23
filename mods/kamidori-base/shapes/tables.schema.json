@@ -3,6 +3,9 @@
   "description": "DO NOT EDIT -- generated from vm-map/globals-kamidori.toml and engine/Ome.Engine/Profiles/kamidori.json by tools/base_mod_build.py --build. The shape of kamidori.tables, the kind kamidori-base accepts (data patches spec §7): a file's record tables by name, each record by its id in decimal, each field by name, and each scope's tables by its id and their short names. A field the save holds, a scoped table's own name, a table the format does not edit and a named column's number take no value, and say why. The base mod still checks, at a file's first delivery, what a shape cannot say: text the save's code page cannot encode, one cell named twice through an old name, and a part at an event this install does not raise.",
   "type": "object",
   "properties": {
+    "card": {
+      "$ref": "#/definitions/records.card"
+    },
     "character_profile": {
       "$ref": "#/definitions/records.character_profile"
     },
@@ -16,11 +19,17 @@
     "dig_table": {
       "$ref": "#/definitions/records.dig_table"
     },
+    "element": {
+      "$ref": "#/definitions/records.element"
+    },
     "glossary_entry": {
       "$ref": "#/definitions/records.glossary_entry"
     },
     "item": {
       "$ref": "#/definitions/records.item"
+    },
+    "object_type": {
+      "$ref": "#/definitions/records.object_type"
     },
     "objective": {
       "$ref": "#/definitions/records.objective"
@@ -52,6 +61,9 @@
       "description": "stage_reward is reached through its scope: write stage.<id>.reward",
       "type": "null"
     },
+    "terrain": {
+      "$ref": "#/definitions/records.terrain"
+    },
     "unit": {
       "$ref": "#/definitions/records.unit"
     },
@@ -61,6 +73,241 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "record.card": {
+      "description": "card: one record's fields, by name; write card.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "awarded_item_id": {
+          "description": "card.awarded_item_id: card_definition_awarded_item_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "condition_levels": {
+          "description": "card.condition_levels: card_definition_condition_levels, a row of 30 columns by number, 0 to 29; write condition_levels.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 29
+          },
+          "additionalProperties": {
+            "description": "card.condition_levels.<column>: a column of card_definition_condition_levels, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "forbidden_story_flag_ids": {
+          "description": "card.forbidden_story_flag_ids: card_definition_forbidden_story_flag_ids, a row of 3 columns by number, 0 to 2; write forbidden_story_flag_ids.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 2
+          },
+          "additionalProperties": {
+            "description": "card.forbidden_story_flag_ids.<column>: a column of card_definition_forbidden_story_flag_ids, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "maximum_money": {
+          "description": "card.maximum_money: card_definition_maximum_money, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "maximum_resource_damage": {
+          "description": "card.maximum_resource_damage: card_definition_maximum_resource_damage, a row of 3 columns by name; write maximum_resource_damage.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write hp",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write sp",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write fs",
+              "type": "null"
+            },
+            "fs": {
+              "description": "card.maximum_resource_damage.fs: column 2 of card_definition_maximum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "hp": {
+              "description": "card.maximum_resource_damage.hp: column 0 of card_definition_maximum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "sp": {
+              "description": "card.maximum_resource_damage.sp: column 1 of card_definition_maximum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "maximum_resource_recovery": {
+          "description": "card.maximum_resource_recovery: card_definition_maximum_resource_recovery, a row of 3 columns by name; write maximum_resource_recovery.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write hp",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write sp",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write fs",
+              "type": "null"
+            },
+            "fs": {
+              "description": "card.maximum_resource_recovery.fs: column 2 of card_definition_maximum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "hp": {
+              "description": "card.maximum_resource_recovery.hp: column 0 of card_definition_maximum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "sp": {
+              "description": "card.maximum_resource_recovery.sp: column 1 of card_definition_maximum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "minimum_money": {
+          "description": "card.minimum_money: card_definition_minimum_money, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "minimum_resource_damage": {
+          "description": "card.minimum_resource_damage: card_definition_minimum_resource_damage, a row of 3 columns by name; write minimum_resource_damage.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write hp",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write sp",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write fs",
+              "type": "null"
+            },
+            "fs": {
+              "description": "card.minimum_resource_damage.fs: column 2 of card_definition_minimum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "hp": {
+              "description": "card.minimum_resource_damage.hp: column 0 of card_definition_minimum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "sp": {
+              "description": "card.minimum_resource_damage.sp: column 1 of card_definition_minimum_resource_damage, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "minimum_resource_recovery": {
+          "description": "card.minimum_resource_recovery: card_definition_minimum_resource_recovery, a row of 3 columns by name; write minimum_resource_recovery.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write hp",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write sp",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write fs",
+              "type": "null"
+            },
+            "fs": {
+              "description": "card.minimum_resource_recovery.fs: column 2 of card_definition_minimum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "hp": {
+              "description": "card.minimum_resource_recovery.hp: column 0 of card_definition_minimum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "sp": {
+              "description": "card.minimum_resource_recovery.sp: column 1 of card_definition_minimum_resource_recovery, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "name": {
+          "description": "card.name: card_definition_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "required_story_flag_ids": {
+          "description": "card.required_story_flag_ids: card_definition_required_story_flag_ids, a row of 3 columns by number, 0 to 2; write required_story_flag_ids.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 2
+          },
+          "additionalProperties": {
+            "description": "card.required_story_flag_ids.<column>: a column of card_definition_required_story_flag_ids, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "result_message": {
+          "description": "card.result_message: card_definition_result_messages, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "type_id": {
+          "description": "card.type_id: card_definition_type_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "visual_asset_id": {
+          "description": "card.visual_asset_id: card_definition_visual_asset_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        }
+      },
+      "additionalProperties": false
+    },
     "record.character_profile": {
       "description": "character_profile: one record's fields, by name; write character_profile.<id>.<field> = ...",
       "type": "object",
@@ -954,6 +1201,17 @@
             "minimum": -2147483648,
             "maximum": 4294967295
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "record.element": {
+      "description": "element: one record's fields, by name; write element.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "element.name: element_names, text the save's code page (932) can encode",
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -2371,6 +2629,249 @@
         },
         "usability_flag": {
           "description": "item.usability_flag: item_usability_flags, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        }
+      },
+      "additionalProperties": false
+    },
+    "record.object_type": {
+      "description": "object_type: one record's fields, by name; write object_type.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "action_command_id": {
+          "description": "object_type.action_command_id: object_type_action_command_id, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "allowed_unit_ids": {
+          "description": "object_type.allowed_unit_ids: object_type_allowed_unit_ids, a row of 3 columns by number, 0 to 2; write allowed_unit_ids.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 2
+          },
+          "additionalProperties": {
+            "description": "object_type.allowed_unit_ids.<column>: a column of object_type_allowed_unit_ids, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "animation_frames": {
+          "description": "object_type.animation_frames: object_type_animation_frame_counts, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "available_glow_mode": {
+          "description": "object_type.available_glow_mode: object_type_available_glow_mode, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "battle_stat_deltas": {
+          "description": "object_type.battle_stat_deltas: object_type_battle_stat_deltas, a row of 7 columns by name; write battle_stat_deltas.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write accuracy",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write evasion",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write physical_attack",
+              "type": "null"
+            },
+            "3": {
+              "description": "column 3 is named: write physical_defense",
+              "type": "null"
+            },
+            "4": {
+              "description": "column 4 is named: write magic_attack",
+              "type": "null"
+            },
+            "5": {
+              "description": "column 5 is named: write magic_defense",
+              "type": "null"
+            },
+            "6": {
+              "description": "column 6 is named: write agility",
+              "type": "null"
+            },
+            "accuracy": {
+              "description": "object_type.battle_stat_deltas.accuracy: column 0 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "agility": {
+              "description": "object_type.battle_stat_deltas.agility: column 6 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "evasion": {
+              "description": "object_type.battle_stat_deltas.evasion: column 1 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "magic_attack": {
+              "description": "object_type.battle_stat_deltas.magic_attack: column 4 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "magic_defense": {
+              "description": "object_type.battle_stat_deltas.magic_defense: column 5 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "physical_attack": {
+              "description": "object_type.battle_stat_deltas.physical_attack: column 2 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "physical_defense": {
+              "description": "object_type.battle_stat_deltas.physical_defense: column 3 of object_type_battle_stat_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "description": {
+          "description": "object_type.description: object_type_descriptions, a row of 2 columns by number, 0 to 1; write description.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 1
+          },
+          "additionalProperties": {
+            "description": "object_type.description.<column>: a column of object_type_descriptions, text the save's code page (932) can encode",
+            "type": "string"
+          }
+        },
+        "immunity_skill_ids": {
+          "description": "object_type.immunity_skill_ids: object_type_immunity_skill_ids, a row of 3 columns by number, 0 to 2; write immunity_skill_ids.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 2
+          },
+          "additionalProperties": {
+            "description": "object_type.immunity_skill_ids.<column>: a column of object_type_immunity_skill_ids, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "interaction_class": {
+          "description": "object_type.interaction_class: object_type_interaction_class, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "name": {
+          "description": "object_type.name: object_type_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "player_only": {
+          "description": "object_type.player_only: object_type_player_only, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "required_skill_id": {
+          "description": "object_type.required_skill_id: object_type_required_skill_id, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "required_story_flag": {
+          "description": "object_type.required_story_flag: object_type_required_story_flag, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "sprite_asset_id": {
+          "description": "object_type.sprite_asset_id: object_type_sprite_asset_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "sprite_height": {
+          "description": "object_type.sprite_height: object_type_sprite_heights, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "sprite_width": {
+          "description": "object_type.sprite_width: object_type_sprite_widths, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "state_mode": {
+          "description": "object_type.state_mode: object_type_state_mode, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "turn_resource_deltas": {
+          "description": "object_type.turn_resource_deltas: object_type_turn_resource_deltas, a row of 3 columns by name; write turn_resource_deltas.<column> = ...",
+          "type": "object",
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write hp",
+              "type": "null"
+            },
+            "1": {
+              "description": "column 1 is named: write sp",
+              "type": "null"
+            },
+            "2": {
+              "description": "column 2 is named: write fs",
+              "type": "null"
+            },
+            "fs": {
+              "description": "object_type.turn_resource_deltas.fs: column 2 of object_type_turn_resource_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "hp": {
+              "description": "object_type.turn_resource_deltas.hp: column 0 of object_type_turn_resource_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "sp": {
+              "description": "object_type.turn_resource_deltas.sp: column 1 of object_type_turn_resource_deltas, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
+          },
+          "additionalProperties": false
+        },
+        "use_count_resets_on_entry": {
+          "description": "object_type.use_count_resets_on_entry: object_type_use_count_resets_on_entry, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "use_limit": {
+          "description": "object_type.use_limit: object_type_use_limit, a whole number",
           "type": "integer",
           "minimum": -2147483648,
           "maximum": 4294967295
@@ -4342,6 +4843,61 @@
       },
       "additionalProperties": false
     },
+    "record.terrain": {
+      "description": "terrain: one record's fields, by name; write terrain.<id>.<field> = ...",
+      "type": "object",
+      "properties": {
+        "element_id": {
+          "description": "terrain.element_id: terrain_element_ids, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "move_cost": {
+          "description": "terrain.move_cost: terrain_move_costs, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "name": {
+          "description": "terrain.name: terrain_type_names, text the save's code page (932) can encode",
+          "type": "string"
+        },
+        "required_skill_ids": {
+          "description": "terrain.required_skill_ids: terrain_required_skill_ids, a row of 2 columns by number, 0 to 1; write required_skill_ids.<number> = ...",
+          "type": "object",
+          "x-ome-decimal-keys": {
+            "minimum": 0,
+            "maximum": 1
+          },
+          "additionalProperties": {
+            "description": "terrain.required_skill_ids.<column>: a column of terrain_required_skill_ids, a whole number",
+            "type": "integer",
+            "minimum": -2147483648,
+            "maximum": 4294967295
+          }
+        },
+        "room_join_flag": {
+          "description": "terrain.room_join_flag: terrain_room_join_flags, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "texture_slot": {
+          "description": "terrain.texture_slot: terrain_texture_slot_indices, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        },
+        "visibility_class": {
+          "description": "terrain.visibility_class: terrain_visibility_classes, a whole number",
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 4294967295
+        }
+      },
+      "additionalProperties": false
+    },
     "record.unit": {
       "description": "unit: one record's fields, by name; write unit.<id>.<field> = ...",
       "type": "object",
@@ -5981,6 +6537,17 @@
       },
       "additionalProperties": false
     },
+    "records.card": {
+      "description": "card: records by id, 0 to 99; write card.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 99
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.card"
+      }
+    },
     "records.character_profile": {
       "description": "character_profile: records by id, 0 to 199; write character_profile.<id>.<field> = ...",
       "type": "object",
@@ -6014,6 +6581,17 @@
         "$ref": "#/definitions/record.dig_table"
       }
     },
+    "records.element": {
+      "description": "element: records by id, 0 to 7; write element.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 7
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.element"
+      }
+    },
     "records.glossary_entry": {
       "description": "glossary_entry: records by id, 0 to 999; write glossary_entry.<id>.<field> = ...",
       "type": "object",
@@ -6034,6 +6612,17 @@
       },
       "additionalProperties": {
         "$ref": "#/definitions/record.item"
+      }
+    },
+    "records.object_type": {
+      "description": "object_type: records by id, 0 to 99; write object_type.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 99
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.object_type"
       }
     },
     "records.objective": {
@@ -6122,6 +6711,17 @@
       },
       "additionalProperties": {
         "$ref": "#/definitions/record.stage_reward"
+      }
+    },
+    "records.terrain": {
+      "description": "terrain: records by id, 0 to 39; write terrain.<id>.<field> = ...",
+      "type": "object",
+      "x-ome-decimal-keys": {
+        "minimum": 0,
+        "maximum": 39
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/record.terrain"
       }
     },
     "records.unit": {

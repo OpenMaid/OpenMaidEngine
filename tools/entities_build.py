@@ -50,7 +50,7 @@ STEP = "step"
 EVERY = "*"
 
 EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts", "explicit_pictures"}
-KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "title", "text", "fields", "filters", "pictures",
+KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "key_range", "title", "text", "fields", "filters", "pictures",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
              "joins", "marks"}
 # A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
@@ -336,6 +336,12 @@ def check_seed_cell(game: Game, name, index, value, where: str, errors: list[str
                           f"whole number below {size}")
 
 
+def is_key_range(value) -> bool:
+    """A `key_range`, a kind's or a loader's: [first, last], whole numbers with 0 <= first <= last."""
+    return (isinstance(value, list) and len(value) == 2
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in value) and 0 <= value[0] <= value[1])
+
+
 def check_skip(game: Game, table: dict, skip, where: str, errors: list[str]) -> None:
     if skip is None:
         return
@@ -514,6 +520,15 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             errors.append(f"{where}: title {title} must be a string field or a reference")
         published(title, "title", field)
     check_skip(game, table, kind.get("skip"), where, errors)
+    # The records the kind publishes, when not all of them: a table whose record 0 is a name the game gives to none
+    # (Kamidori's element 0, 無属, which a reference cannot reach, since a value of 0 is none).
+    key_range = kind.get("key_range")
+    if key_range is not None:
+        if not is_key_range(key_range):
+            errors.append(f"{where}: key_range must be [first, last], whole numbers with 0 <= first <= last")
+        elif key_range[1] >= table["records"]:
+            errors.append(f"{where}: key_range ends at {key_range[1]}, past table {table.get('name')}'s "
+                          f"{table['records']} records")
 
     text = kind.get("text", [])
     fields = kind.get("fields", [])
@@ -995,9 +1010,7 @@ def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind
     if key_table is not None:
         check_skip(game, key_table, loader.get("skip"), where, errors)
     key_range = loader.get("key_range")
-    if key_range is not None and not (isinstance(key_range, list) and len(key_range) == 2
-                                      and all(isinstance(v, int) and not isinstance(v, bool) for v in key_range)
-                                      and 0 <= key_range[0] <= key_range[1]):
+    if key_range is not None and not is_key_range(key_range):
         errors.append(f"{where}: key_range must be [first, last], whole numbers with 0 <= first <= last")
         key_range = None
     steps = loader.get("steps")
@@ -1281,7 +1294,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "text_scripts": export.get("text_scripts", []),
                    "explicit_pictures": export.get("explicit_pictures", [])},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
-                   "skip": k.get("skip", {}), "title": k.get("title"), "text": k.get("text", []),
+                   "skip": k.get("skip", {}), "key_range": k.get("key_range"), "title": k.get("title"), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
                    "descriptions": k.get("description", []),
                    "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels"),

@@ -366,6 +366,19 @@ public class GameDataExportTests
         Assert.Equal("$1$ITINIT.BIN", spear.Cells.Single(cell => cell.Field == "category").Writer);
     }
 
+
+    [Fact]
+    public void AKeyRangePublishesOnlyItsRecords()
+    {
+        // Item 1 exists but is outside the range, as Kamidori's element 0, 無属, is: a record no reference reaches.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["key_range"] = new JsonArray(2, 3);
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+
+        Assert.Empty(result.Report.Refusals);
+        Assert.Equal([2, 3], result.Kinds[0].Entities.Select(entity => entity.Id));
+        Assert.Equal([1], result.Kinds[1].Entities.Select(entity => entity.Id));
+    }
     [Fact]
     public void ADescriptionKeepsWhatItsScriptShowsLineByLine()
     {

@@ -99,6 +99,10 @@ public sealed record KindDeclaration(
 {
     public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
 
+    /// <summary>The records the kind publishes, first to last, or null for all of them (export plan §5): Kamidori's
+    /// element 0, 無属, is a name the game gives to none, which no reference can reach.</summary>
+    public (int First, int Last)? KeyRange { get; init; }
+
     /// <summary>The references a title falls back on, in order, when <see cref="Title"/>, a reference too, names no
     /// record (export plan §5): an Arterial recipe makes an item or a card, and is named by the one it makes.</summary>
     public IReadOnlyList<string> TitleFallbacks { get; init; } = [];
@@ -195,6 +199,9 @@ public sealed record KindDeclaration(
                 ? about.GetString()
                 : null,
             Joins = ExportDeclarations.Strings(kind, "joins"),
+            KeyRange = kind.TryGetProperty("key_range", out JsonElement range) && range.ValueKind == JsonValueKind.Array
+                ? (range[0].GetInt32(), range[1].GetInt32())
+                : null,
             Marks = kind.TryGetProperty("marks", out JsonElement marks)
                 ? marks.EnumerateArray().Select(mark => (mark.GetProperty("field").GetString()!,
                     mark.GetProperty("word").GetString()!)).ToList()

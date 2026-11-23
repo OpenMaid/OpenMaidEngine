@@ -84,7 +84,7 @@ ITINIT item records keyed by item id, with the per-item inventory and growth sta
 | category | item_category | `0x2dd428` | `int[2000]` | |
 | min_range | item_min_range | `0x2ddbf8` | `int[2000]` | |
 | max_range | item_max_range | `0x2de3c8` | `int[2000]` | |
-| attack_element | item_attack_element | `0x2deb98` | `int[2000]` | |
+| attack_element | item_attack_element | `0x2deb98` | `int[2000]` | `element` |
 | costume_battle_variant | item_costume_battle_variant | `0x2df368` | `int[2000]` | |
 | affinity_level_deltas | item_affinity_level_deltas | `0x2dfb38` | `int[2000][8]` | |
 | character_whitelist | item_character_whitelist | `0x2e39b8` | `int[2000][5]` | `unit` |
@@ -145,7 +145,7 @@ SKINIT skill records keyed by skill id.
 | area_target_mode | skill_area_target_mode | `0x3a4778` | `int[1000]` | |
 | area_shape_id | skill_area_shape_id | `0x3a4b60` | `int[1000]` | |
 | area_cooldown_turns | skill_area_cooldown_turns | `0x3a4f48` | `int[1000]` | |
-| attack_element_encoded | skill_attack_element_encoded | `0x3a5330` | `int[1000]` | |
+| attack_element_encoded | skill_attack_element_encoded | `0x3a5330` | `int[1000]` | `element` (value − 1) |
 | condition_levels | skill_condition_levels | `0x3a5718` | `int[1000][30]` | |
 | combat_stat_deltas | skill_combat_stat_deltas | `0x3acc48` | `int[1000][10]` | |
 | critical_rate_bonus | skill_critical_rate_bonus | `0x3af358` | `int[1000]` | |
@@ -413,6 +413,83 @@ VIINIT's glossary keyed by entry id, which INFO8 lists; 163 are written. An entr
 | sort_key | vocabulary_sort_keys | `0x3d20df` | `int[1000]` |
 | unlock_scenes | vocabulary_unlock_scene_ids | `0x3d24c7` | `int[1000][3]` |
 | message_script_id | vocabulary_message_script_ids | `0x3d3c37` | `int[1000]` |
+
+### element[8]
+
+Built by: `boot`.
+
+The elements, keyed by element id: INIT2 writes the eight names (INIT2@0xdb-0xfe), 0 無属 the non-elemental and 1 物理 to 7 暗黒. An item's attack element and resistance changes, a skill's attack element (less one) and a terrain's element are element ids; so are the columns of a unit's resistance grades, which every unit has for every element.
+
+| field | global | address | type |
+|---|---|---|---|
+| name | element_names | `GS 0x6212` | `string[8]` |
+
+### terrain[40]
+
+Built by: `boot`.
+
+LAINIT terrain keyed by terrain id, 1 to 39 named in pairs of a visible and an unexplored variant; $3$LAINIT adds 神殿 and 砂塵地帯 (docs/kamidori-data-tables.md, Terrain). A floor's tiles are terrain ids (MPINIT). Kamidori's terrain changes no battle stat: a unit gains on it from an element's terrain skill (CALCSUPPORT@0x34).
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | terrain_type_names | `GS 0x289b` | `string[40]` | |
+| texture_slot | terrain_texture_slot_indices | `0x2a3511` | `int[40]` | |
+| room_join_flag | terrain_room_join_flags | `0x2a3539` | `int[40]` | |
+| visibility_class | terrain_visibility_classes | `0x2a3561` | `int[40]` | |
+| element_id | terrain_element_ids | `0x2a3589` | `int[40]` | `element` |
+| move_cost | terrain_move_costs | `0x2a35b1` | `int[40]` | |
+| required_skill_ids | terrain_required_skill_ids | `0x2a35d9` | `int[40][2]` | `skill` |
+
+### object_type[100]
+
+Built by: `boot`.
+
+OBINIT map object types keyed by type id, 1 to 72 named, and the appends' (docs/kamidori-data-tables.md, Map objects). A stage places them in its object slots (stage_object's type_id); CHECKOBJ tests who may use one, SETOBJ and DRAWOBJ draw it, and FIELD applies what it does.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | object_type_names | `GS 0x28c3` | `string[100]` | |
+| description | object_type_descriptions | `GS 0x2927` | `string[100][2]` | |
+| sprite_asset_id | object_type_sprite_asset_ids | `0x2a363e` | `int[100]` | pictures |
+| sprite_width | object_type_sprite_widths | `0x2a36a2` | `int[100]` | |
+| sprite_height | object_type_sprite_heights | `0x2a3706` | `int[100]` | |
+| animation_frames | object_type_animation_frame_counts | `0x2a376a` | `int[100]` | |
+| state_mode | object_type_state_mode | `0x2a37ce` | `int[100]` | |
+| available_glow_mode | object_type_available_glow_mode | `0x2a3832` | `int[100]` | |
+| interaction_class | object_type_interaction_class | `0x2a3896` | `int[100]` | |
+| use_limit | object_type_use_limit | `0x2a38fa` | `int[100]` | |
+| use_count_resets_on_entry | object_type_use_count_resets_on_entry | `0x2a395e` | `int[100]` | |
+| player_only | object_type_player_only | `0x2a3a26` | `int[100]` | |
+| required_story_flag | object_type_required_story_flag | `0x2a39c2` | `int[100]` | |
+| allowed_unit_ids | object_type_allowed_unit_ids | `0x2a3a8a` | `int[100][3]` | `unit` |
+| required_skill_id | object_type_required_skill_id | `0x2a3bb6` | `int[100]` | `skill` |
+| immunity_skill_ids | object_type_immunity_skill_ids | `0x2a3c1a` | `int[100][3]` | `skill` |
+| battle_stat_deltas | object_type_battle_stat_deltas | `0x2a3d46` | `int[100][7]` | |
+| turn_resource_deltas | object_type_turn_resource_deltas | `0x2a4002` | `int[100][3]` | |
+| action_command_id | object_type_action_command_id | `0x2a412e` | `int[100]` | |
+
+### card[100]
+
+Built by: `boot`.
+
+CDINIT2 dungeon field cards keyed by card id, 85 written by it and its appends (docs/kamidori-data-tables.md, Glossary, galleries, cards). A floor's card list (CDINIT, chosen by the stage) names the cards it may deal; FIELD draws one by weight and applies all of its effects (FIELD@0x8308-0x8890).
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| name | card_definition_names | `GS 0x29ef` | `string[100]` | |
+| result_message | card_definition_result_messages | `GS 0x2a53` | `string[100]` | |
+| type_id | card_definition_type_ids | `0x2a64bc` | `int[100]` | |
+| visual_asset_id | card_definition_visual_asset_ids | `0x2a7970` | `int[100]` | |
+| awarded_item_id | card_definition_awarded_item_ids | `0x2a6778` | `int[100]` | `item` |
+| minimum_money | card_definition_minimum_money | `0x2a6840` | `int[100]` | |
+| maximum_money | card_definition_maximum_money | `0x2a68a4` | `int[100]` | |
+| minimum_resource_recovery | card_definition_minimum_resource_recovery | `0x2a6908` | `int[100][3]` | |
+| maximum_resource_recovery | card_definition_maximum_resource_recovery | `0x2a6a34` | `int[100][3]` | |
+| minimum_resource_damage | card_definition_minimum_resource_damage | `0x2a6b60` | `int[100][3]` | |
+| maximum_resource_damage | card_definition_maximum_resource_damage | `0x2a6c8c` | `int[100][3]` | |
+| condition_levels | card_definition_condition_levels | `0x2a6db8` | `int[100][30]` | |
+| required_story_flag_ids | card_definition_required_story_flag_ids | `0x2a6520` | `int[100][3]` | |
+| forbidden_story_flag_ids | card_definition_forbidden_story_flag_ids | `0x2a664c` | `int[100][3]` | |
 
 ### Scope stage
 
@@ -690,7 +767,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2a2d9f` | map_neighbor_dy | high | investigation | INIT2@0x1df inline array, paired with map_neighbor_dx by SETROOM, MVSEEK and DRAWMAP. |
 | `0x2a3511` | terrain_texture_slot_indices | high | investigation | DRAWMAP@0x304 picks stage_map_texture_asset_overrides[slot] (0x140432) and draws surface 0x52+slot (DRAWMAP@0x37e); DRAWMAP@0x3ea/0x45c draws a seam where neighbouring tiles of the same room use different slots. |
 | `0x2a3539` | terrain_room_join_flags | high | investigation | SETROOM@0x3b8 only enqueues a neighbour across an edge whose terrain has the flag; DRAWMAP@0xae0/0xd28 draws a door marker on edges between two tiles whose terrain lacks it; DRAWMINIMAP@0x987 likewise. |
-| `0x2a3561` | terrain_visibility_classes | high | investigation | DRAWMAP@0x2d1 skips class 0 tiles; FIELD@0x79c reveals class-1 tiles on entry (all nonzero classes at 100%); MVSEEK@0x49e rejects class 0 and only lets class 3 be crossed if revealed or the unit has skill 4 (探索) (MVSEEK@0x4b4); DRAWMAP@0xb01 hides class-3 doors until revealed and @0xf5a gives class 1/2 fog a frontier tint; CALCOCC@0x400 counts nonzero classes as the occupation denominator; SETLAND@0x91 reveals dug class-1 cells. |
+| `0x2a3561` | terrain_visibility_classes | high | investigation | DRAWMAP@0x2d1 skips class 0 tiles; FIELD@0x79c reveals class-1 tiles on entry (all nonzero classes at 100%); MVSEEK@0x49e rejects class 0 and only lets class 3 be crossed if revealed or the unit has skill 4 (探索) (MVSEEK@0x4b4); DRAWMAP@0xb01 hides class-3 doors until revealed and @0xf5a gives class 1/2 fog a frontier tint; CALCOCC@0x400 counts nonzero classes as the occupation denominator; SETLAND@0x91 reveals dug class-1 cells. Values: 1 Known, 2 Unexplored, 3 Hidden. |
 | `0x2a3589` | terrain_element_ids | high | investigation | STATUS@0x1f9c draws the element icon and @0x1ff2 its name; CALCSUPPORT@0x34 grants a terrain bonus when the element is >= 2 and the unit has skill 0x30 or skill 0x28+element; DRAWMINIMAP@0x225 colours the minimap by element in overlay mode bit2. |
 | `0x2a35b1` | terrain_move_costs | high | investigation | MVSEEK@0x41a uses it as the step cost (forced to 1 when the mover has skill 1 飛行 or 3 転移 in 0x548c8; tripled for player units under an unexplained mode test); STATUS@0x2092 prints it ('-' when zero); FELLOW reads it too. |
 | `0x2a35d9` | terrain_required_skill_ids | high | investigation | MVSEEK@0x51b..0x579 lets a unit enter the tile only if its skill matrix 0x548c8[unit][skill] holds one of the two ids; STATUS@0x2009 prints the skill names (0x5998) joined by '／'. |
@@ -702,14 +779,14 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2a37ce` | object_type_state_mode | high | investigation | DRAWOBJ@0xb9 (mode 1 sprite row), SETOBJ@0x1b0/0x1d4 and FIELD@0x7581/0x75a5 (bit2 handling), FIELD@0x829 seeds persistent state for mode 1. |
 | `0x2a3832` | object_type_available_glow_mode | low | investigation | DRAWOBJ@0x1cd applies it via gfx-draw-color when runtime bit2 is set on a revealed tile. |
 | `0x2a3896` | object_type_interaction_class | low | investigation | FIELD@0x751b: bit 2 together with mode flag 0x428a&4 suppresses automatic interaction. |
-| `0x2a38fa` | object_type_use_limit | high | investigation | CHECKOBJ@0x11 and SETOBJ@0x176 block / deactivate the object once stage_object_use_counts reaches it; FIELD@0x7565. |
-| `0x2a395e` | object_type_use_count_resets_on_entry | high | investigation | FIELD@0x5a2: on a fresh map entry the object's use counter 0x37305 is reset to 0. |
+| `0x2a38fa` | object_type_use_limit | high | investigation | CHECKOBJ@0x11 and SETOBJ@0x176 block / deactivate the object once stage_object_use_counts reaches it; FIELD@0x7565. 0 means none. |
+| `0x2a395e` | object_type_use_count_resets_on_entry | high | investigation | FIELD@0x5a2: on a fresh map entry the object's use counter 0x37305 is reset to 0. Values: 1 Yes. |
 | `0x2a39c2` | object_type_required_story_flag | high | investigation | CHECKOBJ@0x3f blocks use unless 0x50d[flag-1]==1; FIELD@0x80ae shows the requirement. |
-| `0x2a3a26` | object_type_player_only | high | investigation | CHECKOBJ@0x85 blocks units whose faction 0x60cae != 1. |
+| `0x2a3a26` | object_type_player_only | high | investigation | CHECKOBJ@0x85 blocks units whose faction 0x60cae != 1. Values: 1 Yes. |
 | `0x2a3a8a` | object_type_allowed_unit_ids | high | investigation | CHECKOBJ@0xa8: when column 0 is set the acting unit's base id 0x53bb2 must match one column. |
 | `0x2a3bb6` | object_type_required_skill_id | high | investigation | CHECKOBJ@0x110 blocks unless 0x548c8[unit][skill] is nonzero; FIELD@0x808b shows it. |
 | `0x2a3c1a` | object_type_immunity_skill_ids | high | investigation | CHECKOBJ@0x143: a unit owning any listed skill is not affected by the hazard object. |
-| `0x2a3d46` | object_type_battle_stat_deltas | med | investigation | CALCBTPARAM@0x6c9..0x770 adds cols 1, 2, 6, 0 to the combatant's battle channels 0xf29cc/0xf29ce/0xf29d0/0xf29d2 when standing on the object (col 1 also subtracts from the opponent's 0xf29d2); STATUS shows them. Columns: 0=hit, 1=evasion, 2=unknown_battle_2, 3=display_3, 4=display_4, 5=display_5, 6=agility. |
+| `0x2a3d46` | object_type_battle_stat_deltas | high | investigation | CALCBTPARAM@0x6c9..0x770 reads them as it reads a skill's (CALCBTPARAM@0x512..0x5d5): column 4 or 2 (the attacker's skill magic, category 6 or 10, or not: CALCBTPARAM@0x22a..0x25c) is added to attack, column 5 or 3 (the defender's skill, @0x261..0x2af) to defense, column 6 to agility and column 0 to hit, and column 1 is taken off the opponent's hit; STATUS shows them on the object's panel. Columns 2 to 5 were read as display-only until 2026-11-23, when locals 1 and 2 were found to hold the attack and defense columns. Columns: 0=accuracy, 1=evasion, 2=physical_attack, 3=physical_defense, 4=magic_attack, 5=magic_defense, 6=agility. |
 | `0x2a4002` | object_type_turn_resource_deltas | high | investigation | FIELD@0x96aa applies each column per turn (positive deltas require persistent state == unit faction); FIELD@0x8221, STATUS@0x1f21 display. Descriptions 'ターン毎HP-2', 'ターン毎SP-3', 'ターン毎FS-5' fix the columns. Columns: 0=hp, 1=sp, 2=fs. |
 | `0x2a412e` | object_type_action_command_id | med | investigation | FIELD@0x3a54 marks a tile as having an object command when it equals the selected command 0x4fdca; FELLOW@0xb25. |
 | `0x2a4193` | dungeon_hall_textures | high | investigation | SETHALLTEX@0x88 loads up to 10 distinct hall textures for the halls placed on the current floor. |
@@ -719,18 +796,18 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2a5133` | dungeon_hall_grid_y | high | investigation | SETROOM@0x245. |
 | `0x2a551b` | dungeon_hall_required_flags | high | investigation | SETROOM@0x189. Columns: 0=flag_0, 1=flag_1. |
 | `0x2a5ceb` | dungeon_hall_forbidden_flags | high | investigation | SETROOM@0x1ec. Columns: 0=flag_0, 1=flag_1. |
-| `0x2a64bc` | card_definition_type_ids | med | investigation | FIELD@0x86ae gives type 6 (転送のカード) a dedicated branch (FIELD@0x86c3 sets 0x2a2d97 and calls preloaded script slot 0x1f with the leader position); other types act purely through their populated effect arrays. |
+| `0x2a64bc` | card_definition_type_ids | high | investigation | FIELD@0x86ae gives type 6 (転送のカード) a dedicated branch (FIELD@0x86c3 sets 0x2a2d97 and calls preloaded script slot 0x1f with the leader position); other types act purely through their populated effect arrays. Each type's cards fill only its effects: type 2's 68 cards an item, 3's three money, 4's recovery, 5's seven damage or conditions (CDINIT2 and the appends' CDINIT2, 2026-11-23). The three 精気のカード are type 4 with no effect and are in no CDINIT list. Values: 2 Item, 3 Money, 4 Recovery, 5 Trap, 6 Warp. |
 | `0x2a6520` | card_definition_required_story_flag_ids | high | investigation | FIELD@0x8a5d eligibility: all nonzero flags must be set. |
 | `0x2a664c` | card_definition_forbidden_story_flag_ids | high | investigation | FIELD@0x8ab7 eligibility: rejected if any nonzero flag is set. |
 | `0x2a6778` | card_definition_awarded_item_ids | high | investigation | FIELD@0x85a8 awards one through ADDITEM. |
-| `0x2a6840` | card_definition_minimum_money | high | investigation | FIELD@0x85ca rolls min + rand(max-min) (when max > min) and adds it to player_money. |
-| `0x2a68a4` | card_definition_maximum_money | high | investigation | FIELD@0x85e4 upper bound of the money roll. |
+| `0x2a6840` | card_definition_minimum_money | high | investigation | FIELD@0x85ca rolls min + rand(max-min) (when max > min) and adds it to player_money. 0 means none. |
+| `0x2a68a4` | card_definition_maximum_money | high | investigation | FIELD@0x85e4 upper bound of the money roll. 0 means none. |
 | `0x2a6908` | card_definition_minimum_resource_recovery | high | investigation | FIELD@0x842c adds min + rand(max-min) per column to the party recovery accumulator. Columns: 0=hp, 1=sp, 2=fs. |
 | `0x2a6a34` | card_definition_maximum_resource_recovery | high | investigation | FIELD@0x845e. Columns: 0=hp, 1=sp, 2=fs. |
 | `0x2a6b60` | card_definition_minimum_resource_damage | high | investigation | FIELD@0x84cb subtracts min + rand(max-min) per column. Columns: 0=hp, 1=sp, 2=fs. |
 | `0x2a6c8c` | card_definition_maximum_resource_damage | high | investigation | FIELD@0x84fd. Columns: 0=hp, 1=sp, 2=fs. |
-| `0x2a6db8` | card_definition_condition_levels | high | investigation | FIELD@0x867c calls ADDILL (0x3b2238 = column, 0x3b2239 = value) for every nonzero cell; cards 16/17/18 apply conditions 8/9/10 at level 1. |
-| `0x2a7970` | card_definition_visual_asset_ids | med | investigation | FIELD@0x8570 passes it to the card presentation routines (FIELD label_bcb9 / label_bbf8, chosen by whether any HP/SP/FS delta was rolled). |
+| `0x2a6db8` | card_definition_condition_levels | high | investigation | FIELD@0x867c calls ADDILL (0x3b2238 = column, 0x3b2239 = value) for every nonzero cell; cards 16/17/18 apply conditions 8/9/10 at level 1. Column k is record k of `condition`. |
+| `0x2a7970` | card_definition_visual_asset_ids | high | investigation | FIELD@0x8570 passes it to the card presentation routines (FIELD label_bcb9 / label_bbf8, chosen by whether any HP/SP/FS delta was rolled), which play it with play-movie-to-surface (FIELD@0xbc91); the asset index resolves each id to an MPG (2026-11-23). |
 | `0x2a79d5` | card_generation_weight_schedules | high | investigation | FIELD@0x832c weight = base + (turn 0x429b / interval) * growth for each eligible candidate; weighted random pick. Columns: 0=base_weight, 1=growth_interval_turns, 2=growth_weight. |
 | `0x2a7b01` | card_generation_card_ids | high | investigation | FIELD@0x8308 candidate list filled by CDINIT per current_card_generation_list_id. |
 | `0x2a7b66` | dig_table_roll_thresholds | high | investigation | DIG@0x12f: a pre-rolled 0..99 value from 0x4f9dc row 0 is compared slot by slot; the first enabled slot with roll < threshold awards its item (0x3c9cd1[item]++), then REWARD.BIN runs. |
@@ -789,7 +866,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2de3c8` | item_max_range | high | investigation | Paired with item_min_range. CALCREVISE@0x003c8 copies it to the unit max range (0x637d8), and CALCSCOPE@0x00058 uses it as the upper distance bound. A value of 3 matches descriptions reading 射程3. |
 | `0x2deb98` | item_attack_element | high | investigation | Populated for 323 weapons and innate attacks. Every value agrees with the element word in item_short_descriptions. CALCBTPARAM@0x001ae falls back to it for the attack element (0xf29d8) when the skill has no element. BTRTN@0x0010b feeds it into the affinity lookup, and the RTN_M05x/M071/SELBOMB scripts read it the same way. Names: `element_names`, element 0 naming 0. |
 | `0x2df368` | item_costume_battle_variant | low | investigation | When equipment slot 2 is empty, CALCREVISE@0x001d4 copies the character's default-costume value into unit 0x53d10. BTL@0x0443a uses 0x53d10 to pick a per-costume battle movie (play-movie-to-surface). The meaning of each value is unconfirmed. |
-| `0x2dfb38` | item_affinity_level_deltas | high | investigation | CALCARM@0x00000 copies the row into work 0x2a9b71. CALCREVISE@0x002f9 adds each equipped item's row to the unit affinity levels 0x53d42[8], then clamps them to 0..11. INFO3@0x017a4 shows GStr[0x621a+5+delta] (affinity_level_names). Orb items 286..292 prove the columns, e.g. 地脈の宝珠 writes column 2 = +1 and 万能の宝珠 writes columns 1..5. Column 0 is never written. Columns: 0=unused, 1=physical, 2=earth, 3=ice, 4=fire, 5=lightning, 6=holy, 7=dark. Column names: `element_names`, element 0 naming column 0. Names: `affinity_level_names`, element 0 naming -5. |
+| `0x2dfb38` | item_affinity_level_deltas | high | investigation | CALCARM@0x00000 copies the row into work 0x2a9b71. CALCREVISE@0x002f9 adds each equipped item's row to the unit affinity levels 0x53d42[8], then clamps them to 0..11. INFO3@0x017a4 shows GStr[0x621a+5+delta] (affinity_level_names). Orb items 286..292 prove the columns, e.g. 地脈の宝珠 writes column 2 = +1 and 万能の宝珠 writes columns 1..5. Column 0 is never written. Columns: 0=unused, 1=physical, 2=earth, 3=ice, 4=fire, 5=lightning, 6=holy, 7=dark. Column k is record k of `element`. Names: `affinity_level_names`, element 0 naming -5. |
 | `0x2e39b8` | item_character_whitelist | high | investigation | SETARMSTATE@0x000a7/0x000e2: if column 0 is set, the item is usable only when one of the 5 columns equals the current character id (0x2d2845). Costume 101 lists Will (1), 111 lists Yuela (2), and the twin nutrient drinks 572..575 list characters 14 and 20. |
 | `0x2e60c8` | item_species_restriction_mask | med | investigation | SETARMSTATE@0x0010f: when nonzero, the item is unusable unless the bit for the character's species (0x2b5edc) is set. No authored item writes it. |
 | `0x2e6898` | item_sex_restriction_mask | med | investigation | SETARMSTATE@0x0014c: the item is unusable unless the mask bit selected by the character's 0x2b62c4 value is set (same pattern as Himegari item_sex_restriction_mask). Costumes carry it: Will's costumes 2, female characters' costumes 4. Bits: bit k stands for `unit_sex` value k. |

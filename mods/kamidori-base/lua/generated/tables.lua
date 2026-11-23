@@ -8,6 +8,26 @@
 return {
     format = 1,
     tables = {
+        card = {
+            records = 100,
+            built_by = "boot",
+            fields = {
+                awarded_item_id = { global = "card_definition_awarded_item_ids", kind = "integer" },
+                condition_levels = { global = "card_definition_condition_levels", kind = "integer", width = 30 },
+                forbidden_story_flag_ids = { global = "card_definition_forbidden_story_flag_ids", kind = "integer", width = 3 },
+                maximum_money = { global = "card_definition_maximum_money", kind = "integer" },
+                maximum_resource_damage = { global = "card_definition_maximum_resource_damage", kind = "integer", width = 3, columns = { hp = 0, sp = 1, fs = 2 } },
+                maximum_resource_recovery = { global = "card_definition_maximum_resource_recovery", kind = "integer", width = 3, columns = { hp = 0, sp = 1, fs = 2 } },
+                minimum_money = { global = "card_definition_minimum_money", kind = "integer" },
+                minimum_resource_damage = { global = "card_definition_minimum_resource_damage", kind = "integer", width = 3, columns = { hp = 0, sp = 1, fs = 2 } },
+                minimum_resource_recovery = { global = "card_definition_minimum_resource_recovery", kind = "integer", width = 3, columns = { hp = 0, sp = 1, fs = 2 } },
+                name = { global = "card_definition_names", kind = "string" },
+                required_story_flag_ids = { global = "card_definition_required_story_flag_ids", kind = "integer", width = 3 },
+                result_message = { global = "card_definition_result_messages", kind = "string" },
+                type_id = { global = "card_definition_type_ids", kind = "integer" },
+                visual_asset_id = { global = "card_definition_visual_asset_ids", kind = "integer" },
+            },
+        },
         character_profile = {
             records = 200,
             built_by = "boot",
@@ -64,6 +84,13 @@ return {
                 item_ids = { global = "dig_table_item_ids", kind = "integer", width = 10 },
                 required_story_flags = { global = "dig_table_required_story_flags", kind = "integer", width = 10 },
                 roll_thresholds = { global = "dig_table_roll_thresholds", kind = "integer", width = 10 },
+            },
+        },
+        element = {
+            records = 8,
+            built_by = "boot",
+            fields = {
+                name = { global = "element_names", kind = "string" },
             },
         },
         glossary_entry = {
@@ -133,6 +160,31 @@ return {
                 species_restriction_mask = { global = "item_species_restriction_mask", kind = "integer" },
                 stat_modifiers = { global = "item_stat_modifiers", kind = "integer", width = 14, columns = { accuracy = 0, evasion = 1, physical_attack = 2, physical_defense = 3, magic_attack = 4, magic_defense = 5, agility = 6, luck = 7, movement = 8, customer_service = 9, max_hp = 10, max_sp = 11, max_fs = 12, skill_capacity = 13 } },
                 usability_flag = { global = "item_usability_flags", kind = "integer" },
+            },
+        },
+        object_type = {
+            records = 100,
+            built_by = "boot",
+            fields = {
+                action_command_id = { global = "object_type_action_command_id", kind = "integer" },
+                allowed_unit_ids = { global = "object_type_allowed_unit_ids", kind = "integer", width = 3 },
+                animation_frames = { global = "object_type_animation_frame_counts", kind = "integer" },
+                available_glow_mode = { global = "object_type_available_glow_mode", kind = "integer" },
+                battle_stat_deltas = { global = "object_type_battle_stat_deltas", kind = "integer", width = 7, columns = { accuracy = 0, evasion = 1, physical_attack = 2, physical_defense = 3, magic_attack = 4, magic_defense = 5, agility = 6 } },
+                description = { global = "object_type_descriptions", kind = "string", width = 2 },
+                immunity_skill_ids = { global = "object_type_immunity_skill_ids", kind = "integer", width = 3 },
+                interaction_class = { global = "object_type_interaction_class", kind = "integer" },
+                name = { global = "object_type_names", kind = "string" },
+                player_only = { global = "object_type_player_only", kind = "integer" },
+                required_skill_id = { global = "object_type_required_skill_id", kind = "integer" },
+                required_story_flag = { global = "object_type_required_story_flag", kind = "integer" },
+                sprite_asset_id = { global = "object_type_sprite_asset_ids", kind = "integer" },
+                sprite_height = { global = "object_type_sprite_heights", kind = "integer" },
+                sprite_width = { global = "object_type_sprite_widths", kind = "integer" },
+                state_mode = { global = "object_type_state_mode", kind = "integer" },
+                turn_resource_deltas = { global = "object_type_turn_resource_deltas", kind = "integer", width = 3, columns = { hp = 0, sp = 1, fs = 2 } },
+                use_count_resets_on_entry = { global = "object_type_use_count_resets_on_entry", kind = "integer" },
+                use_limit = { global = "object_type_use_limit", kind = "integer" },
             },
         },
         objective = {
@@ -304,6 +356,19 @@ return {
             built_by = "stage",
             fields = {
                 condition_text = { global = "stage_reward_condition_texts", kind = "string" },
+            },
+        },
+        terrain = {
+            records = 40,
+            built_by = "boot",
+            fields = {
+                element_id = { global = "terrain_element_ids", kind = "integer" },
+                move_cost = { global = "terrain_move_costs", kind = "integer" },
+                name = { global = "terrain_type_names", kind = "string" },
+                required_skill_ids = { global = "terrain_required_skill_ids", kind = "integer", width = 2 },
+                room_join_flag = { global = "terrain_room_join_flags", kind = "integer" },
+                texture_slot = { global = "terrain_texture_slot_indices", kind = "integer" },
+                visibility_class = { global = "terrain_visibility_classes", kind = "integer" },
             },
         },
         unit = {

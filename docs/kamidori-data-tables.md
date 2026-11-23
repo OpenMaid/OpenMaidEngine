@@ -966,12 +966,22 @@ generic extractor misreads as extra records. Fields:
 
 | field | address |
 |---|---|
-| sprite | `0x2a363e` |
+| sprite; width, height, frames | `0x2a363e`; `0x2a36a2`, `0x2a3706`, `0x2a376a` |
 | state mode | `0x2a37ce` |
 | command | `0x2a412e` |
-| battle deltas | `0x2a3d46[×7]` |
-| size, frames, use limit, key flag | not yet located |
-| required skill (32 = 開錠) | not yet located |
+| use limit (0 = none); uses start again on entry | `0x2a38fa`; `0x2a395e` |
+| story flag CHECKOBJ@`0x3f` needs: 9001 + a key item's id on the 銅, 銀 and 金 doors (9002 to 9004 for items 1 to 3), a story flag on 封鎖された扉 and 飛行結界 | `0x2a39c2` |
+| player's units only; only these units (any of three) | `0x2a3a26`; `0x2a3a8a[×3]` |
+| required skill (32 = 開錠; 飛行結界's 1 = 飛行, the units it stops) | `0x2a3bb6` |
+| skills that spare a unit (any of three) | `0x2a3c1a[×3]` |
+| battle deltas, a skill's first seven combat stats | `0x2a3d46[×7]` |
+| HP, SP and FS each turn | `0x2a4002[×3]` |
+
+CHECKOBJ tests the use limit and the story flag, then, unless bit `0x400` of `0x428a` is set, the faction, the units and
+the required skill, and refuses the unit at the first that fails. The battle deltas are the columns of
+`skill_combat_stat_deltas`' first seven: CALCBTPARAM@`0x6c9`..`0x770` adds column 4 or 2 to attack as the attacker's
+skill is magic or not, 5 or 3 to defense by the defender's, 6 to agility and 0 to hit, and takes column 1 off the
+opponent's hit, as it does a skill's at `0x512`. 拠点 alone has any: accuracy and evasion 5, both defenses 1.
 
 Per-stage object state: owner `0x43655`, use count `0x37305`.
 
@@ -1183,6 +1193,10 @@ the thumbnail `0x136719[20×50]`. EUINIT supplies the page tabs (`0xfec4e`).
 | 5 | trap | 7 |
 | 6 | teleport | 1 |
 
+Each card fills only its type's effects (CDINIT2 and the appends' CDINIT2, checked 2026-11-23), and FIELD applies all of
+a card's effects, branching on its type only for the teleport. The three 精気 cards (ids 4 to 6) are type 4 with no
+recovery and no animation, and no CDINIT list deals them, nor card 61, a 素材のカード.
+
 CDINIT is the weighted generation list: selector `0x2a79d4`, weights `0x2a79d5`/3, card ids `0x2a7b01`.
 
 **EVINIT** is not a data table. It is a set of 215 event-CG substitution rules:
@@ -1214,6 +1228,5 @@ Open questions:
 
 - What is `0xfd492`? It suspends quest evaluation.
 - What do the individual FIELD SCJUMP contexts mean?
-- What does the 精気 card do?
 - Who writes `0xfec3a`?
 - Why do six SCINIT context tags disagree with SCJUMP?

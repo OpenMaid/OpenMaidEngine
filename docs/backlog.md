@@ -568,6 +568,25 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     AUTORUN writes rows past them too, `$1$AUTORUN@0x79` to `0xa1`).
   - **Read at medium confidence, so not shown:** `magic_action_target_modes` (how FIELD's selection bits 9 to 11
     choose targets) and `object_type_interaction_class`.
+- **Kamidori's field tables.** Elements, terrain, map objects and cards are published (2026-11-23; export plan §5). What
+  is open:
+  - **A card's floors.** A stage chooses the card list its card points deal from (`current_card_generation_list_id`
+    from `0x14050e[stage]`), CDINIT's 55 lists, which deal 81 of the 85 cards. As for Himegari's card objects
+    (above), done when a card's page says which stages deal it, and with what weight.
+  - **Where a map object stands.** `stage_object.type_id` refers to the dig tables (`bases`), as Himegari's refers to
+    the chests' items, so a map object's page cannot list the stages that place it. Done when it does, or the stage
+    maps show the objects.
+  - **The doors' keys.** `object_type_required_story_flag` is 9001 plus a key item's id on the 銅, 銀 and 金 doors
+    (ADDITEM sets flag 9000 plus the id, CHECKOBJ@`0x3f` tests flag − 1) and a story flag on 封鎖された扉 and 飛行結界,
+    so it is not published; the doors' descriptions name the key. Done when a door's page links its key, or the field
+    is shown as a flag where it is one.
+  - **Unnamed cells.** The element kind made INIT2 a builder, and the export reports 98 integer cells it writes that
+    the registry does not name: resource ids at `0x3d40e0` to `0x3d42a0` and `0xfd43b` to `0xfd443`, the inline
+    arrays at `0x2a2da4`, `0x2a2db5`, `0x2a2dc3`, `0x13ec57`, `0x13ec5b`, `0x13ec5f` and `0x3c9be9`
+    (`INIT2@0x1e4` to `0x207`), and `0xfd410` (1).
+  - **Read at medium or low confidence, so not shown:** `object_type_action_command_id`,
+    `object_type_available_glow_mode` and `object_type_interaction_class`. A card's `visual_asset_id` is its
+    animation, a movie FIELD plays when it is dealt, which the site cannot show yet.
 
 ## Platform and project
 

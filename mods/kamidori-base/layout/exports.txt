@@ -647,12 +647,15 @@ world_area_visited_profile_flags
 world_map_scroll_x
 world_map_scroll_y
 world_map_zoom_mode
+table card
 table character_profile
 table class_change
 table condition
 table dig_table
+table element
 table glossary_entry
 table item
+table object_type
 table objective
 table quest
 table recipe
@@ -661,8 +664,23 @@ table stage_catalog
 table stage_enemy
 table stage_object
 table stage_reward
+table terrain
 table unit
 table world_area
+field card.awarded_item_id
+field card.condition_levels
+field card.forbidden_story_flag_ids
+field card.maximum_money
+field card.maximum_resource_damage
+field card.maximum_resource_recovery
+field card.minimum_money
+field card.minimum_resource_damage
+field card.minimum_resource_recovery
+field card.name
+field card.required_story_flag_ids
+field card.result_message
+field card.type_id
+field card.visual_asset_id
 field character_profile.biography_script_id
 field character_profile.epithet
 field character_profile.name
@@ -697,6 +715,7 @@ field dig_table.forbidden_story_flags
 field dig_table.item_ids
 field dig_table.required_story_flags
 field dig_table.roll_thresholds
+field element.name
 field glossary_entry.message_script_id
 field glossary_entry.name
 field glossary_entry.sort_key
@@ -754,6 +773,25 @@ field item.sort_key
 field item.species_restriction_mask
 field item.stat_modifiers
 field item.usability_flag
+field object_type.action_command_id
+field object_type.allowed_unit_ids
+field object_type.animation_frames
+field object_type.available_glow_mode
+field object_type.battle_stat_deltas
+field object_type.description
+field object_type.immunity_skill_ids
+field object_type.interaction_class
+field object_type.name
+field object_type.player_only
+field object_type.required_skill_id
+field object_type.required_story_flag
+field object_type.sprite_asset_id
+field object_type.sprite_height
+field object_type.sprite_width
+field object_type.state_mode
+field object_type.turn_resource_deltas
+field object_type.use_count_resets_on_entry
+field object_type.use_limit
 field objective.chapter_label
 field objective.complete_flags
 field objective.forbidden_flags
@@ -877,6 +915,13 @@ field stage_object.tile_y
 field stage_object.type_id
 field stage_object.use_story_flags_by_faction
 field stage_reward.condition_text
+field terrain.element_id
+field terrain.move_cost
+field terrain.name
+field terrain.required_skill_ids
+field terrain.room_join_flag
+field terrain.texture_slot
+field terrain.visibility_class
 field unit.auto_level_scale_divisor
 field unit.bestiary_description
 field unit.bestiary_knowledge_gain
