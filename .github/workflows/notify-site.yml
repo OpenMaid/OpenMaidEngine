@@ -1,0 +1,38 @@
+# Tells the project's website that a release is out. The site's deploy follows OME's latest release: it exports each
+# game with that release's exporter and builds with its reference bundle (the site's plan §15, in its repository), so
+# a release starts it with no other step. This runs once the release workflow has finished successfully for a tag. The
+# release workflow itself holds no secret (tools/test_release_workflow.py); this one holds the one token it needs.
+#
+# It needs the repository variable SITE_REPOSITORY (the site repository's owner/name) and the secret
+# SITE_DISPATCH_TOKEN, a token that may send that repository a dispatch event (a fine-grained token with Contents:
+# write on it, or a GitHub App's). Without the variable it does nothing.
+name: Notify the site
+
+on:
+  workflow_run:
+    workflows: ["Release builds"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    name: Start the site's deploy
+    if: >-
+      vars.SITE_REPOSITORY != '' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Send the site an ome-release event
+        # Context values reach the script as environment variables, never as text spliced into it.
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          SITE_REPOSITORY: ${{ vars.SITE_REPOSITORY }}
+          RELEASE_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          gh api --method POST "repos/$SITE_REPOSITORY/dispatches" \
+            -f event_type=ome-release -f "client_payload[tag]=$RELEASE_TAG"
+          echo "sent ome-release $RELEASE_TAG to $SITE_REPOSITORY"

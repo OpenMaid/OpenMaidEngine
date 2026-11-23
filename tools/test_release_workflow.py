@@ -327,7 +327,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         for workflow in workflows:
             text = workflow.read_text(encoding="utf-8")
             uses = re.findall(r"(?m)^\s*(?:- )?uses:\s*(\S+)(.*)$", text)
-            self.assertTrue(uses, workflow.name)
+            # A workflow that only runs commands (notify-site.yml) uses no action; every one that does pins it.
+            self.assertTrue(uses or re.search(r"(?m)^\s*run:", text), workflow.name)
             for action, comment in uses:
                 self.assertRegex(action, r"^[\w.-]+/[\w.-]+@[0-9a-f]{40}$", workflow.name)
                 self.assertRegex(comment, r"^ # v\d+\.\d+\.\d+$", f"{workflow.name}: {action}")

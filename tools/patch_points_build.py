@@ -6,6 +6,10 @@ Source: vm-map/patch-points-<game>.toml (hand-edited). Generates
   docs/patch-point-reference[-<game>].md    the human reference (Himegari's has no suffix)
 
   --build            validate, then write both outputs; exit nonzero on errors
+  --build --no-install
+                     validate the registry without the install, as --check-reference does, then write both outputs:
+                     for a checkout with no extracted scripts, such as the site's deploy, whose data export stops at
+                     each point it reads in the install's own catalog and fails when the boot ends elsewhere
   --check            validate only
   --check-reference  validate the registry without the install (names, fingerprints, sites), then exit nonzero if
                      the reference doc differs from what --build would write (a content-free validation gate)
@@ -184,9 +188,14 @@ def main(argv=None) -> int:
     parser.add_argument("--check", action="store_true", help="validate only")
     parser.add_argument("--check-reference", action="store_true",
                         help="without the install: validate the registry's form and fail if the reference doc is stale")
+    parser.add_argument("--no-install", action="store_true",
+                        help="with --build: validate the registry's form only, as --check-reference does, and write "
+                             "the outputs (a checkout with no extracted scripts)")
     args = parser.parse_args(argv)
     if sum((args.build, args.check, args.check_reference)) != 1:
         parser.error("choose one of --build, --check or --check-reference")
+    if args.no_install and not args.build:
+        parser.error("--no-install goes with --build")
     if not REGISTRY.exists():
         print(f"no registry at {REGISTRY}; nothing to do")
         return 0
@@ -194,9 +203,12 @@ def main(argv=None) -> int:
     if args.check_reference:
         return check_reference(load_registry(REGISTRY), source)
 
-    scripts = installed_scripts()
-    points, errors, warnings = validate(
-        load_registry(REGISTRY), lambda name: scripts[name].read_bytes() if name in scripts else None)
+    if args.no_install:
+        read_script = None
+    else:
+        scripts = installed_scripts()
+        read_script = lambda name: scripts[name].read_bytes() if name in scripts else None  # noqa: E731
+    points, errors, warnings = validate(load_registry(REGISTRY), read_script)
     for warning in warnings:
         print(f"warning: {warning}")
     for error in errors:
@@ -210,7 +222,7 @@ def main(argv=None) -> int:
                     "profile": PROFILE, "points": points}
         OUTPUT_JSON.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         REFERENCE_DOC.write_text(render_reference(points, source), encoding="utf-8", newline="\n")
-        print(f"wrote {OUTPUT_JSON.relative_to(paths.REPO)} and {REFERENCE_DOC.relative_to(paths.REPO)}")
+        print(f"wrote {_shown(OUTPUT_JSON)} and {_shown(REFERENCE_DOC)}")
     return 0
 
 

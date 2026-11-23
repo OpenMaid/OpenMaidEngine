@@ -1,4 +1,5 @@
 """Plain tests for patch_points_build.py: validation with synthesized scripts (no game content)."""
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -87,12 +88,46 @@ def test_reference_check_needs_no_install():
         check(build.check_reference([point(name="experience")], source, doc) == 1, "a malformed registry fails")
 
 
+def test_build_without_the_install():
+    # --build --no-install (the site's deploy, from a checkout with no extracted scripts): the registry's own form only,
+    # and both outputs written as --build writes them; the install is never read.
+    saved = (build.REGISTRY, build.OUTPUT_JSON, build.REFERENCE_DOC, build.installed_scripts, build.load_registry)
+
+    def no_install():
+        raise AssertionError("the install was read")
+
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        build.REGISTRY = root / "patch-points-himegari.toml"
+        build.REGISTRY.write_text("", encoding="utf-8")
+        build.OUTPUT_JSON = root / "build" / "patch-points.json"
+        build.REFERENCE_DOC = root / "patch-point-reference.md"
+        build.installed_scripts = no_install
+        try:
+            build.load_registry = lambda path: [point(script="MISSING.BIN")]
+            check(build.main(["--build", "--no-install"]) == 0, "--build --no-install needs no install")
+            written = json.loads(build.OUTPUT_JSON.read_text(encoding="utf-8"))
+            check(written["points"][0]["script"] == "MISSING.BIN", "--no-install writes the normalized points")
+            check(build.REFERENCE_DOC.is_file(), "--no-install writes the reference")
+            build.load_registry = lambda path: [point(name="experience")]
+            check(build.main(["--build", "--no-install"]) == 1, "--no-install still refuses a malformed registry")
+            try:
+                build.main(["--check", "--no-install"])
+                check(False, "--no-install without --build is refused")
+            except SystemExit as exit_:
+                check(exit_.code == 2, "--no-install without --build is refused")
+        finally:
+            (build.REGISTRY, build.OUTPUT_JSON, build.REFERENCE_DOC, build.installed_scripts,
+             build.load_registry) = saved
+
+
 def main():
     test_valid_point()
     test_rejections()
     test_other_revisions_are_a_warning()
     test_reference_lists_each_revision()
     test_reference_check_needs_no_install()
+    test_build_without_the_install()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0
 
