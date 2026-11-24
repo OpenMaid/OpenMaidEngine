@@ -216,11 +216,11 @@ Himegari's, and nothing of it is assumed here.
 
 Leader `G[0x297db9]`, capacity 1000. 107 characters: 81 in the base data, 4, 8 and 14 from appends 1, 3 and 4.
 A character is whoever can speak a page: the scene library sets `G[0x3140]` to the character of the page's
-face and reads these arrays for the name plate and the voice (`oms/arterial/adv.oms`).
+face and reads these arrays for the name plate and the voice (`mods/arterial-base/oms/adv.oms`).
 
 | array | cells per id | columns written | ids | values | holds |
 |---|---|---|---|---|---|
-| `G[0x297db9]` | 1 |  | 107 | 1..316, 91 distinct | the character whose voice the speaker uses (itself for 91 of the 107); the page's voice block finds the voice setting through it (`oms/arterial/adv.oms`) |
+| `G[0x297db9]` | 1 |  | 107 | 1..316, 91 distinct | the character whose voice the speaker uses (itself for 91 of the 107); the page's voice block finds the voice setting through it (`mods/arterial-base/oms/adv.oms`) |
 | `G[0x29eaa6]` | 1 |  | 108 | 10..9990, 107 distinct | a sort number: unique to each record, in steps of ten through the base data. The game's lists of these records are in its order (`sort_indices_by_key_sum`) |
 | `G[0x29ee8e]` | 1 |  | 107 | 1..3, 3 distinct 1×38, 2×43, 3×26 | 1, 2 or 3. The page's voice block plays a voice only where this is 2 |
 | `G[0x29f65e]` | 1 |  | 26 | 1..32, 26 distinct | the character's 奥義, a `COINIT` id (26 characters have one). The 奥義's numbers are read at the character's 奥義 level, `G[0x3c70 + character]` in a save |

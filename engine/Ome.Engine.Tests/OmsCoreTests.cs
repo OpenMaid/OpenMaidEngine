@@ -872,6 +872,55 @@ public class OmsCoreTests
     }
 
     [Fact]
+    public void OldNamesOfAGlobalATableAndAFieldStillCompile()
+    {
+        // Modding from a release spec §5.2: a base mod's oms/globals.json keeps the registry's old names, so a source
+        // written against them compiles as before; a lookup by cell, which the decompiler makes, gives the current name.
+        GameModule globals = GameModule.ParseGlobals("test", System.Text.Encoding.UTF8.GetBytes("""
+            {"cells": {
+                "G:0x10": {"name": "current_stage_id", "aliases": ["scjump_progress_a"], "type": "int", "address": "0x10"},
+                "G:0x100": {"name": "hero_levels", "aliases": ["hero_lvls"], "type": "int[10]", "address": "0x100"}
+             },
+             "tables": [
+                {"name": "hero", "aliases": ["heroes"], "records": 10, "fields": {"level": "hero_levels"},
+                 "field_aliases": {"lvl": "level"}}
+             ]}
+            """));
+        GameModule? Lookup(string name) => name == globals.Name ? globals : null;
+        IrScript Build(string body) => OmsCompiler.Compile(
+            Parser.ParseScript("script \"T.BIN\"\nuse test.globals\n" + body, "t.oms"), Abi, Table, null, Intrinsics, Lookup);
+
+        string current = Shape(Build("current_stage_id = 3\nhero_levels[2] = 4\nhero[5].level = 6\nexit\n"));
+        Assert.Equal(current, Shape(Build("scjump_progress_a = 3\nhero_lvls[2] = 4\nheroes[5].lvl = 6\nexit\n")));
+        Assert.Equal(Shape(Build("G[0x10] = 3\nG[0x102] = 4\nG[0x105] = 6\nexit\n")), current);
+        Assert.True(globals.TryGet(0x3, 0x10, out GlobalSymbol byCell));
+        Assert.Equal("current_stage_id", byCell.Name);
+        Assert.Equal(["current_stage_id", "hero_levels"], globals.Symbols.Select(symbol => symbol.Name).Order());
+        Assert.Equal(["hero_lvls", "scjump_progress_a"], globals.Aliases.Keys.Order());
+    }
+
+    [Theory]
+    [InlineData("himegari")]
+    [InlineData("kamidori")]
+    [InlineData("arterial")]
+    public void EveryNamedCellOfTheShippedGlobalsLoads(string profile)
+    {
+        // Spec §12, gate 1: base_mod_build.py writes each type in the form the loader reads (Kamidori's int[1000x100]
+        // and int[unit][30] included), so no named cell is skipped.
+        byte[] json = Ome.Mods.Linking.GameToolchain.Shipped(profile)!.Globals!;
+        using System.Text.Json.JsonDocument file = System.Text.Json.JsonDocument.Parse(json);
+        int named = file.RootElement.GetProperty("cells").EnumerateObject().Count();
+        GameModule globals = GameModule.ParseGlobals(profile, json);
+        Assert.Equal(named, globals.Symbols.Count);
+        // Every table but a one-record one, whose fields name a scalar or one row: table[i].field does not reach those
+        // (the Lua record map does, data patches spec §6.3).
+        Assert.Equal(file.RootElement.GetProperty("tables").EnumerateArray()
+                         .Select(table => table.GetProperty("name").GetString())
+                         .Where((_, k) => file.RootElement.GetProperty("tables")[k].GetProperty("records").GetInt32() > 1),
+                     globals.Tables.Select(table => table.Name));
+    }
+
+    [Fact]
     public void ScriptsRunByCatalogName()
     {
         IrScript compiled = Compile("""
@@ -1350,13 +1399,11 @@ public class OmsCoreTests
         Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
         var store = new Sys4AssetStore(catalog, gameRoot, gameRoot);
         string profile = abiId == "SYS4422" ? "himegari" : "kamidori";
-        Assert.True(File.Exists(Paths.GlobalsJson(profile)), $"run globals_build.py --build for {profile}");
-        List<GameModule> modules =
-        [
-            GameModule.LoadGlobals(profile, Paths.GlobalsJson(profile)),
-            GameModule.Scripts(profile, catalog.EnumerateScripts().Select(packed => (packed.Asset.Name, packed.PackedId))),
-        ];
-        if (level == OmsSourceRoundTrip.IdiomaticLevel) modules.AddRange(GameModule.LoadSources(Paths.OmsModules(profile), profile));
+        // The modules the linker compiles with (modding from a release spec §5.1); the source modules only at the
+        // idiomatic level.
+        List<GameModule> modules = Ome.Mods.Linking.GameToolchain.Modules(Ome.Mods.Linking.GameToolchain.Shipped(profile),
+                                                                          profile, catalog);
+        if (level != OmsSourceRoundTrip.IdiomaticLevel) modules.RemoveAll(module => module.Source != null);
         OmsSourceRoundTripReport report = OmsSourceRoundTrip.Run(
             catalog.EnumerateScripts().Select(packed =>
                 (packed.Asset.Name, packed.PackedId, (Func<byte[]>)(() => store.ReadAll(packed.Asset)))),

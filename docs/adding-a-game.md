@@ -278,8 +278,10 @@ This step is static and can start once P1 is reached.
 
 - **Scripts (M1).** Run the script toolchain's gates in order: `oms-roundtrip`, then `--level core` and
   `--fixed-point`, then `oms-rebuild` and `oms-rebuild --patch-probe`. A script that fails one is a fault of the
-  toolchain to fix, not of the game. Write the ADV module `oms/<id>/adv.oms` so the idiomatic round trip and
-  rebuild pass too: decompile every scene at core level, collect the units the scenes share (the header's
+  toolchain to fix, not of the game. Start the base mod here, since the game's toolchain lives in it (modding from
+  a release spec §5): `mods/<id>-base/manifest.toml` (`omp = 5`, `[game]` with `target = "extended"`, and
+  `[lua] capabilities = ["vm"]`), and run `base_mod_build.py --build`, which writes its `oms/globals.json` and
+  `layout/`. Write its ADV module `mods/<id>-base/oms/adv.oms` so the idiomatic round trip and rebuild pass too: decompile every scene at core level, collect the units the scenes share (the header's
   handlers, the library linked behind `exit` guards, as many copies of a body as one scene links), name them, and
   write the page template from the commonest page shapes. A speaker enum needs the name table, which may wait
   for step 9. Name patch points in `vm-map/patch-points-<id>.toml` where a point is understood; they may also
@@ -287,8 +289,8 @@ This step is static and can start once P1 is reached.
   example (`oms/examples/mods/example.<id>-…`) with a workspace test that links it and runs it to its page, and
   run it on native AGE too. Write `docs/modding/games/<id>.md`, add the launcher's art entry to the profile, and
   run `patch_points_build.py` if the game has points, then `modding_games_build.py --build`.
-- **Base mod (M3).** Survey the places the game's own appends hook (its handler chains). Write
-  `mods/<id>-base/`: the manifest, the events (boot data layered and ready, the stage events, the experience
+- **Base mod (M3).** Survey the places the game's own appends hook (its handler chains). Complete
+  `mods/<id>-base/`: the manifest's Lua parts, the events (boot data layered and ready, the stage events, the experience
   award, and what the survey found a use for), `lua/tables.lua` for the `<id>.tables` kind, and at least one
   helper over a wait-free game script. Run `base_mod_build.py --build`. Test that each event binds on every
   install the guide lists, and run an example mod in the port under the driver.
@@ -330,6 +332,6 @@ does not replace the sweep. What each method can settle:
 | Opcodes | `vm-map/opcodes.toml` (`profile_ids`, `[[observation]]`, `[[abi_layer]]`, evidence), `VirtualMachine.Handlers.cs` and the handlers, `tools/operand_access.py` `ENGINES` |
 | Driving and checks | `tools/drive/<id>.toml`, `tools/drive/scenarios/<id>-*.steps`, `tools/validate.py` (the game's test filter and terminal gate), the game's workspace tests |
 | Data | `vm-map/globals-<id>.toml`, `tools/init_<id>*.py`, `docs/<id>-data-tables.md`, `vm-map/scripts-<id>.toml`, `vm-map/entities-<id>.toml` |
-| Modding | `oms/<id>/adv.oms`, `vm-map/patch-points-<id>.toml`, `mods/<id>-base/`, `docs/modding/games/<id>.md`, examples |
-| Generated | `docs/global-reference-<id>.md`, `docs/patch-point-reference-<id>.md`, `docs/modding/games/README.md`, `docs/opcode-reference.md`, the base mod's `layout/`, record map and shape, `docs/script-index-<id>.json` |
+| Modding | `mods/<id>-base/` (its `oms/adv.oms` among it), `vm-map/patch-points-<id>.toml`, `docs/modding/games/<id>.md`, examples |
+| Generated | `docs/global-reference-<id>.md`, `docs/patch-point-reference-<id>.md`, `docs/modding/games/README.md`, `docs/opcode-reference.md`, the base mod's `layout/`, `oms/globals.json`, record map and shape, `docs/script-index-<id>.json` |
 | References | `engine-re.md`, `sys4-format-notes.md`, `PROJECT-STRUCTURE.md`, `tools-reference.md`, `AGENTS.md`'s map, `backlog.md`, the Ghidra project, the status memory and changelog |

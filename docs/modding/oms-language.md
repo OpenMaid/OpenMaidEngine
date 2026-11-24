@@ -37,7 +37,7 @@ with an operator. `;` also separates statements.
 - **`<game>.scripts`:** every catalog script by its file stem, for `run`. A stem that is not an identifier is
   quoted: `run RECOVER`, `run "$1$SC2600"`.
 - **`<game>.adv`:** the ADV prelude, which holds the scene library, the dialogue line template and the speaker
-  names. Its source is `oms/<game>/adv.oms`, and it is worth reading. A game without a prelude yet has no
+  names. Its source is the game's base mod's `oms/adv.oms` (`mods/<game>-base/oms/adv.oms`), and it is worth reading. A game without a prelude yet has no
   dialogue statements; its identity block says so.
 
 `<game>.adv` itself uses the other two. Most fragments that touch a scene start with:
@@ -194,7 +194,7 @@ The prelude marks one template `@dialogue`. The string binds to its `text` param
 named arguments to the parameters of the same name. A game's template can take more arguments, such as a nameplate
 form. Your game guide shows its template and real examples.
 
-**Speakers** are the names in the prelude's `enum speaker` (`oms/<game>/adv.oms`). They are the game's own
+**Speakers** are the names in the prelude's `enum speaker` (`mods/<game>-base/oms/adv.oms`). They are the game's own
 character names, which may not be English. Names that repeat, or that are not identifiers (such as `？？？？`), carry
 their id instead: `speaker_0x10`. Copy a speaker name from the decompiled scene you are editing, or look up the id
 in the enum. **Voice ids** come from the decompiled scene as well: a voiced line prints its

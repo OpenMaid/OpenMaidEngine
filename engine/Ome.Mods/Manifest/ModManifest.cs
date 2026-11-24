@@ -49,11 +49,15 @@ public sealed record ModKind(int Index, string Kind, string? Description, IReadO
 
 /// <summary>A parsed and validated <c>manifest.toml</c> (spec §3.3; format version 2 adds the localization spec's
 /// <c>[[language]]</c> tables, §9.2; version 3 adds the Lua scripting spec's <c>[lua]</c> and <c>[[hooks]]</c>,
-/// §6.2; version 4 adds the data patches spec's <c>[[data]]</c> and <c>[[accepts]]</c>, §5.1–§5.2).</summary>
+/// §6.2; version 4 adds the data patches spec's <c>[[data]]</c> and <c>[[accepts]]</c>, §5.1–§5.2; version 5 adds a base
+/// mod's <c>oms/</c>, the game's toolchain, modding from a release spec §5.2).</summary>
 public sealed record ModManifest
 {
-    /// <summary>The newest format version the reader takes; it also reads versions 1 to 3.</summary>
-    public const int CurrentOmpVersion = 4;
+    /// <summary>The newest format version the reader takes; it also reads versions 1 to 4.</summary>
+    public const int CurrentOmpVersion = 5;
+    /// <summary>The first format version in which a base mod carries the game's toolchain in <c>oms/</c> (modding from a
+    /// release spec §5.2).</summary>
+    public const int ToolchainOmpVersion = 5;
     /// <summary>The first format version with <c>[[data]]</c>, <c>[[accepts]]</c> and <c>data/</c> (data patches
     /// spec §5.1).</summary>
     public const int DataOmpVersion = 4;

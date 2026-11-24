@@ -20,6 +20,7 @@ An Open Maid Pack (OMP) is one mod. It comes in two forms that load identically:
 ├── lua/            Lua sources; init.lua is optional (format version 3; lua.md)
 ├── events/         game event declarations (NAME.toml), for a mod that declares events (format version 3; lua.md)
 ├── layout/         a game's base mod only: the names of its cells (format version 3)
+├── oms/            a game's base mod only: the game's OMS toolchain (format version 5)
 ├── data/           data files (NAME.toml, subfolders allowed), each named by a [[data]] entry (format version 4; data-files.md)
 ├── shapes/         for a mod that defines a kind: its shapes (NAME.json), each named by an [[accepts]] shape (format version 4)
 ├── README.md       optional
@@ -106,6 +107,8 @@ version 3 loader still reads versions 1 and 2. A package with Lua and an earlier
 version 4 loader still reads versions 1 to 3. In a package of an earlier version, a `data/` or `shapes/` folder is
 outside the layout: it is ignored and reported as a note. A package with data files targets `extended`, as one with
 Lua does.
+`omp = 5` adds a base mod's `oms/` folder (below); a version 5 loader still reads versions 1 to 4. A mod has no
+reason to change its version for it.
 
 ### Identity
 
@@ -256,12 +259,13 @@ stores. See [data-files.md](data-files.md).
 named by an `[[accepts]] shape`, at most 4 MiB each. A file that no kind names is an error, as in `data/`. See
 [data-files.md](data-files.md), "Shapes".
 
-### Base mods: `layout/`
+### Base mods: `layout/` and `oms/`
 
-The engine ships one base mod per game, `<game>-base`, which names the game's cells for Lua mods. Its
+The engine ships one base mod per game, `<game>-base`, which names the game's cells for Lua mods and carries the
+game's OMS toolchain. Its
 `layout/globals.json` gives each named global its bank, address and shape; `layout/points.json` copies the game's
 patch points, which the link uses when the game has none of its own; `layout/exports.txt` lists the names it
-exports, which stay exported until its major version is raised. Its `events/` declares the game's events, and its
+exports, its OMS modules' among them, which stay exported until its major version is raised. Its `events/` declares the game's events, and its
 `lua/init.lua` returns its helpers, with the game scripts they call under `[lua] calls`. Its `lua/tables.lua`
 applies the game's record tables, and `lua/generated/tables.lua` maps them to the cells. The layout and the map
 are written by the project's `tools/base_mod_build.py`; a mod has no reason to carry `layout/`, and a package that
@@ -269,6 +273,13 @@ does needs omp 3 or later, its own game's `[game]` and `[lua] capabilities = ["v
 requires the base mod (`[[requires]] id = "<game>-base"`). The engine mounts it only then, and uses an installed
 package of the same id instead when there is one. How a Lua mod reads and writes names through a base mod is in
 [lua.md](lua.md), "Game names".
+
+Its `oms/` folder (format version 5) is the game's OMS toolchain: `oms/adv.oms`, the module `<game>.adv`, and
+`oms/globals.json`, the module `<game>.globals`, which `tools/base_mod_build.py` writes from the same registry as
+the layout, with the old names of renamed globals, tables and fields. Fragments and new scripts compile against them
+and `layout/points.json`, always from the copy the engine ships, even when an installed package of the same id
+replaces the base mod in the stack; the link report then names both versions. In a package that is no base mod,
+`oms/` is outside the layout.
 
 The engine ships one library too, `ome-records`, which every base mod requires: the code that checks and writes
 record tables, with no game in it. It mounts with the base mod, as any requirement does, and loads before it.

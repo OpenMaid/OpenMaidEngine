@@ -506,21 +506,11 @@ require it.
 Each game guide lists its quirks and current limits, such as installs with several bases, missing patch points, or
 recipes not yet tested on that game ([games/README.md](games/README.md)).
 
-## Outside the repository
+## The game's toolchain does not build
 
-An exported port build cannot compile new scripts, or fragments without a stored plan, because the OMS modules and
-registries live in the repository ([cli.md](cli.md), "Outside the repository"). Build packages with `omp build` and
-ship the `.omp`.
-
-**"the OMS modules in … do not build: …; they use the generated …globals.json, which is missing".** The other way
-round: a program inside a repository checkout links with the checkout's OMS modules and generated registries. That
-covers the port, `omp`, and the launcher's Link check, even when the program was copied into the checkout. A fresh
-clone has the modules but not the files built from them under `build/`. Run
-`py -3.11 -X utf8 tools/globals_build.py --game <game> --build` as the message says, or run the program from
-outside the checkout. The port stops at startup with this message, `omp` prints it and exits 2, and the launcher
-shows it as a failed Link check.
-
-Without the game's shape map (`build/games/<game>/global-var-map.json`, which `tools/global_map.py` writes from the
-extracted game data), that build also rewrites the checked-in global reference with only the named globals. The
-`globals.json` the modules need is complete, so put the reference back (`git checkout docs/global-reference*.md`)
-instead of committing it.
+**"the OMS modules of <engine>/mods/<game>-base do not build against this install: …; a fragment or new script
+cannot compile until it does".** The game's toolchain ([cli.md](cli.md), "Where the toolchain comes from") compiles
+its ADV module against the install, and the module runs some of the game's own scripts. An install that lacks one of
+them, such as a trial or a damaged copy, cannot compile fragments or new scripts. Every other mod still links, and
+the launcher's Link check shows a warning that says what a compiling mod would meet. Check the install against the
+game's guide ([games/README.md](games/README.md)); a mod with stored plans that match still links on it.

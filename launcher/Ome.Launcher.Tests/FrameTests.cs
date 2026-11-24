@@ -29,7 +29,7 @@ public sealed class FrameTests : IDisposable
     /// on a worker, so a test that went on at once would race them (a lock taken, the home deleted).</summary>
     private async Task<MainViewModel> Open(string language = "en", ArtOptions? art = null)
     {
-        var model = new MainViewModel(_home.Session(language: language), art ?? new ArtOptions(Handler: new NoRequests()));
+        var model = Headless.Track(new MainViewModel(_home.Session(language: language), art ?? new ArtOptions(Handler: new NoRequests())));
         await model.Checking;
         return model;
     }

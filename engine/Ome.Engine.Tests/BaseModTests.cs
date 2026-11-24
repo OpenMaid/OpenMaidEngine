@@ -79,7 +79,10 @@ public sealed class BaseModTests : IDisposable
             // stage's stage.loaded (data patches spec §6.2), by the same handlers; Kamidori's stage part at its stage
             // list's preview too (plan §12.6). Arterial's scope is an area, whose part comes at area.loaded.
             string game = shipped.Manifest.Profile!;
-            Assert.Equal(ModManifest.DataOmpVersion, shipped.Manifest.OmpVersion);
+            // Modding from a release spec §5.1: each carries its game's toolchain, its generated globals and adv.oms.
+            Assert.Equal(ModManifest.ToolchainOmpVersion, shipped.Manifest.OmpVersion);
+            Assert.NotNull(shipped.Layout.Toolchain!.Globals);
+            Assert.Equal(["adv.oms"], shipped.Layout.Toolchain.Modules.Select(module => module.Name));
             ModKind kind = Assert.Single(shipped.Manifest.Accepts);
             Assert.Equal($"{game}.tables", kind.Kind);
             (string, string)[] at = game == "arterial"
@@ -139,7 +142,7 @@ public sealed class BaseModTests : IDisposable
         ModDiscovery with = ModLaunch.Discover(mods, [], report);
         ModPackage shipped = Assert.Single(with.Packages, package => package.Id == "himegari-base");
         Assert.Equal(ShippedPackages.LocationOf("himegari-base"), shipped.Location);
-        Assert.Contains(report.Lines, line => line.Message.Contains("the engine's own himegari-base 1.2.0 is mounted: needs-base requires it"));
+        Assert.Contains(report.Lines, line => line.Message.Contains("the engine's own himegari-base 1.3.0 is mounted: needs-base requires it"));
         // The resolver finds the requirement met, and the base mod loads before the mod that requires it.
         var order = new ModLinkReport();
         IReadOnlyList<ModPackage> resolved = StackResolver.Resolve(with.Packages, SyntheticBase(), with.UserOrder, order);
@@ -223,6 +226,86 @@ public sealed class BaseModTests : IDisposable
     public void ALayoutThatIsNotOneIsRefusedWhenThePackageOpens(string path, string text, string message)
     {
         string folder = Folder("b", Manifest("b"), new Dictionary<string, string> { [path] = text });
+        Assert.Contains(message, Assert.Throws<ModPackageException>(() => ModPackage.Open(folder)).Message);
+    }
+
+    // ------------------------------------------------------------------------------------------------ the toolchain
+
+    [Theory]
+    [InlineData("himegari")]
+    [InlineData("kamidori")]
+    [InlineData("arterial")]
+    public void TheExportsListNamesWhatTheShippedModulesDeclare(string game)
+    {
+        // Modding from a release spec §5.2: tools/base_mod_build.py reads a module's names by its layout, so the rename
+        // rule covers them; here the parser says what they are, as OmsCompiler.Use imports them.
+        var declared = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var (name, text) in GameToolchain.Shipped(game)!.Sources)
+        {
+            Ome.Script.Syntax.ScriptUnit unit = Ome.Script.Syntax.Parser.ParseScript(text, name);
+            foreach (Ome.Script.Syntax.Statement statement in unit.Body)
+            {
+                IEnumerable<string> names = statement switch
+                {
+                    Ome.Script.Syntax.ConstStatement constant => [constant.Name],
+                    Ome.Script.Syntax.EnumStatement enumeration =>
+                        [enumeration.Name, .. enumeration.Members.Select(member => member.Name)],
+                    Ome.Script.Syntax.TemplateStatement template => [template.Name],
+                    Ome.Script.Syntax.SubStatement sub =>
+                        [sub.Name, .. Ome.Script.Compile.TemplateExpander.DefinedLabels(sub.Body)],
+                    Ome.Script.Syntax.StorageDeclaration { Local: false } cell => [cell.Name],
+                    Ome.Script.Syntax.TableStatement table => [table.Name],
+                    _ => [],
+                };
+                foreach (string symbol in names) declared.Add($"module {unit.Name}.{symbol}");
+            }
+        }
+        string exports = Path.Combine(Paths.Repo, "mods", $"{game}-base", "layout", "exports.txt");
+        var listed = File.ReadLines(exports).Where(line => line.StartsWith("module ", StringComparison.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.NotEmpty(declared);
+        Assert.Equal(declared, listed.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void ABaseModCarriesItsGamesToolchainInOmsFromFormatVersionFive()
+    {
+        // Modding from a release spec §5.2: oms/globals.json and the modules, by file name.
+        string folder = Folder("b", Manifest("b").Replace("omp = 3", "omp = 5"), new Dictionary<string, string>
+        {
+            ["layout/globals.json"] = Layout,
+            ["oms/globals.json"] = "{}",
+            ["oms/zeta.oms"] = "module himegari.zeta\n",
+            ["oms/adv.oms"] = "module himegari.adv\n",
+        });
+        using ModPackage package = ModPackage.Open(folder);
+        ModToolchainFiles toolchain = package.Layout.Toolchain!;
+        Assert.Equal("oms/globals.json", toolchain.Globals!.Path);
+        Assert.Equal(["adv.oms", "zeta.oms"], toolchain.Modules.Select(module => module.Name));
+        Assert.Empty(package.Layout.Notes);
+    }
+
+    [Fact]
+    public void OmsIsOutsideTheLayoutOfAPackageThatIsNoBaseMod()
+    {
+        string folder = Folder("plain", Manifest("plain").Replace("omp = 3", "omp = 5"),
+                               new Dictionary<string, string> { ["oms/adv.oms"] = "module himegari.adv\n" });
+        using ModPackage package = ModPackage.Open(folder);
+        Assert.Null(package.Layout.Toolchain);
+        Assert.Equal(["'oms/adv.oms' is outside the package layout and is ignored"], package.Layout.Notes);
+    }
+
+    [Theory]
+    [InlineData("omp = 4", "oms/adv.oms", "oms/: a base mod's toolchain needs omp = 5")]
+    [InlineData("omp = 5", "oms/notes.txt", "'oms/notes.txt': oms/ holds globals.json, which tools/base_mod_build.py writes, and the game's *.oms modules, without subdirectories")]
+    [InlineData("omp = 5", "oms/more/adv.oms", "without subdirectories")]
+    public void AToolchainThatIsNotOneIsRefusedWhenThePackageOpens(string format, string path, string message)
+    {
+        string folder = Folder("b", Manifest("b").Replace("omp = 3", format), new Dictionary<string, string>
+        {
+            ["layout/globals.json"] = Layout,
+            [path] = "module himegari.adv\n",
+        });
         Assert.Contains(message, Assert.Throws<ModPackageException>(() => ModPackage.Open(folder)).Message);
     }
 

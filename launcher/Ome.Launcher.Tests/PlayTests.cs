@@ -29,8 +29,8 @@ public sealed class PlayTests : IDisposable
     private (MainViewModel Model, RecordingHost Host) Model(EngineProgram engine, WindowReason reason = WindowReason.Requested,
                                                    LaunchResult? launch = null)
     {
-        var model = new MainViewModel(_home.Session(reason, profile: launch == null ? null : _profile, launch: launch,
-                                                    engine: engine), new ArtOptions(Handler: new HttpClientHandler()));
+        var model = Headless.Track(new MainViewModel(_home.Session(reason, profile: launch == null ? null : _profile, launch: launch,
+                                                    engine: engine), new ArtOptions(Handler: new HttpClientHandler())));
         var host = new RecordingHost();
         model.Host = host;
         return (model, host);
@@ -222,9 +222,9 @@ public sealed class PlayTests : IDisposable
         LauncherSettings settings = LauncherSettingsStore.Load(_home.Home).Settings;
         ProfileEntry elsewhere = ProfileStore.Open(root, root, settings, () => MachineState.Load(_home.CheckOptions.MachineFolder!));
         Assert.True(elsewhere.NeedsReview);
-        using var review = new MainViewModel(_home.Session(WindowReason.Review, profile: elsewhere,
+        using var review = Headless.Track(new MainViewModel(_home.Session(WindowReason.Review, profile: elsewhere,
                                                            engine: TestHome.StubEngine()),
-                                             new ArtOptions(Handler: new HttpClientHandler()));
+                                             new ArtOptions(Handler: new HttpClientHandler())));
         await review.StartAsync();
         Assert.Equal(ProfileState.Review, review.Selected!.State);
         Assert.Equal(root, review.Selected.Entry.Root);

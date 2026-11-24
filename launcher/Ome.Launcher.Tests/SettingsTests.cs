@@ -28,7 +28,7 @@ public sealed class SettingsTests : IDisposable
 
     private async Task<(MainViewModel Model, RecordingHost Host)> Open((int, int)? usable = null)
     {
-        var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler()));
+        var model = Headless.Track(new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler())));
         var host = new RecordingHost { Usable = usable };
         model.Host = host;
         await model.StartAsync();

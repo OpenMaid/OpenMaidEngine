@@ -150,7 +150,7 @@ public sealed partial class DataPatchWorkspaceTests
         var catalog = Sys4AssetCatalog.Load(sys4Ini);
         var store = new Sys4AssetStore(catalog, gameRoot, looseRoots);
         ModLinkBase linkBase = ModLinkBase.ForInstall("kamidori", sys4Ini, catalog, store, KamidoriTable, Contracts,
-            Paths.GlobalsJson("kamidori"), Paths.OmsModules("kamidori"), Paths.PatchPointsJson("kamidori"));
+            Ome.Mods.Linking.GameToolchain.Shipped("kamidori"));
         return (linkBase, new Sys4ScriptProvider(KamidoriTable, catalog, store));
     }
 

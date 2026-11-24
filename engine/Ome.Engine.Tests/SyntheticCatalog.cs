@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ome.Engine.Sys4;
 
 /// <summary>
 /// A synthetic SYS4INI.BIN: the catalog header (revision and title, a game's identity), the file list of one archive,
@@ -16,10 +15,11 @@ internal static class SyntheticCatalog
         => Wrap(Expanded([], includeTrailer: true, fileNames), magic, title);
 
     /// <summary>The scripts a profile's OMS modules run (<c>run NAME</c>), as catalog names: a synthetic install
-    /// lists them so the modules' idioms build.</summary>
+    /// lists them so the modules' idioms build. The modules are the shipped base mod's (modding from a release spec
+    /// §5.1), as the linker reads them.</summary>
     public static string[] ScriptsTheModulesRun(string profile)
-        => Directory.EnumerateFiles(Paths.OmsModules(profile), "*.oms", SearchOption.AllDirectories)
-            .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"\brun ([A-Z][A-Z0-9_]*)\b"))
+        => (Ome.Mods.Linking.GameToolchain.Shipped(profile)?.Sources ?? [])
+            .SelectMany(source => Regex.Matches(source.Text, @"\brun ([A-Z][A-Z0-9_]*)\b"))
             .Select(match => match.Groups[1].Value + ".BIN").Distinct().Order(StringComparer.Ordinal).ToArray();
 
     /// <summary>A catalog with <paramref name="fileNames"/> and the startup settings <paramref name="pairs"/>.</summary>

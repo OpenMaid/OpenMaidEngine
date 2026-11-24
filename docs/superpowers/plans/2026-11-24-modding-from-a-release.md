@@ -4,8 +4,8 @@
 **Spec:** `docs/superpowers/specs/2026-11-24-modding-from-a-release-design.md` (cited as "spec §n"). The spec stays the
 design's home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what
 changed since the spec was accepted (§4).
-**Status:** milestone 0 measured (2026-11-24, §2); milestone 1 next (§3.1). §3 gets each later milestone's section
-before it starts.
+**Status:** milestone 0 measured (2026-11-24, §2); milestone 1 built (2026-11-24, §3.1), its gates passed (§2.4);
+milestone 2 next. §3 gets each later milestone's section before it starts.
 **Branch:** `feature/modding-from-release`, off `develop` at `e6b92761`. Its first commits are the spec (`ba5dbd18`,
 `13d0fd53`, `b45e6c0b`).
 
@@ -101,6 +101,16 @@ are game data. After M1 the same script runs again, and the two must be equal.
   translated install's `SC0000.BIN` (`sha256:54d6bc4d…`), and the snapshot gives the clean one (`sha256:e8db06e1…`).
   After M1 it must be refused the same way.
 
+**After M1** (2026-11-24), the same script again:
+- **Himegari and Arterial** decompile identically: 969 and 1,176 files, none changed.
+- **Kamidori** changes in 1,007 of its 1,286 files, as M1 means it to (§4). Every changed line is one of three kinds:
+  - 168,635 name one of the 44 cells the loader once skipped, where the decompiler printed a raw cell before;
+  - 21 are a `use kamidori.globals` line, in scripts that name a global now and named none before;
+  - 486 are sidecar fingerprints of the changed source.
+- **The example builds** are byte-identical, all 25. The 26th is refused with the same message.
+- **The idiomatic rebuild** (`oms-rebuild --level idiomatic`) passes for each game: 297, 279 and 271 scenes
+  equivalent, none divergent.
+
 ## 3. Later milestones
 
 ### 3.1 Milestone 1: the toolchain in the base mods
@@ -145,6 +155,15 @@ are game data. After M1 the same script runs again, and the two must be equal.
   follows. `modding_games_build.py` lists the base mod's modules.
 - The package smoke's `write_smoke_home` lists the scripts the base mods' modules run.
 
+**The module's names** (spec §5.2 leaves them to this plan):
+- `base_mod_build.py` adds them to `layout/exports.txt`, last, as `module MODULE.NAME`. They are what
+  `OmsCompiler.Use` imports from a module: its constants, enums and their members, templates, cells, tables, and
+  subs with their labels. Himegari's module has 312, Kamidori's 178 and Arterial's 126.
+- It reads them by the module's layout: a declaration starts at column 0, and a `}` at column 0 closes its block.
+  `BaseModTests.TheExportsListNamesWhatTheShippedModulesDeclare` checks the list against the parser for each game.
+- A module's names have no old-name form. Renaming or removing one needs the base mod's major version raised, and
+  `--check` refuses it otherwise. A sub can stay as one that calls its new name.
+
 **Docs:**
 - `docs/modding/cli.md`'s and `troubleshooting.md`'s "Outside the repository" entries;
 - `docs/adding-a-game.md`;
@@ -154,7 +173,15 @@ are game data. After M1 the same script runs again, and the two must be equal.
 - the backlog: "Toolchain packaging for exported ports" is deleted;
 - `AGENTS.md`'s generated-files rows and trigger lines.
 
-**Gates:** 1, 3 (§2.4's snapshot again) and 4, then core validation.
+**Gates:** 1, 3 (§2.4's snapshot again) and 4, then core validation. All passed on 2026-11-24.
+
+**Surfaced on the way:** the second core run failed one launcher test, `AdvancedTests.TheEnginesOptionsAreWrittenToTheProfileFile`,
+in its teardown: `TestHome.Dispose` could not delete the test home's `SYS4INI.BIN`, "being used by another process".
+The data patches plan saw the same in another window test on 2026-11-18 (its §12). The test's UI job ended while
+the page's last write was still running its check, which reads the install. Settling in `TestHome.Dispose` was too
+late: the job's end leaves what it queued on the UI thread unrun, so a write that waited for its turn never ended.
+`MainViewModel.SettleAsync` now waits for the model's background work (its first checks, the page's check run, its
+writes, the gate), and each `Headless.Run` job settles the models built in it (`Headless.Track`) before it ends.
 
 ## 4. What changed since the spec
 
@@ -165,3 +192,17 @@ are game data. After M1 the same script runs again, and the two must be equal.
 - **Ctrl+C in `start`** (spec §8) closes the engine over its control channel first, and ends it only after a grace
   period or a second Ctrl+C (§2.3). The spec left the clean quit open.
 - **`Ome.Launcher.Core` is marked `IsAotCompatible`** in M2, after M0 found it compiles that way with no warning.
+- **Gate 3** (spec §12) cannot hold Kamidori's decompiled scripts equal. M1 loads the 44 cells the old loader
+  skipped (§1), so the decompiler names them. The gate now asks that Himegari and Arterial decompile identically,
+  that Kamidori's changes be only those names and what follows from them, and that the example builds be
+  byte-identical (§2.4).
+- **The link report names the toolchain in a header line**, `toolchain: …`, after the load order. A note would change
+  the reports' note counts, which the tests and the launcher read.
+- **The port's startup catch stays** (`godot/Main.cs`). M1 removes its one cause in the toolchain, but the catch
+  also covers the mod layer's I/O.
+- **A new game starts its base mod at `adding-a-game.md`'s script step**, since its OMS module lives there: a
+  manifest of `omp = 5` with `[game]` and `[lua] capabilities = ["vm"]`, and `oms/adv.oms`. Its Lua parts come at the
+  modding track's third level, as before.
+- **The launcher's Link check** shows a toolchain that does not build as a warning, naming what a mod that compiles
+  would meet, when the stack links. A stack with a mod that compiles fails as it did, with the error in its report.
+- **The module's names join the rename rule** (§3.1), which spec §5.2 left to this plan.

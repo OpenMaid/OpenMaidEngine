@@ -48,7 +48,7 @@ The prelude's template is `line(text, speaker = none, voice = none)`:
 魔王 "「…」" (voice: 0x34e)                        // with a voice clip
 ```
 
-Speakers are CNINIT's character names (`enum speaker` in `oms/himegari/adv.oms`). Names that repeat, or that are
+Speakers are CNINIT's character names (`enum speaker` in `mods/himegari-base/oms/adv.oms`). Names that repeat, or that are
 not identifiers such as `？？？？`, carry their id (`speaker_0x10`).
 
 ## Data edits

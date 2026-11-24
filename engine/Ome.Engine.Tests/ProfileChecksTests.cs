@@ -81,6 +81,27 @@ public sealed class ProfileChecksTests : IDisposable
     }
 
     [Fact]
+    public void AToolchainThatDoesNotBuildIsAWarningWhenNoModCompiles()
+    {
+        // Modding from a release spec §5.3: an install that lacks the scripts kamidori.adv runs still plays a stack that
+        // compiles nothing; the Link check says what a compiling mod would meet.
+        File.WriteAllBytes(Path.Combine(_install, "SYS4INI.BIN"), Sys4StartupSettingsTests.BuildCatalog(
+            ["GATESIX.BIN"], KamidoriRevision, KamidoriTitle));
+        string fingerprint = Installs.Recognize(_install, GameProfileRegistry.BuiltIn).Fingerprint!;
+        ProfileEntry profile = ProfileStore.Create(_home, LauncherSettings.Defaults, "bare",
+            ProfileDocument.New("Bare", "kamidori", _install, fingerprint, _home)).Profile;
+
+        ProfileCheckResult result = ProfileChecks.Run(profile, Options);
+
+        ProfileCheck link = Assert.Single(result.Checks, check => check.Kind == ProfileCheckKind.Link);
+        Assert.Equal(CheckStatus.Warning, link.Status);
+        Assert.Contains("but a mod that compiles a fragment or new script would not: the OMS modules of "
+                        + "<engine>/mods/kamidori-base do not build against this install", link.Message);
+        Assert.True(result.CanPlay);
+        Assert.Contains("toolchain: kamidori-base ", result.Link!.Text);
+    }
+
+    [Fact]
     public void TheChecksNameWhatStopsPlayAndWhatASkippedLinkDrops()
     {
         Package("gate.one", "GATESIX");

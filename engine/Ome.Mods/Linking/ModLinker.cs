@@ -80,8 +80,16 @@ public static class ModLinker
     private static ModLinkResult LinkOnce(ModLinkBase linkBase, IReadOnlyList<ModPackage> mods,
                                           IReadOnlyList<string> userOrder, SelectorStore selectors)
     {
-        var report = new ModLinkReport();
+        var report = new ModLinkReport { Toolchain = linkBase.ToolchainSummary };
         IReadOnlyList<ModPackage> order = StackResolver.Resolve(mods, linkBase, userOrder, report);
+        // Modding from a release spec §5.2: an installed base mod replaces the shipped one in the stack, but the
+        // toolchain stays the engine's.
+        if (linkBase.Toolchain is { } toolchain
+            && order.FirstOrDefault(mod => mod.Id == toolchain.Id) is { } installed
+            && installed.Manifest.Version.ToString() != toolchain.Version)
+            report.Add(ModReportClass.Note, installed.Id, null,
+                $"{installed.Location} is {installed.Id} {installed.Manifest.Version}; fragments compile with the engine's own "
+                + $"toolchain, {toolchain.Id} {toolchain.Version}");
         var byId = order.ToDictionary(mod => mod.Id, StringComparer.Ordinal);
         foreach (ModPackage mod in order)
             foreach (string note in mod.Layout.Notes)
@@ -285,6 +293,7 @@ public static class ModLinker
         }
         try
         {
+            linkBase.RequireToolchain();
             var warnings = new List<OmsWarning>();
             // The compiler applies the plan once to check it; its notes are left out, since ApplyAll applies the plan
             // again and reports the same notes.

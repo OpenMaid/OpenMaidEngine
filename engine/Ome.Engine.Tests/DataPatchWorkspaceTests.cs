@@ -116,7 +116,7 @@ public sealed partial class DataPatchWorkspaceTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(Paths.Sys4Ini);
         var store = new Sys4AssetStore(catalog, Paths.GameDir, Paths.GameDir);
         ModLinkBase linkBase = ModLinkBase.ForInstall("himegari", Paths.Sys4Ini, catalog, store, HimegariTable, Contracts,
-            Paths.GlobalsJson("himegari"), Paths.OmsModules("himegari"), Paths.PatchPointsJson("himegari"));
+            Ome.Mods.Linking.GameToolchain.Shipped("himegari"));
         return (linkBase, new Sys4ScriptProvider(HimegariTable, catalog, store));
     }
 

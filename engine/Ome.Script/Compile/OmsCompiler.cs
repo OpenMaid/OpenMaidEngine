@@ -370,10 +370,18 @@ public static class OmsCompiler
                     symbol.Dimensions, symbol.Columns);
                 if (unit != null) Shared(symbol.Name, use.Span, unit.Name);
             }
+            // A registry's old names (modding from a release spec §5.2): a source written against them still compiles.
+            // A name some module declares wins over an old one.
+            foreach (var (alias, symbol) in module.Aliases)
+                _names.TryAdd(alias, new Declared(
+                    new RawStorage(use.Span, StorageBanks.BankByType[symbol.Type], symbol.Address),
+                    symbol.Dimensions, symbol.Columns));
             foreach (TableSymbol table in module.Tables)
             {
                 if (unit != null) Shared(table.Name, use.Span, unit.Name);
                 AddTable(table, use.Span);
+                foreach (string alias in table.Aliases)
+                    if (!_names.ContainsKey(alias)) _tables.TryAdd(alias, table);
             }
             if (unit == null) return;
             foreach (Statement statement in unit.Body)

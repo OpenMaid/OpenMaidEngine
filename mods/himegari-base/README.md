@@ -7,6 +7,11 @@ enabled mod requires it. A Lua mod reads and writes the game's cells by name thr
 - `manifest.toml` is hand-written. Its major version is the version of the names the base mod exports.
 - `layout/` is generated from `vm-map/globals.toml` and `vm-map/patch-points-himegari.toml` by
   `py -3.11 -X utf8 tools/base_mod_build.py --build`. Do not edit it.
+- `oms/` is the game's OMS toolchain (modding from a release spec §5, `docs/superpowers/specs/2026-11-24-modding-from-a-release-design.md`), which the engine reads
+  from its own copy of this base mod to compile fragments and new scripts. `oms/adv.oms` is hand-written: the module
+  `himegari.adv`, the ADV prelude: the scene library, the dialogue line template and the speaker names. `oms/globals.json` is the module `himegari.globals`, generated with `layout/` from
+  `vm-map/globals.toml` by `tools/base_mod_build.py --build`, with the old names of renamed globals, tables and fields. Do
+  not edit it.
 - `events/` is hand-written: the game events the base mod declares, with each field's cell by an exported name:
   `experience.toml` (the experience award at `himegari.experience.after_calculation`), `boot.toml`
   (`himegari.data.layered`, once every layer has written its data tables and before the boot uses them, and
@@ -31,6 +36,8 @@ enabled mod requires it. A Lua mod reads and writes the game's cells by name thr
   the file's first delivery. Do not edit it. `omp lua-stubs` writes a copy for an editor.
 - `layout/exports.txt` is the list of exported names, checked in: the globals, then the record tables
   (`table NAME`) and their fields (`field TABLE.FIELD`), then the scopes (`scope NAME`) and their tables' short
-  names (`scope NAME.SHORT`). A name in it stays exported, as a global's name or one of its `aliases`, a table's
-  name or one of its `aliases`, or a field's name or an old name in its table's `[table.field_aliases]`, until the
-  major version is raised; a scope and a short name have no old-name form.
+  names (`scope NAME.SHORT`), then the names `oms/*.oms` declares (`module MODULE.NAME`: its subs and their labels,
+  templates, enums and their members, constants). A name in it stays exported, as a global's name or one of its
+  `aliases`, a table's name or one of its `aliases`, or a field's name or an old name in its table's
+  `[table.field_aliases]`, until the major version is raised; a scope, a short name and a module's name have no
+  old-name form, so renaming a sub or a speaker of `oms/adv.oms` raises the major version.

@@ -601,8 +601,9 @@ Each archive carries the launcher beside the engine (launcher spec §10; plan §
   - the launcher's `--check` on a synthetic home, with no display;
   - the hand-over.
 
-  The launcher's two steps run on a copy outside the repository, since a program inside a checkout links with the
-  repository's toolchain (plan §9.5).
+  The launcher's two steps run on a copy outside the repository, as a player's would. The toolchain is the one the
+  program embeds wherever it runs (modding from a release spec §5), and the synthetic install lists the scripts the
+  game's ADV module runs, so the toolchain builds against it.
 - **Windows's checks stay structural:**
   - the launcher's program is AMD64 PE with the GUI subsystem;
   - its natives are AMD64;
@@ -723,7 +724,8 @@ ways:
 - **Driven scenarios on a package.** `drive.py port start --package <folder>` runs a package's own engine under the
   driver, and its hello reports NativeAOT. On 2026-11-18 the Windows AOT package passed `himegari-save-load.steps`,
   `port/himegari-lua-random.steps`, and mod gate 4's save and load (`--mod oms/examples/mods/example.prologue`, with
-  the package inside the repository's `build/`; see the backlog's "Toolchain packaging for exported ports"). The Linux
+  the package inside the repository's `build/`, which an exported build needed then to compile fragments; since
+  modding from a release, spec §5, it carries the toolchain itself). The Linux
   library passed the package smoke in WSL.
 
 **Risks.** Godot ships NativeAOT on iOS, where its C# path is exercised more than on desktop. GodotSharp warns that

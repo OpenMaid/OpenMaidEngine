@@ -32,8 +32,6 @@ public static class Paths
     public static string GlobalsJson(string profileId) => Path.Combine(GameBuild(profileId), "globals.json");
     /// <summary>Generated named patch points (tools/patch_points_build.py --build; mod loader spec §5).</summary>
     public static string PatchPointsJson(string profileId) => Path.Combine(GameBuild(profileId), "patch-points.json");
-    /// <summary>A profile's hand-written Open Maid Script source modules, <c>oms/&lt;profile&gt;</c>.</summary>
-    public static string OmsModules(string profileId) => Path.Combine(Repo, "oms", profileId);
     /// <summary>A profile's converter BMPs (<c>tools/convert_agf.py</c>), the AGF decoder's pixel oracle.</summary>
     public static string Textures(string profileId) => Path.Combine(GameBuild(profileId), "textures");
     public static string Sys4Ini => Path.Combine(GameDir, "SYS4INI.BIN");

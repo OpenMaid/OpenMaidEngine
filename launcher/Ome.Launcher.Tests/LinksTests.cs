@@ -41,7 +41,7 @@ public sealed class LinksTests : IDisposable
 
     private async Task<(MainViewModel Model, RecordingHost Host)> Open(ArtOptions? art = null)
     {
-        var model = new MainViewModel(_home.Session(), art ?? new ArtOptions(Handler: new Served()));
+        var model = Headless.Track(new MainViewModel(_home.Session(), art ?? new ArtOptions(Handler: new Served())));
         var host = new RecordingHost();
         model.Host = host;
         await model.StartAsync();
@@ -356,8 +356,8 @@ public sealed class LinksTests : IDisposable
         Settings(settings => settings with { Art = ArtConsent.Never });
         var crashed = new LaunchResult(true, 5, null, null, ["the last line"],
                                        ProfileChecks.Run(profile, _home.CheckOptions));
-        var model = new MainViewModel(_home.Session(WindowReason.StartFailed, profile: profile, launch: crashed),
-                                      new ArtOptions(Handler: new Served()));
+        var model = Headless.Track(new MainViewModel(_home.Session(WindowReason.StartFailed, profile: profile, launch: crashed),
+                                      new ArtOptions(Handler: new Served())));
         await model.StartAsync();
         ProfileRowViewModel row = model.Rows.Single();
         Assert.NotNull(row.Failure);

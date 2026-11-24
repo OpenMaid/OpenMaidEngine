@@ -44,6 +44,14 @@ public sealed record ModDataFile(ModDataEntry Entry, PackageEntry File);
 /// <c>[[accepts]] shape</c> names.</summary>
 public sealed record ModShapeFile(string Path, PackageEntry File);
 
+/// <summary>A source module of a base mod's toolchain, <c>oms/NAME.oms</c>, by its file name.</summary>
+public sealed record ModOmsFile(string Name, PackageEntry File);
+
+/// <summary>A base mod's toolchain (modding from a release spec §5.1, format version 5): the generated
+/// <c>oms/globals.json</c>, which <c>tools/base_mod_build.py</c> writes, and the hand-kept modules <c>oms/*.oms</c>, by
+/// file name in ordinal order.</summary>
+public sealed record ModToolchainFiles(PackageEntry? Globals, IReadOnlyList<ModOmsFile> Modules);
+
 /// <summary>A base mod's generated layout (Lua scripting spec §9.1): <c>layout/globals.json</c>, the patch points'
 /// copy <c>layout/points.json</c>, and the exported names <c>layout/exports.txt</c>, which the engine does not read.</summary>
 public sealed record ModLayoutFiles(PackageEntry Globals, PackageEntry? Points, PackageEntry? Exports);
@@ -51,8 +59,9 @@ public sealed record ModLayoutFiles(PackageEntry Globals, PackageEntry? Points, 
 /// <summary>
 /// A package's files sorted into the content kinds of spec §3.2 and §4, and the localization spec's <c>text/</c> and
 /// <c>fonts/</c> (§9.1, format version 2), the Lua scripting spec's <c>lua/</c>, <c>events/</c> and a base mod's
-/// <c>layout/</c> (§6.1, §9.1, format version 3), and the data patches spec's <c>data/</c> and <c>shapes/</c> (§5.1,
-/// §7, format version 4). Directories are matched case-insensitively. Files outside the layout are kept as notes (spec
+/// <c>layout/</c> (§6.1, §9.1, format version 3), the data patches spec's <c>data/</c> and <c>shapes/</c> (§5.1, §7,
+/// format version 4), and a base mod's <c>oms/</c> (modding from a release spec §5.2, format version 5). Directories
+/// are matched case-insensitively. Files outside the layout are kept as notes (spec
 /// §3.2), as a <c>data/</c> or <c>shapes/</c> folder is before format version 4; a wrongly typed or nested file inside a
 /// content directory is an error.
 /// </summary>
@@ -65,7 +74,10 @@ public sealed record ModLayout(
 {
     public const string PlanSuffix = ".omspatch.json";
     public const string TextFolder = "text", FontsFolder = "fonts", LuaFolder = "lua", EventsFolder = "events",
-                        LayoutFolder = "layout", DataFolder = ModDataEntry.Folder, ShapesFolder = ModKind.ShapesFolder;
+                        LayoutFolder = "layout", DataFolder = ModDataEntry.Folder, ShapesFolder = ModKind.ShapesFolder,
+                        OmsFolder = "oms";
+    /// <summary>The generated file of a base mod's <c>oms/</c>: the module <c>&lt;game&gt;.globals</c>.</summary>
+    public const string OmsGlobalsFile = "globals.json";
     /// <summary>The files a base mod's <c>layout/</c> holds; <c>tools/base_mod_build.py</c> writes them.</summary>
     public const string LayoutGlobalsFile = "globals.json", LayoutPointsFile = "points.json", LayoutExportsFile = "exports.txt";
     /// <summary>Largest Lua source a package may carry, and the most files under <c>lua/</c> (Lua scripting spec
@@ -93,6 +105,9 @@ public sealed record ModLayout(
     public IReadOnlyList<ModDataFile> Data { get; init; } = [];
     /// <summary>The shapes under <c>shapes/</c>, by path in ordinal order (data patches spec §7).</summary>
     public IReadOnlyList<ModShapeFile> Shapes { get; init; } = [];
+    /// <summary>A base mod's toolchain under <c>oms/</c>, or null (modding from a release spec §5.2). In a package that
+    /// is no base mod, <c>oms/</c> is outside the layout.</summary>
+    public ModToolchainFiles? Toolchain { get; init; }
 
     /// <summary>Whether the package changes no script or asset: it holds only <c>text/</c>, <c>fonts/</c>,
     /// language assets and <c>[[language]]</c> tables (localization spec §8, save stamps). A language asset changes
@@ -119,6 +134,7 @@ public sealed record ModLayout(
         var layoutFiles = new Dictionary<string, PackageEntry>(StringComparer.Ordinal);
         var dataFiles = new Dictionary<string, PackageEntry>(StringComparer.Ordinal);
         var shapeFiles = new Dictionary<string, PackageEntry>(StringComparer.Ordinal);
+        var omsFiles = new List<(string Path, PackageEntry Entry)>();
 
         foreach (PackageEntry entry in entries)
         {
@@ -244,6 +260,10 @@ public sealed record ModLayout(
                 case "replace":
                     problems.Add($"'{entry.Path}': replace/ holds only whole scripts (NAME.BIN)");
                     break;
+                // Whether the package is a base mod is known once every file is seen, so oms/ is sorted after.
+                case OmsFolder:
+                    omsFiles.Add((rest, entry));
+                    break;
                 case "assets" when manifest.OmpVersion < ModManifest.LanguageOmpVersion:
                     problems.Add($"'{entry.Path}': assets/ holds files by basename; language assets "
                                  + $"(assets/<language>/NAME) need omp = {ModManifest.LanguageOmpVersion}");
@@ -341,9 +361,31 @@ public sealed record ModLayout(
         else if (layoutFiles.Count > 0)
             problems.Add($"layout/: a base mod's layout needs layout/{LayoutGlobalsFile}");
 
+        // Modding from a release spec §5.2: a base mod carries the game's toolchain in oms/, from format version 5; in
+        // any other package oms/ is outside the layout.
+        ModToolchainFiles? toolchain = null;
+        if (omsFiles.Count > 0 && baseLayout == null)
+            notes.AddRange(omsFiles.Select(file => $"'{file.Entry.Path}' is outside the package layout and is ignored"));
+        else if (omsFiles.Count > 0 && manifest.OmpVersion < ModManifest.ToolchainOmpVersion)
+            problems.Add($"oms/: a base mod's toolchain needs omp = {ModManifest.ToolchainOmpVersion}");
+        else if (omsFiles.Count > 0)
+        {
+            PackageEntry? omsGlobals = null;
+            var modules = new List<ModOmsFile>();
+            foreach (var (rest, entry) in omsFiles)
+                if (rest == OmsGlobalsFile) omsGlobals = entry;
+                else if (!rest.Contains('/') && rest.EndsWith(".oms", StringComparison.Ordinal) && rest.Length > 4)
+                    modules.Add(new ModOmsFile(rest, entry));
+                else
+                    problems.Add($"'{entry.Path}': oms/ holds {OmsGlobalsFile}, which tools/base_mod_build.py writes, and "
+                                 + "the game's *.oms modules, without subdirectories");
+            toolchain = new ModToolchainFiles(omsGlobals, modules.OrderBy(module => module.Name, StringComparer.Ordinal).ToList());
+        }
+
         return new ModLayout(patches, scripts, replacements, assets, notes)
         {
             BaseLayout = baseLayout,
+            Toolchain = toolchain,
             Data = data,
             Shapes = shapeFiles.Where(pair => namedShapes.Contains(pair.Key)).OrderBy(pair => pair.Key, StringComparer.Ordinal)
                 .Select(pair => new ModShapeFile(pair.Key, pair.Value)).ToList(),

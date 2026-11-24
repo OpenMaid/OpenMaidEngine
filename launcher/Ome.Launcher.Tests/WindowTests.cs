@@ -29,7 +29,7 @@ public sealed class WindowTests : IDisposable
                      })
             {
                 // With no profile the wizard opens over the window; the frame's own colours are measured without it.
-                var model = new MainViewModel(_home.Session(language: "ja"));
+                var model = Headless.Track(new MainViewModel(_home.Session(language: "ja")));
                 await model.StartAsync();
                 model.Wizard!.Cancel.Execute(null);
                 var window = new MainWindow { DataContext = model };
@@ -80,8 +80,8 @@ public sealed class WindowTests : IDisposable
         {
             foreach (ThemeVariant theme in themes.Length == 0 ? [ThemeVariant.Light, ThemeVariant.Dark] : themes)
             {
-                var model = new MainViewModel(session?.Invoke() ?? _home.Session(language: language),
-                                              new ArtOptions(Handler: new Refuse()));
+                var model = Headless.Track(new MainViewModel(session?.Invoke() ?? _home.Session(language: language),
+                                              new ArtOptions(Handler: new Refuse())));
                 await model.StartAsync();
                 var window = new MainWindow { DataContext = model };
                 if (before != null) await before(model);
@@ -368,7 +368,7 @@ public sealed class WindowTests : IDisposable
         // The More menu holds Rename and Delete, bound to the page.
         Headless.Run(async () =>
         {
-            var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new Refuse()));
+            var model = Headless.Track(new MainViewModel(_home.Session(), new ArtOptions(Handler: new Refuse())));
             await model.StartAsync();
             var window = new MainWindow { DataContext = model };
             Headless.Render(window, ThemeVariant.Light, "6.10-more-closed-light");
@@ -488,7 +488,7 @@ public sealed class WindowTests : IDisposable
         Three();
         Headless.Run(async () =>
         {
-            var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new Refuse()));
+            var model = Headless.Track(new MainViewModel(_home.Session(), new ArtOptions(Handler: new Refuse())));
             // The window starts it as it opens: its checks read the installs, done before the home is deleted.
             await model.StartAsync();
             Assert.True(model.AskArt);

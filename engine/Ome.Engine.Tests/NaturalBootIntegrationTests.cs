@@ -274,7 +274,7 @@ public class NaturalBootIntegrationTests
         var store = new Sys4AssetStore(catalog, gameRoot, baseRoots);
         Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("kamidori", sys4Ini, catalog,
             store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
-            Paths.GlobalsJson("kamidori"), Paths.OmsModules("kamidori"), Paths.PatchPointsJson("kamidori"));
+            Ome.Mods.Linking.GameToolchain.Shipped("kamidori"));
         string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.kamidori-prologue-line");
         using var mod = Ome.Mods.Packages.ModPackage.Open(source);
         var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
@@ -327,7 +327,7 @@ public class NaturalBootIntegrationTests
         var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
         Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("arterial", sys4Ini, catalog,
             store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
-            Paths.GlobalsJson("arterial"), Paths.OmsModules("arterial"), Paths.PatchPointsJson("arterial"));
+            Ome.Mods.Linking.GameToolchain.Shipped("arterial"));
         string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.arterial-prologue-line");
         using var mod = Ome.Mods.Packages.ModPackage.Open(source);
         var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
@@ -364,7 +364,7 @@ public class NaturalBootIntegrationTests
         var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
         Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("arterial", sys4Ini, catalog,
             store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
-            Paths.GlobalsJson("arterial"), Paths.OmsModules("arterial"), Paths.PatchPointsJson("arterial"));
+            Ome.Mods.Linking.GameToolchain.Shipped("arterial"));
         string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.arterial-new-scene");
         using var mod = Ome.Mods.Packages.ModPackage.Open(source);
         var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);

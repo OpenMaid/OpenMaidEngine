@@ -88,6 +88,7 @@ public static class ModCatalogBuilder
                     failed = true;
                     continue;
                 }
+                linkBase.RequireToolchain();
                 var warnings = new List<OmsWarning>();
                 IrScript compiled = OmsCompiler.Compile(unit, linkBase.Table.AbiId, linkBase.Table, null, linkBase.Intrinsics,
                     Module, warnings, scope);

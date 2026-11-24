@@ -48,6 +48,9 @@ public sealed class ModLinkReport
     /// <summary>The edges the resolver ordered the stack by, each with its kind (<see cref="StackResolver"/>).</summary>
     public IReadOnlyList<OrderEdge> OrderEdges { get; internal set; } = [];
     public IReadOnlyList<string> Dropped { get; internal set; } = [];
+    /// <summary>The toolchain fragments compiled with (<see cref="ModLinkBase.ToolchainSummary"/>; modding from a
+    /// release spec §12, gate 2), or null for a report no link wrote.</summary>
+    public string? Toolchain { get; internal set; }
 
     /// <summary>The Lua section (Lua scripting spec §12): each mod that ships Lua or lends its layout, with its
     /// capabilities and writes; each hook with its handlers in order; each event with its owner and subscribers.</summary>
@@ -71,6 +74,7 @@ public sealed class ModLinkReport
         var text = new StringBuilder();
         text.Append("load order: ").AppendLine(Order.Count == 0 ? "(no mods)" : string.Join(" -> ", Order));
         if (Dropped.Count > 0) text.Append("dropped: ").AppendLine(string.Join(", ", Dropped));
+        if (Toolchain != null) text.Append("toolchain: ").AppendLine(Toolchain);
         foreach (ModReportClass kind in Enum.GetValues<ModReportClass>())
             foreach (ModReportLine line in _lines.Where(line => line.Class == kind))
                 text.AppendLine(line.ToString());

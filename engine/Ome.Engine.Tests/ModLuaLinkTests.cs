@@ -63,7 +63,7 @@ public sealed class ModLuaLinkTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(Paths.Sys4Ini);
         var store = new Sys4AssetStore(catalog, Paths.GameDir, Paths.GameDir);
         return ModLinkBase.ForInstall("himegari", Paths.Sys4Ini, catalog, store, HimegariTable, Contracts,
-            Paths.GlobalsJson("himegari"), Paths.OmsModules("himegari"), Paths.PatchPointsJson("himegari")) with
+            Ome.Mods.Linking.GameToolchain.Shipped("himegari")) with
         {
             Lua = _runtime,
         };
@@ -1416,7 +1416,7 @@ public sealed class ModLuaLinkTests : IDisposable
             end
             """), []);
         Assert.True(result.Succeeded, result.Report.Render());
-        Assert.Contains(result.Report.Lua, line => line.StartsWith("mod himegari-base 1.2.0: ", StringComparison.Ordinal)
+        Assert.Contains(result.Report.Lua, line => line.StartsWith("mod himegari-base 1.3.0: ", StringComparison.Ordinal)
                                                    && line.EndsWith("; calls ADDITEM", StringComparison.Ordinal));
 
         using var scripting = new Scripting(new ScriptMemory(), new ScriptingSetup
@@ -1522,7 +1522,7 @@ public sealed class ModLuaLinkTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(sys4Ini);
         var store = new Sys4AssetStore(catalog, gameRoot, looseRoots.Length > 0 ? looseRoots : [gameRoot]);
         ModLinkBase linkBase = ModLinkBase.ForInstall("kamidori", sys4Ini, catalog, store, KamidoriTable, Contracts,
-            Paths.GlobalsJson("kamidori"), Paths.OmsModules("kamidori"), Paths.PatchPointsJson("kamidori")) with
+            Ome.Mods.Linking.GameToolchain.Shipped("kamidori")) with
         {
             Lua = _runtime,
         };
@@ -1738,7 +1738,7 @@ public sealed class ModLuaLinkTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(sys4Ini);
         var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
         ModLinkBase linkBase = ModLinkBase.ForInstall("arterial", sys4Ini, catalog, store, ArterialTable, Contracts,
-            Paths.GlobalsJson("arterial"), Paths.OmsModules("arterial"), Paths.PatchPointsJson("arterial")) with
+            Ome.Mods.Linking.GameToolchain.Shipped("arterial")) with
         {
             Lua = _runtime,
         };

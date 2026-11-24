@@ -17,8 +17,19 @@ public sealed record GlobalSymbol(string Name, int Type, uint Address, IReadOnly
 /// array whose leading dimension is the record count.</summary>
 public sealed record TableSymbol(string Name, int Records, IReadOnlyList<(string Field, string Array)> Fields)
 {
-    /// <summary>The array that holds a field, if the table has it.</summary>
-    public string? ArrayOf(string field) => Fields.FirstOrDefault(pair => pair.Field == field).Array;
+    /// <summary>The table's old names, which the compiler still takes (the registry's <c>aliases</c>; modding from a
+    /// release spec §5.2). The decompiler writes <see cref="Name"/> only.</summary>
+    public IReadOnlyList<string> Aliases { get; init; } = [];
+
+    /// <summary>Renamed fields, old name to current (the registry's <c>field_aliases</c>), which the compiler still
+    /// takes. <see cref="Fields"/> holds the current names only.</summary>
+    public IReadOnlyDictionary<string, string> FieldAliases { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>The array that holds a field, if the table has it, by its name or an old one.</summary>
+    public string? ArrayOf(string field)
+        => Fields.FirstOrDefault(pair => pair.Field == field).Array
+           ?? (FieldAliases.TryGetValue(field, out string? current)
+               ? Fields.FirstOrDefault(pair => pair.Field == current).Array : null);
 }
 
 /// <summary>
@@ -35,6 +46,7 @@ public sealed class GameModule
     private static readonly Regex TypeShape = new(@"^(int|string|float)((?:\[\d*\])*)$", RegexOptions.CultureInvariant);
 
     private readonly Dictionary<string, GlobalSymbol> _byName = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, GlobalSymbol> _aliases = new(StringComparer.Ordinal);
     private readonly Dictionary<(int Type, uint Address), GlobalSymbol> _byCell = new();
     private readonly Dictionary<string, uint> _scriptIds = new(StringComparer.Ordinal);
     private readonly Dictionary<uint, string> _scriptNames = new();
@@ -45,8 +57,12 @@ public sealed class GameModule
     /// <summary>The parsed unit of a source module; null for a generated one.</summary>
     public ScriptUnit? Source { get; }
 
+    /// <param name="aliases">Old names of <paramref name="symbols"/>, each with the current name it stands for. A
+    /// lookup by name finds a symbol by either; a lookup by cell, which the decompiler makes, gives the current name.
+    /// An old name that is also a current name, or that names no symbol, is left out.</param>
     public GameModule(string name, IEnumerable<GlobalSymbol> symbols, IEnumerable<(string Name, uint Id)>? scripts = null,
-                      ScriptUnit? source = null, IEnumerable<TableSymbol>? tables = null)
+                      ScriptUnit? source = null, IEnumerable<TableSymbol>? tables = null,
+                      IEnumerable<(string Alias, string Name)>? aliases = null)
     {
         Name = name;
         Source = source;
@@ -58,6 +74,9 @@ public sealed class GameModule
         }
         foreach (var (script, id) in scripts ?? [])
             if (_scriptIds.TryAdd(script, id)) _scriptNames.TryAdd(id, script);
+        foreach (var (alias, current) in aliases ?? [])
+            if (!_byName.ContainsKey(alias) && _byName.TryGetValue(current, out GlobalSymbol? symbol))
+                _aliases.TryAdd(alias, symbol);
         foreach (TableSymbol table in tables ?? [])
         {
             if (_byName.ContainsKey(table.Name) || _tables.Any(other => other.Name == table.Name))
@@ -91,17 +110,17 @@ public sealed class GameModule
         return new GameModule(unit.Name, symbols, source: unit, tables: tables);
     }
 
-    /// <summary>Every source module in a directory (<c>oms/&lt;profile&gt;/*.oms</c>), in file-name order; each must
-    /// declare <c>module &lt;profile&gt;.&lt;name&gt;</c>.</summary>
-    public static List<GameModule> LoadSources(string directory, string profileId)
+    /// <summary>Source modules from their texts, in the order of their names (a base mod's <c>oms/*.oms</c>, modding
+    /// from a release spec §5.1); each must declare <c>module &lt;profile&gt;.&lt;name&gt;</c>. A source's name stands
+    /// for its path in diagnostics.</summary>
+    public static List<GameModule> ParseSources(IEnumerable<(string Name, string Text)> sources, string profileId)
     {
         var modules = new List<GameModule>();
-        if (!Directory.Exists(directory)) return modules;
-        foreach (string path in Directory.GetFiles(directory, "*.oms").Order(StringComparer.Ordinal))
+        foreach (var (name, text) in sources.OrderBy(source => source.Name, StringComparer.Ordinal))
         {
-            ScriptUnit unit = Parser.ParseScript(File.ReadAllText(path), path);
+            ScriptUnit unit = Parser.ParseScript(text, name);
             if (!unit.IsModule || !unit.Name.StartsWith(profileId + ".", StringComparison.Ordinal))
-                throw new InvalidDataException($"{path}: expected 'module {profileId}.<name>'");
+                throw new InvalidDataException($"{name}: expected 'module {profileId}.<name>'");
             modules.Add(FromSource(unit));
         }
         return modules;
@@ -113,7 +132,11 @@ public sealed class GameModule
 
     public IReadOnlyCollection<GlobalSymbol> Symbols => _byName.Values;
 
-    public bool TryGet(string name, out GlobalSymbol symbol) => _byName.TryGetValue(name, out symbol!);
+    /// <summary>The module's old names, each with the symbol it stands for (see the constructor).</summary>
+    public IReadOnlyDictionary<string, GlobalSymbol> Aliases => _aliases;
+
+    public bool TryGet(string name, out GlobalSymbol symbol)
+        => _byName.TryGetValue(name, out symbol!) || _aliases.TryGetValue(name, out symbol!);
 
     public bool TryGet(int type, uint address, out GlobalSymbol symbol) => _byCell.TryGetValue((type, address), out symbol!);
 
@@ -162,13 +185,22 @@ public sealed class GameModule
 
     private static long Extent(GlobalSymbol symbol) => symbol.Dimensions.Aggregate(1L, (product, dimension) => product * dimension);
 
-    /// <summary>Loads <c>&lt;profile&gt;.globals</c> from a generated registry view. Entries without a usable name or
-    /// with an unknown shape are skipped, as are names that would read as a keyword or a storage bank. Its tables keep
-    /// the fields whose arrays loaded with the table's record count as their leading dimension.</summary>
+    /// <summary>Loads <c>&lt;profile&gt;.globals</c> from a generated registry view on disk (<see cref="ParseGlobals"/>).</summary>
     public static GameModule LoadGlobals(string profileId, string globalsJsonPath)
+        => ParseGlobals(profileId, File.ReadAllBytes(globalsJsonPath));
+
+    /// <summary>Reads <c>&lt;profile&gt;.globals</c> from a generated registry view: a base mod's <c>oms/globals.json</c>
+    /// (modding from a release spec §5.1) or a checkout's <c>build/games/&lt;profile&gt;/globals.json</c>. Entries
+    /// without a usable name or with an unknown shape are skipped, as are names that would read as a keyword or a
+    /// storage bank. Its tables keep the fields whose arrays loaded with the table's record count as their leading
+    /// dimension. A cell's <c>aliases</c>, a table's <c>aliases</c> and its <c>field_aliases</c> are old names the
+    /// compiler still takes.</summary>
+    public static GameModule ParseGlobals(string profileId, ReadOnlyMemory<byte> json)
     {
-        using FileStream stream = File.OpenRead(globalsJsonPath);
-        using JsonDocument doc = JsonDocument.Parse(stream);
+        using JsonDocument doc = JsonDocument.Parse(json);
+        bool Usable(string name) => Identifier.IsMatch(name) && !Abi.IntrinsicCatalog.Keywords.Contains(name)
+                                    && !StorageBanks.TypeByBank.ContainsKey(name);
+        var aliases = new List<(string, string)>();
         var symbols = new List<GlobalSymbol>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (JsonProperty cell in doc.RootElement.GetProperty("cells").EnumerateObject())
@@ -193,6 +225,9 @@ public sealed class GameModule
                         columns.TryAdd(columnName, index);
             uint address = Convert.ToUInt32(entry.GetProperty("address").GetString(), 16);
             symbols.Add(new GlobalSymbol(name, type, address, dimensions, columns));
+            if (entry.TryGetProperty("aliases", out JsonElement old) && old.ValueKind == JsonValueKind.Array)
+                foreach (JsonElement alias in old.EnumerateArray())
+                    if (alias.GetString() is { } oldName && Usable(oldName)) aliases.Add((oldName, name));
         }
         var arrays = symbols.ToDictionary(symbol => symbol.Name, StringComparer.Ordinal);
         var tables = new List<TableSymbol>();
@@ -210,8 +245,20 @@ public sealed class GameModule
                         && arrays.TryGetValue(array, out GlobalSymbol? symbol) && symbol.Dimensions is [var leading, ..]
                         && leading == records && symbol.Dimensions.Count <= 2)
                         fields.Add((field.Name, array));
-                if (fields.Count > 0) tables.Add(new TableSymbol(name, records, fields));
+                if (fields.Count == 0) continue;
+                var tableAliases = new List<string>();
+                if (entry.TryGetProperty("aliases", out JsonElement old) && old.ValueKind == JsonValueKind.Array)
+                    foreach (JsonElement alias in old.EnumerateArray())
+                        if (alias.GetString() is { } oldName && Usable(oldName) && !arrays.ContainsKey(oldName))
+                            tableAliases.Add(oldName);
+                var fieldAliases = new Dictionary<string, string>(StringComparer.Ordinal);
+                if (entry.TryGetProperty("field_aliases", out JsonElement renamed) && renamed.ValueKind == JsonValueKind.Object)
+                    foreach (JsonProperty alias in renamed.EnumerateObject())
+                        if (Identifier.IsMatch(alias.Name) && alias.Value.GetString() is { } current
+                            && fields.Any(field => field.Item1 == current) && fields.All(field => field.Item1 != alias.Name))
+                            fieldAliases.TryAdd(alias.Name, current);
+                tables.Add(new TableSymbol(name, records, fields) { Aliases = tableAliases, FieldAliases = fieldAliases });
             }
-        return new GameModule($"{profileId}.globals", symbols, tables: tables);
+        return new GameModule($"{profileId}.globals", symbols, tables: tables, aliases: aliases);
     }
 }

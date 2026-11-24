@@ -11,7 +11,7 @@
 note = "Curated Arterial global addresses. Names started 2026-11-20 from the table layouts of tools/init_arterial.py and the scripts that read them."
 
 
-# ---- ADV page state (oms/arterial/adv.oms) ----
+# ---- ADV page state (mods/arterial-base/oms/adv.oms) ----
 
 [[global]]
 address = "0x3140"

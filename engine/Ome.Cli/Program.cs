@@ -106,21 +106,13 @@ if (command == "oms-residue")
     return 0;
 }
 
-// The profile's OMS modules: generated <game>.globals (globals_build.py --build; absent until generated) and
-// <game>.scripts (the mounted catalog), then the hand-written source modules in oms/<game>/*.oms (spec §3.2),
-// whose library subs and templates the idiomatic level lifts. --no-names decompiles without any of them.
+// The profile's OMS modules, as the linker compiles with them (modding from a release spec §5.1): <game>.globals and the
+// hand-written source modules from the shipped base mod's oms/, and <game>.scripts from the mounted catalog. The
+// idiomatic level lifts the source modules' library subs and templates. --no-names decompiles without any of them.
 List<Ome.Script.Modules.GameModule> OmsModules()
-{
-    var omsModules = new List<Ome.Script.Modules.GameModule>();
-    if (args.Contains("--no-names")) return omsModules;
-    string profileId = selectedProfile.Profile.Id;
-    if (File.Exists(Paths.GlobalsJson(profileId)))
-        omsModules.Add(Ome.Script.Modules.GameModule.LoadGlobals(profileId, Paths.GlobalsJson(profileId)));
-    omsModules.Add(Ome.Script.Modules.GameModule.Scripts(profileId,
-        catalog.EnumerateScripts().Select(packed => (packed.Asset.Name, packed.PackedId))));
-    omsModules.AddRange(Ome.Script.Modules.GameModule.LoadSources(Paths.OmsModules(profileId), profileId));
-    return omsModules;
-}
+    => args.Contains("--no-names") ? []
+        : Ome.Mods.Linking.GameToolchain.Modules(Ome.Mods.Linking.GameToolchain.Shipped(selectedProfile.Profile.Id),
+                                                 selectedProfile.Profile.Id, catalog);
 
 if (command == "omp")
 {
@@ -135,18 +127,9 @@ if (command == "omp")
     using Ome.Engine.Modding.LazyModRuntime luaRuntime = Ome.Scripting.Lua.LuaModRuntime.Lazy();
     // Launcher spec §5.9: the engine's link base, from the opcode metadata embedded in Ome.Engine (rebuild after
     // opcodes_build.py --build); the other commands read build/opcodes.json live.
-    Ome.Mods.Linking.ModLinkBase linkBase;
-    try
-    {
-        linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, engineBuild.AbiId, sys4Ini, catalog, assetStore, out _)
-            with { Lua = luaRuntime, ProfileMode = run.ProfileFile?.ModeName };
-    }
-    catch (InvalidDataException error)
-    {
-        // A base that does not build: a checkout's OMS modules without their generated globals (ModLinkBase.ForInstall).
-        Console.Error.WriteLine($"error: {error.Message}");
-        return 2;
-    }
+    // A toolchain that does not build is the base's ToolchainError, which each compile reports (spec §5.3).
+    Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, engineBuild.AbiId, sys4Ini,
+        catalog, assetStore) with { Lua = luaRuntime, ProfileMode = run.ProfileFile?.ModeName };
     string? dataRoot = run.DataRoot;
     Ome.Mods.Launch.ProfileMods? modsTable = run.Mods;
     string verb = args.Length > 1 ? args[1] : "";
@@ -304,9 +287,9 @@ if (command == "oms-patch")
         : new Ome.Script.Compile.OmsResourceScope(patchModId,
             patchNames.Where(name => !Path.HasExtension(name)), patchNames.Where(Path.HasExtension));
     int? patchSelector = int.TryParse(OptionValue("--selector"), out int boundSelector) ? boundSelector : null;
-    string patchPointsPath = Paths.PatchPointsJson(selectedProfile.Profile.Id);
-    Ome.Script.Patch.OmsPatchPoints? patchPoints = File.Exists(patchPointsPath)
-        ? Ome.Script.Patch.OmsPatchPoints.Load(patchPointsPath) : null;
+    // The patch points the linker resolves with: the shipped base mod's layout/points.json (modding from a release
+    // spec §5.1).
+    Ome.Script.Patch.OmsPatchPoints? patchPoints = Ome.Mods.Linking.GameToolchain.Shipped(selectedProfile.Profile.Id)?.Points;
     try
     {
         foreach (string source in patchSources)

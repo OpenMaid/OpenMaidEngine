@@ -488,6 +488,38 @@ public sealed class MainViewModel : ViewModel, IDisposable
         }
     }
 
+    /// <summary>Ends once the work this model started in the background has ended, whatever its outcome: its first
+    /// checks and art downloads (<see cref="StartAsync"/>), the page's check run (<see cref="Checking"/>), the page's
+    /// writes with their check runs, and whatever waits for <see cref="OneAtATime"/>. That work reads the installs and
+    /// the profiles' folders. The window does not wait for it, since its process ends with it; a caller that deletes
+    /// those folders next, as the tests do, must, or the delete races a check that still reads them.</summary>
+    public async Task SettleAsync()
+    {
+        while (true)
+        {
+            // WhenAny ends with its task and does not throw: the work's own callers report its failures.
+            await Task.WhenAny(_started ?? Task.CompletedTask);
+            await Task.WhenAny(Checking);
+            await OneAtATime(() => Task.FromResult(true));
+            if (BackgroundWork == null) return;
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>What <see cref="SettleAsync"/> still waits for, or null when nothing runs: for a diagnostic.</summary>
+    public string? BackgroundWork
+    {
+        get
+        {
+            var running = new List<string>();
+            if (_started is { IsCompleted: false }) running.Add("the first checks");
+            if (!Checking.IsCompleted) running.Add("the page's check run");
+            if (_page is { IsWorking: true }) running.Add($"the page's work ({_page.Working})");
+            if (_lockGate.CurrentCount == 0) running.Add("work under the lock gate");
+            return running.Count == 0 ? null : string.Join(", ", running);
+        }
+    }
+
     private async Task Recheck(ProfileRowViewModel row)
     {
         if (row == _selected && _page != null)

@@ -32,7 +32,7 @@ internal static class LinkComposition
         AssetLaunchOptions assets = AssetLaunchOptions.Resolve(arguments, gameRoot);
         var store = new Sys4AssetStore(catalog, gameRoot, assets.LooseRoots.ToArray());
         using LazyModRuntime lua = LuaModRuntime.Lazy();
-        ModLinkBase linkBase = ModLinkBase.ForGame(game.Profile.Id, build.AbiId, sys4Ini, catalog, store, out _)
+        ModLinkBase linkBase = ModLinkBase.ForGame(game.Profile.Id, build.AbiId, sys4Ini, catalog, store)
             with { Lua = lua, ProfileMode = run.ProfileFile?.ModeName };
         using ModInspection inspection = ModInspection.Inspect(linkBase, run.DataRoot, [],
                                                                arguments.Contains(ModLaunchOptions.SkipFailedOption), run.Mods);
@@ -40,6 +40,6 @@ internal static class LinkComposition
         var dropped = (report?.Dropped ?? []).Concat(inspection.Discovery.FailedMods).Distinct()
             .Order(StringComparer.Ordinal).ToList();
         return new LinkCheck(OmpCommands.CheckReport(inspection), inspection.Discovery, report, inspection.Order,
-                             inspection.Moves, dropped);
+                             inspection.Moves, dropped) { ToolchainError = linkBase.ToolchainError };
     }
 }

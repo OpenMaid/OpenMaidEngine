@@ -302,15 +302,10 @@ still handled on their own. Each change should be behaviour-neutral and pass the
 
   The site's usability review found it (site plan §10.3, finding 10). The user wants it fixed on its own, once the
   site's design and workflow settle (2026-11-22: "it's been an ongoing 'issue' that you need to repo to perform
-  modding"). "Toolchain packaging for exported ports" below is the linking half of it. Done when a release carries the
-  mod commands and the page locator, and the guides start from a release with the from-source steps marked as such.
-  Its design, with the next item's, is `superpowers/specs/2026-11-24-modding-from-a-release-design.md` (proposed
-  2026-11-24, waiting for the user's decisions).
-- **Toolchain packaging for exported ports.** Fragments compile against the repository's OMS modules
-  (`oms/<game>/`), globals and patch points (`build/games/<game>/`). An exported port without the repository
-  links only mods that need none of them (`tools-reference.md`, port `--mod`). Done when an export carries or
-  embeds these files and a fragment mod links in an exported build. Designed with the item above (its §5: the
-  toolchain moves into each game's base mod).
+  modding"). Done when a release carries the mod commands and the page locator, and the guides start from a release
+  with the from-source steps marked as such. Its design is `superpowers/specs/2026-11-24-modding-from-a-release-design.md`
+  (accepted 2026-11-24), built on `feature/modding-from-release`; its first milestone moved the game's toolchain
+  into each base mod, so an exported build links fragments as a checkout does.
 - **Mod-owned globals.** `global` declarations must pin a cell (`@ address`). The linker-allocated and `saved`
   globals of the language design (OMS spec §5.2, §9.2) are not implemented, and which cells are free (and which a
   save keeps) is open (§13). Mods pick unused cells by hand meanwhile (`docs/modding/oms-language.md`). Done when
@@ -415,8 +410,8 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   report shown, list a Lua mod's writes beside its `[lua] writes`, export for native AGE, and run the port with the
   authoring flags while showing its logs (`diagnostics/lua.log`, the trace). It would drive the same commands and
   files, as the launcher drives the engine (`launcher/`, launcher spec §5.1), and may share the launcher's Avalonia
-  shell (`launcher/Ome.Launcher`): the launcher serves players, the devkit authors. Outside the repository it needs
-  the toolchain an export lacks (the first item of this section). An editor extension (VS Code, say) is the other form to weigh, instead of the
+  shell (`launcher/Ome.Launcher`): the launcher serves players, the devkit authors. Outside the repository it uses
+  the mod commands a release carries (the first item of this section). An editor extension (VS Code, say) is the other form to weigh, instead of the
   application or beside it: it could bundle OMS language support (highlighting, the modules' names, the compiler's
   errors in place), run the commands from the editor, point lua-language-server at `omp lua-stubs`' definitions, and
   open a game script (`.BIN`) as its `oms-decompile` text. Done when a design spec settles the form (an application,
@@ -602,8 +597,8 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   table, the base mods (`Ome.Mods`), the shell's strings, the panel font and the icon. On 2026-11-16 the user named
   the game manifests as data to separate out eventually. A manifest holds the art addresses and their hashes (launcher
   spec §8.7), so where a separate manifest is read from decides whether it is trusted as the program is.
-  "Toolchain packaging for exported ports" above asks the same question for the OMS modules. Done when the user has
-  chosen the data that sits beside the library and the release builds ship it there.
+  The game's OMS toolchain is embedded the same way, as part of each base mod (modding from a release spec §5).
+  Done when the user has chosen the data that sits beside the library and the release builds ship it there.
 - **A package folder in a cloud folder may be refused.**
   - `FolderPackageContainer` (`engine/Ome.Mods/Packages/`) refuses every entry with the `ReparsePoint` attribute, to
     keep a package inside its folder (mod loader spec §3.1). A cloud folder's placeholder (OneDrive's
@@ -774,7 +769,7 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     drawn", under Engine fidelity.
   - **The script level, M1, is reached (2026-11-20, by the user's word that it comes next).** All 693 scripts
     round-trip byte for byte at the core and the idiomatic level, and the canonical rebuild, the idiomatic rebuild
-    and the patch probe each run the 271 scenes equivalent to the originals. `oms/arterial/adv.oms` lifts 15,641
+    and the patch probe each run the 271 scenes equivalent to the originals. `mods/arterial-base/oms/adv.oms` lifts 15,641
     library subs and 25,438 pages, 41.0% of the instructions. `example.arterial-prologue-line` links, shows its
     line as the first page on native AGE and on the port, and has a workspace test. A three-line language package
     ran in the port. The guide and the launcher's art entry are in, and so is `example.arterial-new-scene`

@@ -390,17 +390,29 @@ def _cp932_field(text: str, size: int) -> bytes:
     return raw + bytes(size - len(raw))
 
 
+def scripts_the_modules_run(game: str) -> list[str]:
+    """The scripts the game's OMS modules run (`run NAME` in its base mod's oms/*.oms), as catalog names, in order. The
+    smoke's install lists them, so the toolchain the engine ships builds against it, as on a real install (modding
+    from a release spec §12, gate 2)."""
+    found: set[str] = set()
+    for path in sorted((REPO / "mods" / f"{game}-base" / "oms").glob("*.oms")):
+        found.update(re.findall(r"\brun ([A-Z][A-Z0-9_]*)\b", path.read_text(encoding="utf-8")))
+    return [f"{name}.BIN" for name in sorted(found)]
+
+
 def write_smoke_home(home: Path, game: str = SMOKE_GAME) -> Path:
     """An OME home for `OME-Launcher --check smoke --home HOME`: `profiles/smoke/` in native mode on
     `installs/<game>/`. Its SYS4INI.BIN is the smallest complete catalog:
     - the header of the game's first catalog identity (`engine/Ome.Engine/Profiles/<game>.json`);
-    - a directory of one archive and one placeholder entry, then an empty trailer as the engine reads one (no
-      metadata, a zero-length settings block, nothing after it), packed as LZSS literals.
+    - a directory of one archive, one placeholder entry and an empty entry for each script the game's OMS modules
+      run (scripts_the_modules_run), then an empty trailer as the engine reads one (no metadata, a zero-length
+      settings block, nothing after it), packed as LZSS literals.
     A header alone is refused, since its expanded size 0 fails (launcher plan §9). Returns the home."""
     identity = json.loads((REPO / f"engine/Ome.Engine/Profiles/{game}.json").read_text(encoding="utf-8"))
     identity = identity["catalogIdentities"][0]
-    directory = (struct.pack("<I", 1) + _cp932_field("DATA.ALF", 256) + struct.pack("<I", 1)
-                 + _cp932_field("@", 64) + bytes(16) + struct.pack("<II", 0, 0))
+    names = ["@", *scripts_the_modules_run(game)]
+    directory = (struct.pack("<I", 1) + _cp932_field("DATA.ALF", 256) + struct.pack("<I", len(names))
+                 + b"".join(_cp932_field(name, 64) + bytes(16) for name in names) + struct.pack("<II", 0, 0))
     packed = bytearray()
     for offset in range(0, len(directory), 8):
         chunk = directory[offset:offset + 8]

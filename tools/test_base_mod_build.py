@@ -36,7 +36,7 @@ confidence = "high"
 address = "0x200"
 name = "unit_condition_levels"
 category = "data-table"
-type = "int[unit][30]"
+type = "int[][30]"
 columns = { "6" = "charm", "7" = "confusion" }
 source = "investigation"
 confidence = "high"
@@ -87,7 +87,13 @@ def write(files: dict):
 
 def layout_of(files: dict) -> dict:
     return {value["name"]: value for value in json.loads(next(text for path, text in files.items()
-                                                              if path.name == "globals.json"))["globals"]}
+                                                              if path.parent.name == "layout"
+                                                              and path.name == "globals.json"))["globals"]}
+
+
+def oms_of(files: dict) -> dict:
+    return json.loads(next(text for path, text in files.items()
+                           if path.parent.name == "oms" and path.name == "globals.json"))
 
 
 def test_shapes():
@@ -196,6 +202,70 @@ def test_rename_rule():
         (mods / "test-base" / "manifest.toml").write_text('version = "1.4.0"\n', encoding="utf-8")
         _, errors = generate(mods, source)
         check(any("lower than the released 2" in error for error in errors), "the major version cannot go down")
+
+
+MODULE = '''oms 1
+// a comment: sub not_a_name {
+module test.adv
+use test.globals
+
+enum speaker {
+    hero = 0x1   // the hero
+    エミリオ = 0x2
+}
+enum flag { on = 0x1, off = 0x0 }
+const page_limit = 0x10
+@dialogue inline line(text: text, speaker: speaker = none) {
+inner_label:
+    @op(0x1, 0x0)
+}
+sub open_window {
+    if G[0x1] == 0x0 {
+retry:
+        @op(0x2, "a { b } // c:")
+    }
+second_entry:
+    return
+}
+@guard sub draw_window {
+    return
+}
+coroutine handler {
+    resume
+}
+'''
+
+
+def test_module_names():
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory))
+        (mods / "test-base" / "oms").mkdir()
+        (mods / "test-base" / "oms" / "adv.oms").write_text(MODULE, encoding="utf-8")
+        names, errors = build.module_names(mods / "test-base")
+        check(not errors, f"the module reads ({errors})")
+        check(sorted(names) == sorted(f"test.adv.{name}" for name in (
+            "speaker", "hero", "エミリオ", "flag", "on", "off", "page_limit", "line", "open_window", "retry",
+            "second_entry", "draw_window", "handler")),
+              f"a module's names are its declarations, enum members and its subs' labels ({sorted(names)})")
+        files, errors = generate(mods, source)
+        check(not errors, f"the base mod builds ({errors})")
+        exports = next(text for path, text in files.items() if path.name == "exports.txt").splitlines()
+        listed = [line for line in exports if line.startswith("module ")]
+        check(len(listed) == 13 and exports[-13:] == listed and "module test.adv.エミリオ" in listed,
+              f"exports.txt lists the module's names last ({listed})")
+        write(files)
+        (mods / "test-base" / "oms" / "adv.oms").write_text(MODULE.replace("sub open_window", "sub show_window"),
+                                                            encoding="utf-8")
+        _, errors = generate(mods, source)
+        check(errors == ["test-base 1 exports 'open_window' of the module test.adv, which oms/ no longer declares: a "
+                         "module's names have no old-name form, so keep the name (a sub can stay as one that calls "
+                         "its new name) or raise the base mod's major version"], f"a renamed sub is refused ({errors})")
+        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n', encoding="utf-8")
+        _, errors = generate(mods, source)
+        check(not errors, f"a raised major version lets it go ({errors})")
+        (mods / "test-base" / "oms" / "adv.oms").write_text(MODULE + "sub handler {\n}\n", encoding="utf-8")
+        _, errors = generate(mods, source)
+        check(any("'handler' is declared twice in test.adv" in error for error in errors), f"a name twice ({errors})")
 
 
 def entry(address: str, name: str, type_: str, extra: str = "") -> str:
@@ -394,6 +464,61 @@ def test_old_names():
         table_json = json.loads(globals_build.emit_json(merged, {}, globals_build.load_tables(source)))["tables"][0]
         check(table_json["aliases"] == ["heroes"] and table_json["field_aliases"] == {"lvl": "level"},
               "the registry's JSON carries the old names")
+
+
+OMS_REGISTRY = REGISTRY.replace('type = "int[][30]"', 'type = "int[unit][30]"') + '''
+[[global]]
+address = "0x300"
+name = "unit_levels"
+aliases = ["unit_lvls"]
+category = "data-table"
+type = "int[1000]"
+source = "investigation"
+confidence = "high"
+
+[[table]]
+name = "unit"
+aliases = ["units"]
+records = 1000
+built_by = "boot"
+fields = { level = "unit_levels" }
+field_aliases = { lvl = "level" }
+'''
+
+
+def test_oms_globals():
+    check(build.oms_type("int[1000x100]", {}) == "int[1000][100]", "the RxC form is written as two dimensions")
+    check(build.oms_type("int[unit][30]", {"unit": 1000}) == "int[1000][30]",
+          "a record table's name as a dimension is its record count")
+    check(build.oms_type("int[][27]", {}) == "int[][27]" and build.oms_type("string", {}) == "string",
+          "an open first dimension and a scalar are kept")
+    check(build.oms_type("int[unit][30]", {}) is None and build.oms_type("int[5][]", {}) is None
+          and build.oms_type("bool", {}) is None,
+          "a symbolic dimension that names no table, an open later one and no shape cannot be written")
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory), OMS_REGISTRY)
+        files, errors = generate(mods, source)
+        check(not errors, f"a registry with a record table and old names generates ({errors})")
+        oms = oms_of(files)
+        check(oms["format"] == 1 and oms["profile"] == "test" and "DO NOT EDIT" in oms["note"],
+              "oms/globals.json says what it is and that it is generated")
+        cells = oms["cells"]
+        check(list(cells) == ["G:0x10", "G:0x100", "G:0x200", "G:0x300", "GS:0x0"],
+              f"the cells are keyed and ordered by bank and address, the unnamed one left out ({list(cells)})")
+        check(cells["G:0x200"] == {"name": "unit_condition_levels", "type": "int[1000][30]", "address": "0x200",
+                                   "columns": {"6": "charm", "7": "confusion"}},
+              f"a symbolic dimension is written as the table's records, with the columns ({cells['G:0x200']})")
+        check(cells["GS:0x0"]["type"] == "string[1000][2]", "the RxC form is written in the loader's form")
+        check(cells["G:0x300"]["aliases"] == ["unit_lvls"], "a cell keeps its old names")
+        check(oms["tables"] == [{"name": "unit", "aliases": ["units"], "records": 1000,
+                                 "fields": {"level": "unit_levels"},
+                                 "field_aliases": {"lvl": "level"}}],
+              f"a table keeps its old names and its fields' ({oms['tables']})")
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory), REGISTRY.replace('type = "int[][30]"', 'type = "int[foe][30]"'))
+        files, errors = generate(mods, source)
+        check(any("unit_condition_levels" in error and "oms/globals.json" in error for error in errors),
+              f"a dimension that names no table is reported ({errors})")
 
 
 def test_old_names_lint():
@@ -655,6 +780,8 @@ def main():
     test_record_map_errors()
     test_alias_lint()
     test_old_names()
+    test_oms_globals()
+    test_module_names()
     test_old_names_lint()
     test_old_names_rename_rule()
     test_scopes()

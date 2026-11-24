@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Ome.Engine.Sys4;
 using Ome.Launcher;
+using Ome.Launcher.ViewModels;
 
 /// <summary>
 /// The headless harness of the window's tests (launcher plan §6.1): one Avalonia session for the test process, on
@@ -24,14 +25,52 @@ internal static class Headless
 
     public static string ShotsFolder => Path.Combine(Paths.Repo, "build", "launcher-shots");
 
-    /// <summary>Runs <paramref name="action"/> on the session's UI thread.</summary>
-    public static T Run<T>(Func<T> action) => Session.Value.Dispatch(action, CancellationToken.None).GetAwaiter().GetResult();
+    /// <summary>Runs <paramref name="action"/> on the session's UI thread, then lets the models it built settle
+    /// (<see cref="Track"/>).</summary>
+    public static T Run<T>(Func<T> action)
+        => Session.Value.Dispatch(async () =>
+        {
+            T result = action();
+            await SettleTracked();
+            return result;
+        }, CancellationToken.None).GetAwaiter().GetResult();
 
     public static void Run(Action action) => Run(() => { action(); return 0; });
 
-    /// <summary>Runs <paramref name="action"/> on the session's UI thread, awaiting it there.</summary>
+    /// <summary>Runs <paramref name="action"/> on the session's UI thread, awaiting it there, then lets the models it
+    /// built settle (<see cref="Track"/>).</summary>
     public static void Run(Func<Task> action)
-        => Session.Value.Dispatch(async () => { await action(); return 0; }, CancellationToken.None).GetAwaiter().GetResult();
+        => Session.Value.Dispatch(async () =>
+        {
+            await action();
+            await SettleTracked();
+            return 0;
+        }, CancellationToken.None).GetAwaiter().GetResult();
+
+    private static readonly List<MainViewModel> Tracked = [];
+
+    /// <summary>Returns <paramref name="model"/>, which the job that built it lets settle before it ends
+    /// (<see cref="MainViewModel.SettleAsync"/>). A model's background work, its check runs and a page's writes, reads
+    /// the test home's installs and profiles. Left running past its job, a check that still holds the install's
+    /// SYS4INI.BIN open races the home's deletion ("being used by another process"), and what the job left queued on
+    /// the UI thread does not run: a write that waited for its turn never ends. Every test builds its model through
+    /// it, on the UI thread, which alone touches the list.</summary>
+    public static MainViewModel Track(MainViewModel model)
+    {
+        Tracked.Add(model);
+        return model;
+    }
+
+    private static async Task SettleTracked()
+    {
+        if (Tracked.Count == 0) return;
+        MainViewModel[] models = [.. Tracked];
+        Tracked.Clear();
+        Task settled = Task.WhenAll(models.Select(model => model.SettleAsync()));
+        Assert.True(await Task.WhenAny(settled, Task.Delay(TimeSpan.FromMinutes(1))) == settled,
+                    "a model's background work did not end within a minute: "
+                    + string.Join("; ", models.Select(model => model.BackgroundWork).OfType<string>()));
+    }
 
     /// <summary>Shows <paramref name="window"/> in <paramref name="theme"/>, lays it out, and returns its frame, which is
     /// written to <c>build/launcher-shots/&lt;name&gt;.png</c>. Fails on a warning Avalonia logged while it drew. Call on

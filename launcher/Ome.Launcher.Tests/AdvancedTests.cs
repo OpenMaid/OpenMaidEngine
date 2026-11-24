@@ -33,7 +33,7 @@ public sealed class AdvancedTests : IDisposable
 
     private async Task<(MainViewModel Model, RecordingHost Host)> Open()
     {
-        var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler()));
+        var model = Headless.Track(new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler())));
         var host = new RecordingHost();
         model.Host = host;
         await model.StartAsync();

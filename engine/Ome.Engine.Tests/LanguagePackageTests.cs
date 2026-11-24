@@ -339,7 +339,7 @@ public sealed class LanguagePackageTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(Paths.Sys4Ini);
         var store = new Sys4AssetStore(catalog, Paths.GameDir, Paths.GameDir);
         ModLinkBase linkBase = ModLinkBase.ForInstall("himegari", Paths.Sys4Ini, catalog, store, himegari, Contracts,
-            Paths.GlobalsJson("himegari"), Paths.OmsModules("himegari"), Paths.PatchPointsJson("himegari"));
+            Ome.Mods.Linking.GameToolchain.Shipped("himegari"));
         ModPackage example = ModPackage.Open(Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.sc0000-page3"));
         _opened.Add(example);
 

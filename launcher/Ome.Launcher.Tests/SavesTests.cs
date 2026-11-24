@@ -29,7 +29,7 @@ public sealed class SavesTests : IDisposable
 
     private async Task<MainViewModel> Open()
     {
-        var model = new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler()));
+        var model = Headless.Track(new MainViewModel(_home.Session(), new ArtOptions(Handler: new HttpClientHandler())));
         model.Host = new RecordingHost();
         await model.StartAsync();
         Assert.Equal(_profile.Id, model.Selected!.Id);

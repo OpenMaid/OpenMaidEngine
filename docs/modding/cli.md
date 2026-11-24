@@ -181,14 +181,15 @@ the port only; `tools/drive/scenarios/port/` holds those.
 `pictures` lists the picture files on screen as the port's F5 does ([translating.md](translating.md), step 8). It is
 a port step too.
 
-## Outside the repository
+## Where the toolchain comes from
 
-Fragments and new scripts compile against the repository's OMS modules (`oms/<game>/`) and generated registries
-(`build/games/<game>/`). An exported port build without the repository has none of them. It can still load:
+Fragments and new scripts compile against the game's OMS toolchain: `<game>.globals`, `<game>.adv` and the named
+patch points. Each is a file of the game's base mod, `<game>-base` ([packages.md](packages.md), "Base mods"), and
+the engine and every command read the copy built into the program. So a release and a source checkout compile a mod
+alike, and a package compiles the same wherever it sits. The link report names the toolchain on its `toolchain:`
+line.
 
-- asset-only mods;
-- whole-script replacements;
-- fragments whose stored plan `omp build` compiled, provided the plan's fingerprint matches.
-
-New scripts always compile from source, so they need the repository. Ship built `.omp` files for players. Packaging
-the toolchain with exported builds is in `../backlog.md`.
+If the toolchain does not build against an install, for instance because the install lacks a script `<game>.adv`
+runs, only what compiles is refused: each fragment and new script reports why. Asset-only mods, whole-script
+replacements, and fragments whose stored plan matches still link ([troubleshooting.md](troubleshooting.md),
+"The game's toolchain does not build").

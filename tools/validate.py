@@ -361,9 +361,10 @@ def build_gate_plan(
                 900,
                 profile_environment,
             ))
-            # A profile with source modules (oms/<profile>/*.oms) also rebuilds from idiomatic source, whose
-            # sidecar-free linking moves library subs: positions compare by relocation key.
-            if any((REPO / "oms" / context.profile_id).glob("*.oms")):
+            # A profile with source modules (its base mod's oms/*.oms; modding from a release spec §5.1) also
+            # rebuilds from idiomatic source, whose sidecar-free linking moves library subs: positions compare by
+            # relocation key.
+            if any((REPO / "mods" / f"{context.profile_id}-base" / "oms").glob("*.oms")):
                 gates.append(Gate(
                     "oms-idiomatic-rebuild",
                     f"Open Maid Script idiomatic rebuild, VM-trace-equivalent scenes ({context.profile_id})",

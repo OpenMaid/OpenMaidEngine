@@ -198,7 +198,7 @@ public sealed class ModLaunchTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(Paths.Sys4Ini);
         var store = new Sys4AssetStore(catalog, Paths.GameDir, Paths.GameDir);
         ModLinkBase linkBase = ModLinkBase.ForInstall("himegari", Paths.Sys4Ini, catalog, store, Table, Contracts,
-            Paths.GlobalsJson("himegari"), Paths.OmsModules("himegari"), Paths.PatchPointsJson("himegari"));
+            Ome.Mods.Linking.GameToolchain.Shipped("himegari"));
         string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.sc0000-page3");
         string first = Path.Combine(_root, "a.omp"), second = Path.Combine(_root, "b.omp");
         Directory.CreateDirectory(_root);

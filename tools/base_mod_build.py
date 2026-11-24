@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate each game's base mod layout (Lua scripting spec §9.1): mods/<game>-base/layout/.
+"""Generate each game's base mod layout (Lua scripting spec §9.1): mods/<game>-base/layout/, and the compiler's view of
+the same registry, mods/<game>-base/oms/globals.json (modding from a release spec §5.1).
 
-A base mod is the per-game package that names the game's cells for Lua mods. Its layout comes from the repository
-alone, so no game content is read:
+A base mod is the per-game package that names the game's cells for Lua mods and for OMS. Its generated files come
+from the repository alone, so no game content is read:
 
   vm-map/globals[-<game>].toml      every named global: its bank, address, shape, columns and aliases; the
                                     record tables ([[table]]), with what builds each; and the scopes that key
@@ -16,10 +17,17 @@ For each profile with a base mod (a hand-written mods/<game>-base/manifest.toml)
 
   layout/globals.json   the layout the engine builds a mod's accessors from (game.g, game.table)
   layout/points.json    the patch points, in the form of build/games/<game>/patch-points.json
+  oms/globals.json      the module <game>.globals that a fragment or script `use`s (GameModule.ParseGlobals): each
+                        named cell with its old names, its type in the form the compiler reads (`int[1000x100]` as
+                        `int[1000][100]`, a record table's name as a dimension as its record count) and its columns,
+                        and each record table with its old names and its fields' old names. Beside it, the base mod's
+                        hand-kept modules (`oms/*.oms`, such as adv.oms) make up the game's toolchain
   layout/exports.txt    the names the base mod exports: its API, checked in, so a review sees a name change: the
                         globals, then the record tables (`table NAME`) and their fields (`field TABLE.FIELD`), each
                         old name as `OLD = NAME`, then the scopes (`scope NAME`) and their tables' short names
-                        (`scope NAME.SHORT`)
+                        (`scope NAME.SHORT`), then the names its OMS modules declare (`module MODULE.NAME`; modding
+                        from a release spec §5.2): what a source that uses the module may name, as the compiler
+                        imports them
   lua/generated/tables.lua   the record map (data patches spec §6.3): each record table's record count and what
                         builds it, and for each field its global, kind, row width, named columns and whether a save
                         holds it, for the base mod's tables.lua; the old names of tables and fields; and each scope's
@@ -30,10 +38,12 @@ For each profile with a base mod (a hand-written mods/<game>-base/manifest.toml)
                         column's number are marked as not offered, with why
 
 The rename rule (spec §9.1): a name the checked-in exports.txt lists stays exported, as a global's name or as one of
-its `aliases`, until the base mod's major version is raised. A rename that does neither is refused. A record table's
+its `aliases`, until the base mod's major version is raised. The layout and oms/globals.json name the same globals
+and tables from the same registry, with the same old names, so the rule covers both. A rename that does neither is refused. A record table's
 name and its fields' names follow the same rule, kept as a table's `aliases` or in its `[table.field_aliases]`
 (data patches plan §9.1). A scope and its tables' short names have no old-name form: one that leaves needs a raised
-major version.
+major version, and so does a name an OMS module declares (oms/*.oms, hand-kept: its constants, enums and their
+members, templates, cells, tables, and subs with their labels).
 
   --build   write the layouts; refuses a change the rename rule forbids
   --check   exit nonzero if a layout is stale or the rename rule is broken (the core validation gate)
@@ -55,6 +65,7 @@ import patch_points_build  # noqa: E402
 
 MODS = paths.REPO / "mods"
 LAYOUT_FORMAT = 1
+OMS_GLOBALS_FORMAT = 1
 IDENTIFIER = re.compile(r"[a-z_][a-z0-9_]*")
 COLUMN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")   # a column is reached as a Lua name; registries use capitals there
 SHAPE = re.compile(r"(int|string|float)((?:\[[^\]]*\])*)")
@@ -66,6 +77,15 @@ LUA_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 LUA_KEYWORDS = {"and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto", "if", "in",
                 "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while"}
 VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+OMS_NAME = r"[^\W\d]\w*"
+OMS_MODULE = re.compile(r"module\s+(" + OMS_NAME + r"(?:\." + OMS_NAME + r")*)\s*$")
+# A declaration at the top of a module (OmsParser's statement keywords): its name, and whether it opens a block.
+OMS_DECLARATION = re.compile(r"(?:@guard\s+)?(sub|coroutine)\s+(" + OMS_NAME + r")"
+                             r"|(?:@dialogue\s+)?(inline)\s+(" + OMS_NAME + r")"
+                             r"|(enum|const|table)\s+(" + OMS_NAME + r")"
+                             r"|(global)\s+\w+\s+(" + OMS_NAME + r")")
+OMS_LABEL = re.compile(r"\s*(" + OMS_NAME + r"):\s*$")
+OMS_MEMBER = re.compile(r"(" + OMS_NAME + r")\s*=")
 
 
 def base_mod_id(profile_id: str) -> str:
@@ -166,6 +186,81 @@ def render_globals(profile_id: str, values: list[dict], source: str) -> str:
              f' "profile": {text(profile_id)},',
              ' "globals": [']
     lines += [f"  {text(value)}" + ("," if k + 1 < len(values) else "") for k, value in enumerate(values)]
+    lines += [" ]", "}"]
+    return "\n".join(lines) + "\n"
+
+
+def oms_type(type_: str, records: dict[str, int]) -> str | None:
+    """A registry type in the form the compiler's loader reads (GameModule.ParseGlobals): `int[1000x100]` is
+    `int[1000][100]`, and a record table's name as a dimension (`int[unit][30]`) is that table's record count, given
+    by `records`. An open first dimension stays open (`int[][27]`). None for a type it cannot write."""
+    match = SHAPE.fullmatch(type_ or "")
+    if not match:
+        return None
+    dims: list[str] = []
+    for k, inner in enumerate(re.findall(r"\[([^\]]*)\]", match.group(2))):
+        if re.fullmatch(r"\d+", inner):
+            dims.append(inner)
+        elif re.fullmatch(r"\d+x\d+", inner):
+            dims.extend(inner.split("x"))
+        elif inner == "" and k == 0:
+            dims.append("")
+        elif inner in records:
+            dims.append(str(records[inner]))
+        else:
+            return None
+    return match.group(1) + "".join(f"[{d}]" for d in dims)
+
+
+def oms_globals(curated: dict, tables: list[dict], source: str) -> tuple[list[tuple[str, dict]], list[dict], list[str]]:
+    """The cells and tables of oms/globals.json, and the errors: a named cell whose type the compiler cannot read. The
+    cells keep the order of build/games/<game>/globals.json (by bank, then address), and the tables the registry's."""
+    records = {t["name"]: t["records"] for t in tables if isinstance(t.get("records"), int)}
+    cells: list[tuple[str, dict]] = []
+    errors: list[str] = []
+    for (bank, address), entry in sorted(curated.items()):
+        name = entry.get("name")
+        if not name:
+            continue
+        type_ = oms_type(entry.get("type", ""), records)
+        if type_ is None:
+            errors.append(f"{source}: {name}: type {entry.get('type')!r} is not a shape oms/globals.json can write "
+                          f"(a dimension is a number, RxC, a record table's name, or open first)")
+            continue
+        cell: dict = {"name": name}
+        if entry.get("aliases"):
+            cell["aliases"] = sorted(entry["aliases"])
+        cell["type"] = type_
+        cell["address"] = f"0x{globals_build._parse_addr(entry['address']):x}"
+        if entry.get("columns"):
+            cell["columns"] = {index: column for index, column in
+                               sorted(entry["columns"].items(), key=lambda item: int(item[0]))}
+        cells.append((globals_build.cell_key(bank, address), cell))
+    out: list[dict] = []
+    for table in tables:
+        value: dict = {"name": table["name"]}
+        if table.get("aliases"):
+            value["aliases"] = sorted(table["aliases"])
+        value["records"] = table["records"]
+        value["fields"] = dict(table["fields"])
+        if table.get("field_aliases"):
+            value["field_aliases"] = dict(sorted(table["field_aliases"].items()))
+        out.append(value)
+    return cells, out, errors
+
+
+def render_oms_globals(profile_id: str, cells: list[tuple[str, dict]], tables: list[dict], source: str) -> str:
+    """oms/globals.json, one cell or table per line, so a registry change is a one-line diff."""
+    def text(value) -> str:
+        return json.dumps(value, ensure_ascii=False)
+    lines = ["{",
+             f' "note": {text(f"DO NOT EDIT -- generated from {source} by tools/base_mod_build.py --build")},',
+             f' "format": {OMS_GLOBALS_FORMAT},',
+             f' "profile": {text(profile_id)},',
+             ' "cells": {']
+    lines += [f"  {text(key)}: {text(cell)}" + ("," if k + 1 < len(cells) else "") for k, (key, cell) in enumerate(cells)]
+    lines += [" },", ' "tables": [']
+    lines += [f"  {text(table)}" + ("," if k + 1 < len(tables) else "") for k, table in enumerate(tables)]
     lines += [" ]", "}"]
     return "\n".join(lines) + "\n"
 
@@ -494,13 +589,81 @@ def render_shape(profile_id: str, tables: list[dict], source: str, manifest: str
     return json.dumps(shape, indent=2, ensure_ascii=False) + "\n"
 
 
-TABLE_PREFIX, FIELD_PREFIX, SCOPE_PREFIX = "table ", "field ", "scope "
+TABLE_PREFIX, FIELD_PREFIX, SCOPE_PREFIX, MODULE_PREFIX = "table ", "field ", "scope ", "module "
 
 
-def exported_names(values: list[dict], tables: list[dict] = (), scopes: list[dict] = ()) -> dict[str, str | None]:
+def _without_comment(line: str) -> str:
+    """A line of OMS source without its `//` comment (one outside a string literal)."""
+    quoted = False
+    for index, char in enumerate(line):
+        if char == '"' and (index == 0 or line[index - 1] != "\\"):
+            quoted = not quoted
+        elif not quoted and line.startswith("//", index):
+            return line[:index].rstrip()
+    return line.rstrip()
+
+
+def module_names(root: Path) -> tuple[dict[str, str], list[str]]:
+    """The names the base mod's OMS modules declare (oms/*.oms), as `MODULE.NAME` to the file that declares it, and
+    the errors. They are what a source that uses the module may name, as OmsCompiler.Use imports them: constants,
+    enums and their members, templates, global cells, tables, and subs with the labels in their bodies. Read by the
+    modules' layout: a declaration starts at column 0, and a `}` at column 0 closes its block. BaseModTests checks the
+    list against the parser for each base mod the engine ships."""
+    names: dict[str, str] = {}
+    errors: list[str] = []
+    for path in sorted((root / "oms").glob("*.oms")):
+        shown = f"oms/{path.name}"
+        module = None
+        block = None   # the kind of the open top-level block
+        members = ""   # an open enum's text
+        for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            line = _without_comment(raw)
+            if block is not None:
+                if line == "}":
+                    if block == "enum":
+                        for member in OMS_MEMBER.findall(members):
+                            names.setdefault(f"{module}.{member}", shown)
+                    block = None
+                elif block == "enum":
+                    members += line + "\n"
+                elif block in ("sub", "coroutine") and (label := OMS_LABEL.fullmatch(line)):
+                    names.setdefault(f"{module}.{label.group(1)}", shown)
+                continue
+            if not line or line[0].isspace():
+                continue
+            if module is None:
+                if found := OMS_MODULE.fullmatch(line):
+                    module = found.group(1)
+                continue
+            found = OMS_DECLARATION.match(line)
+            if not found:
+                continue
+            groups = [group for group in found.groups() if group is not None]
+            kind, name = groups[0], groups[1]
+            if f"{module}.{name}" in names:
+                errors.append(f"{shown}:{number}: '{name}' is declared twice in {module}")
+            names[f"{module}.{name}"] = shown
+            opens, closes = line.count("{"), line.count("}")
+            if kind == "enum" and opens:
+                members = line[line.index("{") + 1:] + "\n"
+                if closes:
+                    for member in OMS_MEMBER.findall(members.split("}", 1)[0]):
+                        names.setdefault(f"{module}.{member}", shown)
+                else:
+                    block = "enum"
+            elif opens > closes:
+                block = "template" if kind == "inline" else kind
+        if module is None:
+            errors.append(f"{shown}: no `module` line")
+    return names, errors
+
+
+def exported_names(values: list[dict], tables: list[dict] = (), scopes: list[dict] = (),
+                   modules: dict[str, str] | None = None) -> dict[str, str | None]:
     """Each exported name: None for a global's own name, the global's name for an alias. A record table is
     `table NAME` and its field `field TABLE.FIELD` (data patches plan §9.1), an old one with its current name. A scope
-    is `scope NAME`, and each table's short name under it `scope NAME.SHORT` (data patches spec §6.2)."""
+    is `scope NAME`, and each table's short name under it `scope NAME.SHORT` (data patches spec §6.2). A name an OMS
+    module declares is `module MODULE.NAME` (module_names)."""
     names: dict[str, str | None] = {}
     for value in values:
         names[value["name"]] = None
@@ -519,6 +682,8 @@ def exported_names(values: list[dict], tables: list[dict] = (), scopes: list[dic
         names[SCOPE_PREFIX + scope["name"]] = None
         for short in scope["tables"]:
             names[f"{SCOPE_PREFIX}{scope['name']}.{short}"] = None
+    for name in modules or {}:
+        names[MODULE_PREFIX + name] = None
     return names
 
 
@@ -526,12 +691,13 @@ def render_exports(profile_id: str, major: int, names: dict[str, str | None], so
     lines = [f"# DO NOT EDIT -- generated from {source} by tools/base_mod_build.py --build",
              f"# The names {base_mod_id(profile_id)} {major} exports (Lua scripting spec §9.1): its globals, then its",
              "# record tables and their fields (data patches plan §9.1), then its scopes and their tables' short names",
-             "# (data patches spec §6.2). Each stays until the major version changes: a renamed global, table or field",
-             "# keeps its old name, listed as OLD = NAME.",
+             "# (data patches spec §6.2), then the names its OMS modules declare, oms/*.oms (modding from a release",
+             "# spec §5.2). Each stays until the major version changes: a renamed global, table or field keeps its old",
+             "# name, listed as OLD = NAME; a scope and a module's names have no old-name form.",
              f"major = {major}"]
     def group(name: str) -> int:
         return (1 if name.startswith(TABLE_PREFIX) else 2 if name.startswith(FIELD_PREFIX)
-                else 3 if name.startswith(SCOPE_PREFIX) else 0)
+                else 3 if name.startswith(SCOPE_PREFIX) else 4 if name.startswith(MODULE_PREFIX) else 0)
     for name in sorted(names, key=lambda name: (group(name), name)):
         lines.append(name if names[name] is None else f"{name} = {names[name]}")
     return "\n".join(lines) + "\n"
@@ -566,7 +732,7 @@ def manifest_major(manifest: Path) -> tuple[int | None, str | None]:
 
 
 def rename_errors(profile_id: str, released: tuple[int | None, set[str]] | None, major: int,
-                  names: dict[str, str | None]) -> list[str]:
+                  names: dict[str, str | None], modules_read: bool = True) -> list[str]:
     """The rename rule against the checked-in exports (spec §9.1)."""
     if released is None or released[0] is None:
         return []
@@ -581,7 +747,14 @@ def rename_errors(profile_id: str, released: tuple[int | None, set[str]] | None,
     dropped = released_names - names.keys()
     errors = []
     for name in sorted(dropped):
-        if name.startswith(SCOPE_PREFIX):
+        if name.startswith(MODULE_PREFIX):
+            if not modules_read:
+                continue  # The modules' own errors stand for them.
+            module, _, symbol = name[len(MODULE_PREFIX):].rpartition(".")
+            errors.append(f"{base_mod_id(profile_id)} {major} exports '{symbol}' of the module {module}, which oms/ no "
+                          f"longer declares: a module's names have no old-name form, so keep the name (a sub can stay "
+                          f"as one that calls its new name) or raise the base mod's major version")
+        elif name.startswith(SCOPE_PREFIX):
             scope, _, short = name[len(SCOPE_PREFIX):].partition(".")
             if short and SCOPE_PREFIX + scope in dropped:
                 continue  # A dropped scope's error stands for its short names.
@@ -611,7 +784,8 @@ def rename_errors(profile_id: str, released: tuple[int | None, set[str]] | None,
 
 def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
              points_registry: Path | None = None, manifest: Path | None = None) -> tuple[dict[Path, str], list[str]]:
-    """The files a base mod's layout and record map should hold, and the errors that block them."""
+    """The files a base mod's layout, record map, shape and oms/globals.json should hold, and the errors that block
+    them."""
     root = base_mod_dir(profile_id, mods)
     registry = registry or globals_source(profile_id)
     points_registry = points_registry or points_source(profile_id)
@@ -636,6 +810,8 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
     prefixes, prefix_error = saved_prefixes(manifest) if tables else (None, None)
     if prefix_error:
         errors.append(f"{base_mod_id(profile_id)}: {prefix_error}")
+    oms_cells, oms_tables, oms_errors = oms_globals(curated, tables if not table_errors else [], source)
+    errors += oms_errors
     record_map: list[dict] = []
     if not table_errors and not prefix_error:
         record_map, map_errors = record_tables(tables, values, prefixes, source)
@@ -645,12 +821,15 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
     labels, label_error = format_labels(root)
     if label_error:
         errors.append(f"{base_mod_id(profile_id)}: {label_error}")
-    names = exported_names(values, tables if not table_errors else [], scopes if not table_errors else [])
+    modules, module_errors = module_names(root)
+    errors += [f"{base_mod_id(profile_id)}: {message}" for message in module_errors]
+    names = exported_names(values, tables if not table_errors else [], scopes if not table_errors else [], modules)
     exports = root / "layout" / "exports.txt"
     released = parse_exports(exports.read_text(encoding="utf-8")) if exports.is_file() else None
-    errors += rename_errors(profile_id, released, major, names)
+    errors += rename_errors(profile_id, released, major, names, modules_read=not module_errors)
     files = {root / "layout" / "globals.json": render_globals(profile_id, values, source),
              root / "layout" / "points.json": points,
+             root / "oms" / "globals.json": render_oms_globals(profile_id, oms_cells, oms_tables, source),
              exports: render_exports(profile_id, major, names, source),
              root / "lua" / "generated" / "tables.lua": render_record_map(profile_id, record_map, source,
                                                                           _shown(manifest),
@@ -672,7 +851,8 @@ def _shown(path: Path) -> str:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--build", action="store_true", help="write every base mod's layout and record map")
+    mode.add_argument("--build", action="store_true",
+                      help="write every base mod's layout, record map, shape and oms/globals.json")
     mode.add_argument("--check", action="store_true", help="fail if a layout is stale or a rename breaks the rule")
     args = parser.parse_args(argv)
     failed = False

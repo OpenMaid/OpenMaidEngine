@@ -216,7 +216,11 @@ class LauncherCheckSmokeTests(unittest.TestCase):
         self.assertEqual(identity["catalogRevision"], raw[:8].decode("ascii").rstrip())
         self.assertEqual(identity["title"], raw[8:0x12C].split(b"\0", 1)[0].decode("cp932"))
         self.assertEqual(["DATA.ALF"], index["archives"])
-        self.assertEqual((1, 0), (index["file_count"], index["entry_count"]))  # one '@' placeholder
+        # One '@' placeholder, then the scripts himegari.adv runs, so the shipped toolchain builds against it.
+        scripts = package_linux_x64.scripts_the_modules_run("himegari")
+        self.assertEqual(["HIDEWIN.BIN", "HISTORY.BIN", "MENU.BIN"], scripts)
+        self.assertEqual((1 + len(scripts), len(scripts)), (index["file_count"], index["entry_count"]))
+        self.assertEqual(scripts, [entry["name"] for entry in index["files"]])
         self.assertEqual(index["decompressed_size"], int.from_bytes(raw[0x12C:0x130], "little"))
         self.assertEqual('ome_profile = 1\ngame = "himegari"\nmode = "native"\n\n[install]\n'
                          'root = "../../installs/himegari"\n', profile)

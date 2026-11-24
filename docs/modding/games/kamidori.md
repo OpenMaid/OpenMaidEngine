@@ -119,7 +119,7 @@ The prelude's template is `line(text, speaker = none, voice = none, form = form_
 - `form_descriptor`, a description shown before the character is introduced;
 - `form_unknown`, `？？？？`.
 
-Speakers come from `unit_speaker_names` (`enum speaker` in `oms/kamidori/adv.oms`).
+Speakers come from `unit_speaker_names` (`enum speaker` in `mods/kamidori-base/oms/adv.oms`).
 
 ## Data edits
 

@@ -48,11 +48,10 @@ public partial class Main
         }
 
         // Launcher spec §5.9: the link base Ome.Cli's omp commands and the launcher build too.
+        // Modding from a release spec §5.3: the toolchain is the shipped base mod's; one that does not build is reported
+        // by each compile that needs it, not here.
         ModLinkBase shared = ModLinkBase.ForGame(selected.Profile.Id, selected.Profile.EngineAbiId, sys4IniPath, catalog,
-                                                 baseStore, out bool repositoryToolchain);
-        if (!repositoryToolchain)
-            GD.PushWarning("[mods] no repository toolchain: fragments compile without the profile's OMS modules, "
-                           + "globals and patch points");
+                                                 baseStore);
         // The Lua runtime checks each lua/ file; it is created only when a mod ships Lua (Lua scripting spec §14.2).
         // Launcher spec §5.3: this machine's value joins every cache key, so an entry another machine wrote is not used.
         string machineValue = MachineState.CacheValueFor(ProjectSettings.GlobalizePath("user://"), out string? machineWarning);

@@ -28,8 +28,15 @@ public sealed record ModLinkBase
     public required OpcodeTable Table { get; init; }
     public required OpcodeContracts Contracts { get; init; }
     public required IntrinsicCatalog Intrinsics { get; init; }
-    /// <summary>The profile's OMS modules (globals, scripts, source preludes).</summary>
+    /// <summary>The profile's OMS modules: <c>&lt;game&gt;.globals</c>, <c>&lt;game&gt;.scripts</c> and the source modules
+    /// (<see cref="GameToolchain.Modules"/>).</summary>
     public IReadOnlyList<GameModule> Modules { get; init; } = [];
+    /// <summary>The game's toolchain, from its base mod (modding from a release spec §5.1); null for a game the engine
+    /// ships no base mod for, whose fragments compile with <c>&lt;game&gt;.scripts</c> only.</summary>
+    public GameToolchain? Toolchain { get; init; }
+    /// <summary>Why the toolchain does not load or build against this install, or null (spec §5.3). A fragment or new
+    /// script that compiles reports it; a mod that compiles nothing still links.</summary>
+    public string? ToolchainError { get; init; }
     public OmsIdioms? Idioms { get; init; }
     public OmsPatchPoints? PatchPoints { get; init; }
     /// <summary><c>--lua-dev</c> (Lua scripting spec §9.3, §13): an unpacked mod's write to a name its <c>[lua] writes</c>
@@ -70,37 +77,24 @@ public sealed record ModLinkBase
     }
 
     /// <summary>
-    /// The base of an installed game: the mounted catalog and its asset store (overlay roots included), with the
-    /// profile's generated globals, its OMS source modules (which also give the idioms that name base labels) and its
-    /// patch points, each when present.
-    /// </summary>
-    /// <summary>
-    /// The link base every linker of an install uses: the engine, <c>Ome.Cli</c>'s <c>omp</c> commands and the launcher
-    /// (launcher spec §5.9), so they link alike and share a toolchain stamp. The opcode table and contracts are the
-    /// copy embedded in <c>Ome.Engine</c>; the profile's generated globals, OMS modules and patch points come from the
-    /// repository when this build runs inside one (<paramref name="repositoryToolchain"/>), and otherwise fragments
-    /// compile without them (backlog, "Toolchain packaging for exported ports").
+    /// The link base every linker of an install uses: the engine, the mod commands and the launcher (launcher spec
+    /// §5.9), so they link alike and share a toolchain stamp. The opcode table and contracts are the copy embedded in
+    /// <c>Ome.Engine</c>, and the toolchain is the profile's shipped base mod (<see cref="GameToolchain.Shipped"/>), so a
+    /// build inside a checkout links as a release does (modding from a release spec §3.2).
     /// </summary>
     public static ModLinkBase ForGame(string profile, string abiId, string sys4IniPath, Sys4AssetCatalog catalog,
-                                      IAssetStore store, out bool repositoryToolchain)
-    {
-        string? globals = null, modules = null, points = null;
-        try
-        {
-            (globals, modules, points) = (Paths.GlobalsJson(profile), Paths.OmsModules(profile), Paths.PatchPointsJson(profile));
-        }
-        catch (Exception error) when (error is TypeInitializationException or DirectoryNotFoundException)
-        {
-            // No repository above this build: Paths cannot find its root.
-        }
-        repositoryToolchain = modules != null;
-        return ForInstall(profile, sys4IniPath, catalog, store, OpcodeTableJson.LoadEmbedded(abiId),
-                          OpcodeContracts.LoadEmbedded(), globals, modules, points);
-    }
+                                      IAssetStore store)
+        => ForInstall(profile, sys4IniPath, catalog, store, OpcodeTableJson.LoadEmbedded(abiId),
+                      OpcodeContracts.LoadEmbedded(), GameToolchain.Shipped(profile));
 
+    /// <summary>
+    /// The base of an installed game: the mounted catalog and its asset store (overlay roots included), with the
+    /// game's toolchain when given: its globals, its source modules (which also give the idioms that name base labels)
+    /// and its patch points. A toolchain that does not load or build is kept as <see cref="ToolchainError"/>, not
+    /// thrown (modding from a release spec §5.3).
+    /// </summary>
     public static ModLinkBase ForInstall(string profile, string sys4IniPath, Sys4AssetCatalog catalog, IAssetStore store,
-                                         OpcodeTable table, OpcodeContracts contracts, string? globalsJson = null,
-                                         string? omsModulesDirectory = null, string? patchPointsJson = null)
+                                         OpcodeTable table, OpcodeContracts contracts, GameToolchain? toolchain = null)
     {
         var intrinsics = new IntrinsicCatalog(table, contracts);
         var stamp = new List<string>
@@ -113,20 +107,22 @@ public sealed record ModLinkBase
             TableFingerprint(table),
             contracts.Fingerprint(),
         };
-        foreach (string? file in new[] { globalsJson, patchPointsJson })
-            if (file != null && File.Exists(file)) stamp.Add(OmsPatchPlan.FingerprintOf(File.ReadAllBytes(file)));
-        if (omsModulesDirectory != null && Directory.Exists(omsModulesDirectory))
-            foreach (string file in Directory.EnumerateFiles(omsModulesDirectory, "*", SearchOption.AllDirectories)
-                         .Order(StringComparer.Ordinal))
-                stamp.Add(Path.GetRelativePath(omsModulesDirectory, file).Replace('\\', '/') + "="
-                          + OmsPatchPlan.FingerprintOf(File.ReadAllBytes(file)));
-        var modules = new List<GameModule>();
-        if (globalsJson != null && File.Exists(globalsJson)) modules.Add(GameModule.LoadGlobals(profile, globalsJson));
-        modules.Add(GameModule.Scripts(profile, catalog.EnumerateScripts().Select(packed => (packed.Asset.Name, packed.PackedId))));
-        if (omsModulesDirectory != null && Directory.Exists(omsModulesDirectory))
-            modules.AddRange(GameModule.LoadSources(omsModulesDirectory, profile));
+        if (toolchain != null) stamp.AddRange(toolchain.Stamp);
+        string? toolchainError = null;
+        List<GameModule> modules;
+        try
+        {
+            modules = GameToolchain.Modules(toolchain, profile, catalog);
+        }
+        catch (Exception error) when (error is OmsSyntaxException or InvalidDataException or System.Text.Json.JsonException
+                                          or KeyNotFoundException or InvalidOperationException or FormatException
+                                          or OverflowException)
+        {
+            modules = GameToolchain.Modules(null, profile, catalog);
+            toolchainError = $"the OMS toolchain of {toolchain!.Location} does not load: {error.Message}";
+        }
         OmsIdioms? idioms = null;
-        if (modules.Any(module => module.Source != null))
+        if (toolchainError == null && modules.Any(module => module.Source != null))
         {
             try
             {
@@ -134,14 +130,9 @@ public sealed record ModLinkBase
             }
             catch (Exception error) when (error is OmsCompileException or OmsSyntaxException)
             {
-                // The modules use the generated globals, which a fresh checkout has none of until they are built (its
-                // build/ is regenerable): said as the base's failure, which every linker reports, not as a crash.
-                string missing = globalsJson != null && !File.Exists(globalsJson)
-                    ? $"; they use the generated {globalsJson}, which is missing: run tools/globals_build.py --game "
-                      + $"{profile} --build"
-                    : "";
-                throw new InvalidDataException(
-                    $"the OMS modules in {omsModulesDirectory} do not build: {error.Message}{missing}", error);
+                // Spec §5.3: such as an install that lacks a script a module runs. Kept, so a mod that compiles nothing
+                // still links, and each compile reports it.
+                toolchainError = $"the OMS modules of {toolchain!.Location} do not build against this install: {error.Message}";
             }
         }
         return new ModLinkBase
@@ -158,12 +149,27 @@ public sealed record ModLinkBase
             Intrinsics = intrinsics,
             Modules = modules,
             Idioms = idioms,
-            PatchPoints = patchPointsJson != null && File.Exists(patchPointsJson) ? OmsPatchPoints.Load(patchPointsJson) : null,
+            PatchPoints = toolchain?.Points,
+            Toolchain = toolchain,
+            ToolchainError = toolchainError,
             CatalogTitle = catalog.Title,
             AppendMagic = ("S4AC" + catalog.Magic[4..]).PadRight(8)[..8],
             InstallSelectors = catalog.AppendPacks.Keys.ToHashSet(),
             HasAsset = name => catalog.ResolveMountedName(name) is { IsPlaceholder: false },
             ToolchainStamp = string.Join("\n", stamp),
         };
+    }
+
+    /// <summary>What the link report says of the toolchain (spec §12, gate 2).</summary>
+    public string ToolchainSummary => Toolchain == null
+        ? $"none: the engine ships no {Profile}-base, so fragments and new scripts compile with {Profile}.scripts only"
+        : ToolchainError == null ? Toolchain.Describe() : $"{Toolchain.Describe()}; {ToolchainError}";
+
+    /// <summary>Refuses a compile when the toolchain is broken (spec §5.3). The linker reports the error against the
+    /// fragment or script that needed it.</summary>
+    internal void RequireToolchain()
+    {
+        if (ToolchainError != null)
+            throw new InvalidDataException($"{ToolchainError}; a fragment or new script cannot compile until it does");
     }
 }

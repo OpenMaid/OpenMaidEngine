@@ -30,7 +30,12 @@ public sealed record ProfileCheck(ProfileCheckKind Kind, CheckStatus Status, str
 /// <summary>The link check (spec §5.9): the text <c>omp check</c> prints for the profile, the discovery's and the
 /// link's reports, the resolved order, the packages the resolver moved and why, and what a skipped link drops.</summary>
 public sealed record LinkCheck(string Text, ModLinkReport Discovery, ModLinkReport? Report, IReadOnlyList<string> Order,
-                               IReadOnlyList<OrderMove> Moves, IReadOnlyList<string> Dropped);
+                               IReadOnlyList<OrderMove> Moves, IReadOnlyList<string> Dropped)
+{
+    /// <summary>Why the game's toolchain does not build against the install (<see cref="ModLinkBase.ToolchainError"/>),
+    /// or null. Modding from a release spec §5.3: a stack that compiles nothing still links, so it is a warning.</summary>
+    public string? ToolchainError { get; init; }
+}
 
 /// <summary>Every check of a profile. Play is on when none failed; a failed lock check is "running".</summary>
 public sealed record ProfileCheckResult(IReadOnlyList<ProfileCheck> Checks, InstallRecognition Install,
@@ -166,6 +171,10 @@ public static class ProfileChecks
                 else if (!report.Stops && link.Dropped.Count > 0)
                     Add(ProfileCheckKind.Link, CheckStatus.Warning,
                         $"the stack links without {string.Join(", ", link.Dropped)}, which on_failure = \"skip\" drops");
+                else if (!report.Stops && link.ToolchainError != null)
+                    Add(ProfileCheckKind.Link, CheckStatus.Warning,
+                        $"the stack links: {report.Summary()}; but a mod that compiles a fragment or new script would not: "
+                        + link.ToolchainError);
                 else
                     Add(ProfileCheckKind.Link, report.Stops ? CheckStatus.Failed : CheckStatus.Passed,
                         $"the stack {(report.Stops ? "does not link" : "links")}: {report.Summary()}");

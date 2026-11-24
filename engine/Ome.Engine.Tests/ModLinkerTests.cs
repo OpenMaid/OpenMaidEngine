@@ -324,7 +324,7 @@ public sealed class ModLinkerTests : IDisposable
         var catalog = Sys4AssetCatalog.Load(Paths.Sys4Ini);
         var store = new Sys4AssetStore(catalog, Paths.GameDir, Paths.GameDir);
         return ModLinkBase.ForInstall("himegari", Paths.Sys4Ini, catalog, store, HimegariTable, Contracts,
-            Paths.GlobalsJson("himegari"), Paths.OmsModules("himegari"), Paths.PatchPointsJson("himegari"));
+            Ome.Mods.Linking.GameToolchain.Shipped("himegari"));
     }
 
     private ModPackage Example(string id)

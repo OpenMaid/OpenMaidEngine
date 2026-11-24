@@ -20,11 +20,10 @@ lists (empty for the default game).
   (`../../README.md`).
 - The game install in its expected place (your game guide says where), or `--game-root DIR`.
 - One build: `dotnet build engine/OmeEngine.sln`.
-- The generated registries, which fragments that `use <game>.globals` need. Run
-  `py -3.11 -X utf8 tools/globals_build.py --game <game> --build`, and
-  `py -3.11 -X utf8 tools/patch_points_build.py --game <game> --build` if the game has patch points. A game whose
-  guide says it has no registry yet has no `<game>.globals` module: skip the first command, and leave the
-  `use <game>.globals` line out of the fragment below.
+- Nothing to generate: the game's OMS toolchain (`<game>.globals`, `<game>.adv` and its patch points) is built
+  into the programs from its base mod ([cli.md](cli.md), "Where the toolchain comes from"). A game whose guide says
+  it has no registry yet has no `<game>.globals` module: leave the `use <game>.globals` line out of the fragment
+  below.
 
 Every `Ome.Cli` command selects the game with its game options: `--game`, `--game-root`, and `--overlay-root`
 for an install with a translation layer. A translation that replaces scripts changes the base your fragment edits,
@@ -104,7 +103,7 @@ before site <the site from step 1> {
 }
 ```
 
-The quoted line is a *dialogue statement* from the game's ADV prelude (`oms/<game>/adv.oms`). It expands to the
+The quoted line is a *dialogue statement* from the game's ADV prelude (`mods/<game>-base/oms/adv.oms`). It expands to the
 same instructions as the game's own narration pages: show the text, wait for a click, reset the text layout. Add a
 speaker and voice the same way the decompiled scenes do (`oms-language.md`, "Dialogue lines").
 
