@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Ome.Engine.Sys4;
 
 /// <summary>
 /// The engine started with no game (launcher spec §5.6): with no engine argument at all, no <c>SYS4INI.BIN</c> in the
@@ -23,7 +24,7 @@ public static class LauncherHandOver
         string cwd = Path.GetFullPath(workingDirectory);
         string? folder = Path.GetDirectoryName(Path.GetFullPath(executablePath, cwd));
         if (folder == null) return null;
-        if (File.Exists(Path.Combine(folder, "SYS4INI.BIN")) || File.Exists(Path.Combine(cwd, "SYS4INI.BIN")))
+        if (InstallFileNames.HasCatalog(folder) || InstallFileNames.HasCatalog(cwd))
             return null;
         string launcher = Path.Combine(folder, LauncherName + (windows ? ".exe" : ""));
         return File.Exists(launcher) ? launcher : null;

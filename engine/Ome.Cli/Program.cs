@@ -61,7 +61,7 @@ string conventionalGameRoot =
         ? Paths.GameInstall(requestedId)
         : Paths.GameDir;
 string gameRoot = Path.GetFullPath(OptionValue("--game-root") ?? conventionalGameRoot);
-string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+string sys4Ini = InstallFileNames.CatalogPath(gameRoot);
 GameCatalogIdentity catalogIdentity = GameCatalogIdentity.ReadSys4IniHeader(sys4Ini);
 SelectedGameProfile selectedProfile = GameProfileSelection.Resolve(args, catalogIdentity);
 if (selectedProfile.MismatchDiagnostic is { } mismatchDiagnostic)

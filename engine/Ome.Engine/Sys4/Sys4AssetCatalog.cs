@@ -78,12 +78,13 @@ public sealed class Sys4AssetCatalog
 
         string? root = Path.GetDirectoryName(Path.GetFullPath(path));
         if (root == null) return catalog;
-        foreach (string appendPath in Directory.EnumerateFiles(root, "*.AAI"))
+        // Whatever their case, in the order Windows lists them (InstallFileNames.Enumerate), on any file system.
+        foreach (string appendPath in InstallFileNames.Enumerate(root, "*.AAI"))
             catalog.MountAppend(Parse(File.ReadAllBytes(appendPath), Path.GetFileName(appendPath)));
         foreach (string directory in extraAppendDirectories ?? [])
         {
             string full = Path.GetFullPath(directory);
-            foreach (string appendPath in Directory.EnumerateFiles(full, "*.AAI").Order(StringComparer.OrdinalIgnoreCase))
+            foreach (string appendPath in InstallFileNames.Enumerate(full, "*.AAI"))
             {
                 var append = Parse(File.ReadAllBytes(appendPath), Path.GetFileName(appendPath));
                 if (catalog._appendPacks.ContainsKey(append.PackId))

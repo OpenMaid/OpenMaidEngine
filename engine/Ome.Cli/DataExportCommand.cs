@@ -199,9 +199,9 @@ internal static class DataExportCommand
                                      out string catalogFingerprint)
     {
         var files = new SortedDictionary<string, string>(StringComparer.Ordinal);
-        catalogFingerprint = OmsPatchPlan.FingerprintOf(File.ReadAllBytes(Path.Combine(gameRoot, "SYS4INI.BIN")));
+        catalogFingerprint = OmsPatchPlan.FingerprintOf(File.ReadAllBytes(InstallFileNames.CatalogPath(gameRoot)));
         files["SYS4INI.BIN"] = catalogFingerprint;
-        foreach (string append in Directory.EnumerateFiles(gameRoot, "*.AAI"))
+        foreach (string append in InstallFileNames.Enumerate(gameRoot, "*.AAI"))
             files[Path.GetFileName(append).ToUpperInvariant()] = OmsPatchPlan.FingerprintOf(File.ReadAllBytes(append));
         foreach (PackedAssetEntry script in catalog.EnumerateScripts())
             if (store.Locate(script.Asset) is { Loose: true } loose)

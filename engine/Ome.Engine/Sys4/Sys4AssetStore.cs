@@ -52,7 +52,8 @@ public sealed class CatalogTrackingAssetStore : IAssetStore
 public sealed record AssetLocation(string Path, bool Loose, long Offset = 0, long Size = -1);
 
 /// <summary>Native base-game precedence: exact-basename loose roots first, indexed ALF range second. An append
-/// catalog mounted from outside the game root opens its archive from its own directory.</summary>
+/// catalog mounted from outside the game root opens its archive from its own directory. A loose file or an archive
+/// matches its name whatever the case, as on Windows (<see cref="InstallFileNames"/>).</summary>
 public sealed class Sys4AssetStore : IAssetStore
 {
     private readonly string _archiveRoot;
@@ -74,7 +75,8 @@ public sealed class Sys4AssetStore : IAssetStore
 
         foreach (string root in _looseRoots)
         {
-            string candidate = Path.GetFullPath(Path.Combine(root, entry.Name));
+            if (InstallFileNames.Find(root, entry.Name) is not { } found) continue;
+            string candidate = Path.GetFullPath(found);
             if (!IsDirectChild(root, candidate)) throw new InvalidDataException($"unsafe asset name: {entry.Name}");
             try
             {
@@ -111,8 +113,9 @@ public sealed class Sys4AssetStore : IAssetStore
         ValidateBasename(entry.Name, "asset");
         foreach (string root in _looseRoots)
         {
-            string candidate = Path.GetFullPath(Path.Combine(root, entry.Name));
-            if (IsDirectChild(root, candidate) && File.Exists(candidate)) return new AssetLocation(candidate, true);
+            if (InstallFileNames.Find(root, entry.Name) is not { } found) continue;
+            string candidate = Path.GetFullPath(found);
+            if (IsDirectChild(root, candidate)) return new AssetLocation(candidate, true);
         }
         return new AssetLocation(ArchivePath(entry), false, entry.Offset, entry.Size);
     }
@@ -122,7 +125,7 @@ public sealed class Sys4AssetStore : IAssetStore
         ValidateBasename(entry.Archive, "archive");
         string root = entry.PackId != 0 && Catalog.AppendPacks.TryGetValue(entry.PackId, out var pack)
                       && pack.ArchiveDirectory is { } own ? own : _archiveRoot;
-        string archivePath = Path.GetFullPath(Path.Combine(root, entry.Archive));
+        string archivePath = Path.GetFullPath(InstallFileNames.Find(root, entry.Archive) ?? Path.Combine(root, entry.Archive));
         if (!IsDirectChild(root, archivePath))
             throw new InvalidDataException($"unsafe archive name: {entry.Archive}");
         return archivePath;

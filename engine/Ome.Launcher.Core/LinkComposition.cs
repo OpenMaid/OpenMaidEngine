@@ -24,7 +24,7 @@ internal static class LinkComposition
         IReadOnlyList<string> arguments = run.Arguments;
         string gameRoot = Path.GetFullPath(RunResolver.LastValue(arguments, RunResolver.GameRootOption)
                                            ?? throw new RunResolutionException($"{root} names no install"));
-        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        string sys4Ini = InstallFileNames.CatalogPath(gameRoot);
         SelectedGameProfile game = GameProfileSelection.Resolve(arguments, GameCatalogIdentity.ReadSys4IniHeader(sys4Ini),
                                                                 registry);
         EngineBuild build = EngineBuilds.ForProfile(game.Profile);

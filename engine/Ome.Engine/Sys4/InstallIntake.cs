@@ -125,7 +125,7 @@ public static class InstallIntake
         ArgumentNullException.ThrowIfNull(knownOperandTypes);
         ArgumentNullException.ThrowIfNull(registry);
         string root = Path.GetFullPath(installRoot);
-        string sys4Ini = Path.Combine(root, "SYS4INI.BIN");
+        string sys4Ini = InstallFileNames.CatalogPath(root);
         if (!File.Exists(sys4Ini))
             throw new FileNotFoundException($"no SYS4INI.BIN in {root}: not an install", sys4Ini);
 
@@ -147,7 +147,7 @@ public static class InstallIntake
 
         var appends = new List<IntakeAppend>();
         if (catalog != null && baseCatalog)
-            foreach (string appendPath in Directory.EnumerateFiles(root, "*.AAI").Order(StringComparer.OrdinalIgnoreCase))
+            foreach (string appendPath in InstallFileNames.Enumerate(root, "*.AAI"))
             {
                 string file = Path.GetFileName(appendPath);
                 try
@@ -176,7 +176,7 @@ public static class InstallIntake
         foreach ((string name, string otherRoot) in compareInstalls)
         {
             string other = Path.GetFullPath(otherRoot);
-            string otherIni = Path.Combine(other, "SYS4INI.BIN");
+            string otherIni = InstallFileNames.CatalogPath(other);
             if (string.Equals(other, root, StringComparison.OrdinalIgnoreCase) || !File.Exists(otherIni)) continue;
             Sys4AssetCatalog otherCatalog;
             try

@@ -365,6 +365,120 @@ public class Sys4AssetStoreTests
         }
     }
 
+    // On Linux these are the case-sensitive file system the store meets there: core CI runs them on ubuntu-24.04.
+    [Fact]
+    public void InstallFileNamesMatchANameWhateverItsCase()
+    {
+        string temp = Directory.CreateTempSubdirectory("ome-case-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(temp, "sc2600.bin"), [1]);
+            Directory.CreateDirectory(Path.Combine(temp, "Folder.BIN"));
+
+            string? found = InstallFileNames.Find(temp, "SC2600.BIN");
+            Assert.NotNull(found);
+            Assert.Equal([1], File.ReadAllBytes(found));
+            Assert.Equal(temp, Path.GetDirectoryName(found));
+            Assert.Null(InstallFileNames.Find(temp, "SC2610.BIN"));
+            Assert.Null(InstallFileNames.Find(temp, "FOLDER.BIN"));     // a directory is not a file
+            Assert.Null(InstallFileNames.Find(Path.Combine(temp, "missing"), "SC2600.BIN"));
+
+            // Each lookup reads the directory as it is then.
+            File.WriteAllBytes(Path.Combine(temp, "Sc2610.Bin"), [2]);
+            Assert.Equal([2], File.ReadAllBytes(InstallFileNames.Find(temp, "SC2610.BIN")!));
+            File.Delete(Path.Combine(temp, "sc2600.bin"));
+            Assert.Null(InstallFileNames.Find(temp, "SC2600.BIN"));
+
+            // Two names that differ only in case can both exist only where names match exactly: the one as written
+            // is found, and a third spelling is refused, since AGE could not tell them apart.
+            File.WriteAllBytes(Path.Combine(temp, "a.bin"), [3]);
+            File.WriteAllBytes(Path.Combine(temp, "A.BIN"), [4]);
+            bool exactNames = Directory.EnumerateFiles(temp, "a.bin", InstallFileNames.AnyCase).Count() == 2;
+            if (exactNames)
+            {
+                Assert.Equal([3], File.ReadAllBytes(InstallFileNames.Find(temp, "a.bin")!));
+                Assert.Throws<InvalidDataException>(() => InstallFileNames.Find(temp, "A.Bin"));
+            }
+            else Assert.Equal([4], File.ReadAllBytes(InstallFileNames.Find(temp, "A.Bin")!));
+
+            File.WriteAllBytes(Path.Combine(temp, "sys4ini.bin"), [5]);
+            Assert.True(InstallFileNames.HasCatalog(temp));
+            Assert.Equal([5], File.ReadAllBytes(InstallFileNames.CatalogPath(temp)));
+            // Every spelling of the pattern's extension, by name with case ignored, then by exact spelling.
+            Assert.Equal(exactNames ? ["A.BIN", "a.bin", "Sc2610.Bin", "sys4ini.bin"] : ["a.bin", "Sc2610.Bin", "sys4ini.bin"],
+                         InstallFileNames.Enumerate(temp, "*.BIN").Select(Path.GetFileName));
+        }
+        finally
+        {
+            Directory.Delete(temp, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LooseFilesArchivesAndAppendCatalogsAreFoundWhateverTheirCase()
+    {
+        string temp = Directory.CreateTempSubdirectory("ome-case-store-").FullName;
+        string overlay = Path.Combine(temp, "patch");
+        Directory.CreateDirectory(overlay);
+        try
+        {
+            // An install whose files are all named in lower case: its catalog, an append catalog and both archives.
+            File.WriteAllBytes(Path.Combine(temp, "sys4ini.bin"), SyntheticCatalog.Build(["TEST.BIN"]));
+            Sys4AppendCatalogWriter.File[] appended = [new("$2$HELLO.BIN", [7, 7])];
+            var (appendCatalog, appendArchive) = Sys4AppendCatalogWriter.Write("S4AC422 ", "Synthetic", 2,
+                "APPEND02.ALF", appended);
+            File.WriteAllBytes(Path.Combine(temp, "append02.aai"), appendCatalog);
+            File.WriteAllBytes(Path.Combine(temp, "append02.alf"), appendArchive);
+            File.WriteAllBytes(Path.Combine(temp, "data.alf"), [9]);
+
+            var catalog = Sys4AssetCatalog.Load(InstallFileNames.CatalogPath(temp));
+            AssetEntry hello = Assert.IsType<AssetEntry>(catalog.ResolvePacked(0x02000000));
+            var store = new Sys4AssetStore(catalog, temp, overlay, temp);
+            Assert.Equal([7, 7], store.ReadAll(hello));
+            Assert.False(store.Locate(hello).Loose);
+
+            // A loose file in an overlay serves its catalog entry whatever its case, before the archive.
+            AssetEntry entry = catalog.ResolveName("TEST.BIN")!;
+            Assert.Equal("DATA.ALF", entry.Archive);
+            Assert.Empty(store.ReadAll(entry));
+            Assert.Equal("data.alf", Path.GetFileName(store.Locate(entry).Path), StringComparer.OrdinalIgnoreCase);
+            File.WriteAllBytes(Path.Combine(overlay, "test.bin"), [1, 2]);
+            Assert.Equal([1, 2], store.ReadAll(entry));
+            AssetLocation location = store.Locate(entry);
+            Assert.True(location.Loose);
+            Assert.Equal([1, 2], File.ReadAllBytes(location.Path));
+            File.WriteAllBytes(Path.Combine(temp, "$2$hello.bin"), [8]);
+            Assert.Equal([8], store.ReadAll(hello));
+        }
+        finally
+        {
+            Directory.Delete(temp, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AnInstallsAppendCatalogsMountInTheOrderWindowsListsThem()
+    {
+        string temp = Directory.CreateTempSubdirectory("ome-append-order-").FullName;
+        try
+        {
+            // Two catalogs for one selector: AGE keeps the one mounted last, so the order decides which serves it.
+            File.WriteAllBytes(Path.Combine(temp, "SYS4INI.BIN"), SyntheticCatalog.Build(["TEST.BIN"]));
+            foreach ((string name, byte value) in new[] { ("b.aai", (byte)2), ("A.AAI", (byte)1), ("C.aai", (byte)3) })
+            {
+                var (bytes, _) = Sys4AppendCatalogWriter.Write("S4AC422 ", "Synthetic", 2, "APPEND02.ALF",
+                    [new($"$2$FILE{value}.BIN", [value])]);
+                File.WriteAllBytes(Path.Combine(temp, name), bytes);
+            }
+            var catalog = Sys4AssetCatalog.Load(Path.Combine(temp, "SYS4INI.BIN"));
+            Assert.Equal("$2$FILE3.BIN", catalog.ResolvePacked(0x02000000)?.Name);
+        }
+        finally
+        {
+            Directory.Delete(temp, recursive: true);
+        }
+    }
+
     [Fact]
     public void TypedResolutionReportsInvalidAndMismatchedPackedIdsOnce()
     {

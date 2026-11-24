@@ -15,7 +15,7 @@ public readonly record struct GameRootSelection(string Root, GameRootSource Sour
 {
     public const string OptionName = "--game-root";
 
-    public string Sys4IniPath => Path.Combine(Root, "SYS4INI.BIN");
+    public string Sys4IniPath => InstallFileNames.CatalogPath(Root);
 
     public string SourceName => Source switch
     {
@@ -56,7 +56,7 @@ public readonly record struct GameRootSelection(string Root, GameRootSource Sour
             candidates.Add((cwd, GameRootSource.CurrentDirectory));
 
         foreach ((string root, GameRootSource source) in candidates)
-            if (File.Exists(Path.Combine(root, "SYS4INI.BIN")))
+            if (InstallFileNames.HasCatalog(root))
                 return new GameRootSelection(root, source);
 
         string searched = string.Join(", ", candidates.Select(candidate => $"'{candidate.Root}'"));
@@ -81,7 +81,7 @@ public readonly record struct GameRootSelection(string Root, GameRootSource Sour
 
     private static void RequireCatalog(string root, string description)
     {
-        if (!File.Exists(Path.Combine(root, "SYS4INI.BIN")))
+        if (!InstallFileNames.HasCatalog(root))
             throw new ArgumentException(
                 $"{description} does not contain SYS4INI.BIN (resolved to '{root}')");
     }

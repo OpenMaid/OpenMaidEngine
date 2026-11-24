@@ -59,8 +59,8 @@ public static class InstallAssetComparer
                     || !seen.Add(name))
                     continue;
                 string relative = Path.GetRelativePath(translatedRoot, path);
-                string counterpart = Path.Combine(baseRoot, name);
-                if (!File.Exists(counterpart)) counts.NonAssetFiles.Add($"{relative} (only in the translation)");
+                string? counterpart = InstallFileNames.Find(baseRoot, name);
+                if (counterpart == null) counts.NonAssetFiles.Add($"{relative} (only in the translation)");
                 else if (!File.ReadAllBytes(path).AsSpan().SequenceEqual(File.ReadAllBytes(counterpart)))
                     counts.NonAssetFiles.Add($"{relative} (differs)");
             }

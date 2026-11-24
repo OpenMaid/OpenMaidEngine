@@ -65,7 +65,7 @@ public static class Installs
                                                MachineRegistryReader? registry = null)
     {
         string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
-        string path = Path.Combine(root, CatalogFile);
+        string path = InstallFileNames.CatalogPath(root);
         if (!File.Exists(path)) return new InstallRecognition(root, InstallKind.NotAnInstall, $"{root} holds no {CatalogFile}");
         GameCatalogIdentity identity;
         try

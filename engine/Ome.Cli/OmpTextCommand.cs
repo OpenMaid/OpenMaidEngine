@@ -123,7 +123,7 @@ internal static partial class OmpTextCommand
         Ome.Mods.Linking.ModLinkBase linkBase;
         try
         {
-            linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, table.AbiId, Path.Combine(baseRoot, "SYS4INI.BIN"),
+            linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, table.AbiId, InstallFileNames.CatalogPath(baseRoot),
                 baseCatalog, store, out _) with { ProfileMode = run.ProfileFile?.ModeName };
         }
         catch (InvalidDataException error)
@@ -156,7 +156,7 @@ internal static partial class OmpTextCommand
             return 2;
         }
         string translatedRoot = Path.GetFullPath(from);
-        string translatedIni = Path.Combine(translatedRoot, "SYS4INI.BIN");
+        string translatedIni = InstallFileNames.CatalogPath(translatedRoot);
         if (!File.Exists(translatedIni))
         {
             Console.Error.WriteLine($"error: {translatedIni} does not exist");

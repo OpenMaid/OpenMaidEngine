@@ -214,7 +214,7 @@ public static class RunResolver
             ?? throw new RunResolutionException(
                 $"{file.Path}: game: unknown game '{file.Game}'; available games: "
                 + string.Join(", ", registry.Profiles.Select(value => value.Id)));
-        string sys4Ini = Path.Combine(file.Install.Root, "SYS4INI.BIN");
+        string sys4Ini = InstallFileNames.CatalogPath(file.Install.Root);
         byte[] catalog;
         try
         {
