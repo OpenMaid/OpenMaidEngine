@@ -18,8 +18,11 @@ using Ome.Script.Patch;
 /// <c>data-export</c> (game data export spec §6.1): reads the selected game's data through the engine, as its
 /// declarations (<c>build/games/&lt;game&gt;/entities.json</c>) publish it, and writes <c>&lt;revision&gt;.sqlite</c>,
 /// its pictures and <c>manifest.json</c> to <c>--output</c> (default <c>build/games/&lt;game&gt;/export/</c>). Each
-/// <c>--language PACKAGE</c> translates the text into the languages a language package declares (§6.4). Exit 0 on a
-/// clean export, 1 when a value was refused (§5.5; the rest is still written), 2 when it could not run.
+/// <c>--language PACKAGE</c> translates the text into the languages a language package declares (§6.4).
+/// <c>--game-version VERSION</c> is the game version the manifest records, in place of the one this machine reports
+/// (<see cref="GameVersionRule"/>): that is the installer's, read from the Windows registry, which a machine without the
+/// game installed, or without a registry, does not have. Exit 0 on a clean export, 1 when a value was refused (§5.5;
+/// the rest is still written), 2 when it could not run.
 /// </summary>
 internal static class DataExportCommand
 {
@@ -44,6 +47,13 @@ internal static class DataExportCommand
                 }
                 packages.Add(args[++k]);
             }
+        int versionAt = Array.IndexOf(args, "--game-version");
+        string? gameVersion = versionAt >= 0 && versionAt + 1 < args.Length ? args[versionAt + 1].Trim() : null;
+        if (versionAt >= 0 && (string.IsNullOrEmpty(gameVersion) || gameVersion.StartsWith("--", StringComparison.Ordinal)))
+        {
+            Console.Error.WriteLine("data-export: --game-version needs the game's version, as its installer gives it");
+            return 2;
+        }
         string output = Path.GetFullPath(Option("--output") ?? Path.Combine(Paths.GameBuild(gameId), "export"));
         string entitiesJson = Path.Combine(Paths.GameBuild(gameId), "entities.json");
         if (!File.Exists(entitiesJson))
@@ -121,7 +131,8 @@ internal static class DataExportCommand
         }
         TimeSpan read = clock.Elapsed;
         var manifest = new ExportManifest(DateTimeOffset.UtcNow, "Ome.Cli " + string.Join(" ", args),
-                                          GameVersionRule.Of(catalog.StartupSettings), OmeVersion(), OmeCommit());
+                                          gameVersion ?? GameVersionRule.Of(catalog.StartupSettings), OmeVersion(),
+                                          OmeCommit());
         ExportFiles files = ExportWriter.Write(result, output, revision, manifest);
         Print(result, output, files, read, clock.Elapsed);
         return result.Report.ExitCode;
