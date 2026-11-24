@@ -591,8 +591,8 @@ From the user's design pass on the built site (2026-11-22). The export's design 
 ## Platform and project
 
 - **Portability gates** listed in `remake-architecture-and-roadmap.md` ("The open portability gates remain separate
-  follow-ups"): mixed-case roots, fresh-profile writes, native Linux desktop, the movie preroll recheck, and Linux
-  font bundling (`platform-portability.md`, "Deferred Linux font-bundling follow-up").
+  follow-ups"): fresh-profile writes, native Linux desktop, the movie preroll recheck, and Linux font bundling
+  (`platform-portability.md`, "Deferred Linux font-bundling follow-up").
 - **Data beside the program.** Since 2026-11-18 the engine ships as one NativeAOT library (`platform-portability.md`,
   "Fewer files in a package"), and all its data stays inside it: the game manifests
   (`engine/Ome.Engine/Profiles/*.json`, which `GameProfileRegistry` reads from `Ome.Engine`'s resources), the opcode

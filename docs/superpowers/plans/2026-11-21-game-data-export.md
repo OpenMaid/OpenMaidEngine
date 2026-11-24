@@ -1112,3 +1112,8 @@ authors.
   - Open, in the backlog's "Kamidori's field tables": the floors a card is dealt on, where a map object stands, the
     doors' keys, INIT2's 98 unnamed cells (the element kind makes INIT2 a
     builder) and the fields read at medium or low confidence.
+- **The game version an export records may be given** (2026-11-24; the user: "Go ahead with your recommendations",
+  on a version per game in the site's config). Spec §6 takes it from the machine (`GameVersionRule`, the installer's
+  version in the Windows registry). The site's deploy exports on a Linux runner, where every game came out as the
+  installer default, `1.00.0000`; `data-export --game-version` records the version given, and the site's
+  `site.config.mjs` gives each game's.
