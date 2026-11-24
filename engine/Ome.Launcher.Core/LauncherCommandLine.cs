@@ -170,8 +170,7 @@ public static class LauncherCommandLine
         }
         if (profile.NeedsReview)
         {
-            output.WriteLine($"{profile.Root} is a profile root the launcher did not create: nothing opens its paths "
-                             + "before the player accepts its review in the launcher's window");
+            output.WriteLine(ProfileLookup.ReviewRefusal(profile));
             return new LauncherOutcome(Failure, WindowReason.Review, Start(profile));
         }
         Usable(profile);
@@ -208,8 +207,8 @@ public static class LauncherCommandLine
     private static ProfileEntry Locate(string target, OmeHome home, LauncherSettings settings, Func<MachineState> machine,
                                        string workingDirectory, OmePlatform platform)
     {
+        if (ProfileLookup.Find(target, home, settings, machine) is { } byId) return byId;
         IReadOnlyList<ProfileEntry> profiles = ProfileStore.List(home, settings, machine);
-        if (ProfileId.IsValid(target) && ProfileStore.Find(profiles, target) is { } byId) return byId;
         string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(target, workingDirectory));
         if (profiles.FirstOrDefault(entry => OmeHome.PathsEqual(entry.Root, root, platform))
             is { } byRoot)

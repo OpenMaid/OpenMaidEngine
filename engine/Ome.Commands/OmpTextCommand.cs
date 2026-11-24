@@ -6,28 +6,39 @@ using Ome.Engine.Sys4;
 using Ome.Mods.Localization;
 using Ome.Mods.Localization.Import;
 
+namespace Ome.Commands;
+
 /// <summary>
-/// <c>omp text</c> (localization spec §13), against the selected profile's install (<c>--game-root</c>):
+/// <c>omp text</c> (localization spec §13), against the selected game's install:
 /// <c>extract</c> writes catalog templates from its scripts; <c>check</c> validates catalogs (packages and a text
 /// root) and <c>stats</c> counts what they translate; <c>import-scripts</c> builds a catalog from an install whose
 /// scripts were translated in place and writes <c>import-report.json</c> (spec §18.1), and with <c>--package</c>
-/// also the replaced images and a manifest, so its output loads as a package.
+/// also the replaced images and a manifest, so its output loads as a package. <c>po-export</c> and <c>po-import</c>
+/// read no install (<see cref="RunPo"/>).
 /// </summary>
 internal static partial class OmpTextCommand
 {
     [GeneratedRegex(@"^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$")]
     private static partial Regex LanguageTag();
 
-    /// <param name="run">The resolver's run (launcher spec §5.2): its data root, and a profile file's [mods] table.</param>
-    public static int Run(string[] args, string baseRoot, Sys4AssetCatalog baseCatalog, OpcodeTable table, string profileId,
-                          Ome.Mods.Launch.ResolvedRun run)
+    /// <summary>Whether the command line is <c>omp text po-export</c> or <c>po-import</c>, which read no install.</summary>
+    public static bool IsPo(string[] args)
+        => args.Length > 2 && args[0] == "omp" && args[1] == "text" && args[2] is "po-export" or "po-import";
+
+    /// <summary><c>po-export</c> and <c>po-import</c>, from the command line as given.</summary>
+    public static int RunPo(string[] args) => Po(args[2] == "po-export", args);
+
+    /// <summary>The other verbs, against <paramref name="inputs"/>: its install is the base, and the resolver's run
+    /// gives the data root and a profile file's <c>[mods]</c> table (launcher spec §5.2).</summary>
+    public static int Run(CommandInputs inputs)
     {
+        string[] args = inputs.Args;
         string verb = args.Length > 2 ? args[2] : "";
         return verb switch
         {
-            "import-scripts" => ImportScripts(args, baseRoot, baseCatalog, table, profileId),
-            "extract" => Extract(args, baseRoot, baseCatalog, table, profileId),
-            "check" or "stats" => CheckOrStats(verb == "stats", args, baseRoot, baseCatalog, table, profileId, run),
+            "import-scripts" => ImportScripts(inputs),
+            "extract" => Extract(inputs),
+            "check" or "stats" => CheckOrStats(verb == "stats", inputs),
             "po-export" or "po-import" => Po(verb == "po-export", args),
             _ => Usage(),
         };
@@ -38,7 +49,7 @@ internal static partial class OmpTextCommand
         Console.Error.WriteLine("usage: omp text extract --language TAG --output DIR");
         Console.Error.WriteLine("       omp text check [--mod PATH ...] [--data-root DIR] [--text-root DIR] [--language TAG] [--no-scripts]");
         Console.Error.WriteLine("       omp text stats [--mod PATH ...] [--data-root DIR] [--text-root DIR] [--language TAG] [--scripts]");
-        Console.Error.WriteLine("       omp text import-scripts --from GAME_ROOT [--overlay-root DIR] [--allow-bmp-as-agf] "
+        Console.Error.WriteLine("       omp text import-scripts --from GAME_ROOT [--from-overlay-root DIR] [--from-allow-bmp-as-agf] "
                                 + "--output DIR [--language TAG] [--package] [--verify] [--compare-archives]");
         Console.Error.WriteLine("       omp text po-export --language TAG (--package DIR | --text-root DIR) --output FILE.po");
         Console.Error.WriteLine("       omp text po-import --language TAG (--package DIR | --text-root DIR) --input FILE.po");
@@ -71,25 +82,21 @@ internal static partial class OmpTextCommand
     private static Ome.Mods.Tools.EngineTextKeys EngineKeys { get; } = new(
         ShellStrings.Embedded(ShellStrings.FallbackLanguage)!, ShellStrings.Embedded, ShellStrings.EntryProblem);
 
-    private static List<string> Options(string[] args, string name)
-        => args.Select((arg, k) => (arg, k)).Where(pair => pair.arg == name && pair.k + 1 < args.Length)
-            .Select(pair => Path.GetFullPath(args[pair.k + 1])).ToList();
-
     /// <summary>The install's scripts as <c>extract</c>, <c>check</c> and <c>stats</c> read them: the base catalog's
     /// own, before any mod or overlay.</summary>
-    private static ScriptTextCorpus Corpus(string baseRoot, Sys4AssetCatalog baseCatalog, OpcodeTable table)
+    private static ScriptTextCorpus Corpus(CommandInputs inputs)
     {
-        var store = new Sys4AssetStore(baseCatalog, baseRoot, baseRoot);
-        var scanner = new ScriptTextScanner(table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson));
+        Sys4AssetCatalog baseCatalog = inputs.Catalog;
+        var store = new Sys4AssetStore(baseCatalog, inputs.GameRoot, inputs.GameRoot);
+        var scanner = new ScriptTextScanner(inputs.Table, inputs.Contracts);
         return ScriptTextCorpus.Scan(scanner, baseCatalog.EnumerateScripts().Where(packed => !packed.Asset.IsPlaceholder)
             .Select(packed => (packed.Asset.Name, (Func<byte[]>)(() => store.ReadAll(packed.Asset)))));
     }
 
-    private static int Extract(string[] args, string baseRoot, Sys4AssetCatalog baseCatalog, OpcodeTable table,
-                               string profileId)
+    private static int Extract(CommandInputs inputs)
     {
-        string? output = Option(args, "--output");
-        string? language = Option(args, "--language");
+        string? output = inputs.Option("--output");
+        string? language = inputs.Option("--language");
         if (output == null || language == null) return Usage();
         if (!LanguageTag().IsMatch(language) || language == Ome.Engine.Localization.LanguageTag.Source)
         {
@@ -97,17 +104,20 @@ internal static partial class OmpTextCommand
                                     + "such as en or pt-br");
             return 2;
         }
-        ScriptTextCorpus corpus = Corpus(baseRoot, baseCatalog, table);
-        return Ome.Mods.Tools.TextCommands.Extract(corpus, language, output, $"the {profileId} install at {baseRoot}",
-                                                   Console.Out, EngineKeys);
+        ScriptTextCorpus corpus = Corpus(inputs);
+        return Ome.Mods.Tools.TextCommands.Extract(corpus, language, output,
+                                                   $"the {inputs.GameId} install at {inputs.GameRoot}", Console.Out, EngineKeys);
     }
 
-    private static int CheckOrStats(bool stats, string[] args, string baseRoot, Sys4AssetCatalog baseCatalog,
-                                    OpcodeTable table, string profileId, Ome.Mods.Launch.ResolvedRun run)
+    private static int CheckOrStats(bool stats, CommandInputs inputs)
     {
-        List<string> packages = Options(args, "--mod");
+        string[] args = inputs.Args;
+        Ome.Mods.Launch.ResolvedRun run = inputs.Run;
+        string baseRoot = inputs.GameRoot;
+        Sys4AssetCatalog baseCatalog = inputs.Catalog;
+        List<string> packages = inputs.Options("--mod").Select(Path.GetFullPath).ToList();
         string? dataRoot = run.DataRoot;
-        string? textRoot = Option(args, "--text-root") is { } text ? Path.GetFullPath(text) : null;
+        string? textRoot = inputs.Option("--text-root") is { } text ? Path.GetFullPath(text) : null;
         if (packages.Count == 0 && dataRoot == null && textRoot == null)
         {
             Console.Error.WriteLine($"error: omp text {(stats ? "stats" : "check")} needs --mod PATH, --data-root DIR or --text-root DIR");
@@ -120,11 +130,11 @@ internal static partial class OmpTextCommand
         }
         var store = new Sys4AssetStore(baseCatalog, baseRoot, baseRoot);
         // Launcher spec §5.9: the engine's link base (the embedded opcode metadata).
-        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, table.AbiId,
+        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(inputs.GameId, inputs.Table.AbiId,
             InstallFileNames.CatalogPath(baseRoot), baseCatalog, store) with { ProfileMode = run.ProfileFile?.ModeName };
-        ScriptTextCorpus? corpus = stats || !args.Contains("--no-scripts") ? Corpus(baseRoot, baseCatalog, table) : null;
+        ScriptTextCorpus? corpus = stats || !args.Contains("--no-scripts") ? Corpus(inputs) : null;
         return Ome.Mods.Tools.TextCommands.Run(stats, linkBase, dataRoot, packages, textRoot, corpus,
-            Option(args, "--language"), args.Contains("--scripts"), Console.Out, EngineKeys, table: run.Mods);
+            inputs.Option("--language"), args.Contains("--scripts"), Console.Out, EngineKeys, table: run.Mods);
     }
 
     private static string? Option(string[] args, string name)
@@ -133,12 +143,40 @@ internal static partial class OmpTextCommand
         return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
     }
 
-    private static int ImportScripts(string[] args, string baseRoot, Sys4AssetCatalog baseCatalog, OpcodeTable table,
-                                     string profileId)
+    /// <summary><c>import-scripts</c>' options for the <c>--from</c> install (modding from a release spec §6.3), and the
+    /// asset options they stand for there. They are named apart from the base's own, which a profile file sets.</summary>
+    private static readonly (string From, string Option)[] FromOptions =
+    [
+        ("--from-overlay-root", AssetLaunchOptions.OverlayRootOptionName),
+        ("--from-allow-bmp-as-agf", AssetLaunchOptions.AllowBmpAsAgfOptionName),
+    ];
+
+    /// <summary>The <c>--from-…</c> options of <paramref name="args"/>, as the asset options of the translated
+    /// install.</summary>
+    private static List<string> TranslatedAssetArguments(string[] args)
     {
-        string? from = Option(args, "--from");
-        string? output = Option(args, "--output");
-        string language = Option(args, "--language") ?? "en";
+        var translated = new List<string>();
+        for (int index = 0; index < args.Length; index++)
+            foreach (var (from, option) in FromOptions)
+            {
+                if (args[index] != from) continue;
+                translated.Add(option);
+                if (option == AssetLaunchOptions.OverlayRootOptionName && index + 1 < args.Length)
+                    translated.Add(args[++index]);
+            }
+        return translated;
+    }
+
+    private static int ImportScripts(CommandInputs inputs)
+    {
+        string[] args = inputs.Args;
+        string baseRoot = inputs.GameRoot;
+        Sys4AssetCatalog baseCatalog = inputs.Catalog;
+        OpcodeTable table = inputs.Table;
+        string profileId = inputs.GameId;
+        string? from = inputs.Option("--from");
+        string? output = inputs.Option("--output");
+        string language = inputs.Option("--language") ?? "en";
         if (from == null || output == null) return Usage();
         if (!LanguageTag().IsMatch(language))
         {
@@ -152,12 +190,13 @@ internal static partial class OmpTextCommand
             Console.Error.WriteLine($"error: {translatedIni} does not exist");
             return 2;
         }
-        // --overlay-root and --allow-bmp-as-agf belong to the translated install here; the base reads its own root.
-        AssetLaunchOptions translatedOptions = AssetLaunchOptions.Resolve(args, translatedRoot);
+        // --from-overlay-root and --from-allow-bmp-as-agf belong to the translated install; the base reads its own root,
+        // without the overlays a profile file names.
+        AssetLaunchOptions translatedOptions = AssetLaunchOptions.Resolve(TranslatedAssetArguments(args), translatedRoot);
         Sys4AssetCatalog translatedCatalog = Sys4AssetCatalog.Load(translatedIni);
         var translatedStore = new Sys4AssetStore(translatedCatalog, translatedRoot, translatedOptions.LooseRoots.ToArray());
         var baseStore = new Sys4AssetStore(baseCatalog, baseRoot, baseRoot);
-        var contracts = Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson);
+        var contracts = inputs.Contracts;
 
         var report = new ImportReport
         {

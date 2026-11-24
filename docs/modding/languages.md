@@ -80,8 +80,8 @@ as a PNG. When the folder has no manifest, it writes one with the language's `[[
 Ome.Cli omp text import-scripts --from TRANSLATED_ROOT --output my.lang --language en --package <game options>
 ```
 
-- The game options name the original install. `--overlay-root` and `--allow-bmp-as-agf` apply to the translated
-  install, as it is played without the port.
+- The game options, or a profile, name the original install. `--from-overlay-root` and `--from-allow-bmp-as-agf`
+  apply to the translated install, as it is played without the port.
 - `--verify` reads the catalogs back and checks every message against the translated scripts.
 - The summary and `import-report.json` list what could not be carried.
 - The manifest's `glyph_delay_scale` is the original's character count divided by the translation's. Its `id` and

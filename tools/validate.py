@@ -680,10 +680,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--level", choices=LEVELS, default="full")
     parser.add_argument("--godot", help="Godot 4.7 .NET console executable")
-    # paths.py consumes --game (alias --profile), --game-root and --extracted-root at import (paths.CONTEXT); they are
-    # listed here for --help only, and validation reads the context, never these values.
-    parser.add_argument("--game", "--profile", dest="game", default=paths.CONTEXT.profile_id,
-                        help="game id (common tool-context option; --profile is the same option)")
+    # paths.py consumes --game, --game-root and --extracted-root at import (paths.CONTEXT); they are listed here for
+    # --help only, and validation reads the context, never these values.
+    parser.add_argument("--game", dest="game", default=paths.CONTEXT.profile_id,
+                        help="game id (common tool-context option)")
     parser.add_argument("--game-root", help="AGE install containing SYS4INI.BIN (common tool-context option)")
     parser.add_argument("--extracted-root", help="optional extracted DATA1..DATA5 root")
     parser.add_argument("--verbose", action="store_true", help="stream successful gate output")

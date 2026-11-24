@@ -4,7 +4,7 @@ using Ome.Engine.Vm;
 
 /// <summary><c>save-info FILE [--game ID]</c>: what one native save file says about itself (NativeSaveInfo): its
 /// identity and version stamp, and for a numbered save its frames, bank counts and graphics record size, and whether
-/// the codec carries it through an encode. With --game (or its alias --profile) it is set against that game's profile
+/// the codec carries it through an encode. With --game it is set against that game's profile
 /// and engine build. Exit code 0 when the file reads and agrees, 1 when it differs from the profile or does not
 /// survive the codec, 2 on a usage or decode error.</summary>
 internal static class SaveInfoCommand

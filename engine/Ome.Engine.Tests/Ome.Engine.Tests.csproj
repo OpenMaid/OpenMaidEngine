@@ -37,6 +37,8 @@
     <ProjectReference Include="..\Ome.Scripting.Lua\Ome.Scripting.Lua.csproj" />
     <!-- Built, not loaded: the run lock tests (launcher spec §5.5, gate 4) start Ome.Cli as a second process. -->
     <ProjectReference Include="..\Ome.Cli\Ome.Cli.csproj" ReferenceOutputAssembly="false" />
+    <!-- Built, not loaded: the tool tests (modding from a release plan §3.2, gate 5) run OME-Tool as a process. -->
+    <ProjectReference Include="..\Ome.Tool\Ome.Tool.csproj" ReferenceOutputAssembly="false" />
     <!-- Built, not loaded: the launch tests (launcher plan §5.11) start it in the engine's place. -->
     <ProjectReference Include="..\Ome.Launcher.StubEngine\Ome.Launcher.StubEngine.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Ome.Launcher.Core\Ome.Launcher.Core.csproj" />

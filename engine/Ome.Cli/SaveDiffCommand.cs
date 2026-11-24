@@ -5,8 +5,8 @@ using Ome.Engine.Vm;
 using Ome.Script.Modules;
 
 /// <summary><c>save-diff A B [--game ID] [--section NAME]... [--limit N]</c>: compare two native save containers
-/// (numbered SAVEnn.DAT, or any S3SD/S4SD file) by their decoded payloads (NativeSaveDiff). With --game (or its alias
-/// --profile, the last of either winning), global differences carry the names of that game's registry, and the bank
+/// (numbered SAVEnn.DAT, or any S3SD/S4SD file) by their decoded payloads (NativeSaveDiff). With --game (the last
+/// one winning), global differences carry the names of that game's registry, and the bank
 /// sections its engine build never writes are left out (NativeSaveDiff.UnwrittenSections). Exit code 0 when the saves
 /// match, 1 when they differ, 2 on a usage or decode error.</summary>
 internal static class SaveDiffCommand

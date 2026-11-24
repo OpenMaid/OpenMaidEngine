@@ -48,16 +48,15 @@ public static class GameProfileSelection
 {
     /// <summary>The option that names the game (launcher spec §5.8).</summary>
     public const string GameOptionName = "--game";
-    /// <summary>The old spelling of <see cref="GameOptionName"/>: the same option, accepted without a warning.</summary>
-    public const string ProfileOptionName = "--profile";
     public const string ProbeOptionName = "--probe";
 
-    public static bool IsGameOption(string argument)
-        => argument is GameOptionName or ProfileOptionName;
+    /// <summary>Whether <paramref name="argument"/> names the game. <c>--profile</c>, once its old name, names a player
+    /// profile since 2026-11-24 (modding from a release spec §6.3).</summary>
+    public static bool IsGameOption(string argument) => argument is GameOptionName;
 
-    /// <summary>The game id the arguments ask for: the value of the last <c>--game</c> or <c>--profile</c>, which
-    /// are one option, or null when neither is given. Every reader of the option goes through this, so the host and
-    /// <c>Ome.Cli</c> cannot disagree about which value wins.</summary>
+    /// <summary>The game id the arguments ask for: the value of the last <c>--game</c>, or null when it is not given.
+    /// Every reader of the option goes through this, so the host and <c>Ome.Cli</c> cannot disagree about which value
+    /// wins.</summary>
     public static string? RequestedGameId(IReadOnlyList<string> arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);

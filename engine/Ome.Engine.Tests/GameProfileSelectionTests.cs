@@ -156,17 +156,21 @@ public sealed class GameProfileSelectionTests
         Assert.Equal(GameProfileSelectionSource.Explicit, selected.Source);
     }
 
-    /// <summary>Launcher spec §5.8: <c>--profile</c> is the same option as <c>--game</c>, so the last of either wins.</summary>
+    /// <summary>The last <c>--game</c> wins. <c>--profile</c> names a player profile since 2026-11-24 (modding from a
+    /// release spec §6.3), so it no longer names the game.</summary>
     [Theory]
-    [InlineData(new[] { "--profile", "kamidori" }, "kamidori")]
-    [InlineData(new[] { "--game", "himegari", "--profile", "kamidori" }, "kamidori")]
-    [InlineData(new[] { "--profile", "himegari", "--game", "kamidori" }, "kamidori")]
-    [InlineData(new[] { "--game", "kamidori", "--mod", "x", "--profile", "himegari" }, "himegari")]
-    public void ProfileIsAnAliasOfGameAndTheLastOfEitherWins(string[] arguments, string expected)
+    [InlineData(new[] { "--game", "himegari", "--game", "kamidori" }, "kamidori")]
+    [InlineData(new[] { "--game", "kamidori", "--mod", "x", "--game", "himegari" }, "himegari")]
+    [InlineData(new[] { "--profile", "kamidori", "--game", "himegari" }, "himegari")]
+    public void TheLastGameOptionWinsAndProfileIsNotOne(string[] arguments, string expected)
     {
         Assert.Equal(expected, GameProfileSelection.RequestedGameId(arguments));
         Assert.Equal(expected, GameProfileSelection.Resolve(arguments, KamidoriIdentity).Profile.Id);
     }
+
+    [Fact]
+    public void ProfileAloneRequestsNoGame()
+        => Assert.Null(GameProfileSelection.RequestedGameId(["--profile", "kamidori"]));
 
     [Fact]
     public void NoGameOptionRequestsNothing()
@@ -216,8 +220,7 @@ public sealed class GameProfileSelectionTests
     [Theory]
     [InlineData("--game", "--game")]
     [InlineData("--game", "--game", "--probe")]
-    [InlineData("--profile", "--profile")]
-    [InlineData("--profile", "--game", "himegari", "--profile")]
+    [InlineData("--game", "--game", "himegari", "--game")]
     public void MissingExplicitGameIdIsRejected(string option, params string[] arguments)
     {
         var error = Assert.Throws<ArgumentException>(

@@ -1,10 +1,13 @@
+using System.Reflection;
+
 namespace Ome.Engine.Frontend.Shell;
 
 /// <summary>
 /// Open Maid Engine's own identity, which the options panel's 情報 section shows where AGE's ﾊﾞｰｼﾞｮﾝ情報 names AGE
 /// (docs/superpowers/specs/2026-11-09-engine-shell-design.md, §5.5). The version is what <c>git describe</c> gave the
 /// build (the root Directory.Build.targets, target OmeVersion, which the engine and the launcher both run); the build
-/// stores it in an AssemblyMetadata attribute named <see cref="VersionMetadataKey"/>.
+/// stores it in an AssemblyMetadata attribute named <see cref="VersionMetadataKey"/>, and the commit beside it
+/// (<see cref="CommitMetadataKey"/>).
 /// </summary>
 public static class EngineIdentity
 {
@@ -18,6 +21,14 @@ public static class EngineIdentity
     public const string NoticesFile = "THIRD_PARTY_NOTICES.md";
     public const string NoticesPointer = "Third-party licenses: " + NoticesFile;
     public const string VersionMetadataKey = "OmeVersion";
+    /// <summary>The commit the program was built from, <c>git rev-parse --short=12 HEAD</c> or a <c>-p:OmeCommit=</c>
+    /// override: OME-Tool's <c>--version</c> names it (modding from a release plan §3.2).</summary>
+    public const string CommitMetadataKey = "OmeCommit";
+
+    /// <summary>The value of the AssemblyMetadata attribute <paramref name="key"/> that the build stamped into
+    /// <paramref name="assembly"/>, or null.</summary>
+    public static string? Stamp(Assembly assembly, string key)
+        => assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(attribute => attribute.Key == key)?.Value;
 
     /// <summary>The version as 情報 shows it, from <c>git describe --tags --match "v[0-9]*" --dirty=+ --always</c> or a
     /// <c>-p:OmeVersion=</c> override: a release tag without its "v" ("0.4.0"), a later commit as git describes it

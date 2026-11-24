@@ -163,16 +163,28 @@ class ToolContext:
         )
 
 
+PROFILE_OPTION = "--profile"
+PROFILE_REFUSAL = (
+    "--profile names a player profile (OME-Tool and Ome.Cli), not the game: a tool takes --game ID, "
+    "with --game-root DIR for an install"
+)
+
+
 def _context_from_process(
     argv: Sequence[str], environ: Mapping[str, str] | None = None
 ) -> tuple[ToolContext, list[str]]:
     """Consume common context flags while leaving every tool-specific argument untouched.
 
     Names match exactly (``allow_abbrev=False``): argparse's default reads an unambiguous
-    prefix, which once read ``--game kamidori`` as ``--game-root kamidori``. ``--game`` and
-    ``--profile`` are one option, so the last of either wins."""
+    prefix, which once read ``--game kamidori`` as ``--game-root kamidori``. The last ``--game``
+    wins. ``--profile``, once its old name, names a player profile of OME-Tool and Ome.Cli
+    since 2026-11-24 (modding from a release spec §6.3); it is refused here, since parsing
+    known arguments would pass it through unread and a tool would run Himegari."""
     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
-    parser.add_argument("--game", "--profile", dest="game")
+    for argument in argv:
+        if argument == PROFILE_OPTION or argument.startswith(PROFILE_OPTION + "="):
+            parser.error(PROFILE_REFUSAL)
+    parser.add_argument("--game", dest="game")
     parser.add_argument("--game-root")
     parser.add_argument("--extracted-root")
     arguments, remaining = parser.parse_known_args(list(argv))

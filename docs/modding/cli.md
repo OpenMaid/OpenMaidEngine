@@ -3,13 +3,20 @@
 This page is the reference for the mod commands, the port's mod options, and where installed mods live. Run commands
 from `age-reimpl/`.
 
-`Ome.Cli` is `dotnet run --project engine/Ome.Cli -- <command>`. Every `Ome.Cli` command takes the game options:
+`Ome.Cli` is `dotnet run --project engine/Ome.Cli -- <command>`. Every `Ome.Cli` command takes either a player
+profile or the game options:
 
 | Option | Meaning |
 |---|---|
-| `--game <game>` | the game; without it, `himegari`. `--profile <game>` is the same option under its old name, and the last of either wins |
+| `--profile <id>` | a player profile, by its id in OME home: its game, install, overlays and mods, as the launcher runs it. `--home DIR` names another OME home. A profile the launcher asks you to review is refused until you accept it there |
+| `--data-root DIR` | a profile's folder, with the same effect (see below) |
+| `--game <game>` | the game, without a profile; without it, `himegari` |
 | `--game-root DIR` | the install; without it, the game's expected install beside the repository |
 | `--overlay-root DIR` | a loose-file layer over the install, such as a translation, relative to the game root (repeatable) |
+
+`--profile` was `--game`'s old name until 2026-11-24, and an old command line now fails with a message: an id that
+names no profile says where it looked and that the game is `--game`. With a profile, `--game`, `--game-root` and
+`--overlay-root` are refused ([troubleshooting.md](troubleshooting.md)).
 
 Your game guide lists the options its installs need ([games/README.md](games/README.md)).
 
@@ -44,7 +51,7 @@ the same selectors.
 | `omp text stats [--mod PATH …] [--data-root DIR] [--text-root DIR] [--language TAG] [--scripts]` | Counts, per language, the messages, strings and composed strings of the installed scripts that its catalogs and their fallback chain translate. `--scripts` adds a line per script. |
 | `omp text po-export --language TAG (--package DIR \| --text-root DIR) --output FILE.po` | Writes language `TAG`'s catalogs (`DIR/text/TAG/` of a package folder, or `DIR/TAG/` of a text root) as one gettext PO file: a message per entry with its scope as `msgctxt`, its `note` and origin as comments, templates with an empty `msgstr` and obsolete entries as `#~` messages. `[[engine]]` entries have the context `engine:KEY` and the engine's Japanese as `msgid`. |
 | `omp text po-import --language TAG (--package DIR \| --text-root DIR) --input FILE.po` | Puts the PO file's translations into those catalogs, entry by entry, keeping every other key and each file's header comments, and rewrites only the files that changed. Empty, fuzzy and obsolete messages are left out, and a message no entry has is a warning. A translation that does not fit its entry stops it before it writes anything. |
-| `omp text import-scripts --from GAME_ROOT [--overlay-root DIR] [--allow-bmp-as-agf] --output DIR [--language TAG] [--package] [--verify] [--compare-archives]` | Builds language `TAG`'s catalogs (default `en`) in `DIR/text/TAG/` from the install at `GAME_ROOT`, whose scripts were translated in place, against the selected install. It replaces the `.toml` files already in that folder and writes `DIR/import-report.json`. `--overlay-root` and `--allow-bmp-as-agf` apply to the translated install. `--package` also writes the images the translation replaced to `DIR/assets/TAG/`, each AGF as a PNG and replacing the images already there. When `DIR` has no `manifest.toml`, it writes one with a `[[language]]` table. `--verify` checks every message against the translated scripts and exits 1 on a mismatch. `--compare-archives` compares archives by content rather than size ([languages.md](languages.md), "From a translation made in place"). |
+| `omp text import-scripts --from GAME_ROOT [--from-overlay-root DIR] [--from-allow-bmp-as-agf] --output DIR [--language TAG] [--package] [--verify] [--compare-archives]` | Builds language `TAG`'s catalogs (default `en`) in `DIR/text/TAG/` from the install at `GAME_ROOT`, whose scripts were translated in place, against the selected install. It replaces the `.toml` files already in that folder and writes `DIR/import-report.json`. `--from-overlay-root` and `--from-allow-bmp-as-agf` apply to the translated install; the selected install is read without overlays. `--package` also writes the images the translation replaced to `DIR/assets/TAG/`, each AGF as a PNG and replacing the images already there. When `DIR` has no `manifest.toml`, it writes one with a `[[language]]` table. `--verify` checks every message against the translated scripts and exits 1 on a mismatch. `--compare-archives` compares archives by content rather than size ([languages.md](languages.md), "From a translation made in place"). |
 
 The catalog format and the workflow are in [languages.md](languages.md).
 

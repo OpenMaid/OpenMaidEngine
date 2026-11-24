@@ -182,11 +182,13 @@ public sealed class EngineBuildTests
         "engine/Ome.Mods/Linking/ModLinkBase.cs",
         "engine/Ome.Mods/Linking/ModCatalogBuilder.cs",
         "engine/Ome.Engine/Sys4/ScriptAssembler.cs",
-        // Composition: the Godot front end and the command-line tools put the engine together, and the launcher's
-        // link check links as Ome.Cli does (launcher spec §5.9).
+        // Composition: the Godot front end and the command-line tools put the engine together (Ome.Commands, the
+        // commands OME-Tool and Ome.Cli share, among them), and the launcher's link check links as Ome.Cli does
+        // (launcher spec §5.9).
         "godot/Main.cs",
         "godot/Main.Mods.cs",
         "engine/Ome.Cli/",
+        "engine/Ome.Commands/",
         "engine/Ome.Launcher.Core/LinkComposition.cs",
         // Diagnostics that print the id.
         "engine/Ome.Engine/Sys4/Sys4OpcodeDecodeException.cs",

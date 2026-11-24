@@ -69,9 +69,12 @@ public static class RunResolver
     public const string RenderBackendOption = "--render-backend";
     public const string TextBackendOption = "--text-backend";
     public const string LuaErrorsOption = "--lua-errors";
+    /// <summary>A player profile by its id (modding from a release spec §6.3). <c>OME-Tool</c> and <c>Ome.Cli</c> turn
+    /// it into the profile's <c>--data-root</c> before they resolve; the resolver refuses it, since a profile runs from
+    /// its folder alone.</summary>
+    public const string ProfileOption = "--profile";
 
-    /// <summary>Options that take one value, where the last given wins. <c>--game</c> and <c>--profile</c> are one
-    /// option and come out as <c>--game</c>.</summary>
+    /// <summary>Options that take one value, where the last given wins.</summary>
     private static readonly string[] SingleValued =
     [
         GameProfileSelection.GameOptionName, GameRootOption, DataRootOption,
@@ -81,7 +84,7 @@ public static class RunResolver
     /// <summary>What a command-line flag cannot change once a profile file names the game and the install.</summary>
     private static readonly string[] RefusedWithProfileFile =
     [
-        GameProfileSelection.GameOptionName, GameProfileSelection.ProfileOptionName, GameRootOption,
+        GameProfileSelection.GameOptionName, GameRootOption,
         AssetLaunchOptions.OverlayRootOptionName, AssetLaunchOptions.AllowBmpAsAgfOptionName,
         GameProfileSelection.ProbeOptionName,
     ];
@@ -95,6 +98,10 @@ public static class RunResolver
         ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
         registry ??= GameProfileRegistry.BuiltIn;
 
+        if (arguments.Contains(ProfileOption))
+            throw new RunResolutionException(
+                $"{ProfileOption} names a player profile, which runs from its folder: give --data-root DIR (the profile's "
+                + "folder), or --game ID for a game");
         List<string> normalized = Normalize(arguments, Path.GetFullPath(workingDirectory));
         string? dataRoot = LastValue(normalized, DataRootOption);
         if (dataRoot == null)
@@ -150,17 +157,14 @@ public static class RunResolver
     }
 
     /// <summary>The command line with one occurrence of each single-valued option, the last given, in its place;
-    /// <c>--profile</c> is spelled <c>--game</c> and <c>--data-root</c> is a full path. An option without a value
-    /// is kept as given, so its own reader reports it.</summary>
+    /// <c>--data-root</c> is a full path. An option without a value is kept as given, so its own reader reports
+    /// it.</summary>
     private static List<string> Normalize(IReadOnlyList<string> arguments, string workingDirectory)
     {
-        static string Canonical(string argument)
-            => GameProfileSelection.IsGameOption(argument) ? GameProfileSelection.GameOptionName : argument;
-
         var last = new Dictionary<string, int>(StringComparer.Ordinal);
         for (int index = 0; index < arguments.Count; index++)
         {
-            string option = Canonical(arguments[index]);
+            string option = arguments[index];
             if (Array.IndexOf(SingleValued, option) < 0) continue;
             last[option] = index;
             if (HasValue(arguments, index)) index++;
@@ -169,7 +173,7 @@ public static class RunResolver
         var normalized = new List<string>(arguments.Count);
         for (int index = 0; index < arguments.Count; index++)
         {
-            string option = Canonical(arguments[index]);
+            string option = arguments[index];
             if (Array.IndexOf(SingleValued, option) < 0)
             {
                 normalized.Add(arguments[index]);

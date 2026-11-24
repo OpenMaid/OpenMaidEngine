@@ -125,13 +125,12 @@ public sealed class RunResolverTests : IDisposable
         Assert.Equal(["--data-root", root, "--game-root", "x", "--mod", "m"], run.Arguments);
     }
 
-    /// <summary>Launcher spec §5.8: <c>--game</c> and <c>--profile</c> are one option, and each single-valued option
-    /// keeps its last value, so a reader that takes the first (<c>Ome.Cli</c>) and one that takes the last (the host)
-    /// read the same.</summary>
+    /// <summary>Launcher spec §5.8: each single-valued option keeps its last value, so a reader that takes the first
+    /// (<c>Ome.Cli</c>) and one that takes the last (the host) read the same.</summary>
     [Fact]
     public void RepeatedOptionsKeepTheLastValueForEveryReader()
     {
-        ResolvedRun run = Resolve("omp", "build", "DIR", "--profile", "himegari", "--game-root", "a",
+        ResolvedRun run = Resolve("omp", "build", "DIR", "--game", "himegari", "--game-root", "a",
                                   "--game", "kamidori", "--mod", "x", "--game-root", "b", "--mod", "y",
                                   "--render-backend", "gpu", "--render-backend", "software");
 
@@ -154,9 +153,24 @@ public sealed class RunResolverTests : IDisposable
         Assert.Throws<ArgumentException>(() => GameRootSelection.Resolve(run.Arguments, null, _root));
     }
 
+    /// <summary>Modding from a release spec §6.3: <c>--profile</c> names a player profile, which <c>OME-Tool</c> and
+    /// <c>Ome.Cli</c> turn into its <c>--data-root</c>. Given to the resolver, as the engine is, it is refused, and the
+    /// message names what to give instead.</summary>
+    [Theory]
+    [InlineData("--profile", "kamidori")]
+    [InlineData("--game", "kamidori", "--profile", "kamidori")]
+    [InlineData("--data-root", "root", "--profile", "kamidori")]
+    public void ProfileIsRefusedWithWhatToGiveInstead(params string[] arguments)
+    {
+        var error = Assert.Throws<RunResolutionException>(() => Resolve(arguments));
+
+        Assert.StartsWith("--profile names a player profile, which runs from its folder", error.Message);
+        Assert.Contains("--data-root DIR", error.Message);
+        Assert.Contains("--game ID", error.Message);
+    }
+
     [Theory]
     [InlineData("--game", "kamidori")]
-    [InlineData("--profile", "kamidori")]
     [InlineData("--game-root", "elsewhere")]
     [InlineData("--overlay-root", "patch")]
     [InlineData("--allow-bmp-as-agf")]

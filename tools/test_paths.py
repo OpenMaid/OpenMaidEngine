@@ -2,6 +2,8 @@
 """Pure tests for the profile-aware tool path context."""
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import tempfile
 import unittest
@@ -47,16 +49,26 @@ class ToolContextTests(unittest.TestCase):
         self.assertEqual(paths.WORKSPACE / "games" / "kamidori", context.game_root)
         self.assertEqual(["--tool-flag"], remaining)
 
-    def test_profile_is_the_same_option_as_game_and_the_last_wins(self) -> None:
+    def test_the_last_game_option_wins(self) -> None:
         for argv, expected in (
-            (["--profile", "kamidori"], "kamidori"),
-            (["--game", "himegari", "--profile", "kamidori"], "kamidori"),
-            (["--profile", "kamidori", "--game=himegari"], "himegari"),
+            (["--game", "himegari", "--game", "kamidori"], "kamidori"),
+            (["--game", "kamidori", "--game=himegari"], "himegari"),
         ):
             with self.subTest(argv=argv):
                 context, remaining = paths._context_from_process(argv, {})
                 self.assertEqual(expected, context.profile_id)
                 self.assertEqual([], remaining)
+
+    def test_profile_is_refused_with_what_to_give_instead(self) -> None:
+        # --profile names a player profile since 2026-11-24 (modding from a release spec §6.3): passed through
+        # unread, a tool would run Himegari.
+        for argv in (["--profile", "kamidori"], ["--game", "himegari", "--profile=kamidori"]):
+            with self.subTest(argv=argv):
+                stderr = io.StringIO()
+                with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as exit_:
+                    paths._context_from_process(argv, {})
+                self.assertEqual(2, exit_.exception.code)
+                self.assertIn(paths.PROFILE_REFUSAL, stderr.getvalue())
 
     def test_common_options_match_only_their_exact_names(self) -> None:
         context, remaining = paths._context_from_process(["--gam", "kamidori", "--extracted", "x"], {})

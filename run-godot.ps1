@@ -22,7 +22,7 @@
 #   .\run-godot.ps1 -LuaDev    let a mod folder write base-mod names its [lua] writes list lacks
 #   .\run-godot.ps1 -LuaTrace  log every Lua handler call to the profile's diagnostics/lua-trace.jsonl
 #   .\run-godot.ps1 -LuaReload rebuild the Lua session when a mod folder's lua/ files change, keeping maid.state
-#   .\run-godot.ps1 -Game kamidori -GameRoot <install>  explicitly select the game (-Profile is its alias)
+#   .\run-godot.ps1 -Game kamidori -GameRoot <install>  explicitly select the game
 #   .\run-godot.ps1 -Game himegari -Probe -GameRoot <install>  force a read-only diagnostic run
 #   .\run-godot.ps1 -Doctor     resolve and print prerequisites without building or launching
 #
@@ -31,7 +31,6 @@
 param(
     [string]$GodotConsole,
     [string]$GameRoot,
-    [Alias('Profile')]
     [string]$Game,
     [switch]$Kamidori,
     [switch]$AllowBmpAsAgf,

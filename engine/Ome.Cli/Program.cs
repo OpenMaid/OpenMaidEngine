@@ -13,6 +13,17 @@ const string CommandList = "save-diff, save-info, run-lock, intake, omp, oms-com
                           + "oms-roundtrip, oms-decompile, oms-residue, catalog-scan, run, audio, gfx, picture, init-image, data-export, "
                           + "script-index, play, "
                           + "sweep, trace";
+// UTF-8 output while the program runs, and the console's own code page back at its end (modding from a release spec
+// §6.1). A command that throws an ArgumentException for a missing or wrong option exits 2 with its message (spec §6.2),
+// not as a crash.
+using Ome.Commands.Utf8Console utf8Console = Ome.Commands.Utf8Console.Begin();
+AppDomain.CurrentDomain.UnhandledException += (_, unhandled) =>
+{
+    if (unhandled.ExceptionObject is not ArgumentException usage) return;
+    Console.Error.WriteLine($"error: {usage.Message}");
+    utf8Console.Dispose();
+    Environment.Exit(2);
+};
 if (args.Length == 0)
 {
     Console.Error.WriteLine("usage: Ome.Cli COMMAND [options] (docs/tools-reference.md); commands: " + CommandList);
@@ -30,6 +41,23 @@ if (command == "run-lock") return RunLockCommand.Run(args);
 // intake looks at an install that has no profile yet (docs/adding-a-game.md, step 1), so it runs before a game is
 // selected and with the whole opcode catalog.
 if (command == "intake") return IntakeCommand.Run(args);
+
+// --profile ID names a player profile in OME home (modding from a release spec §6.3): it becomes that profile's
+// --data-root, for the shared commands and this program's own alike.
+if (Ome.Commands.ToolCommands.ExpandProfile(args) is not { } expandedArgs) return 2;
+args = expandedArgs;
+
+// The commands OME-Tool shares (spec §6.2) run with this checkout's defaults: games/<game>/ when no install is named,
+// build/opcodes.json read live, and pictures in build/games/<game>/pictures.
+if (Ome.Commands.ToolCommands.Handles(command))
+    return Ome.Commands.ToolCommands.Run(args, new Ome.Commands.CommandDefaults
+    {
+        Program = "Ome.Cli",
+        DefaultInstall = Paths.GameInstall,
+        OpcodeTable = abi => OpcodeTableJson.Load(Paths.OpcodesJson, abi),
+        Contracts = () => Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
+        PictureFolder = game => Path.Combine(Paths.GameBuild(game), "pictures"),
+    });
 
 // Every option below reads the resolver's list (launcher spec §5.2): one occurrence of each single-valued option, the
 // last given, and a --data-root's profile.toml mapped to the flags it stands for. The command keeps its place.
@@ -53,7 +81,7 @@ string? OptionValue(string name)
     return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
 }
 
-// The conventional game root follows the game GameProfileSelection.Resolve picks below: the last --game/--profile.
+// The conventional game root follows the game GameProfileSelection.Resolve picks below: the last --game.
 string? requestedGame = GameProfileSelection.RequestedGameId(args);
 // A game the registry does not know keeps Himegari's root, so the selection below reports the unknown id.
 string conventionalGameRoot =
@@ -74,9 +102,6 @@ var table = OpcodeTableJson.Load(Paths.OpcodesJson, engineBuild.AbiId);
 // call-script execution: resolves ids -> scripts. Product paths pass this so subroutines run;
 // `trace` stays provider-less on purpose (the base-ISA offset oracle).
 var catalog = Sys4AssetCatalog.Load(sys4Ini);
-// omp text resolves its own asset roots: there --overlay-root belongs to the translated install (--from).
-if (command == "omp" && args.Length > 1 && args[1] == "text")
-    return OmpTextCommand.Run(args, gameRoot, catalog, table, selectedProfile.Profile.Id, run);
 AssetLaunchOptions assetOptions = AssetLaunchOptions.Resolve(args, gameRoot);
 var assetStore = new Sys4AssetStore(catalog, gameRoot, assetOptions.LooseRoots.ToArray());
 var provider = new Sys4ScriptProvider(
@@ -113,92 +138,6 @@ List<Ome.Script.Modules.GameModule> OmsModules()
     => args.Contains("--no-names") ? []
         : Ome.Mods.Linking.GameToolchain.Modules(Ome.Mods.Linking.GameToolchain.Shipped(selectedProfile.Profile.Id),
                                                  selectedProfile.Profile.Id, catalog);
-
-if (command == "omp")
-{
-    // Mod loader spec §10: omp build DIR [--output FILE.omp] [--mod DEP …] | omp check [--data-root DIR] [--mod PATH …]
-    // [--skip-failed-mods] | omp explain NAME [--data-root DIR] [--mod PATH …]. --data-root is a port profile root
-    // (its mods/ folder, load-order.txt and selectors.toml, or its profile.toml's [mods] table, launcher spec §5.3);
-    // without it only --mod packages are linked.
-    List<string> Paths_(string flag) => args.Select((arg, k) => (arg, k))
-        .Where(pair => pair.arg == flag && pair.k + 1 < args.Length).Select(pair => Path.GetFullPath(args[pair.k + 1])).ToList();
-    string profileId = selectedProfile.Profile.Id;
-    // The Lua runtime checks each lua/ file (Lua scripting spec §13); it is created only when a mod ships Lua.
-    using Ome.Engine.Modding.LazyModRuntime luaRuntime = Ome.Scripting.Lua.LuaModRuntime.Lazy();
-    // Launcher spec §5.9: the engine's link base, from the opcode metadata embedded in Ome.Engine (rebuild after
-    // opcodes_build.py --build); the other commands read build/opcodes.json live.
-    // A toolchain that does not build is the base's ToolchainError, which each compile reports (spec §5.3).
-    Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForGame(profileId, engineBuild.AbiId, sys4Ini,
-        catalog, assetStore) with { Lua = luaRuntime, ProfileMode = run.ProfileFile?.ModeName };
-    string? dataRoot = run.DataRoot;
-    Ome.Mods.Launch.ProfileMods? modsTable = run.Mods;
-    string verb = args.Length > 1 ? args[1] : "";
-    return verb switch
-    {
-        "build" when args.Length > 2 => Ome.Mods.Tools.OmpCommands.Build(linkBase, args[2], OptionValue("--output"),
-            Paths_("--mod"), Console.Out),
-        "check" => Ome.Mods.Tools.OmpCommands.Check(linkBase, dataRoot, Paths_("--mod"), args.Contains("--skip-failed-mods"),
-            Console.Out, modsTable),
-        "export" when OptionValue("--output-dir") is { } exportDirectory => Ome.Mods.Tools.OmpCommands.Export(linkBase,
-            dataRoot, Paths_("--mod"), exportDirectory, Console.Out, modsTable),
-        "explain" when args.Length > 2 => Ome.Mods.Tools.OmpCommands.Explain(linkBase, catalog, assetStore, dataRoot,
-            Paths_("--mod"), args[2], Console.Out, modsTable),
-        "lua-stubs" when OptionValue("--output") is { } stubsDirectory => Ome.Mods.Tools.OmpCommands.LuaStubs(linkBase,
-            dataRoot, Paths_("--mod"), stubsDirectory, Console.Out, modsTable),
-        _ => Usage(),
-    };
-    static int Usage()
-    {
-        Console.Error.WriteLine("usage: omp build DIR [--output FILE.omp] [--mod DEP] | omp check [--data-root DIR] "
-                                + "[--mod PATH] [--skip-failed-mods] | omp export --output-dir DIR [--data-root DIR] [--mod PATH] | "
-                                + "omp explain NAME [--data-root DIR] [--mod PATH] | "
-                                + "omp lua-stubs --output DIR [--data-root DIR] [--mod PATH]");
-        return 2;
-    }
-}
-
-if (command == "oms-compile")
-{
-    // Compile one OMS source file to a SYS4 script. A sidecar next to the source (<file>.omslayout.json) is applied
-    // unless --no-layout asks for the canonical layout; warnings go to stderr.
-    string sourcePath = OptionValue("--source") ?? throw new ArgumentException("--source FILE.oms is required");
-    string layoutPath = OptionValue("--layout") ?? Path.ChangeExtension(sourcePath, ".omslayout.json");
-    string binaryPath = OptionValue("--output") ?? Path.ChangeExtension(sourcePath, ".BIN");
-    var compileModules = OmsModules();
-    var warnings = new List<Ome.Script.Compile.OmsWarning>();
-    try
-    {
-        string sourceText = File.ReadAllText(sourcePath);
-        Ome.Script.Layout.OmsLayout? sidecar = !args.Contains("--no-layout") && File.Exists(layoutPath)
-            ? Ome.Script.Layout.OmsLayout.FromJson(File.ReadAllText(layoutPath)) : null;
-        // A sidecar records the layout of the text it was decompiled with; applied to an edited source it would put
-        // the old data back (an edited line that shared a slot keeps the old text), so it is set aside.
-        if (sidecar?.SourceFingerprint is { } fingerprint
-            && fingerprint != Ome.Script.Layout.OmsLayout.SourceFingerprintOf(sourceText))
-        {
-            Console.Error.WriteLine($"warning: {sourcePath} changed since {layoutPath} was written; compiling the "
-                                    + "canonical layout without it (the original byte layout is not kept)");
-            sidecar = null;
-        }
-        var unit = Ome.Script.Syntax.Parser.ParseScript(sourceText, sourcePath);
-        var compiled = Ome.Script.Compile.OmsCompiler.Compile(unit, table.AbiId, table, sidecar,
-            new Ome.Script.Abi.IntrinsicCatalog(table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson)),
-            name => compileModules.FirstOrDefault(module => module.Name == name), warnings);
-        byte[] bytes = Ome.Script.Ir.IrEncoder.Encode(compiled);
-        File.WriteAllBytes(binaryPath, bytes);
-        foreach (var warning in warnings) Console.Error.WriteLine(warning);
-        Console.WriteLine($"oms-compile: {sourcePath} -> {binaryPath} ({bytes.Length} bytes, {compiled.Code.Count} instructions"
-                          + $"{(sidecar != null ? ", with sidecar" : "")}, {warnings.Count} warnings)");
-        return 0;
-    }
-    catch (Exception error) when (error is Ome.Script.Syntax.OmsSyntaxException or Ome.Script.Compile.OmsCompileException
-                                      or InvalidDataException or System.Text.Json.JsonException)
-    {
-        foreach (var warning in warnings) Console.Error.WriteLine(warning);
-        Console.Error.WriteLine($"error: {error.Message}");
-        return 1;
-    }
-}
 
 if (command == "oms-append")
 {
@@ -251,105 +190,6 @@ if (command == "oms-append")
         Console.WriteLine($"  0x{(selector << 24) | k:x8} {records[k].Name} ({records[k].Bytes.Length} bytes)");
     Console.WriteLine($"oms-append: selector {selector}, {records.Count} scripts -> {outputDirectory}");
     return 0;
-}
-
-if (command == "oms-patch")
-{
-    // Spec §10: compile fragments (patch units) into transform plans against the mounted catalog's scripts, and apply
-    // plans, in the order given, to produce patched scripts as loose overrides.
-    if (OptionValue("--fingerprint") is { } fingerprintScript)
-    {
-        AssetEntry fingerprintEntry = catalog.ResolveName(fingerprintScript)
-            ?? throw new ArgumentException($"{fingerprintScript} is not in the mounted catalog");
-        Console.WriteLine($"patch \"{fingerprintEntry.Name}\" fingerprint "
-                          + $"\"{Ome.Script.Patch.OmsPatchPlan.FingerprintOf(assetStore.ReadAll(fingerprintEntry))}\"");
-        return 0;
-    }
-    List<string> Values(string flag) => args.Select((arg, k) => (arg, k))
-        .Where(pair => pair.arg == flag && pair.k + 1 < args.Length).Select(pair => args[pair.k + 1]).ToList();
-    var patchSources = Values("--source");
-    var planFiles = Values("--plan");
-    if (patchSources.Count == 0 && planFiles.Count == 0)
-        throw new ArgumentException("oms-patch needs --source FRAGMENT.oms or --plan PLAN.omspatch.json (or --fingerprint SCRIPT)");
-    var patchModules = OmsModules();
-    var patchContracts = Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson);
-    var patchIntrinsics = new Ome.Script.Abi.IntrinsicCatalog(table, patchContracts);
-    Ome.Script.Text.OmsIdioms? patchIdioms = patchModules.Any(module => module.Source != null)
-        ? Ome.Script.Text.OmsIdioms.Build(patchModules, table.AbiId, patchIntrinsics) : null;
-    var plans = new List<(string Origin, Ome.Script.Patch.OmsPatchPlan Plan)>();
-    // --mod-id ID --names A,B,ICON.AGF: compile the fragments as part of a mod whose catalog records are those names in
-    // order; references to them stay symbolic in the plans (mod loader spec §6.2). --selector N binds them for
-    // --output-dir.
-    string? patchModId = OptionValue("--mod-id");
-    var patchNames = (OptionValue("--names") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-        .ToList();
-    Ome.Script.Compile.OmsResourceScope? patchScope = patchModId == null ? null
-        : new Ome.Script.Compile.OmsResourceScope(patchModId,
-            patchNames.Where(name => !Path.HasExtension(name)), patchNames.Where(Path.HasExtension));
-    int? patchSelector = int.TryParse(OptionValue("--selector"), out int boundSelector) ? boundSelector : null;
-    // The patch points the linker resolves with: the shipped base mod's layout/points.json (modding from a release
-    // spec §5.1).
-    Ome.Script.Patch.OmsPatchPoints? patchPoints = Ome.Mods.Linking.GameToolchain.Shipped(selectedProfile.Profile.Id)?.Points;
-    try
-    {
-        foreach (string source in patchSources)
-        {
-            var warnings = new List<Ome.Script.Compile.OmsWarning>();
-            var notes = new List<string>();
-            var unit = Ome.Script.Syntax.Parser.ParseScript(File.ReadAllText(source), source);
-            if (!unit.IsPatch) throw new InvalidDataException($"{source} is not a patch unit (patch \"SCRIPT.BIN\" fingerprint ...)");
-            AssetEntry baseEntry = catalog.ResolveName(unit.Name)
-                ?? throw new InvalidDataException($"{source}: {unit.Name} is not in the mounted catalog");
-            var plan = Ome.Script.Patch.OmsPatchCompiler.Compile(unit, assetStore.ReadAll(baseEntry), table, patchContracts,
-                patchIntrinsics, patchModules, patchIdioms, warnings, notes, patchPoints, patchScope);
-            foreach (var warning in warnings) Console.Error.WriteLine(warning);
-            foreach (string note in notes) Console.WriteLine($"  note: {note}");
-            string planPath = OptionValue("--plan-dir") is { } planDirectory
-                ? Path.Combine(planDirectory, Path.GetFileNameWithoutExtension(source) + ".omspatch.json")
-                : Path.ChangeExtension(source, ".omspatch.json");
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(planPath))!);
-            File.WriteAllText(planPath, plan.ToJson());
-            Console.WriteLine($"oms-patch: {source} -> {planPath} ({plan.Operations.Count} operations, "
-                              + $"{plan.Blocks.Sum(block => block.Count)} instructions against {unit.Name})");
-            plans.Add((source, plan));
-        }
-        foreach (string file in planFiles)
-            plans.Add((file, Ome.Script.Patch.OmsPatchPlan.FromJson(File.ReadAllText(file))));
-        if (OptionValue("--output-dir") is { } patchOutput)
-        {
-            Directory.CreateDirectory(patchOutput);
-            foreach (var group in plans.GroupBy(entry => entry.Plan.Script, StringComparer.OrdinalIgnoreCase))
-            {
-                AssetEntry baseEntry = catalog.ResolveName(group.Key)
-                    ?? throw new InvalidDataException($"{group.Key} is not in the mounted catalog");
-                var bound = group.Select(entry => entry.Plan.Resources.Count == 0 ? entry.Plan
-                    : entry.Plan.ResolveResources(reference =>
-                    {
-                        string local = reference[(reference.IndexOf(':') + 1)..];
-                        int record = patchNames.FindIndex(name => string.Equals(name, local, StringComparison.OrdinalIgnoreCase));
-                        return patchSelector is int chosenSelector && record >= 0 && reference.StartsWith(patchModId + ":")
-                            ? (uint)(chosenSelector << 24) | (uint)record
-                            : throw new InvalidDataException(
-                                $"{entry.Origin}: '{reference}' needs --mod-id, --names and --selector to bind it");
-                    })).ToList();
-                var result = Ome.Script.Patch.OmsPatchApplier.Apply(assetStore.ReadAll(baseEntry), baseEntry.Name,
-                    bound, table, patchContracts);
-                foreach (string interaction in result.Interactions) Console.WriteLine($"  interaction: {interaction}");
-                foreach (string note in result.Notes) Console.WriteLine($"  note: {note}");
-                string output = Path.Combine(patchOutput, baseEntry.Name);
-                File.WriteAllBytes(output, result.Bytes);
-                Console.WriteLine($"oms-patch: {group.Count()} plans applied to {baseEntry.Name} -> {output} "
-                                  + $"({result.Script.Code.Count} instructions, {result.Bytes.Length} bytes)");
-            }
-        }
-        return 0;
-    }
-    catch (Exception error) when (error is Ome.Script.Syntax.OmsSyntaxException or Ome.Script.Compile.OmsCompileException
-                                      or Ome.Script.Patch.OmsPatchException or InvalidDataException)
-    {
-        Console.Error.WriteLine($"error: {error.Message}");
-        return 1;
-    }
 }
 
 if (command == "oms-rebuild")
@@ -451,68 +291,6 @@ if (command == "oms-roundtrip" && OptionValue("--level") is { } sourceLevel)
     foreach (Ome.Script.Ir.IrRoundTripFailure failure in (source.LiftFailures ?? []).Take(20))
         Console.Error.WriteLine($"  lift abandoned 0x{failure.PackedId:x8} {failure.Name}: {failure.Error}");
     return source.Passed ? 0 : 1;
-}
-
-if (command == "oms-decompile")
-{
-    // Print one catalog script as OMS source (and its sidecar when non-empty), or write every script to a directory.
-    var omsContracts = Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson);
-    var omsIntrinsics = new Ome.Script.Abi.IntrinsicCatalog(table, omsContracts);
-    var omsModules = OmsModules();
-    // --level idiomatic lifts the source modules' library subs and templates (spec §11 steps 4 and 5).
-    Ome.Script.Text.OmsIdioms? omsIdioms = OptionValue("--level") is "idiomatic"
-        ? Ome.Script.Text.OmsIdioms.Build(omsModules, table.AbiId, omsIntrinsics) : null;
-    Ome.Script.Text.OmsDecompilation DecompileEntry(PackedAssetEntry packed)
-    {
-        byte[] scriptBytes = assetStore.ReadAll(packed.Asset);
-        // --fixed-point decompiles the canonical rebuild (gate 4's compiler-generated input) instead of the original.
-        if (args.Contains("--fixed-point"))
-            scriptBytes = Ome.Script.OmsSourceRoundTrip.CanonicalRebuild(scriptBytes, packed.Asset.Name, table, omsContracts,
-                omsIntrinsics, omsModules, omsIdioms);
-        var decoded = Ome.Script.Ir.IrDecoder.Decode(scriptBytes, table, omsContracts, packed.Asset.Name);
-        Ome.Script.Text.OmsDecompilation result = OptionValue("--level") is "raw"
-            ? Ome.Script.Text.OmsRawDecompiler.Decompile(decoded, table.AbiId)
-            : Ome.Script.Text.OmsCoreDecompiler.Decompile(decoded, table.AbiId, omsIntrinsics, modules: omsModules,
-                idioms: omsIdioms);
-        if (result.LiftFailure != null)
-            Console.Error.WriteLine($"{packed.Asset.Name}: lifting abandoned, core source written: {result.LiftFailure}");
-        return result;
-    }
-    void WriteDecompilation(Ome.Script.Text.OmsDecompilation decompiled, string path)
-    {
-        File.WriteAllText(path, decompiled.Source);
-        if (!decompiled.Layout.IsEmpty)
-        {
-            decompiled.Layout.SourceFingerprint = Ome.Script.Layout.OmsLayout.SourceFingerprintOf(decompiled.Source);
-            File.WriteAllText(Path.ChangeExtension(path, ".omslayout.json"), decompiled.Layout.ToJson());
-        }
-    }
-    if (OptionValue("--output-dir") is { } decompileDirectory)
-    {
-        Directory.CreateDirectory(decompileDirectory);
-        int written = 0;
-        foreach (PackedAssetEntry packed in catalog.EnumerateScripts())
-        {
-            WriteDecompilation(DecompileEntry(packed),
-                Path.Combine(decompileDirectory, Path.ChangeExtension(packed.Asset.Name, ".oms")));
-            written++;
-        }
-        Console.WriteLine($"oms-decompile: profile={selectedProfile.Profile.Id} scripts={written} output={decompileDirectory}");
-        return 0;
-    }
-    string scriptName = OptionValue("--script") ?? throw new ArgumentException("--script NAME or --output-dir DIR is required");
-    PackedAssetEntry entry = catalog.EnumerateScripts().FirstOrDefault(packed =>
-        string.Equals(packed.Asset.Name, scriptName, StringComparison.OrdinalIgnoreCase))
-        ?? throw new ArgumentException($"no catalog script named {scriptName}");
-    var decompiledScript = DecompileEntry(entry);
-    if (OptionValue("--output") is { } decompileOutput)
-        WriteDecompilation(decompiledScript, decompileOutput);
-    else
-    {
-        Console.Write(decompiledScript.Source);
-        if (!decompiledScript.Layout.IsEmpty) Console.WriteLine("// sidecar:\n" + decompiledScript.Layout.ToJson());
-    }
-    return 0;
 }
 
 if (command == "oms-roundtrip")
@@ -776,77 +554,6 @@ if (command == "gfx")
     foreach (var v in vis)
         Console.WriteLine($"    h=0x{v.Handle:x} surf=0x{v.SurfaceResId:x} ({res.ResolveTexture(v.SurfaceResId)?.Name ?? "?"}) src=({v.SrcX},{v.SrcY} {v.W}x{v.H}) dst=({v.DstX},{v.DstY})");
     return 0;
-}
-
-if (command == "picture")
-{
-    // picture <NAME...> | --all [--output-dir DIR] — decode the game's pictures as the port draws them
-    // (ResourceMap.DecodeTexture: a loose file first, then the archives, and a language package's PNG) and write each
-    // as NAME.png. A name is the catalog record's, with an append's $n$ prefix; --all writes every AGF record of the
-    // catalog and its appends. The default folder is build/games/<game>/pictures.
-    string outputDir = Path.GetFullPath(OptionValue("--output-dir")
-                                        ?? Path.Combine(Paths.GameBuild(selectedProfile.Profile.Id), "pictures"));
-    var pictures = new ResourceMap(catalog, assetStore, Console.Error.WriteLine, assetOptions.AllowBmpAsAgf);
-    var names = new List<string>();
-    for (int k = 1; k < args.Length; k++)
-    {
-        if (args[k] is "--output-dir" or "--game" or "--profile" or "--game-root" or "--overlay-root") { k++; continue; }
-        if (!args[k].StartsWith("--", StringComparison.Ordinal)) names.Add(args[k]);
-    }
-    List<AssetEntry> entries;
-    if (args.Contains("--all"))
-        entries = catalog.Files.Concat(catalog.AppendPacks.OrderBy(pair => pair.Key).SelectMany(pair => pair.Value.Files))
-            .Where(entry => entry.Name.EndsWith(".AGF", StringComparison.OrdinalIgnoreCase)).ToList();
-    else
-    {
-        if (names.Count == 0)
-        {
-            Console.Error.WriteLine("usage: Ome.Cli --game <game> picture <NAME...> | --all [--output-dir DIR]");
-            return 2;
-        }
-        entries = [];
-        foreach (string name in names)
-        {
-            if (catalog.ResolveMountedName(name) is { IsPlaceholder: false } entry) entries.Add(entry);
-            else { Console.Error.WriteLine($"picture: no record {name} in the catalog or its appends"); return 1; }
-        }
-    }
-    Directory.CreateDirectory(outputDir);
-    bool all = args.Contains("--all");
-    int written = 0, failed = 0, movies = 0;
-    foreach (AssetEntry entry in entries)
-    {
-        try
-        {
-            RgbaImage image = pictures.DecodeTexture(entry);
-            string file = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(entry.Name) + ".png");
-            File.WriteAllBytes(file, PngWriter.Write(image));
-            written++;
-            if (!all) Console.WriteLine($"{entry.Name}: {image.Width}x{image.Height} -> {file}");
-        }
-        // A movie is an MPEG stream under an AGF name (ResourceMap.ReadMovie): --all passes over it.
-        catch (InvalidDataException) when (IsMoviePayload(entry))
-        {
-            movies++;
-            if (all) continue;
-            failed++;
-            Console.Error.WriteLine($"picture: {entry.Name} is a movie (an MPEG stream), not a picture");
-        }
-        catch (Exception error) when (error is InvalidDataException or IOException)
-        {
-            failed++;
-            Console.Error.WriteLine($"picture: {entry.Name}: {error.Message}");
-        }
-    }
-    Console.WriteLine($"picture: {written} written to {outputDir}" + (all && movies > 0 ? $", {movies} movies passed over" : "")
-                      + (failed > 0 ? $", {failed} failed" : ""));
-    return failed > 0 ? 1 : 0;
-
-    bool IsMoviePayload(AssetEntry entry)
-    {
-        try { pictures.ReadMovie(entry); return true; }
-        catch (InvalidDataException) { return false; }
-    }
 }
 
 if (command == "init-image")

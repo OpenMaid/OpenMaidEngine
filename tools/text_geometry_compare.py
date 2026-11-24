@@ -92,8 +92,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("a", type=Path, help="run A's shots: native AGE on the translated install")
     parser.add_argument("b", type=Path, help="run B's shots: the port on the clean install with the package")
     parser.add_argument("names", nargs="*", help="shot names (default: every geometry-*.png in both)")
-    parser.add_argument("--game", "--profile", dest="game", default="kamidori", choices=sorted(GEOMETRY),
-                        help="the game whose text geometry to compare (--profile is the same option)")
+    parser.add_argument("--game", dest="game", default="kamidori", choices=sorted(GEOMETRY),
+                        help="the game whose text geometry to compare")
     parser.add_argument("--tolerance", type=int, default=1, help="pixels a column may differ by (default 1)")
     parser.add_argument("--report", type=Path, help="write every shot's measures and result as JSON")
     args = parser.parse_args(argv)

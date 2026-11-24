@@ -91,13 +91,21 @@ A data root that holds a `profile.toml` is a player profile: the file names the 
 line disagree, when the profile or its root is unsafe or wrong, and, for any data root, when another engine runs
 on it:
 
-**"`--game-root` is refused with a profile file".** The same goes for `--game`, `--profile`, `--overlay-root` and
+**"`--game-root` is refused with a profile file".** The same goes for `--game`, `--overlay-root` and
 `--allow-bmp-as-agf`. The profile's saves and selectors belong to its game and install, so a flag cannot swap them
 for one run. Change the profile, or test with a data root that has no `profile.toml` (the driver's sandboxes have
 none). `--mod`, `--no-mods`, `--skip-failed-mods` and the run options still work with a profile.
 
 **"`--probe` is refused with a profile file".** Probing needs a game named on the command line. Probe with a data
 root that has no `profile.toml`.
+
+**"no player profile has the id ..."** (from `Ome.Cli` and the tool). `--profile <id>` names a player profile in OME
+home, and before 2026-11-24 it was `--game`'s old name. To name a game, write `--game <game>`. To name a profile,
+give its id as the launcher shows it, or its folder with `--data-root`; the message says which OME home was searched,
+and `--home DIR` names another.
+
+**"`--profile` names a player profile, which runs from its folder"** (from the port). The engine runs a profile from
+its folder alone: give `--data-root <profile folder>`, or `--game <game>` for a game.
 
 **"the install at … is …, not the game '…'".** The profile's `[install] root` holds another game's `SYS4INI.BIN`.
 Point it at the game's own install.

@@ -150,10 +150,10 @@ if __name__ == "__main__":
         if skip:
             skip = False
             continue
-        if arg in ("--game", "--profile", "--game-root"):
+        if arg in ("--game", "--game-root"):
             skip = True
             continue
-        if arg.startswith(("--game=", "--profile=", "--game-root=")):
+        if arg.startswith(("--game=", "--game-root=")):
             continue
         rest.append(arg)
     sys.exit(main(rest))

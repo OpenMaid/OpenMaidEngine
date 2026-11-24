@@ -5,7 +5,8 @@
 design's home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what
 changed since the spec was accepted (§4).
 **Status:** milestone 0 measured (2026-11-24, §2); milestone 1 built (2026-11-24, §3.1), its gates passed (§2.4);
-milestone 2 next. §3 gets each later milestone's section before it starts.
+milestone 2 built (2026-11-24, §3.2), its gate passed; milestone 3 next. §3 gets each later milestone's section
+before it starts.
 **Branch:** `feature/modding-from-release`, off `develop` at `e6b92761`. Its first commits are the spec (`ba5dbd18`,
 `13d0fd53`, `b45e6c0b`).
 
@@ -183,6 +184,101 @@ late: the job's end leaves what it queued on the UI thread unrun, so a write tha
 `MainViewModel.SettleAsync` now waits for the model's background work (its first checks, the page's check run, its
 writes, the gate), and each `Headless.Run` job settles the models built in it (`Headless.Track`) before it ends.
 
+### 3.2 Milestone 2: the tool
+
+**The projects:**
+- `engine/Ome.Commands/`, a library: the commands both programs run (spec §6.1's shared code). It references
+  `Ome.Launcher.Core`, and through it the engine library's projects, with `Ome.Script`, `Ome.Engine.Vm` and
+  `Ome.Engine.Devices`. It is marked `IsAotCompatible`, and so is `Ome.Launcher.Core` (M0, §2.1).
+- `engine/Ome.Tool/`, the program, in `OmeEngine.sln`: assembly `OME-Tool`, `OmeProgram=true`, `PublishAot`. It
+  handles `--version` and hands every other command to `Ome.Commands` with the tool's defaults.
+- `OmpCommands` and `LuaStubs` stay in `Ome.Mods/Tools`. The launcher's Link check prints `OmpCommands.CheckReport`,
+  so they are already shared. What moves is the argument handling around them in `Ome.Cli`'s `Program.cs` (§4).
+
+**What moves into `Ome.Commands`:** `omp` with its verbs, `omp text` (`OmpTextCommand.cs`), `oms-patch`,
+`oms-compile`, `oms-decompile` and `picture`.
+- One `CommandInputs.Open(args, defaults)` gives every command the game, the install, its catalog and asset store,
+  the script provider, the opcode table and contracts, the engine build and the resolved run, as `Program.cs`'s top
+  does today.
+- `CommandDefaults` holds what differs between the programs:
+  - the install when the command line names none: `Ome.Cli` takes `games/<game>/` beside the repository, and the
+    tool says to give `--game-root` or `--profile`;
+  - the opcode metadata: `Ome.Cli` reads `build/opcodes.json` live, and the tool the copy embedded in `Ome.Engine`;
+  - `picture`'s folder: `Ome.Cli` writes `build/games/<game>/pictures`, and the tool `pictures/` in the current
+    folder.
+- `Ome.Cli` hands those commands over before its own start, and keeps the rest.
+
+**Both programs:**
+- **UTF-8 output.** `Console.OutputEncoding` is UTF-8 for the run, and the console's own code page comes back at
+  exit.
+- **Usage errors.** An `ArgumentException` that reaches the top exits 2 with its message.
+- **`--profile <id>`** is resolved in `Ome.Commands`:
+  - through OME home, `--home DIR` or else `OmeHome.Resolve`, as the launcher's command line resolves it, with
+    `LauncherCommandLine`'s lookup made public;
+  - a profile that needs review is refused with the launcher's reason;
+  - an id that names no profile is refused, naming the home it looked in and that the game is `--game`;
+  - the id becomes `--data-root <root>` before `RunResolver` reads the arguments, and `--profile` beside
+    `--data-root` is refused.
+
+**The old meaning goes** (spec §6.3's list):
+- `GameProfileSelection.ProfileOptionName` and the alias in `IsGameOption`. `RunResolver` refuses `--profile`; the
+  engine's message names `--data-root` and `--game`.
+- `SaveDiffCommand`, `SaveInfoCommand` and `picture`'s option skipping; `run-godot.ps1`'s `-Profile`.
+- `tools/paths.py` refuses `--profile`; `validate.py`, `text_geometry_compare.py` and `capture_gdi_fonts.py` drop it.
+  Their tests and docs follow.
+- `omp text import-scripts` takes `--from-overlay-root` and `--from-allow-bmp-as-agf` for the `--from` install.
+
+**`--version`** prints `OME-Tool <version> (commit <hash>)`. The `OmeVersion` target also stamps `OmeCommit`
+(`git rev-parse --short=12 HEAD`), which `EngineIdentity` reads, since a tagged build's `git describe` names no
+commit. The engine and the launcher show the version alone, as before.
+
+**Usage:** a command the tool lacks is refused with its own list, and exits 2.
+
+**Tests** (gate 5, less its Windows part):
+- `ToolTests`, running the tool as a process: `--version`; a command it lacks; no install named; a usage error;
+  `--profile` that names no profile, one that needs review, and one that runs, in a test home; `--profile` beside
+  `--data-root`.
+- **No `Paths`:** a scan of `engine/Ome.Tool/` and `engine/Ome.Commands/`. `EngineBuildTests.AllowedReaders` names
+  `engine/Ome.Commands/`, which reads the ABI id to load the table.
+- **Outside a repository:** a test copies the tool's build output to a temporary folder and runs `omp check` there,
+  on a synthetic Kamidori install. `Paths` finds the repository from the program's folder, so in that copy any use
+  throws. The report names the toolchain.
+- The engine's refusal of `--profile` (`RunResolverTests`) and `paths.py`'s (`test_paths.py`).
+
+**Docs:** `tools-reference.md` (a row for `OME-Tool`, and `--profile` in `Ome.Cli`); `PROJECT-STRUCTURE.md` (the two
+projects); `docs/modding/cli.md` (`--profile`, the renamed `import-scripts` options); `AGENTS.md`'s line on the
+guides, which calls `--profile` `--game`'s old name. The guides move to `OME-Tool` in M5.
+
+**Built** (2026-11-24):
+- `engine/Ome.Commands/` holds the six commands, `CommandInputs` and `CommandDefaults`, `ProfileOption` and
+  `Utf8Console`. `omp text` moved there from `Ome.Cli` (`OmpTextCommand.cs`); the others were cut from `Program.cs`
+  unchanged, apart from what the inputs now give them.
+- `engine/Ome.Tool/` is `OME-Tool`: `--version`, `--help`, the refusal of a command it lacks, and the shared
+  commands with `CommandDefaults.Tool`.
+- `Ome.Launcher.Core` gained `ProfileLookup`, the id lookup its own command line now uses too, and is
+  `IsAotCompatible`. Both new projects build with the trim and AOT analyzers on and no warning.
+- `omp text po-export` and `po-import` read no install, so the tool runs them without one.
+- `picture`'s option skipping also passes over `--data-root`, `--mod` and `--home`, whose values were read as
+  pictures' names before.
+- `Ome.Cli` exits 2 on an `ArgumentException` that reaches the top through an unhandled-exception handler, since its
+  top-level statements are one long body; the shared commands catch it themselves.
+
+**Gates:** 5, less its Windows part (`ToolTests`, 10 tests), with the engine's 3,535 tests, the launcher's 86, the
+Godot build and `tools/test_paths.py`. All passed on 2026-11-24.
+
+**Checks beyond the gate:**
+- The tool's `oms-decompile --level idiomatic --output-dir` of every Kamidori script (732, the clean install) is
+  byte-identical to `Ome.Cli`'s, so the embedded opcode metadata gives what the live file does.
+- **NativeAOT on this machine** (`dotnet publish engine/Ome.Tool -c Release -r win-x64 -p:PublishAot=true`, with
+  `vswhere.exe`'s folder on PATH): no warning, and `OME-Tool.exe` is 18.4 MB, within M0's estimate. The publish also
+  writes `.pdb` files beside it, which M4 leaves out of the release. Run from the scratch folder, outside the
+  repository:
+  - `--version` prints `OME-Tool 0.10.1-9-ge8d17655+ (commit e8d17655a17a)`;
+  - `omp check` on the clean Kamidori install links and names `kamidori-base 1.3.0`'s toolchain;
+  - `omp build` of the 26 example mods gives 25 packages byte-identical to `Ome.Cli`'s, and refuses
+    `example.kamidori-prologue-line` with the same message, as §2.4's snapshot does;
+  - `oms-decompile` of Himegari's `SC0000.BIN` to stdout, with its Japanese text, is byte-identical to `Ome.Cli`'s.
+
 ## 4. What changed since the spec
 
 - **Gate 2** (spec §12) cannot link a fragment at a named patch point on the smoke's synthetic install, since a point
@@ -206,3 +302,7 @@ writes, the gate), and each `Headless.Run` job settles the models built in it (`
 - **The launcher's Link check** shows a toolchain that does not build as a warning, naming what a mod that compiles
   would meet, when the stack links. A stack with a mod that compiles fails as it did, with the error in its report.
 - **The module's names join the rename rule** (§3.1), which spec §5.2 left to this plan.
+- **`OmpCommands` stays in `Ome.Mods`** (§3.2). Spec §6.1 moves the commands' code out of it with the rest, but the
+  launcher's Link check already calls it, so it is shared as it is. What moves is `Ome.Cli`'s handling around it.
+- **`--version` names the commit** from a second stamp, `OmeCommit` (§3.2), since `git describe` of a tagged commit
+  is the tag alone.

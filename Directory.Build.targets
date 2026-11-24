@@ -14,13 +14,15 @@
     <WarningsAsErrors>$(WarningsAsErrors);IL2026;IL2046;IL2050;IL2057;IL2058;IL2059;IL2060;IL2062;IL2063;IL2065;IL2067;IL2068;IL2069;IL2070;IL2072;IL2075;IL2077;IL2080;IL2087;IL2090;IL2091;IL2111;IL3000;IL3001;IL3002;IL3050;IL3051</WarningsAsErrors>
   </PropertyGroup>
 
-  <!-- The two programs a release ships, the engine (godot/OME.csproj) and the launcher
-       (launcher/Ome.Launcher/Ome.Launcher.csproj), opt into what follows with OmeProgram=true (launcher plan §9.1). -->
+  <!-- The programs a release ships, the engine (godot/OME.csproj), the launcher
+       (launcher/Ome.Launcher/Ome.Launcher.csproj) and the tool (engine/Ome.Tool/Ome.Tool.csproj), opt into what
+       follows with OmeProgram=true (launcher plan §9.1). -->
 
   <!-- The version each program shows, the engine in ﾍﾙﾌﾟ > ﾊﾞｰｼﾞｮﾝ情報 and the launcher in About
        (Ome.Engine.Frontend.Shell.EngineIdentity): git describe of the checkout, "+" when it has uncommitted changes,
        unless the build passes -p:OmeVersion=... A build without git or a repository stores none, which both show as
-       "unknown". -->
+       "unknown". The commit is stamped beside it as OmeCommit (git rev-parse, or -p:OmeCommit=...), since a tagged
+       commit describes as its tag alone: OME-Tool's version names both (modding from a release plan §3.2). -->
   <Target Name="OmeVersion" BeforeTargets="GetAssemblyAttributes" Condition="'$(OmeProgram)' == 'true'">
     <Exec Condition="'$(OmeVersion)' == ''" Command="git describe --tags --match &quot;v[0-9]*&quot; --dirty=+ --always"
           WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" IgnoreExitCode="true"
@@ -29,13 +31,27 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="_OmeDescribed" />
       <Output TaskParameter="ExitCode" PropertyName="_OmeDescribeExit" />
     </Exec>
+    <Exec Condition="'$(OmeCommit)' == ''" Command="git rev-parse --short=12 HEAD"
+          WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" EchoOff="true"
+          StandardOutputImportance="low" StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_OmeRevision" />
+      <Output TaskParameter="ExitCode" PropertyName="_OmeRevisionExit" />
+    </Exec>
     <PropertyGroup>
       <OmeVersion Condition="'$(OmeVersion)' == '' and '$(_OmeDescribeExit)' == '0'">$(_OmeDescribed)</OmeVersion>
+      <OmeCommit Condition="'$(OmeCommit)' == '' and '$(_OmeRevisionExit)' == '0'">$(_OmeRevision)</OmeCommit>
     </PropertyGroup>
     <ItemGroup Condition="'$(OmeVersion)' != ''">
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
         <_Parameter1>OmeVersion</_Parameter1>
         <_Parameter2>$(OmeVersion)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+    <ItemGroup Condition="'$(OmeCommit)' != ''">
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>OmeCommit</_Parameter1>
+        <_Parameter2>$(OmeCommit)</_Parameter2>
       </AssemblyAttribute>
     </ItemGroup>
   </Target>

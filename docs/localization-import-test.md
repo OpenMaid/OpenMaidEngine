@@ -19,7 +19,7 @@ The translated text belongs to its translators. The catalog and the report are l
 
 ```
 dotnet run --project engine/Ome.Cli -- omp text import-scripts --game kamidori ^
-    --from ../games/kamidori-translated --overlay-root patch --allow-bmp-as-agf ^
+    --from ../games/kamidori-translated --from-overlay-root patch --from-allow-bmp-as-agf ^
     --output build/games/kamidori/import-en --verify
 ```
 

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The commands OME-Tool and Ome.Cli both run (modding from a release spec §6.1, plan §3.2): omp, omp text,
+       oms-patch, oms-compile, oms-decompile and picture, with the inputs they open and the profile option. It never reads
+       Ome.Engine.Sys4.Paths, the checkout's layout: each program passes its defaults (CommandDefaults). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ome.Engine\Ome.Engine.csproj" />
+    <ProjectReference Include="..\Ome.Engine.Devices\Ome.Engine.Devices.csproj" />
+    <ProjectReference Include="..\Ome.Engine.Vm\Ome.Engine.Vm.csproj" />
+    <ProjectReference Include="..\Ome.Engine.Frontend\Ome.Engine.Frontend.csproj" />
+    <ProjectReference Include="..\Ome.Script\Ome.Script.csproj" />
+    <ProjectReference Include="..\Ome.Mods\Ome.Mods.csproj" />
+    <ProjectReference Include="..\Ome.Scripting.Lua\Ome.Scripting.Lua.csproj" />
+    <ProjectReference Include="..\Ome.Launcher.Core\Ome.Launcher.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>

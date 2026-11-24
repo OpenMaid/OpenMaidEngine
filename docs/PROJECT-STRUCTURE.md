@@ -433,7 +433,9 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │                                       dialog's forms, the launch with diagnostics/engine.log),
     │                                       ShortcutFile (a command quoted for Windows or a POSIX shell, and
     │                                       the .lnk or .desktop file it writes), LauncherCommandLine (spec
-    │                                       §8.6: --launch, --check, --print-command and their outcomes) and
+    │                                       §8.6: --launch, --check, --print-command and their outcomes),
+    │                                       ProfileLookup (a profile by its id on a command line, which
+    │                                       OME-Tool's and Ome.Cli's --profile use too) and
     │                                       ArtStore (spec §8.7: each image's order, the generated card, the
     │                                       download on consent into cache/art/<game>/, ArtProbe's PNG and JPEG
     │                                       header read); no
@@ -442,6 +444,15 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │   ├── Ome.Launcher.StubEngine/         the engine's stand-in in the launch tests: prints what it was given
     │                                       on both streams, waits for a file or deletes one when told, and
     │                                       exits with the code it is told; built, never loaded
+    │   ├── Ome.Commands/                    the commands OME-Tool and Ome.Cli share (superpowers/plans/2026-11-24-
+    │                                       modding-from-a-release.md §3.2): omp and omp text, oms-patch,
+    │                                       oms-compile, oms-decompile and picture, the inputs they open
+    │                                       (CommandInputs) with each program's defaults (CommandDefaults),
+    │                                       --profile ID (ProfileOption) and the UTF-8 console; never reads
+    │                                       Paths; references Ome.Launcher.Core and the engine library's projects
+    │   ├── Ome.Tool/                        OME-Tool, the mod author's command line in a release (superpowers/specs/
+    │                                       2026-11-24-modding-from-a-release-design.md §6): --version and the
+    │                                       shared commands with no checkout; published with NativeAOT
     │   └── Ome.Scripting.Lua.Spike/         milestone 0 of the Lua design (superpowers/plans/2026-11-14-lua-
     │                                       scripting.md §1): a console program that checks LuaCSharp and
     │                                       MoonSharp against spec §5.1's criteria, one child process per case;
