@@ -1,7 +1,8 @@
 # Modding from a release design
 
 **Date:** 2026-11-24
-**Status:** proposed; waiting for the user's decisions (§15). Not accepted.
+**Status:** proposed. The user decided its four questions on 2026-11-24 (§15), and the text follows their answers.
+Not yet accepted.
 **How it was decided:** the backlog items "Modding from a release" and "Toolchain packaging for exported ports"
 (`docs/backlog.md`, "Mod loader and modding"). The site's usability review found the first one (site plan §10.3,
 finding 10, in the `ome-site` repository: "a release ships the mod commands, and the guide then starts from a
@@ -148,6 +149,13 @@ When this is built, both backlog items are deleted.
 - The guides start from a release, with the from-source steps marked as such (the backlog item's "done when").
 - Tag only a commit CI has passed, and push only on the user's word (`AGENTS.md`).
 - The engine stays game-agnostic, and a game's facts go in its base mod (2026-11-16).
+- Their answers to this design's questions, 2026-11-24 (§15):
+  - the tool is `OME-Tool`;
+  - `adv.oms` moves into the base mod;
+  - the examples are linked, not shipped;
+  - `--profile` names a player profile, and stops being `--game`'s old name: "I think it's fine to deprecated the old
+    usage for the new one, unless you disagree. We're still pre 1.0 and I don't think anyone's using this yet except
+    me".
 
 ### 3.2 This design's
 
@@ -180,8 +188,8 @@ When this is built, both backlog items are deleted.
     catalog;
   - the idioms built from them;
   - the game's patch points.
-- **Mod tool:** `OME-Tool`, the program this design adds (its name is §15, question 1).
-- **Profile option:** how a command names a player profile: `--data-root <profile root>`, and the new option of §6.3.
+- **Mod tool:** `OME-Tool`, the program this design adds.
+- **Profile option:** how a command names a player profile: `--data-root <profile root>` or `--profile <id>` (§6.3).
 - **Game options:** `--game`, `--game-root` and `--overlay-root`, as today.
 - **From source:** a step that needs a checkout of this repository, and is marked as such in a guide.
 
@@ -282,11 +290,19 @@ step. That is a reason to keep the toolchain in the base mod rather than embed i
 
 - **A profile** is the usual way, since the launcher makes one for every game a player adds. A command takes either:
   - `--data-root <profile root>`, which exists and is read through `RunResolver`; or
-  - a profile's id, resolved through OME home as the launcher resolves it, with `--home DIR` as in the launcher. The
-    option's name is §15, question 3. `--profile` is taken: it is `--game`'s old name.
+  - `--profile <id>`, a profile's id resolved through OME home as the launcher resolves it, with `--home DIR` as in
+    the launcher.
 
   Either one gives the game, the install, the overlays and the profile's `[mods]`, so `omp check` checks what the
   profile would run (launcher spec §5.7).
+- **`--profile` stops being `--game`'s old name** (the user, 2026-11-24, §3.1).
+  - Every program that took it for the game drops that meaning in the same change: `GameProfileSelection` (so the
+    engine and `Ome.Cli`), and the Python tools' shared option (`tools/paths.py`, `validate.py`,
+    `text_geometry_compare.py`).
+  - In `OME-Tool` and `Ome.Cli`, an id that names no player profile is refused with where the tool looked and a
+    reminder that the game is `--game`, so an old command line fails plainly.
+  - The engine runs a profile from its folder alone (launcher spec §2), so it keeps `--data-root`. Given
+    `--profile`, it refuses it and names `--data-root` and `--game`.
 - **Game options without a profile** still work: `--game <game> --game-root <install>`, with `--overlay-root` where
   needed. In a release `--game-root` is required, since there is no conventional install beside a repository. Inside
   a checkout it defaults to `games/<game>/`, as today.
@@ -462,7 +478,8 @@ There are two ways, and the guides give both.
 - **The commands in the engine** (`OME -- omp check`). It is windowed as well, and starts Godot for a text command.
   Rejected.
 - **Copy the toolchain into the base mod and keep `oms/<game>/` as the source.** This is less churn, but leaves a
-  hand-kept file in two places, with a gate to keep them equal. Moving it gives one home. This is §15, question 2.
+  hand-kept file in two places, with a gate to keep them equal. Moving it gives one home, which the user chose
+  (§15).
 - **Embed the toolchain on its own** (`Ome.Engine` embedding `oms/` and the curated globals), with no base mod
   change. It is simpler in the package format, but puts a game's facts in the engine's own resources, beside the
   manifests that "Data beside the program" may move out. The base mod is where the user placed a game's facts.
@@ -500,6 +517,8 @@ There are two ways, and the guides give both.
 4. **The tool stands alone:**
    - `OME-Tool --version` gives the archive's version and commit;
    - a command `OME-Tool` lacks is refused with its own list;
+   - `--profile` with an id that names no player profile is refused as §6.3 says, in the tool, `Ome.Cli` and the
+     engine;
    - with no profile and no `--game-root`, it says to give one;
    - on Windows, `verify_windows_native.py` passes on it.
 5. **`locate` matches `locate_page.py`.**
@@ -531,7 +550,9 @@ There are two ways, and the guides give both.
   The backlog's "Toolchain packaging for exported ports" is deleted here.
 - **M2, the tool** (§6):
   - the project and the moved commands, with `Ome.Cli` calling them;
-  - profile resolution and the profile-id option;
+  - profile resolution and `--profile <id>`, with the old meaning retired everywhere (§6.3) and its docs:
+    `docs/modding/cli.md`, `troubleshooting.md`, `docs/tools-reference.md`, and `AGENTS.md`'s convention that
+    names `--profile` as `--game`'s old name;
   - `--version`;
   - gate 4, less its Windows part.
 - **M3, `locate` and `start`** (§7, §8), with gates 5 and 6.
@@ -553,27 +574,24 @@ There are two ways, and the guides give both.
   - the generated-files table, where `base_mod_build.py` also writes `oms/globals.json`;
   - the trigger for editing `adv.oms`;
   - the canonical map's base mod row;
+  - the conventions' line that names `--profile` as `--game`'s old name;
   - the page-location handoff, if `locate` replaces the Python tool (§11).
 - The status memory and the changelog, at each milestone.
 
 ## 15. Decisions by the user
 
-1. **The program's name.**
-   - **`OME-Tool`** (recommended): it sits beside `OME` and `OME-Launcher` and reads as a tool for either.
-   - **`OME-Mod`**: names the audience, but `OME-Mod picture` and `OME-Mod locate` read oddly.
-   - **`ome`**: short to type, but beside `OME` on a case-insensitive Windows file system it is the same name.
-     Rejected unless the user prefers it with another spelling.
-2. **The toolchain's home** (§5.1).
-   - **Move `adv.oms` into the base mod** (recommended): one home, no copy.
-   - **Copy it there and keep `oms/<game>/` as the source**: less churn, plus a gate that keeps the copy equal.
-   - **Embed it on its own** in `Ome.Engine`, with no base mod change (§10).
-3. **How a command names a profile** (§6.3).
-   - **`--data-root` plus a profile id through OME home** (recommended), with the option named `--player-profile`
-     (the launcher design's "player profiles"; `--profile` is taken).
-   - **`--data-root` only**: the guides would write each profile's folder in full.
-   - **The current folder**: a command run inside a profile's folder uses that profile. This is quiet magic, and
-     easy to trip on.
-4. **The example mods in the archive.**
-   - **Not shipped; the guides link them on GitHub** (recommended): the archive stays a player's download.
-   - **Shipped as `examples/`** at the archive's top: a modder can open them with no download, at the cost of a
-     folder every player gets.
+Asked and answered on 2026-11-24. The recommended answer was taken for questions 1, 2 and 4; question 3 took the
+user's own.
+
+1. **The program's name:** `OME-Tool`. The others offered were `OME-Mod`, and `ome`, which on Windows is the same
+   name as `OME`.
+2. **The toolchain's home:** `adv.oms` moves into the base mod (§5.1). The others offered were a copy there with a gate
+   that keeps it equal, and embedding the toolchain in `Ome.Engine` on its own (§10).
+3. **How a command names a profile:** `--profile <id>`, which stops being `--game`'s old name (§6.3). The options
+   offered were a new `--player-profile`, `--data-root` only, and the current folder. The user: "If --profile is the
+   old name of --game, why are we blocked from using it? I think it's fine to deprecated the old usage for the new
+   one, unless you disagree. We're still pre 1.0 and I don't think anyone's using this yet except me". Nothing argues
+   against it: an old command line fails with a message rather than meaning something else, unless a player profile
+   happens to be named after the game. Even then it runs that game.
+4. **The example mods:** not shipped. The guides link them on GitHub. The other option offered was an `examples/`
+   folder at the archive's top.
