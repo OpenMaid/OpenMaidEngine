@@ -1,21 +1,20 @@
 # Modding Himegari
 
 Himegari-specific facts for the generic guides. The identity block (game id, engine ABI, modules, tables,
-patch points) is generated in [README.md](README.md#himegari-dungeon-meister).
+patch points) is generated on [the games page](README.md#himegari-dungeon-meister).
 
 ## Install and options
 
-- Expected install: `games/himegari/` beside the repository. `Ome.Cli` uses it by default, so Himegari commands need
-  no game options. Pass `--game-root DIR` for another location.
-- Port: `.\run-godot.cmd`, with `-Mod PATH` for a mod.
-- Driver: `py -3.11 -X utf8 tools/drive.py port start --mod PATH` (`native` for AGE). Named points such as
-  `adv.next`, `title.start` and `newgame.begin` are predefined.
-- Registries for fragments: `py -3.11 -X utf8 tools/globals_build.py --build` and
-  `py -3.11 -X utf8 tools/patch_points_build.py --build`.
+- **The install:** the game as installed, anywhere. A profile made on it in the launcher needs nothing else, so the
+  guides' commands take `--profile <profile>` alone. Without a profile, give `--game himegari --game-root DIR`.
+- **From source:** the conventional install is `games/himegari/` beside the repository, which `Ome.Cli` and the port
+  use by default, so Himegari needs no game options there. The port is `.\run-godot.cmd`, with `-Mod PATH` for a mod.
+  The driver is `py -3.11 -X utf8 tools/drive.py port start --mod PATH` (`native` for AGE), with named points such as
+  `adv.next`, `title.start` and `newgame.begin` predefined.
 
 ## First mod values
 
-The values for [first-mod.md](../first-mod.md), on the opening scene `SC0000.BIN`:
+The values for [your first mod](../first-mod.md), on the opening scene `SC0000.BIN`:
 
 | Step | Value |
 |---|---|
@@ -34,9 +33,9 @@ before site 0x877 {
 }
 ```
 
-The finished mod is `oms/examples/mods/example.sc0000-page3`. `example.sc0000-page4` inserts before the fourth
-page (site `0x8ac`) and composes with it. `example.sc0000-merge` replaces pages 3 and 4 (`0x874` through `0x8de`) and
-conflicts with both.
+The finished mod is [example.sc0000-page3](../../../oms/examples/mods/example.sc0000-page3/). `example.sc0000-page4`
+inserts before the fourth page (site `0x8ac`) and composes with it. `example.sc0000-merge` replaces pages 3 and 4
+(`0x874` through `0x8de`) and conflicts with both.
 
 ## Dialogue lines
 
@@ -48,12 +47,12 @@ The prelude's template is `line(text, speaker = none, voice = none)`:
 魔王 "「…」" (voice: 0x34e)                        // with a voice clip
 ```
 
-Speakers are CNINIT's character names (`enum speaker` in `mods/himegari-base/oms/adv.oms`). Names that repeat, or that are
-not identifiers such as `？？？？`, carry their id (`speaker_0x10`).
+Speakers are CNINIT's character names (`enum speaker` in [`himegari.adv`](../../../mods/himegari-base/oms/adv.oms)).
+Names that repeat, or that are not identifiers such as `？？？？`, carry their id (`speaker_0x10`).
 
 ## Data edits
 
-A data file ([../data-files.md](../data-files.md)) changes the unit, item and skill tables, and each stage's
+A data file ([data files](../data-files.md)) changes the unit, item and skill tables, and each stage's
 enemies, with no Lua and no script. `himegari-base` accepts the kind `himegari.tables`. It applies each file's boot
 tables at `himegari.data.layered`, after every layer has written them and before TUNE reads them, and a stage's part
 at `himegari.stage.loaded`, each time FIELD has run the stage's loaders. This one raises the experience unit 103
@@ -65,21 +64,21 @@ gives; the comment gives the game's own value:
 experience_reward = 40     # 30
 ```
 
-- **Tables and fields** are those of `../../global-reference.md`, "Tables", by the names in its `field` column:
-  `unit` (records 0 to 999), `item` (0 to 999), `skill` (0 to 299), `stage_catalog` (0 to 999, STINIT2's stages),
-  `condition` (0 to 29, ILINIT), `element` (0 to 15, AFINIT's defense elements), `character_profile` (0 to 99),
+- **Tables and fields** are those of [the global reference](../../global-reference.md), "Tables", by the names in its
+  `field` column: `unit` (records 0 to 999), `item` (0 to 999), `skill` (0 to 299), `stage_catalog` (0 to 999, STINIT2's
+  stages), `condition` (0 to 29, ILINIT), `element` (0 to 15, AFINIT's defense elements), `character_profile` (0 to 99),
   `glossary_entry` (0 to 199), `magic_action` (0 to 29), `recipe` (0 to 999, ALINIT), `card` (0 to 99, CDINIT2),
-  `training_action` (0 to 20, TRINIT), `terrain` (0 to 29, LAINIT), `object_type` (0 to 99, OBINIT) and `map_texture`
-  (0 to 19, LAINIT's default floor sheets). A field with a row takes its columns by the names the reference gives
-  (`stat_modifiers.max_fs`), and by number only where a column has no name. Two of the reference's tables are not
-  ones a file writes, and the shape refuses them: `class_change`, the block CALCCC's rules (CCINIT) fill for one unit
-  at a time, and `card_list_entry`, the card list CDINIT builds each time a card object is used. Their contents are
-  those scripts' code, which an OMS patch changes.
+  `training_action` (0 to 20, TRINIT), `terrain` (0 to 29, LAINIT), `object_type` (0 to 99, OBINIT) and `map_texture` (0
+  to 19, LAINIT's default floor sheets). A field with a row takes its columns by the names the reference gives
+  (`stat_modifiers.max_fs`), and by number only where a column has no name. Two of the reference's tables are not ones a
+  file writes, and the shape refuses them: `class_change`, the block CALCCC's rules (CCINIT) fill for one unit at a
+  time, and `card_list_entry`, the card list CDINIT builds each time a card object is used. Their contents are those
+  scripts' code, which an OMS patch changes.
 - **Saved fields are refused:** `unit.story_speaker_seen_flag`, `skill.acquired_flag`, `skill.info_revealed_flag`,
   `training_action.execution_count` and `training_action.unlock_flag`. They lie below the saved prefix, so a load
   would bring the saved value back over the edit.
 - **The shape.** `himegari-base` ships the kind's shape, `shapes/tables.schema.json`, generated from the same record
-  map as the tables above ([../data-files.md](../data-files.md), "Shapes"). So the link, `omp check` and `omp build`
+  map as the tables above ([data files](../data-files.md), "Shapes"). So the link, `omp check` and `omp build`
   refuse a table, field or column the reference does not name, a saved field, an id or a column out of range and a
   value of the wrong kind, with the file's line, before the game starts. `omp lua-stubs` writes a copy,
   `himegari.tables.schema.json`, and prints the `#:schema` line that points an editor at it. Text that code page 932
@@ -94,8 +93,10 @@ experience_reward = 40     # 30
   unit through `unit.canonical_id` and `unit.roster_variant_ids` first, and makes the first join's copies for a unit
   below 100 whose `unit_current_levels` is 0 (`UNITECH@0x2cf`, `0x2e4`); a form change in 配下 (SALLY's first two
   actions) makes the same copies for a form used for the first time. `example.unit-stats` raises リリィ's maximum HP:
-  `tools/drive/scenarios/port/himegari-unit-stats.steps` shows her saved stats take it at a new game, and
-  `himegari-unit-stats-load-without.steps` that a save made then keeps it without the mod.
+  the driver's [himegari-unit-stats](../../../tools/drive/scenarios/port/himegari-unit-stats.steps) scenario shows
+  her saved stats take it at a new game, and
+  [himegari-unit-stats-load-without](../../../tools/drive/scenarios/port/himegari-unit-stats-load-without.steps)
+  that a save made then keeps it without the mod.
 
   | Field | Saved value | When |
   |---|---|---|
@@ -214,8 +215,9 @@ before site himegari.experience.after_calculation {
 }
 ```
 
-The same in Lua ([../lua.md](../lua.md)), as `oms/examples/mods/example.double-exp-lua` ships it: a hook on the point
-and a handler that doubles the local. It leaves the same state as the patch.
+The same in Lua ([the Lua guide](../lua.md)), as
+[example.double-exp-lua](../../../oms/examples/mods/example.double-exp-lua/) ships it: a hook on the point and a handler
+that doubles the local. It leaves the same state as the patch.
 
 ```toml
 [[hooks]]
@@ -229,12 +231,12 @@ function on_award(ctx)
 end
 ```
 
-Game names ([../lua.md](../lua.md), "Game names") come from `himegari-base`. A mod that requires it reads
+Game names ([the Lua guide](../lua.md), "Game names") come from `himegari-base`. A mod that requires it reads
 `require("himegari-base").g.stage_turn_limit` or `.table("unit_current_levels")[unit]` without `vm`, and writes
-them once its `[lua] writes` lists them. The names are those of `../../global-reference.md`.
+them once its `[lua] writes` lists them. The names are those of [the global reference](../../global-reference.md).
 
-`himegari-base` declares seven game events ([../lua.md](../lua.md), "Game events"). The experience award is raised at
-the experience point:
+`himegari-base` declares seven game events ([the Lua guide](../lua.md), "Game events"). The experience award is raised
+at the experience point:
 
 | Event | Field | Type | Access | Cell |
 |---|---|---|---|---|
@@ -242,8 +244,8 @@ the experience point:
 | | `unit` | int | r | `current_unit_id` |
 | | `level` | int | r | `unit_current_levels[current_unit_id]` |
 
-A subscriber needs no `vm`. `oms/examples/mods/example.double-exp-event` doubles every award with
-`event.amount = event.amount * 2`, and leaves the same state as the patch above.
+A subscriber needs no `vm`. [example.double-exp-event](../../../oms/examples/mods/example.double-exp-event/) doubles
+every award with `event.amount = event.amount * 2`, and leaves the same state as the patch above.
 
 The other six follow the boot and each stage. Each is raised where INIT2 or FIELD has walked the chain the appends
 register their handlers in, so a handler runs after the base game's and every append's. Their fields are read-only:
@@ -277,12 +279,12 @@ register their handlers in, so a handler runs after the base game's and every ap
 - **The stage's enemies** are `stage_enemy_unit_id` (30 slots, zero for an empty one), each with its spawn
   (`stage_enemy_spawn_tile_x` and `_y`, or `stage_enemy_spawn_object_slot`), faction, difficulty mask and replay gate.
   `unit_boss_class` is nonzero for a boss. A rewrite at the stage's start changes what the stage places:
-  `oms/examples/mods/example.random-enemies` replaces each ordinary enemy with one drawn from every ordinary enemy of
-  the game, from a seed it keeps in `maid.state`.
+  [example.random-enemies](../../../oms/examples/mods/example.random-enemies/) replaces each ordinary enemy with one
+  drawn from every ordinary enemy of the game, from a seed it keeps in `maid.state`.
 - **`stage.close`** comes after the close chain, which FIELD walks for a result of 1 or 2 before it takes the stage's
   SCJUMP decision. Stage 1 lost at its 50-turn limit raises it with result 2 and turn 50.
 
-`himegari-base`'s helpers ([../lua.md](../lua.md), "Game names"):
+`himegari-base`'s helpers ([the Lua guide](../lua.md), "Game names"):
 
 | Helper | Calls | What it does |
 |---|---|---|
@@ -293,25 +295,28 @@ register their handlers in, so a handler runs after the base game's and every ap
 - **Selectors.** The install ships one append catalog (`APPEND01`), so a first mod's catalog normally gets selector
   2.
 - **Scene registry.** SCJUMP decision 0 is empty in the base game and falls back to SC0000. A mod scene written into
-  `scjump_scene_script_resource_ids[0x0]` therefore plays before the opening. `oms/examples/mods/example.prologue`
-  does this, on the skeleton of the shipped append scene `$1$SC1260`. Saving and loading inside it passed in the
-  port and on native AGE (`tools/drive/scenarios/himegari-mod-{save,load}-scene.steps`).
-- **Saved range.** Saves keep the integer globals below `0x6241b` and the first 789 string globals. A table cell
-  below that range is restored by loading a save. Check a data edit's cells against `../../global-reference.md`.
+  `scjump_scene_script_resource_ids[0x0]` therefore plays before the opening.
+  [example.prologue](../../../oms/examples/mods/example.prologue/) does this, on the skeleton of the shipped append
+  scene `$1$SC1260`. Saving and loading inside it passed in the port and on native AGE (the driver's
+  [himegari-mod-save-scene](../../../tools/drive/scenarios/himegari-mod-save-scene.steps) and
+  [himegari-mod-load-scene](../../../tools/drive/scenarios/himegari-mod-load-scene.steps) scenarios).
+- **Saved range.** Saves keep the integer globals below `0x6241b` and the first 789 string globals. A table cell below
+  that range is restored by loading a save. Check a data edit's cells against [the global
+  reference](../../global-reference.md).
 - **Free cells.** The examples use the string cells `GS[0x1400]` and `GS[0x1401]`, which no shipped script uses
-  (`oms/examples/himegari-gate6/`).
+  ([the himegari-gate6 example](../../../oms/examples/himegari-gate6/)).
 
 ## Examples
 
 | Path | What it shows |
 |---|---|
-| `oms/examples/mods/example.sc0000-page3`, `-page4`, `-merge` | patches that compose or conflict |
-| `oms/examples/mods/example.prologue` | a save-capable scene in an append catalog |
-| `oms/examples/himegari-patch/SC0000.oms` | two inserted pages, with speakers |
-| `oms/examples/himegari-gate6/` | a boot-time script and a script called by packed id |
-| `oms/examples/mods/example.double-exp-lua` | a Lua point hook on the experience award |
-| `oms/examples/mods/example.double-exp-event` | a Lua subscriber of `himegari.experience.award`, without `vm` |
-| `oms/examples/mods/example.lua-random` | `math.random` in a script hook on `SC0000.BIN`, inside a `pairs` loop too; `tools/drive/scenarios/port/himegari-lua-random.steps` checks that `rand-seed 7` gives the same rolls in every run |
-| `oms/examples/mods/example.random-enemies` | a subscriber of `himegari.stage.loaded` that rewrites the stage's enemies and keeps a seed per playthrough in `maid.state`; `tools/drive/scenarios/port/himegari-random-enemies.steps` checks stage 1's draw under `rand-seed 7` |
-| `oms/examples/mods/example.stage-enemies` | a data file that edits two stages' enemy slots, applied at `himegari.stage.loaded`; `example.stage-enemies-mistake` is its twin with a mistake no shape can say (a unit name code page 932 cannot encode), which the link takes and the boot reports; `tools/drive/scenarios/port/himegari-stage-enemies*.steps` drive both, through the camp, a field save and its load with the mod and without |
-| `oms/examples/mods/example.unit-stats` | a data file that raises リリィ's maximum HP, which UNITECH copies into her saved stats when she joins; `tools/drive/scenarios/port/himegari-unit-stats*.steps` drive a new game with it and the load of its save without it |
+| [example.sc0000-page3](../../../oms/examples/mods/example.sc0000-page3/), `-page4`, `-merge` | patches that compose or conflict |
+| [example.prologue](../../../oms/examples/mods/example.prologue/) | a save-capable scene in an append catalog |
+| [the himegari-patch example's SC0000.oms](../../../oms/examples/himegari-patch/SC0000.oms) | two inserted pages, with speakers |
+| [the himegari-gate6 example](../../../oms/examples/himegari-gate6/) | a boot-time script and a script called by packed id |
+| [example.double-exp-lua](../../../oms/examples/mods/example.double-exp-lua/) | a Lua point hook on the experience award |
+| [example.double-exp-event](../../../oms/examples/mods/example.double-exp-event/) | a Lua subscriber of `himegari.experience.award`, without `vm` |
+| [example.lua-random](../../../oms/examples/mods/example.lua-random/) | `math.random` in a script hook on `SC0000.BIN`, inside a `pairs` loop too; the [himegari-lua-random](../../../tools/drive/scenarios/port/himegari-lua-random.steps) scenario checks that `rand-seed 7` gives the same rolls in every run |
+| [example.random-enemies](../../../oms/examples/mods/example.random-enemies/) | a subscriber of `himegari.stage.loaded` that rewrites the stage's enemies and keeps a seed per playthrough in `maid.state`; the [himegari-random-enemies](../../../tools/drive/scenarios/port/himegari-random-enemies.steps) scenario checks stage 1's draw under `rand-seed 7` |
+| [example.stage-enemies](../../../oms/examples/mods/example.stage-enemies/) | a data file that edits two stages' enemy slots, applied at `himegari.stage.loaded`; `example.stage-enemies-mistake` is its twin with a mistake no shape can say (a unit name code page 932 cannot encode), which the link takes and the boot reports; the driver's [port scenarios](../../../tools/drive/scenarios/port/) `himegari-stage-enemies*` drive both, through the camp, a field save and its load with the mod and without |
+| [example.unit-stats](../../../oms/examples/mods/example.unit-stats/) | a data file that raises リリィ's maximum HP, which UNITECH copies into her saved stats when she joins; the driver's [port scenarios](../../../tools/drive/scenarios/port/) `himegari-unit-stats*` drive a new game with it and the load of its save without it |

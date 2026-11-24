@@ -3,10 +3,11 @@
 Start with `omp check`. It runs the same link the port runs at startup and prints the whole report:
 
 ```text
-Ome.Cli omp check --mod path\to\my.mod [--mod other …]
+OME-Tool omp check --mod path/to/my.mod [--mod other …] --profile <profile>
 ```
 
-In the port, the last report is `diagnostics/mod-link.txt` in the profile root ([cli.md](cli.md)).
+In the port, the last report is `diagnostics/mod-link.txt` in the profile's folder, and the engine's output is in
+`diagnostics/engine.log` ([commands and installing mods](cli.md), "Installing mods").
 
 When a player reports a problem, ask for the launcher's summary: on the profile's Advanced tab, "Copy a summary" puts
 it on the clipboard. It holds the profile's game, install and mode, its checks, the mod order as the profile lists it
@@ -31,13 +32,13 @@ omp check: does not link: 2 mods; 0 errors, 1 conflicts, 0 interactions, 0 overr
 | `conflict` | Two mods cannot load together: overlapping edits, two replacements of one script, a declared `[[conflicts]]`, a missing dependency. | yes |
 | `interaction` | Several mods insert at the same site, several Lua handlers are due at one hook, or two Lua mods list one global in `[lua] writes`. They all apply, in the order shown. | no |
 | `override` | Several mods supply the same asset or script. The winner is named. | no |
-| `note` | Information. Examples: a compiler warning (`file:line:col: warning: …`, listed in [oms-language.md](oms-language.md), "Errors"), a fragment compiled at load time, a stray file in a package, a table entry that now points at replacement code, or a record 0 that would hang native AGE at boot (`warning: record 0 runs at boot …`). | no |
+| `note` | Information. Examples: a compiler warning (`file:line:col: warning: …`, listed in [the language guide](oms-language.md), "Errors"), a fragment compiled at load time, a stray file in a package, a table entry that now points at replacement code, or a record 0 that would hang native AGE at boot (`warning: record 0 runs at boot …`). | no |
 
 In the port, a report with errors or conflicts stops startup with exit code 2. `--skip-failed-mods` drops the mods
 involved and starts with the rest, naming what it dropped.
 
 A stack with Lua ends with a `lua:` section: each mod's capabilities and writes, each hook's handlers in order, and
-each event's subscribers ([lua.md](lua.md), "The link report and the trace").
+each event's subscribers ([the Lua guide](lua.md), "The link report and the trace").
 
 ## Compile errors
 
@@ -65,12 +66,12 @@ different offsets too.
 patches/page3.oms:7:13: 0x878 is not an instruction start in SC0000.BIN
 ```
 
-The offset points into the middle of an instruction. Take offsets from `locate_page.py`, the decompiler or
+The offset points into the middle of an instruction. Take offsets from `OME-Tool locate` or
 `oms-decompile --level raw`, which print instruction starts only.
 
 **Names that do not resolve** usually mean a missing `use` line. Registry names need `use <game>.globals`, and
-dialogue lines and speakers need `use <game>.adv`. If the registries were never generated, build them as described
-in [first-mod.md](first-mod.md), step 0.
+dialogue lines and speakers need `use <game>.adv`. A game with no registry yet has no `<game>.globals`; its guide
+says so ([the games page](games/README.md)).
 
 **A character outside CP932** cannot be shown by the game. Replace it with an equivalent character: curly quotes,
 most emoji and many accented letters are not in CP932, while straight quotes and full-width punctuation are.
@@ -81,15 +82,16 @@ most emoji and many accented letters are not in CP932, while straight quotes and
   Either move your edit outside the other mod's region, or declare the other mod in `[[conflicts]]` with a reason,
   so players get a clear message instead.
 - **Two replacements of one script:** if superseding the other mod is intended, declare it in `[replace]`
-  ([packages.md](packages.md)). Otherwise turn your replacement into patches.
-- **No free selector:** every selector up to `0x7f` is allocated. Release removed mods with `--forget-mod ID`.
+  ([packages](packages.md)). Otherwise turn your replacement into patches.
+- **No free selector:** every selector up to `0x7f` is allocated. Release removed mods on the launcher's Mods page,
+  or with `--forget-mod ID`.
 
 ## Startup refusals
 
 A data root that holds a `profile.toml` is a player profile: the file names the game, the install and the mods
-(`../tools-reference.md`, `--data-root`). The port stops at startup (exit code 2) when the profile and the command
-line disagree, when the profile or its root is unsafe or wrong, and, for any data root, when another engine runs
-on it:
+([commands and installing mods](cli.md), "Installing mods"). The port stops at startup (exit code 2) when the profile
+and the command line disagree, when the profile or its root is unsafe or wrong, and, for any data root, when another
+engine runs on it:
 
 **"`--game-root` is refused with a profile file".** The same goes for `--game`, `--overlay-root` and
 `--allow-bmp-as-agf`. The profile's saves and selectors belong to its game and install, so a flag cannot swap them
@@ -99,7 +101,7 @@ none). `--mod`, `--no-mods`, `--skip-failed-mods` and the run options still work
 **"`--probe` is refused with a profile file".** Probing needs a game named on the command line. Probe with a data
 root that has no `profile.toml`.
 
-**"no player profile has the id ..."** (from `Ome.Cli` and the tool). `--profile <id>` names a player profile in OME
+**"no player profile has the id ..."** (from the tool). `--profile <id>` names a player profile in OME
 home, and before 2026-11-24 it was `--game`'s old name. To name a game, write `--game <game>`. To name a profile,
 give its id as the launcher shows it, or its folder with `--data-root`; the message says which OME home was searched,
 and `--home DIR` names another.
@@ -176,7 +178,7 @@ for example after an official update. The port continues; check that your mods s
 ## In-game problems
 
 **Native AGE hangs at boot, before the title.** Your record 0, the first `[scripts].names` entry, shows text or waits
-for input. Record 0 runs during boot. Put a short boot script that ends with `exit` first ([packages.md](packages.md),
+for input. Record 0 runs during boot. Put a short boot script that ends with `exit` first ([packages](packages.md),
 "Record 0 runs at boot").
 `omp check` warns about this when record 0 itself shows text or waits; a `run` from record 0 into a scene hangs the
 same way without the warning.
@@ -185,12 +187,12 @@ same way without the warning.
 reached a handler that belongs to the scene `OWNER` while the script `SCRIPT`, which the scene called with `run`, was
 waiting for input. Typically a right-click opens the ADV menu. Pages inside a script called with `run` cannot use the
 scene's menu. Insert the pages into the scene with a patch, or make the script a scene of its own
-([new-scenes.md](new-scenes.md)). The port shows the same box as native AGE, with 中止 (abort), 再試行 (retry) and 無視
+([new scenes](new-scenes.md)). The port shows the same box as native AGE, with 中止 (abort), 再試行 (retry) and 無視
 (ignore); with an English shell it reads "An error occurred" and "Invalid depth SCRIPT != OWNER".
 
 **My edit is gone after loading a save.** The cells you changed are part of the save, so loading restores the saved
 values. Make the edit somewhere the save does not store, or repeat it at a point that runs after loading
-([new-scenes.md](new-scenes.md), "Data edits at boot").
+([new scenes](new-scenes.md), "Data edits at boot").
 
 **Save-stamp warnings when loading.** The save was made with different mods, versions or selectors. The port warns
 and loads anyway. A save made on a page that a removed mod added, or inside a removed mod's scripts, may not resume
@@ -203,7 +205,7 @@ the route of the run you made. Branches and earlier choices can skip your site.
 
 **"text/fr/ adds entries to language 'fr', which no package in the stack defines".** Some package in the stack must
 declare the language with a `[[language]]` table. A package that only adds text to a language another one defines
-needs that other package enabled ([languages.md](languages.md)).
+needs that other package enabled ([language packages](languages.md)).
 
 **"[[language]] needs omp = 2" or "text/ needs omp = 2".** Language tables and the `text/` and `fonts/` folders are
 format version 2. Set `omp = 2` in the manifest. So are language assets: "language assets (assets/<language>/NAME)
@@ -244,7 +246,7 @@ the exact key the catalog needs, and `script` and `at` the site that drew it. If
 **Text is cut off at the bottom of the window.** The translation needs more rows than the window has, even with its
 glyphs narrowed to the language's `min_fit_scale` (or the language sets `overflow = "cut"`). Run with `--text-log`:
 each cut message is in `diagnostics/text-misses.jsonl` with `rows_cut`. Shorten the translation, remove `\n` breaks
-it does not need, or patch the script to break the page ([languages.md](languages.md), "Text too long for its
+it does not need, or patch the script to break the page ([language packages](languages.md), "Text too long for its
 window").
 
 **A message looks narrower than the others.** It needed more rows than its window has, and the port narrowed it to
@@ -262,7 +264,8 @@ do the system's. `omp text check` lists the characters each table's bundled font
 **Letters squeezed to half their width, or running past their boxes.** The table's first font is proportional to the
 game: Windows marks it neither monospaced nor fixed-pitch, whatever its name says. Outside aspect mode the game draws
 it at half the height over its average width, about half for a Japanese font and near its own width for a Latin one.
-`omp text check` warns about it and gives the width. Use a fixed-width font (languages.md, "Fonts").
+`omp text check` warns about it and gives the width. Use a fixed-width font ([language packages](languages.md),
+"Fonts").
 
 **A menu or dialog keeps the engine's wording.** The log has a `[text]` line for each `[[engine]]` entry the engine
 left out, ending "the engine's own text is shown": the key is not one the engine has, or the text names a value
@@ -271,13 +274,13 @@ skipped.
 
 **"a package without [game] holds only text/ and fonts/" or "holds only [[engine]] entries".** A package for every
 game carries the engine's own text only. Game text, patches, scripts and assets need a `[game]` table naming the
-game ([languages.md](languages.md), "A shell language for every game").
+game ([language packages](languages.md), "A shell language for every game").
 
 ## Lua
 
 **A value is not what you expect, and several mods touch it.** Run with `--lua-trace` and read
 `diagnostics/lua-trace.jsonl`: each handler call's line shows the event's fields before and after it and every cell
-it wrote, so the first line whose `after` differs from what you expect names the mod ([lua.md](lua.md), "The link
+it wrote, so the first line whose `after` differs from what you expect names the mod ([the Lua guide](lua.md), "The link
 report and the trace").
 
 **"lua/NAME.lua: line N: …".** A syntax error, found by the compiler that runs the mod; the line is the file's. The
@@ -285,13 +288,13 @@ check runs none of your code.
 
 **"… declares no top-level function F; a handler is a global function of its file".** The hook's handler must be
 declared as `function F(ctx)` at the top level of the named file, not as `local function`, `function M.F`, `F =
-function`, or inside a block ([lua.md](lua.md), "Handlers and the session").
+function`, or inside a block ([the Lua guide](lua.md), "Handlers and the session").
 
 **"a point hook hands its handler the frame and operands, which needs the vm capability".** Add
 `capabilities = ["vm"]` to `[lua]`.
 
 **"'NAME' is not a named patch point of <game>".** Point names are in your game guide and its patch-point
-reference ([games/README.md](games/README.md)).
+reference ([the games page](games/README.md)).
 
 **"X replaces SCRIPT, and a hook names the original's instruction" or "a patch of X replaced the instruction".**
 Another mod replaced the script, or patched away the instruction your point names. Your hook cannot bind there;
@@ -305,32 +308,32 @@ script hook names; a replaced script is that mod's code, and the two mods confli
 
 **"the hook was written for SCRIPT sha256:A, but the base catalog's SCRIPT is sha256:B".** The installed script is
 another revision than the one your site hook names; the offset may not mean the same instruction in it. Take the
-fingerprint and the offset from the script as installed (`Ome.Cli oms-patch --fingerprint SCRIPT.BIN`, and the
-disassembly or the page locator).
+fingerprint and the offset from the script as installed (`OME-Tool oms-patch --fingerprint SCRIPT.BIN`, and the
+disassembly or `OME-Tool locate`).
 
 **"0x… is not the start of an instruction of SCRIPT".** A site is a dword offset where an instruction starts, as
 the disassembly lists it; an offset inside an instruction's operands names none.
 
 **"… so the after hook fires only once it has finished" or "… so the after hook never fires".** Notes, not errors:
 the instruction waits or calls a script (a save in between and a later load of it skip the hook), or it ends its
-frame ([lua.md](lua.md), "Site hooks").
+frame ([the Lua guide](lua.md), "Site hooks").
 
 **"skip = true on the instruction at 0x… (op …), which …".** The instruction jumps, calls a script, ends its
 script, waits, saves, loads or restores frames, and skipping it would break the game's flow; the message says which.
-Skip a plain instruction near it, or change the flow with a patch ([lua.md](lua.md), "Skipping an instruction").
+Skip a plain instruction near it, or change the flow with a patch ([the Lua guide](lua.md), "Skipping an instruction").
 
 **"ctx:skip(): this hook did not declare skip = true".** Add `skip = true` to the hook's `[[hooks]]` entry. An after
 hook cannot skip: its instruction has already run.
 
 **"… this engine does not raise it yet".** The reserved engine events are part of a later version of Lua scripting
-([lua.md](lua.md), the list at the top).
+([the Lua guide](lua.md), the list at the top).
 
 **"calling NAME failed: NAME.BIN@0x… (op 0x… …) waits (…), and a called script cannot wait"**, or **"… saves"**,
 **"… loads a save"**, **"… continues the load's restore"**, **"… raised a script error: …"**, **"the call ran past its
 budget"**. A script `maid.vm.call` ran reached something a call cannot do; the offset and the opcode say where, in
 that script or in one it called. The cells keep what the script wrote before it. Run `omp check`: its `lua.calls`
 notes list each instruction of the scripts you call that may wait or restore. Set the cells the script reads so it
-takes a path without them, call a smaller script, or ship a script and a patch that calls it ([lua.md](lua.md),
+takes a path without them, call a smaller script, or ship a script and a patch that calls it ([the Lua guide](lua.md),
 "Calling a script").
 
 **"lua.calls: NAME: NAME.BIN at 0x… (op 0x… …) waits / saves / loads a save, …" in `omp check`.** A script your
@@ -338,15 +341,16 @@ takes a path without them, call a smaller script, or ship a script and a patch t
 always fails at. Take it off the list. **"… may wait, and the call fails if it does"**, **"… continues a load's
 restore …"**, **"… which the check cannot follow"** are notes: the call works on paths that avoid them.
 
-**"NAME is not in M's [lua] calls"**: add the script to `[lua] calls`. **"lua.calls: neither the catalog nor the
-mod's [scripts] has NAME"**: the name is misspelled, or neither the game nor your `[scripts]` has such a script. **"lua.calls: maid.vm.call is raw access, so a mod that lists
-calls needs the vm capability"**: add `capabilities = ["vm"]` to `[lua]`, or use a base mod's helper, which needs
-none. **"maid.vm.call is not available in the console"**, **"… cannot run while the session is built (init.lua,
-ome.session.start)"**: call it from a hook, a watch or a game event's handler ([lua.md](lua.md), "Calling a script").
+**"NAME is not in M's [lua] calls"**: add the script to `[lua] calls`. **"lua.calls: neither the catalog nor the mod's
+[scripts] has NAME"**: the name is misspelled, or neither the game nor your `[scripts]` has such a script. **"lua.calls:
+maid.vm.call is raw access, so a mod that lists calls needs the vm capability"**: add `capabilities = ["vm"]` to
+`[lua]`, or use a base mod's helper, which needs none. **"maid.vm.call is not available in the console"**, **"… cannot
+run while the session is built (init.lua, ome.session.start)"**: call it from a hook, a watch or a game event's handler
+([the Lua guide](lua.md), "Calling a script").
 
 **"a watch on an address names a cell by number, which needs the vm capability".** Add `capabilities = ["vm"]` to
 `[lua]`, or watch the cell's name through the base mod, which needs none. **"a watch on a name resolves through a
-base mod, and the mod requires none"**: add `[[requires]] id = "<game>-base"` ([lua.md](lua.md), "Watches").
+base mod, and the mod requires none"**: add `[[requires]] id = "<game>-base"` ([the Lua guide](lua.md), "Watches").
 
 **"X is a table; watch "X[*]" for its cells", "X is no table", "X is a float global", "X's row count is not
 known".** A table's name takes `[*]` and a scalar's does not; version 1 watches integer and string cells only; and a
@@ -362,7 +366,7 @@ value somewhere no watch covers.
 
 **"no mod of the stack declares the event 'NAME' (it declares …)".** The event is misspelt, or the mod that declares
 it is not enabled; the parenthesis lists the events the stack has. **"X declares NAME, and the mod does not
-require it"**: add `[[requires]] id = "X"` ([lua.md](lua.md), "Game events").
+require it"**: add `[[requires]] id = "X"` ([the Lua guide](lua.md), "Game events").
 
 **"field F of NAME is read-only", "NAME has no field F", "field F is bool, not number".** The handler wrote a field
 declared `r`, named a field the event does not declare, or gave a value of another type. Your game guide lists each
@@ -380,10 +384,10 @@ declaring mod.
 
 **"NAME is raised by X, which declares it; M cannot raise it", "NAME is raised at its point", "NAME: field F is
 missing".** `maid.events.emit` raises only an event your mod declares with `raised_by = "lua"`, and with every
-field it declares ([lua.md](lua.md), "`maid.events.emit`").
+field it declares ([the Lua guide](lua.md), "`maid.events.emit`").
 
-**"M writes NAME, which its [lua] writes list does not name (…)".** Add `NAME` to `[lua] writes` ([lua.md](lua.md),
-"Game names"). The message shows the list as the engine read it.
+**"M writes NAME, which its [lua] writes list does not name (…)".** Add `NAME` to `[lua] writes` ([the Lua
+guide](lua.md), "Game names"). The message shows the list as the engine read it.
 
 **"the source writes names its [lua] writes list lacks: NAME (lua/FILE)…", "omp build: M writes names its [lua]
 writes list lacks".** The link found `game.g.NAME = …` or `game.table("NAME")[…] = …` in your source, and the list
@@ -394,12 +398,12 @@ apply"**: `--lua-dev` loosens the list only for a mod loaded from a folder; run 
 rebuild.
 
 **"lua.writes: 'NAME' is not a name <game>-base exports".** Check the name against your game's global reference
-([games/README.md](games/README.md)). **"lua.writes names cells of a base mod, and the mod requires none"**: add
+([the games page](games/README.md)). **"lua.writes names cells of a base mod, and the mod requires none"**: add
 `[[requires]] id = "<game>-base"`.
 
 **"<game>-base exports no global named 'NAME'", "NAME is a table: use .table(…)", "NAME[i]: an index is a whole
 number from 0 to N".** The name is not exported, or it was used with the wrong accessor or index. Indices start at 0,
-and a table ends at its last row ([lua.md](lua.md), "Game names").
+and a table ends at its last row ([the Lua guide](lua.md), "Game names").
 
 **A handler's error in `diagnostics/lua.log`.** The line names the mod, the handler, the script and offset it ran
 at, and the traceback. After three failures in a row the handler is off for the session; `--lua-errors halt` stops
@@ -410,7 +414,7 @@ usually an endless loop.
 message gives it as the link would: `lua/FILE: line N: …`, "declares no top-level function F, which a hook names",
 "lua/FILE is gone, and a hook names its F", or "its maid.state cannot be carried into the new session" with the value
 a save cannot hold. The game goes on with the code it had. Fix the file and save it again. A hook on a new handler,
-and any change to the manifest or `events/`, needs a restart ([lua.md](lua.md), "Reloading").
+and any change to the manifest or `events/`, needs a restart ([the Lua guide](lua.md), "Reloading").
 
 **"Lua: reload failed, the running session is kept: ID: …".** The new files parsed, but `init.lua` or a handler
 file's top level raised an error as the session was rebuilt (`diagnostics/lua.log` has the traceback), or a mod your
@@ -424,7 +428,7 @@ wait the rebuild waits for the click; `Lua: reloaded ID` then shows.
 **"maid.state was not saved in slot N, its last good state is kept: …"** (or "it has none saved"). Your mod's
 `maid.state` holds something a save cannot hold; the message names it and where it is, as in `maid.state.items[3].f
 is a function`. The game's save was written, and beside it the state your mod loaded or saved last. A state holds
-booleans, finite numbers, strings and tables of them, with string or integer keys ([lua.md](lua.md), "State").
+booleans, finite numbers, strings and tables of them, with string or integer keys ([the Lua guide](lua.md), "State").
 
 **"save slot N was made with X, which ships Lua, but SAVEnn.modstate.json is missing".** The stack stamp beside the
 save names a Lua mod, so the save had a state file, and it is gone: copied without it, or deleted. The mod's state
@@ -439,12 +443,12 @@ one.
 edited by hand. The mod is off for the session; its block is kept unchanged in the next save.
 
 **A total in `maid.state` grows at every load.** Handlers fire while a load restores the game, and on the page the
-save was made in a second time. Skip the restore with `maid.session.restoring` ([lua.md](lua.md), "Loads").
+save was made in a second time. Skip the restore with `maid.session.restoring` ([the Lua guide](lua.md), "Loads").
 
 **A number prints with up to 17 digits** (`0.1 + 0.2` reads `0.30000000000000004`, `1/3` reads
 `0.3333333333333333`). This build's Lua library writes fractions as .NET does, not with Lua 5.2's 14 digits; whole
 numbers print the same. Format a number before you show it, for example `string.format("%.2f", x)`, which gives the
-same text on every build ([lua.md](lua.md), "The sandbox"). Avoid `%e` and `%g` in this build.
+same text on every build ([the Lua guide](lua.md), "The sandbox"). Avoid `%e` and `%g` in this build.
 
 **"bad argument #N to 'format' (number has no integer representation)".** In this build `%d` and `%x` need a
 whole number, where Lua 5.2 truncates. Pass `math.floor(x)`.
@@ -456,25 +460,25 @@ is not bounded by the budget. Disable mods and enable them again one at a time t
 
 **"data/FILE.toml: no mod of the stack accepts the kind K (it accepts …)".** The kind is misspelt, or the mod that
 defines it is not enabled; the parenthesis lists the kinds the stack has. **"… X accepts K, and the mod does not
-require it"**: add `[[requires]] id = "X"` ([data-files.md](data-files.md)).
+require it"**: add `[[requires]] id = "X"` ([data files](data-files.md)).
 
 **"data/FILE.toml:N: …" or "data/FILE.toml: PATH: …".** The file does not read, or holds something a data file
 cannot: a syntax error, a key given twice or an array of tables another table interrupts (with the line), an integer
 past 2^53, a date or a time, `inf` or `nan`, a key with a character that does not print (a control or format
-character, U+2028 or U+2029), or more than a bound allows ([data-files.md](data-files.md), "The file"). The first 20
+character, U+2028 or U+2029), or more than a bound allows ([data files](data-files.md), "The file"). The first 20
 problems are listed and the rest counted. **"… holds more than 400,000 values, counting each table and array as one
 …"**: an empty table or array counts too, so split the file, or drop the empty tables it does not need.
 
 **"data/FILE.toml:N: PATH: no such key; the nearest name here is NAME", and the other errors with a line and a
 path.** The file does not match its kind's shape, and the link stops before any code runs
-([data-files.md](data-files.md), "Shapes"). A misspelt key or one cut short lists the nearest names, or the names
+([data files](data-files.md), "Shapes"). A misspelt key or one cut short lists the nearest names, or the names
 there when none is close; a key the format does not offer gives the reason (`unit.12.stats.0: column 0 is named:
 write <column>`, a saved field, a scoped table's own name, a table the format does not edit); a key that should be a
 whole number says how (`unit.0xc: a key here is written in decimal: 12`, `stage.0: a key here is a whole number from
 <first> to <last>, not 0`); and a value of the wrong kind or out of range says what the cell takes (`names[2]: takes a string, not 2`), and
 where a table goes what to write there (`unit.12.stats: takes a table, not an array (unit.stats: <global>, a row of
 <N> columns by name; write stats.<column> = ...)`). The ids, names and numbers here are placeholders: the game's
-guide (`games/<game>.md`) has its own. Fix the line it names. An editor finds most of these as
+guide has its own ([the games page](games/README.md)). Fix the line it names. An editor finds most of these as
 you type with the shape `omp lua-stubs` writes.
 
 **"accepts[N] K: shapes/FILE: …".** The owner's shape is broken: not JSON, a `$ref` that names no definition, or a
@@ -497,13 +501,13 @@ is not an error: the other events of the kind deliver the files.
 does not require the mod that declares it, or the handler is not a top-level function of its file.
 
 **"error MOD: data/FILE.toml (OWNER FILE:FUNCTION) failed at EVENT …" in `diagnostics/lua.log`.** The owner's handler
-failed on your file; the message is the owner's. For `<game>.tables` it reads "MOD FILE: N problems, so nothing of it
-is applied: PATH: REASON" with the first problem by path, then the next ones up to 20, each with what is wrong ([data-files.md](data-files.md), "The record
-tables"); the file is passed over for the rest of the session, with no second error. For another kind, after three
-failures in a row the file is not applied again that session; other files go on. **"… ran out of its instruction budget"**: the owner's handler ran past the delivery's budget
-([data-files.md](data-files.md), "Delivery"). Either way, a line "the N cells it wrote are put back" says that the
-delivery had begun to write, and that the engine gave each of those cells its value back: the game has none of the
-file.
+failed on your file; the message is the owner's. For `<game>.tables` it reads "MOD FILE: N problems, so nothing of it is
+applied: PATH: REASON" with the first problem by path, then the next ones up to 20, each with what is wrong ([data
+files](data-files.md), "The record tables"); the file is passed over for the rest of the session, with no second error.
+For another kind, after three failures in a row the file is not applied again that session; other files go on. **"… ran
+out of its instruction budget"**: the owner's handler ran past the delivery's budget ([data files](data-files.md),
+"Delivery"). Either way, a line "the N cells it wrote are put back" says that the delivery had begun to write, and that
+the engine gave each of those cells its value back: the game has none of the file.
 
 **"Lua: MOD is off for this session: …; not applied: …".** The mod named first is off (the notice says why), and the
 files listed are not delivered this session: its own, those of the kinds it defines, and those of the mods that
@@ -512,13 +516,13 @@ require it.
 ## Game-specific problems
 
 Each game guide lists its quirks and current limits, such as installs with several bases, missing patch points, or
-recipes not yet tested on that game ([games/README.md](games/README.md)).
+recipes not yet tested on that game ([the games page](games/README.md)).
 
 ## The game's toolchain does not build
 
-**"the OMS modules of <engine>/mods/<game>-base do not build against this install: …; a fragment or new script
-cannot compile until it does".** The game's toolchain ([cli.md](cli.md), "Where the toolchain comes from") compiles
-its ADV module against the install, and the module runs some of the game's own scripts. An install that lacks one of
-them, such as a trial or a damaged copy, cannot compile fragments or new scripts. Every other mod still links, and
-the launcher's Link check shows a warning that says what a compiling mod would meet. Check the install against the
-game's guide ([games/README.md](games/README.md)); a mod with stored plans that match still links on it.
+**"the OMS modules of <engine>/mods/<game>-base do not build against this install: …; a fragment or new script cannot
+compile until it does".** The game's toolchain ([commands and installing mods](cli.md), "Where the toolchain comes
+from") compiles its ADV module against the install, and the module runs some of the game's own scripts. An install that
+lacks one of them, such as a trial or a damaged copy, cannot compile fragments or new scripts. Every other mod still
+links, and the launcher's Link check shows a warning that says what a compiling mod would meet. Check the install
+against the game's guide ([the games page](games/README.md)); a mod with stored plans that match still links on it.

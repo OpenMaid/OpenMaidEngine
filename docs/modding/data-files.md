@@ -49,7 +49,7 @@ priority = 0                   # optional; where the file comes among the event'
 ```
 
 - **Format version 4** (`omp = 4`) and **`target = "extended"`**. `omp export` refuses the package, and a player
-  profile in Compatibility mode refuses it ([packages.md](packages.md)).
+  profile in Compatibility mode refuses it ([packages](packages.md)).
 - **Require the owner.** A file of a kind reaches only the mod that defines the kind, so the contributor requires it,
   as a mod that subscribes to an event requires the event's owner. An owner may ship files of its own kind without
   requiring itself.
@@ -60,6 +60,15 @@ priority = 0                   # optional; where the file comes among the event'
 - **No `[lua]` is needed.** The package may still hold Lua, patches, scripts and assets.
 - **A package without `[game]` holds no `data/`.** A kind is one game's.
 - **Bounds.** A package names at most 64 data files, and a file is at most 16 MiB.
+
+Check it, run it and pack it with the mod tool, in a terminal in the release's folder, on a profile in Extended
+mode ([commands and installing mods](cli.md)):
+
+```text
+OME-Tool omp check --mod example.tougher-slimes --profile <profile>
+OME-Tool start --profile <profile> --mod example.tougher-slimes
+OME-Tool omp build example.tougher-slimes --profile <profile>
+```
 
 ## The file
 
@@ -185,7 +194,7 @@ handler = "lists.lua:apply"            # a file under lua/, then a top-level fun
 ```
 
 - **Each `at` names an event the owner could subscribe to:** one it declares, or one a mod it requires declares.
-  `handler` is a top-level function of a file under `lua/`, as a hook's is ([lua.md](lua.md)).
+  `handler` is a top-level function of a file under `lua/`, as a hook's is ([the Lua guide](lua.md)).
 - **The handler's file is loaded only in a stack that holds a file of the kind.** An owner with no contributor loads
   and runs what it did before.
 - **A kind is unique in a stack.** Two mods that declare one kind are a hard conflict.
@@ -276,22 +285,22 @@ checks TOML against JSON Schema can read the same file:
   handler checks the rest at the first delivery, and everything when its kind has no shape. `<game>.tables` checks
   three such things there: text the save's code page cannot encode, one cell named twice through an old name, and a
   part at an event this install does not raise (above).
-- **In an editor.** `omp lua-stubs --output DIR` ([cli.md](cli.md)) copies each accepted kind's shape into `DIR` as
-  `<kind>.schema.json`, the game's `<game>.tables` included, and prints a line to put first in a data file of the
-  kind: `#:schema file:///C:/path/to/DIR/<game>.tables.schema.json`. An editor that checks TOML against JSON Schema
-  (Taplo, and the editor extensions built on it) then marks a misspelt key, a key the format does not offer, and a
-  value out of range or of the wrong kind as you type. It does not read `x-ome-decimal-keys`, so it takes any key
-  where a record id, a stage, a slot or an unnamed column goes (`unit.0xc`, `unit.1000`, `stage.1.enemy.30`), and
-  its messages are its own (`1 is not of type "null"` for a saved field). The link refuses those keys, and its
-  messages give the reason and the spelling to use, so run `omp check` before you ship.
+- **In an editor.** `omp lua-stubs --output DIR` ([commands and installing mods](cli.md)) copies each accepted kind's
+  shape into `DIR` as `<kind>.schema.json`, the game's `<game>.tables` included, and prints a line to put first in a
+  data file of the kind: `#:schema file:///C:/path/to/DIR/<game>.tables.schema.json`. An editor that checks TOML against
+  JSON Schema (Taplo, and the editor extensions built on it) then marks a misspelt key, a key the format does not offer,
+  and a value out of range or of the wrong kind as you type. It does not read `x-ome-decimal-keys`, so it takes any key
+  where a record id, a stage, a slot or an unnamed column goes (`unit.0xc`, `unit.1000`, `stage.1.enemy.30`), and its
+  messages are its own (`1 is not of type "null"` for a saved field). The link refuses those keys, and its messages give
+  the reason and the spelling to use, so run `omp check` before you ship.
 - **Work.** A check applies at most 64 schemas for each value of a file, each table and array counting one, and
   100,000 more. A shape like the base mods' applies four to six to each, so no file inside the bounds reaches the
   limit with it, empty tables included; only a shape built to cost time does, and the error is its owner's.
 
 ## What the link checks
 
-The link checks every data file before any mod code runs, and so do `omp check` and `omp build`
-([cli.md](cli.md)). Each of these stops the load, with a report line that names the mod and the file:
+The link checks every data file before any mod code runs, and so do `omp check` and `omp build` ([commands and
+installing mods](cli.md)). Each of these stops the load, with a report line that names the mod and the file:
 
 - no mod of the stack accepts the file's kind;
 - the contributor does not require the kind's owner;
@@ -378,7 +387,7 @@ kind <game>.tables (<game>-base), at <game>.data.layered and <game>.stage.loaded
   stacks the scripts keep), the owner's own Lua values (its `maid.state` among them), and the random draws the
   delivery made, after which the generator goes on. A delivery whose called script ends the scene or the run is
   abandoned, not put back: its cells end with the scene. A delivery that succeeds keeps every write, and a Lua
-  handler that is not a delivery keeps what it wrote before it failed ([lua.md](lua.md), "Errors and budgets").
+  handler that is not a delivery keeps what it wrote before it failed ([the Lua guide](lua.md), "Errors and budgets").
   `<game>.tables` still checks the whole document before its first write, so a file with a problem the check finds
   costs the budget of the check alone.
 - **A mod is on or off as a whole.** A contributor that is off for the session (its own Lua failed, or a mod it
@@ -390,8 +399,8 @@ kind <game>.tables (<game>-base), at <game>.data.layered and <game>.stage.loaded
 
 ## The trace
 
-With `--lua-trace` ([lua.md](lua.md), "The link report and the trace"), a delivery's line is the contributor's: `mod`
-is the contributor, with `file` and the kind's `owner`, and `handler` is the owner's.
+With `--lua-trace` ([the Lua guide](lua.md), "The link report and the trace"), a delivery's line is the contributor's:
+`mod` is the contributor, with `file` and the kind's `owner`, and `handler` is the owner's.
 
 ```json
 {"mod":"example.a","file":"data/a.toml","owner":"<game>-base","handler":"tables.lua:apply_boot","hook":"<game>.data.layered","kind":"event","at":"<script>@<offset>","ms":0.162,"instructions":0,"budget":1000750,"result":"ok","writes":[…]}
@@ -404,7 +413,6 @@ is the contributor, with `file` and the kind's `owner`, and `handler` is the own
   put back. A watch on such a cell is told of both writes, after the instruction as any watch is: the delivery's,
   `"writer":"mod","by":"example.a"`, then the put-back, `"writer":"engine"`, whose `new` is the value the cell held
   before the delivery.
-- **`budget`** is the delivery's: the handler budget and the allowance for the document's values, its tables and
-  arrays counted. `instructions` counts in steps of 1,000 ([lua.md](lua.md)), so a file of a few values reads 0; one
-  of every item field of a game runs about 100 for each value, and a file of empty tables about as much for each of
-  them.
+- **`budget`** is the delivery's: the handler budget and the allowance for the document's values, its tables and arrays
+  counted. `instructions` counts in steps of 1,000 ([the Lua guide](lua.md)), so a file of a few values reads 0; one of
+  every item field of a game runs about 100 for each value, and a file of empty tables about as much for each of them.

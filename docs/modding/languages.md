@@ -6,14 +6,14 @@ is drawn. Saves, history and read flags therefore stay those of the original gam
 loads in any other.
 
 This page is the reference. For a walkthrough from an empty folder to a shared package, start with
-[translating.md](translating.md).
+[the translation walkthrough](translating.md).
 
 Language packages run in the port only. Native AGE draws the text its scripts hold, so `omp export` leaves a
 package's text and language assets out (with a note).
 
 ## Layout
 
-A language package is an ordinary Open Maid Pack ([packages.md](packages.md)) with format version 2 and two more
+A language package is an ordinary Open Maid Pack ([packages](packages.md)) with format version 2 and two more
 folders:
 
 ```text
@@ -39,7 +39,7 @@ and its save stamps say so (see "Saves" below).
    for the strings it builds, plus `_global.toml` with every literal the scripts draw or store:
 
    ```text
-   Ome.Cli omp text extract --language en --output my.lang <game options>
+   OME-Tool omp text extract --language en --output my.lang --profile <profile>
    ```
 
    Every entry it writes has a `source` and no `text`. An entry without `text` is a template: the port skips it. For
@@ -50,19 +50,20 @@ and its save stamps say so (see "Saves" below).
 4. **Check** the package without starting the game:
 
    ```text
-   Ome.Cli omp text check --mod my.lang <game options>
+   OME-Tool omp text check --mod my.lang --profile <profile>
    ```
 
-5. **Run it** in the port with `--mod my.lang --language en`, or install it in `mods/` and pick the language in the
-   settings panel's OME section, which lists every language the installed packages define by its `name` (or with
-   `[ui] Language` in `OME.INI`). Add `--text-log` to collect every string that reached the screen without an entry,
-   and every message narrowed or cut to fit its window ([cli.md](cli.md)).
+5. **Run it** in the port with `OME-Tool start --profile <profile> --mod my.lang -- --language en`, or add it on the
+   profile's Mods page in the launcher and pick the language in the settings panel's OME section, which lists every
+   language the installed packages define by its `name` (or with `[ui] Language` in `OME.INI`). Add `--text-log` to
+   collect every string that reached the screen without an entry, and every message narrowed or cut to fit its window
+   ([commands and installing mods](cli.md)).
 
 A switch in the settings panel applies at once to the menus and to text drawn after it. Text already on screen stays
 until the game draws it again; everything is in the new language after returning to the title.
 
 The game driver switches the same way with its `language TAG` step, so a test can check a page before and after a
-switch ([cli.md](cli.md), "Automated testing").
+switch ([commands and installing mods](cli.md), "Automated testing").
 
 Run `extract` again after a game update, or whenever you want the templates current: it keeps every entry the folder
 holds, translated or not, adds templates for sources no file has yet, and marks `obsolete = true` each entry whose
@@ -77,10 +78,10 @@ catalog entries. With `--package` it also writes the images the translation repl
 as a PNG. When the folder has no manifest, it writes one with the language's `[[language]]` table:
 
 ```text
-Ome.Cli omp text import-scripts --from TRANSLATED_ROOT --output my.lang --language en --package <game options>
+OME-Tool omp text import-scripts --from TRANSLATED_ROOT --output my.lang --language en --package --profile <profile>
 ```
 
-- The game options, or a profile, name the original install. `--from-overlay-root` and `--from-allow-bmp-as-agf`
+- The profile, or the game's options, name the original install. `--from-overlay-root` and `--from-allow-bmp-as-agf`
   apply to the translated install, as it is played without the port.
 - `--verify` reads the catalogs back and checks every message against the translated scripts.
 - The summary and `import-report.json` list what could not be carried.
@@ -191,7 +192,7 @@ The narrowest entry wins, then a later file or package. `at` is the instruction'
 script; a message's is its first `show-text`'s, as `--text-log` writes it. The F3 locator prints the page's last
 `show-text` (`text SC0100@0x2a43`), the same instruction for a message drawn in one piece, when no mod patches that
 script. A file with site entries
-gives the script's `fingerprint` (`Ome.Cli oms-patch --fingerprint SC0100.BIN`). Site entries bind only to that
+gives the script's `fingerprint` (`OME-Tool oms-patch --fingerprint SC0100.BIN`). Site entries bind only to that
 revision of the script:
 
 - in a script another mod patches, they move with their instructions; an entry on an instruction a patch replaced is
@@ -272,9 +273,9 @@ fit, never below `min_fit_scale`. The window is whatever the game's script set u
 - `overflow = "cut"` always cuts, as the game does.
 - History shows the text as written.
 
-`--text-log` lists each narrowed message with the width it got (`width_percent`) and each cut one with the rows it
-lost (`rows_cut`; [cli.md](cli.md)). To fit a message without narrowing it, shorten it or patch the script to break
-the page.
+`--text-log` lists each narrowed message with the width it got (`width_percent`) and each cut one with the rows it lost
+(`rows_cut`; [commands and installing mods](cli.md)). To fit a message without narrowing it, shorten it or patch the
+script to break the page.
 
 ## Fonts
 
@@ -330,7 +331,7 @@ left. A fixed-width face is drawn as it is. `fit` and `overflow` narrow the cell
 Text drawn into a picture (a title logo, a menu button, a map label) is not text the port can translate. Give the
 picture a language version instead: put the file in `assets/<tag>/` under the name the game asks for, and it replaces
 that asset while the language, or one that falls back to it, is selected. The port's F5 names the pictures on screen,
-and `Ome.Cli picture` writes one out as PNG ([translating.md](translating.md), step 8).
+and `OME-Tool picture` writes one out as PNG ([the translation walkthrough](translating.md), step 8).
 
 ```text
 <mod>/assets/en/SO001.png      an image: PNG stands for SO001.AGF
@@ -396,8 +397,8 @@ fallback = ["en"]
 
 Such a package holds only `[[language]]` tables, catalogs with `[[engine]]` entries alone, and `fonts/`. A `[[text]]`
 entry, `patches/`, `scripts/`, `replace/` or `assets/`, or a `[scripts]`, `[assets]` or `[replace]` table is an error
-in it. Install it in each game's `mods/` folder or pass it with `--mod`. With its language selected, the shell speaks
-that language and the game's text stays as the game has it.
+in it. Add it in the launcher, where `mods/common/` holds it for every game's profiles, or pass it with `--mod`.
+With its language selected, the shell speaks that language and the game's text stays as the game has it.
 
 ## Tools
 
@@ -413,7 +414,7 @@ that language and the game's text stays as the game has it.
 `check` reports errors (a file that does not read, two patterns that can match one string, too many entries, a stack
 that does not link, an engine entry with a value its key does not take) and warnings (entries whose source no
 installed script draws or stores where their scope reaches, site entries that do not bind, characters no bundled font
-covers, engine keys the engine does not have). Full options are in [cli.md](cli.md).
+covers, engine keys the engine does not have). Full options are in [commands and installing mods](cli.md).
 
 ### Working in PO
 
@@ -456,5 +457,5 @@ text that bypasses translation and layouts that cannot take longer text.
 
 - shaping and right-to-left scripts (Arabic, Hebrew, Thai, the Indic scripts).
 
-The design behind this page is `../superpowers/specs/2026-11-10-localization-design.md`; the open items are in
-`../backlog.md`, "Localization".
+The design behind this page is [the localization design](../superpowers/specs/2026-11-10-localization-design.md); the
+open items are in [the backlog](../backlog.md), "Localization".

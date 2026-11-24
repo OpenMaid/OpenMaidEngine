@@ -1,7 +1,7 @@
 # New scripts, scenes and assets
 
-Patches change what is there ([patching.md](patching.md)). This page is about adding things: scripts of your own, a
-boot-time data edit, a scene the player can save in, and new assets. Your game guide ([games/README.md](games/README.md))
+Patches change what is there ([patching](patching.md)). This page is about adding things: scripts of your own, a
+boot-time data edit, a scene the player can save in, and new assets. Your game guide ([the games page](games/README.md))
 has the game's values: how many catalogs it ships, what its scene registry holds, its saved range, and working
 examples.
 
@@ -11,7 +11,7 @@ AGE games ship add-on content as *append catalogs*: `APPENDnn.AAI` (an index) an
 with new scripts or new assets gets a catalog of its own, built when the mods link:
 
 - **Records.** The catalog's records are your `[scripts].names`, in order, then your `[assets].names`
-  ([packages.md](packages.md)). Each script is `scripts/NAME.oms`, a unit that begins `script "NAME"`.
+  ([packages](packages.md)). Each script is `scripts/NAME.oms`, a unit that begins `script "NAME"`.
 - **Selector.** Each catalog has a number, its *selector*. The port allocates the lowest one that neither the
   install's own catalogs nor another mod use, and keeps it in `mods/selectors.toml` for as long as the mod is
   installed, whatever the load order. Never rely on a particular selector.
@@ -21,7 +21,7 @@ with new scripts or new assets gets a catalog of its own, built when the mods li
 ## Data edits at boot
 
 Record 0, the first name in `[scripts].names`, runs once at boot, after the game's own init scripts fill its data
-tables. Keep it short and end it with `exit` ([packages.md](packages.md), "Record 0 runs at boot"). A record-0 script
+tables. Keep it short and end it with `exit` ([packages](packages.md), "Record 0 runs at boot"). A record-0 script
 can overwrite table entries:
 
 ```text
@@ -97,7 +97,7 @@ record of your catalog after the scripts. Use it wherever an instruction takes a
 adv_gfx_resource_id = asset "MYBG.AGF"
 ```
 
-A file named like an original asset overrides that asset instead, and needs no listing ([packages.md](packages.md)).
+A file named like an original asset overrides that asset instead, and needs no listing ([packages](packages.md)).
 
 ## Using another mod's scripts
 

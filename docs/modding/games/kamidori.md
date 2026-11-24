@@ -1,41 +1,45 @@
 # Modding Kamidori
 
 Kamidori-specific facts for the generic guides. The identity block (game id, engine ABI, modules, tables,
-patch points) is generated in [README.md](README.md#kamidori-alchemy-meister).
+patch points) is generated on [the games page](README.md#kamidori-alchemy-meister).
 
 ## Install and options
 
-The expected install is `games/kamidori/` beside the repository: the game with its official updates applied. The English
-fan translation is a separate install, `games/kamidori-translated/`, with its overlay in `patch/`. Every `Ome.Cli`
-command needs the game options:
+The game is the install with its official updates applied. The English fan translation is a separate install, with
+its overlay in `patch/`. Make a profile for each install you mod: on the translated one, the launcher offers `patch/`
+as an overlay and switches on its BMP pictures (`allow_bmp_as_agf`), since they are BMP files under AGF names. With a
+profile, the guides' commands take `--profile <profile>` alone. Without one, they take the game's options:
 
 | Install | Options |
 |---|---|
-| untranslated | `--game kamidori --game-root ../games/kamidori` |
-| translated | `--game kamidori --game-root ../games/kamidori-translated --overlay-root patch` |
+| untranslated | `--game kamidori --game-root DIR` |
+| translated | `--game kamidori --game-root DIR --overlay-root patch` |
 
-- Port: `.\run-godot.cmd -Kamidori`, or `.\run-godot.cmd -Kamidori -TranslationPatch` for the translated install.
-  Add `-Mod PATH` for a mod.
-- Driver, translated:
+**From source:** the conventional installs are `games/kamidori/` and `games/kamidori-translated/` beside the
+repository, so `--game-root ../games/kamidori` (or `../games/kamidori-translated`) from `age-reimpl/`. The port is
+`.\run-godot.cmd -Kamidori`, or `.\run-godot.cmd -Kamidori -TranslationPatch` for the translated install, with
+`-Mod PATH` for a mod. The driver, translated:
 
-  ```text
-  py -3.11 -X utf8 tools/drive.py --game kamidori --game-root ../games/kamidori-translated port start --mod PATH --port-arg=--overlay-root --port-arg=<absolute path to games\kamidori-translated\patch> --port-arg=--allow-bmp-as-agf
-  ```
+```text
+py -3.11 -X utf8 tools/drive.py --game kamidori --game-root ../games/kamidori-translated port start --mod PATH --port-arg=--overlay-root --port-arg=<absolute path to games\kamidori-translated\patch> --port-arg=--allow-bmp-as-agf
+```
 
-  The game's points include `title.start` (Game Start on the title screen) and `newgame.begin` (Begin Game on
-  the next screen); define others with `point NAME X Y`.
+The driver's points for the game include `title.start` (Game Start on the title screen) and `newgame.begin` (Begin
+Game on the next screen); define others with `point NAME X Y`. The game's dialogs and options, as the driver sees
+them:
+
 - Native AGE on the untranslated install shows Japanese dialogs, so `dialogs` and `answer` use Japanese labels:
   the close dialog is 終了, with `プログラムを終了する(&E)`, `タイトルに戻る(&T)`, `OK` and `ｷｬﾝｾﾙ`.
 - The menu bar, the fullscreen strip and the 終了 dialog are the port's own, so both installs have them. The driver
   reads and answers 終了 by its Japanese texts on the port, whatever language it shows. On native AGE, the translated
   install's `agerc.dll` shows 終了 in English: Quit, with `Exit(&E)`, `'Return to title(&T)'`, `OK` and `Cancel`.
-- 設定, ﾊﾞｰｼﾞｮﾝ情報 and 動作環境 are the port's own options panel, so both installs have them, although the
-  untranslated install's `AGERC.DLL` is packed. While CONFIG runs (op `0x142`'s gate is 0) its ﾒｯｾｰｼﾞ, ｻｳﾝﾄﾞ and
-  その他 sections are read-only, as native's 設定 cannot open then. The port's shell is Japanese unless `OME.INI`'s
-  `ui:Language` or `--language en` picks English; native AGE on the translated install shows its `agerc.dll`'s
-  English. The driver's `option` and `options` steps set and list them on both targets without labels, and
-  `tools/drive/scenarios/kamidori-shell.steps` checks 終了 and three options on the clean install.
-- Registries for fragments: `py -3.11 -X utf8 tools/globals_build.py --game kamidori --build`.
+- 設定, ﾊﾞｰｼﾞｮﾝ情報 and 動作環境 are the port's own options panel, so both installs have them, although the untranslated
+  install's `AGERC.DLL` is packed. While CONFIG runs (op `0x142`'s gate is 0) its ﾒｯｾｰｼﾞ, ｻｳﾝﾄﾞ and その他 sections are
+  read-only, as native's 設定 cannot open then. The port's shell is Japanese unless `OME.INI`'s `ui:Language` or
+  `--language en` picks English; native AGE on the translated install shows its `agerc.dll`'s English. The driver's
+  `option` and `options` steps set and list them on both targets without labels, and the
+  [kamidori-shell](../../../tools/drive/scenarios/kamidori-shell.steps) scenario checks 終了 and three options on the
+  clean install.
 
 ## The translation is a different base
 
@@ -48,41 +52,44 @@ with, and ship two fragments if the mod should work on both.
 | translated | `sha256:54d6bc4d8cf85e32903808979d16ff851f10e62f06dcb8ab87bc8076a31c1e30` |
 | untranslated | `sha256:e8db06e1287c557533e93380084358dbc28beb684b3344f3890852514ad97f58` |
 
-Both installs hold loose `$n$*.BIN` append records in their root. AGE loads a root-loose `$n$` file in place of
-the append catalog's record of that name, and so does the port, with or without `--overlay-root patch`. The
-untranslated install has 17 of them, its official data updates (ITINIT, SKINIT, SCJUMP and others); fingerprint and
-decompile those records from the root file. The translated install replaces 11 of the 17 and adds 75 more, so
-append content shows in English there with or without the overlay (`../../asset-resolution-re.md`). The translated
+Both installs hold loose `$n$*.BIN` append records in their root. AGE loads a root-loose `$n$` file in place of the
+append catalog's record of that name, and so does the port, with or without `--overlay-root patch`. The untranslated
+install has 17 of them, its official data updates (ITINIT, SKINIT, SCJUMP and others); fingerprint and decompile those
+records from the root file. The translated install replaces 11 of the 17 and adds 75 more, so append content shows in
+English there with or without the overlay ([the asset resolution notes](../../asset-resolution-re.md)). The translated
 records' strings are partly damaged, so do not copy code from them.
 
 ## The translation as a language package
 
 One command turns the translated install into a package that shows the untranslated install in English in the port
-([languages.md](../languages.md), "From a translation made in place"):
+([language packages](../languages.md), "From a translation made in place"). The profile is one made on the
+untranslated install, and `--from` names the translated one:
 
 ```text
-Ome.Cli omp text import-scripts --game kamidori --game-root ../games/kamidori --from ../games/kamidori-translated --overlay-root patch --allow-bmp-as-agf --output build/games/kamidori/import-en --package --verify
+OME-Tool omp text import-scripts --profile <profile> --from <the translated install> --from-overlay-root patch --from-allow-bmp-as-agf --output import-en --package --verify
 ```
 
 - The package holds 48,586 entries in 217 catalog files and 232 images: 207 from `patch/`, and the 25 `$n$`
   append images from the translated root. All of them are BMPs under AGF names, written as PNG.
 - The manifest's `glyph_delay_scale` comes out at 0.48.
-- Play it with `.\run-godot.cmd -Kamidori -Mod build\games\kamidori\import-en`, and choose English in the options
-  panel's OME section (or pass `--language en` to the port).
-- Keep it under `build/`. It is the translators' work, for playing on your own machine only.
+- Play it with `OME-Tool start --profile <profile> --mod import-en -- --language en`, or add it on the profile's
+  Mods page and choose English on its Settings page or in the options panel's OME section.
+- Keep it on your own machine. It is the translators' work, for playing there only.
 - Kamidori's text font is the player's choice in its config screen (`CONFIG2`: メイリオ, ＭＳ ゴシック or
   ＭＳ 明朝), kept in `SAVE.DAT`. The clean install starts with メイリオ, a proportional face (ＭＳ 明朝 where it is
   missing). The translated install's `INITCONFIG` and `CHECKCONFIG` settle on ＭＳ ゴシック instead. Those are face
   names, not text, so the importer reports them and carries none: to play in the translated install's face, choose
   ＭＳ ゴシック in the config screen.
-- `SYSTEM4` selects aspect mode at boot, so the port lays English out on the cells native AGE gives the same
-  characters ([languages.md](../languages.md), "Fonts"). On the pages localization gate 12 compares, every name plate
-  and every run of text starts within a pixel of native AGE on the translated install
-  (`../../localization-import-test.md`). Stat boxes and item tables are not compared yet (`../../backlog.md`).
+- `SYSTEM4` selects aspect mode at boot, so the port lays English out on the cells native AGE gives the same characters
+  ([language packages](../languages.md), "Fonts"). On the pages localization gate 12 compares, every name plate and
+  every run of text starts within a pixel of native AGE on the translated install ([the localization import
+  test](../../localization-import-test.md)). Stat boxes and item tables are not compared yet ([the
+  backlog](../../backlog.md)).
 
 ## First mod values
 
-The values for [first-mod.md](../first-mod.md), on the translated opening scene:
+The values for [your first mod](../first-mod.md), on the translated opening scene, with a profile made on the
+translated install:
 
 | Step | Value |
 |---|---|
@@ -101,7 +108,7 @@ before site 0xd0a {
 }
 ```
 
-The finished mod is `oms/examples/mods/example.kamidori-prologue-line`.
+The finished mod is [example.kamidori-prologue-line](../../../oms/examples/mods/example.kamidori-prologue-line/).
 
 ## Dialogue lines
 
@@ -119,11 +126,11 @@ The prelude's template is `line(text, speaker = none, voice = none, form = form_
 - `form_descriptor`, a description shown before the character is introduced;
 - `form_unknown`, `？？？？`.
 
-Speakers come from `unit_speaker_names` (`enum speaker` in `mods/kamidori-base/oms/adv.oms`).
+Speakers come from `unit_speaker_names` (`enum speaker` in [`kamidori.adv`](../../../mods/kamidori-base/oms/adv.oms)).
 
 ## Data edits
 
-A data file ([../data-files.md](../data-files.md)) changes the unit, item and skill tables, the quests, recipes,
+A data file ([data files](../data-files.md)) changes the unit, item and skill tables, the quests, recipes,
 conditions, stage list, dig tables, character profiles, objectives and glossary, and each floor's enemies, with no
 Lua and no script. `kamidori-base` accepts the kind `kamidori.tables`. It applies each file's boot
 tables at `kamidori.data.layered`, after every layer has written them and before INIT2's own work reads them, and a
@@ -139,8 +146,8 @@ experience_reward = 999    # 10
 drop_chance.drop_1 = 100   # 30
 ```
 
-- **Tables and fields** are those of `../../global-reference-kamidori.md`, "Tables", by the names in its `field`
-  column. Each table has room for the records below, by id, and the game writes some of them:
+- **Tables and fields** are those of [the global reference](../../global-reference-kamidori.md), "Tables", by the names
+  in its `field` column. Each table has room for the records below, by id, and the game writes some of them:
 
   | Table | What it holds | Records | The game writes |
   |---|---|---|---|
@@ -175,7 +182,7 @@ drop_chance.drop_1 = 100   # 30
   `item.costume_enhancement_grid` and `item.costume_gem_sockets`. They lie below the saved prefix, so a load would
   bring the saved value back over the edit.
 - **The shape.** `kamidori-base` ships the kind's shape, `shapes/tables.schema.json`, generated from the same record
-  map as the tables above ([../data-files.md](../data-files.md), "Shapes"). So the link, `omp check` and `omp build`
+  map as the tables above ([data files](../data-files.md), "Shapes"). So the link, `omp check` and `omp build`
   refuse a table, field or column the reference does not name, a saved field, an id or a column out of range and a
   value of the wrong kind, with the file's line, before the game starts. `omp lua-stubs --game kamidori` writes a
   copy, `kamidori.tables.schema.json`, and prints the `#:schema` line that points an editor at it. Text that code page
@@ -235,13 +242,13 @@ drop_chance.drop_1 = 100   # 30
   place, so a text for record 0 shows nowhere. The part is applied with the stage's enemies, each time its loaders
   run, and none of it is saved.
 - **A character keeps a copy of its definition.** When a unit joins, UNITECH copies part of its definition into the
-  character's saved state (`../../kamidori-data-tables.md`, "Runtime character state"), which the game uses from
-  then on. An edit to these fields reaches a character who joins after it, not one who has joined, and what was copied
-  while the mod was on stays in the save when the mod is removed. UNITECH takes the character through
-  `unit.canonical_character_id`, refuses one of 100 or more (`UNITECH@0x6d`), and makes the first join's copies when
-  the character's `character_levels` is 0 (`UNITECH@0x13a`). `example.kamidori-unit-stats` raises ウィル's maximum HP:
-  `tools/drive/scenarios/port/kamidori-unit-stats.steps` loads a save made after he joined with it (below,
-  "Examples"), where his definition holds the edit and his saved stats the save's own.
+  character's saved state ([Kamidori's data tables](../../kamidori-data-tables.md), "Runtime character state"), which
+  the game uses from then on. An edit to these fields reaches a character who joins after it, not one who has joined,
+  and what was copied while the mod was on stays in the save when the mod is removed. UNITECH takes the character
+  through `unit.canonical_character_id`, refuses one of 100 or more (`UNITECH@0x6d`), and makes the first join's copies
+  when the character's `character_levels` is 0 (`UNITECH@0x13a`). `example.kamidori-unit-stats` raises ウィル's maximum HP:
+  the [kamidori-unit-stats](../../../tools/drive/scenarios/port/kamidori-unit-stats.steps) scenario loads a save made
+  after he joined with it (below, "Examples"), where his definition holds the edit and his saved stats the save's own.
 
   | Field | Saved value | When |
   |---|---|---|
@@ -321,7 +328,8 @@ drop_chance.drop_1 = 100   # 30
 - **Old names.** No table or field has been renamed yet. When one is, the old name keeps working until
   `kamidori-base`'s next major version, and `diagnostics/lua.log` names each old name a file uses.
 
-A boot script does the same with OMS (`oms/examples/kamidori-gate6/OMSAUTO.oms`), and writes the same three cells:
+A boot script does the same with OMS ([the kamidori-gate6 example's
+OMSAUTO.oms](../../../oms/examples/kamidori-gate6/OMSAUTO.oms)), and writes the same three cells:
 
 ```text
 with unit[761] {
@@ -331,9 +339,9 @@ with unit[761] {
 }
 ```
 
-The unit tables sit above the saved range, so boot rebuilds them with the edit on every start, and the edit holds
-after loading a save. Saves made before the edit pick it up too. `../../kamidori-data-tables.md` explains how the
-init scripts fill each table.
+The unit tables sit above the saved range, so boot rebuilds them with the edit on every start, and the edit holds after
+loading a save. Saves made before the edit pick it up too. [Kamidori's data tables](../../kamidori-data-tables.md)
+explains how the init scripts fill each table.
 
 ## Patch points
 
@@ -362,15 +370,15 @@ before site kamidori.experience.after_calculation {
 A fragment names one fingerprint, so this one patches the untranslated install; put the translated fingerprint in a
 second fragment for the other. A Lua hook or event subscriber names no fingerprint and links on both.
 
-In Lua ([../lua.md](../lua.md), "Game names"), `kamidori-base` gives the game's tables by name.
+In Lua ([the Lua guide](../lua.md), "Game names"), `kamidori-base` gives the game's tables by name.
 `require("kamidori-base").table("unit_condition_levels")[unit].charm` reads a battle unit's charm level. The table
 has 50 rows, which end where `unit_condition_remaining_turns` starts. The names are those of
-`../../global-reference-kamidori.md`. Levels and experience belong to the character, not the unit:
+[the global reference](../../global-reference-kamidori.md). Levels and experience belong to the character, not the unit:
 `character_levels` and `character_experience` are indexed by `current_character_id`, the unit's canonical
 character.
 
-`kamidori-base` declares seven game events ([../lua.md](../lua.md), "Game events"). The experience award is raised at
-the experience point:
+`kamidori-base` declares seven game events ([the Lua guide](../lua.md), "Game events"). The experience award is raised
+at the experience point:
 
 | Event | Field | Type | Access | Cell |
 |---|---|---|---|---|
@@ -379,15 +387,16 @@ the experience point:
 | | `character` | int | r | `current_character_id` |
 | | `level` | int | r | `character_levels[current_character_id]` |
 
-A subscriber needs no `vm`. `oms/examples/mods/example.kamidori-double-exp-event` doubles every award with
-`event.amount = event.amount * 2`, and leaves the same state as the patch above. An amount of 0 or less, or a
+A subscriber needs no `vm`.
+[example.kamidori-double-exp-event](../../../oms/examples/mods/example.kamidori-double-exp-event/) doubles every award
+with `event.amount = event.amount * 2`, and leaves the same state as the patch above. An amount of 0 or less, or a
 character at the level cap, gains no experience. Weapon experience is awarded after the point and does not read the
 amount.
 
-The other seven follow the boot, each floor and the stage list. Each is raised where INIT2, FIELD, INFO3 or SELSTAGE
-has walked the chains the appends register their handlers in (`../../kamidori-data-tables.md`, "Hook chains"), so a
-handler runs after the base game's and every append's. Each point lists both installs' scripts, which put it at the
-same site. Their fields are read-only:
+The other seven follow the boot, each floor and the stage list. Each is raised where INIT2, FIELD, INFO3 or SELSTAGE has
+walked the chains the appends register their handlers in ([Kamidori's data tables](../../kamidori-data-tables.md), "Hook
+chains"), so a handler runs after the base game's and every append's. Each point lists both installs' scripts, which put
+it at the same site. Their fields are read-only:
 
 | Event | Raised | Fields |
 |---|---|---|
@@ -425,7 +434,7 @@ same site. Their fields are read-only:
 - **`result`.** Withdrawing from a free floor (撤退, 探索を終了しますか？) closes it with 1, as winning does, and the
   floor's clear screen follows; forfeiting an arena match (試合を放棄しますか？) closes it with 2.
 
-`kamidori-base`'s helpers ([../lua.md](../lua.md), "Game names"):
+`kamidori-base`'s helpers ([the Lua guide](../lua.md), "Game names"):
 
 | Helper | Calls | What it does |
 |---|---|---|
@@ -438,19 +447,20 @@ same site. Their fields are read-only:
 - **Scene registry.** SCJUMP decision 0 already maps to SC0000. Writing a mod scene into
   `scjump_scene_script_resource_ids[0x0]` replaces the opening instead of preceding it. Pick the decision your
   scene belongs to.
-- **Untested.** No Kamidori save-capable scene mod has been tested yet (`../../backlog.md`). Copy the skeleton from
-  one of Kamidori's own append scenes, and test saving on native AGE as well as in the port.
-- **Free cells.** The examples use the string cells `GS[0x9000]` and `GS[0x9001]` (`oms/examples/kamidori-gate6/`).
+- **Untested.** No Kamidori save-capable scene mod has been tested yet ([the backlog](../../backlog.md)). Copy the
+  skeleton from one of Kamidori's own append scenes, and test saving on native AGE as well as in the port.
+- **Free cells.** The examples use the string cells `GS[0x9000]` and `GS[0x9001]` ([the kamidori-gate6
+  example](../../../oms/examples/kamidori-gate6/)).
 
 ## Examples
 
 | Path | What it shows |
 |---|---|
-| `oms/examples/mods/example.kamidori-prologue-line` | a patch against the translated opening |
-| `oms/examples/kamidori-gate6/` | a boot-time data edit and a script called by packed id |
-| `oms/examples/mods/example.kamidori-double-exp-event` | a Lua subscriber of `kamidori.experience.award`, without `vm` |
-| `oms/examples/mods/example.kamidori-stage-enemies` | a data file that edits two floors' enemy slots, applied at `kamidori.stage.loaded` and `kamidori.stage.previewed`; `example.kamidori-stage-enemies-mistake` is its twin with a mistake no shape can say (a unit name code page 932 cannot encode), which the link takes and the boot reports; `tools/drive/scenarios/port/kamidori-stage-enemies*.steps` drive both through the stage list's preview, INFO's 獲得地点 view, a floor save and its load with the mod and without |
-| `oms/examples/mods/example.kamidori-unit-stats` | a data file that raises ウィル's maximum HP, which reaches only a character who joins after it; `tools/drive/scenarios/port/kamidori-unit-stats.steps` loads a save with it |
+| [example.kamidori-prologue-line](../../../oms/examples/mods/example.kamidori-prologue-line/) | a patch against the translated opening |
+| [the kamidori-gate6 example](../../../oms/examples/kamidori-gate6/) | a boot-time data edit and a script called by packed id |
+| [example.kamidori-double-exp-event](../../../oms/examples/mods/example.kamidori-double-exp-event/) | a Lua subscriber of `kamidori.experience.award`, without `vm` |
+| [example.kamidori-stage-enemies](../../../oms/examples/mods/example.kamidori-stage-enemies/) | a data file that edits two floors' enemy slots, applied at `kamidori.stage.loaded` and `kamidori.stage.previewed`; `example.kamidori-stage-enemies-mistake` is its twin with a mistake no shape can say (a unit name code page 932 cannot encode), which the link takes and the boot reports; the driver's [port scenarios](../../../tools/drive/scenarios/port/) `kamidori-stage-enemies*` drive both through the stage list's preview, INFO's 獲得地点 view, a floor save and its load with the mod and without |
+| [example.kamidori-unit-stats](../../../oms/examples/mods/example.kamidori-unit-stats/) | a data file that raises ウィル's maximum HP, which reaches only a character who joins after it; the [kamidori-unit-stats](../../../tools/drive/scenarios/port/kamidori-unit-stats.steps) scenario loads a save with it |
 
 The Kamidori scenarios start from saves in the clean install's story: one in ウィルの工房 (the workshop) when
 シセティカ湖 has just opened, before the first visit to 蒼月の南湖畔, and two on 蒼月の南湖畔 (turns 1 and 5). Each

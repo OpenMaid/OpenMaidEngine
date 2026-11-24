@@ -4,7 +4,7 @@ An Open Maid Pack (OMP) is one mod. It comes in two forms that load identically:
 
 - a **folder** containing `manifest.toml`, for development;
 - a **`.omp` file**: a ZIP archive of the same tree, with `manifest.toml` at its root. `omp build` writes one
-  (`cli.md`). ZIP entries may be stored or deflated; OMP adds no compression of its own.
+  ([commands and installing mods](cli.md)). ZIP entries may be stored or deflated; OMP adds no compression of its own.
 
 ## Layout
 
@@ -14,14 +14,14 @@ An Open Maid Pack (OMP) is one mod. It comes in two forms that load identically:
 ├── patches/        fragments (NAME.oms) and compiled plans (NAME.omspatch.json)
 ├── scripts/        new scripts (NAME.oms), one per [scripts].names entry
 ├── replace/        whole-script replacements (SCRIPT.BIN)
-├── assets/         asset overrides by original name, and new assets; assets/<language>/ (format version 2; languages.md)
-├── text/           translation catalogs, text/<language>/*.toml (format version 2; languages.md)
-├── fonts/          font files a language uses (format version 2; languages.md)
-├── lua/            Lua sources; init.lua is optional (format version 3; lua.md)
-├── events/         game event declarations (NAME.toml), for a mod that declares events (format version 3; lua.md)
+├── assets/         asset overrides by original name, and new assets; assets/<language>/ (format version 2; "Language packages")
+├── text/           translation catalogs, text/<language>/*.toml (format version 2; "Language packages")
+├── fonts/          font files a language uses (format version 2; "Language packages")
+├── lua/            Lua sources; init.lua is optional (format version 3; "Lua mods")
+├── events/         game event declarations (NAME.toml), for a mod that declares events (format version 3; "Lua mods")
 ├── layout/         a game's base mod only: the names of its cells (format version 3)
 ├── oms/            a game's base mod only: the game's OMS toolchain (format version 5)
-├── data/           data files (NAME.toml, subfolders allowed), each named by a [[data]] entry (format version 4; data-files.md)
+├── data/           data files (NAME.toml, subfolders allowed), each named by a [[data]] entry (format version 4; "Data files")
 ├── shapes/         for a mod that defines a kind: its shapes (NAME.json), each named by an [[accepts]] shape (format version 4)
 ├── README.md       optional
 └── LICENSE         optional
@@ -69,23 +69,23 @@ names = ["DBLEXP_ICON.AGF"]          # new assets, as records after the scripts
 [replace]
 "SC0010.BIN" = { over = "other.mod" } # this replacement deliberately supersedes other.mod's
 
-[[language]]                         # format version 2 and later; repeatable (languages.md)
+[[language]]                         # format version 2 and later; repeatable (see "Language packages")
 tag = "en"
 
 [lua]                                # format version 3; lua.md
 api = 1
 capabilities = ["vm"]
 
-[[hooks]]                            # format version 3; repeatable (lua.md)
+[[hooks]]                            # format version 3; repeatable (see "Lua mods")
 point = "<a patch point>"
 handler = "double_exp.lua:on_award"
 
-[[data]]                             # format version 4; repeatable (data-files.md)
+[[data]]                             # format version 4; repeatable (see "Data files")
 kind = "<game>.tables"               # a kind that a mod of the stack accepts
 file = "slimes.toml"                 # a path under data/
 priority = 0                         # optional, as a hook's
 
-[[accepts]]                          # format version 4; repeatable: a kind this mod defines (data-files.md)
+[[accepts]]                          # format version 4; repeatable: a kind this mod defines (see "Data files")
 kind = "example.lists"
 description = "Lists of names."
 shape = "lists.schema.json"          # optional: a file under shapes/ the link checks the kind's files against
@@ -100,10 +100,10 @@ Unknown keys are errors, so a misspelled setting cannot be silently ignored.
 **Format versions.** `omp = 2` adds the `[[language]]` table, the `text/` and `fonts/` folders and language assets
 in `assets/<language>/`, and lets a package leave out `[game]` (below); everything else is as in version 1, which a
 version 2 loader still reads. A version 1 package with any of these, or without `[game]`, is an error.
-`omp = 3` adds the `[lua]` table, `[[hooks]]`, the `lua/` folder and the `extended` target ([lua.md](lua.md)); a
+`omp = 3` adds the `[lua]` table, `[[hooks]]`, the `lua/` folder and the `extended` target ([the Lua guide](lua.md)); a
 version 3 loader still reads versions 1 and 2. A package with Lua and an earlier version, or with Lua and
 `target = "native"`, is an error.
-`omp = 4` adds `[[data]]`, `[[accepts]]` and the `data/` and `shapes/` folders ([data-files.md](data-files.md)); a
+`omp = 4` adds `[[data]]`, `[[accepts]]` and the `data/` and `shapes/` folders ([data files](data-files.md)); a
 version 4 loader still reads versions 1 to 3. In a package of an earlier version, a `data/` or `shapes/` folder is
 outside the layout: it is ignored and reported as a note. A package with data files targets `extended`, as one with
 Lua does.
@@ -125,13 +125,13 @@ reason to change its version for it.
 
 - **`profile`:** the game. A mod targets exactly one game. A version 2 package without `[game]` targets every game
   and holds only the engine's own text in other languages: `[[language]]` tables, catalogs with `[[engine]]` entries
-  alone, and `fonts/` ([languages.md](languages.md), "A shell language for every game").
+  alone, and `fonts/` ([language packages](languages.md), "A shell language for every game").
 - **`target`:** `native`: the mod uses only what the original engine supports, so it can be exported for
   `AGE.EXE`. `extended` (format version 3): the mod has Lua or data files, which only the port runs, so `omp export`
   refuses it.
   A player profile in Compatibility mode (`mode = "native"` in its `profile.toml`) refuses a package that targets
   `extended`, ships Lua (a Lua library too, though it has no `[game]` table), or requires such a package, the
-  game's base mod among them. Extended mode takes every package ([cli.md](cli.md)).
+  game's base mod among them. Extended mode takes every package ([commands and installing mods](cli.md)).
 - **`revisions`:** optional SHA-256 fingerprints of `SYS4INI.BIN`. When present, any other installed catalog stops
   the load and prints the installed fingerprint (`omp check` prints it too). Patches do not need it, because each
   fragment carries its own script fingerprint. Declare it when the mod has replacements, new scripts or data edits
@@ -152,11 +152,12 @@ The loader orders the enabled mods in three steps:
 
 1. Dependencies come before the mods that require them.
 2. `[order]` hints are applied.
-3. Remaining ties follow the player's `mods/load-order.txt`, then mod id. In a player profile with a `[mods]` table,
-   they follow that table's `order` instead, then the `--mod` packages in the order given ([cli.md](cli.md)).
+3. Remaining ties follow the profile's order (its `[mods]` table's `order`, which the launcher's Mods page sets),
+   then the `--mod` packages in the order given. A data folder without a profile file follows its
+   `mods/load-order.txt` instead, then mod id ([commands and installing mods](cli.md)).
 
 A cycle stops the load and lists it. Load order decides which mod wins an override and in what order insertions at
-one site appear (`patching.md`).
+one site appear ([patching](patching.md)).
 
 ### `[scripts]` and `[assets]`
 
@@ -182,7 +183,7 @@ two replacements of one script are a hard conflict. An `over` entry also orders 
 ### Patches: `patches/`
 
 A patch is a fragment `NAME.oms`, a compiled plan `NAME.omspatch.json`, or both with the same stem
-(`patching.md`).
+([patching](patching.md)).
 
 - **Source only:** the loader compiles it when the game starts and notes that it did.
 - **Both** (what `omp build` produces): the loader uses the stored plan when its fingerprint matches the base, and
@@ -194,20 +195,20 @@ Ship the source as well as the plan, so players can read and rebuild the mod.
 ### New scripts: `scripts/`
 
 One OMS script unit per file, named like its `[scripts].names` entry (`scripts/DBLEXP.oms` holds
-`script "DBLEXP"`). New scripts are compiled into the mod's append catalog. See `new-scenes.md`.
+`script "DBLEXP"`). New scripts are compiled into the mod's append catalog. See [new scenes](new-scenes.md).
 
 ### Record 0 runs at boot
 
 The first name in `[scripts].names` is record 0 of the mod's append catalog. When the engine starts (INIT2, after the
 game's data tables are built), it runs record 0 of every mounted catalog once, in selector order, before the title
-screen. Record 0 is the mod's entry point, for a data edit at boot for example (`new-scenes.md`, "Data edits at
-boot"), and whatever script is listed first runs then:
+screen. Record 0 is the mod's entry point, for a data edit at boot for example ([new scenes](new-scenes.md), "Data edits
+at boot"), and whatever script is listed first runs then:
 
 - **Make record 0 a short script that ends with `exit`.** A record 0 that shows text or waits for the player hangs
   native AGE at boot. `omp build`, `omp check` and the port's link report warn when record 0 itself does either (a
   `note` that starts `warning: record 0 runs at boot`). They do not follow a `run` from record 0 into another script.
 - **Do not list a script meant to be called first.** A scene, a script a patch runs, or one that Lua calls
-  ([lua.md](lua.md), "Calling a script") would also run once at boot. Put a small boot script before it:
+  ([the Lua guide](lua.md), "Calling a script") would also run once at boot. Put a small boot script before it:
 
   ```toml
   [scripts]
@@ -229,23 +230,23 @@ landing on the wrong instructions.
   mods override one asset, the last in load order wins, and the link report says so. The records of the game's own
   append catalogs count as original assets under their `$n$` names (`assets/$1$BG001.AGF`).
 - A file with a name the game does not have is a **new asset**. List it in `[assets].names`. It becomes a record of
-  the mod's append catalog, and scripts reach it with `asset "NAME"` (`new-scenes.md`).
+  the mod's append catalog, and scripts reach it with `asset "NAME"` ([new scenes](new-scenes.md)).
 - `assets/<language>/NAME` (format version 2) is a **language asset**: it replaces `NAME` only while that language is
   selected, in the port only. A `.png` there stands for the `.AGF` of the same name. Plain `assets/` holds no PNG,
-  because native AGE reads only AGF. See [languages.md](languages.md), "Images and other assets".
+  because native AGE reads only AGF. See [language packages](languages.md), "Images and other assets".
 
 ### Text and fonts: `text/`, `fonts/`
 
-`text/<language>/` holds translation catalogs and `fonts/` the font files a `[[language]]` table names. They change
-no script or asset: the port presents the game's text through them as it is drawn. A package that holds nothing
-else, or language assets besides, is presentation only, which its save stamps record. See [languages.md](languages.md).
+`text/<language>/` holds translation catalogs and `fonts/` the font files a `[[language]]` table names. They change no
+script or asset: the port presents the game's text through them as it is drawn. A package that holds nothing else, or
+language assets besides, is presentation only, which its save stamps record. See [language packages](languages.md).
 
 ### Lua: `lua/`
 
 `lua/` holds the mod's Lua sources (`*.lua` only), which `[lua]` and `[[hooks]]` use. A package with `lua/` needs
 a `[lua]` table, and it is never presentation only: Lua can change what the game stores. `events/` holds the game
 events the mod declares (`*.toml`, no subfolders), and takes a `[lua]` table and a `[game]` too. See
-[lua.md](lua.md), "Game events".
+[the Lua guide](lua.md), "Game events".
 
 ### Data files: `data/`
 
@@ -253,11 +254,11 @@ events the mod declares (`*.toml`, no subfolders), and takes a `[lua]` table and
 entry with its kind. A file that no entry names is an error, and so is an entry whose file is missing. A package
 names at most 64 data files, and a file is at most 16 MiB. A data file needs no Lua of its own: the mod that accepts
 its kind applies it. A package with `data/` is never presentation only, since what it holds changes what the game
-stores. See [data-files.md](data-files.md).
+stores. See [data files](data-files.md).
 
 `shapes/` (format version 4) holds the shapes of the kinds a mod defines: JSON files, in subfolders if you like, each
 named by an `[[accepts]] shape`, at most 4 MiB each. A file that no kind names is an error, as in `data/`. See
-[data-files.md](data-files.md), "Shapes".
+[data files](data-files.md), "Shapes".
 
 ### Base mods: `layout/` and `oms/`
 
@@ -272,7 +273,7 @@ are written by the project's `tools/base_mod_build.py`; a mod has no reason to c
 does needs omp 3 or later, its own game's `[game]` and `[lua] capabilities = ["vm"]`. A mod that names cells
 requires the base mod (`[[requires]] id = "<game>-base"`). The engine mounts it only then, and uses an installed
 package of the same id instead when there is one. How a Lua mod reads and writes names through a base mod is in
-[lua.md](lua.md), "Game names".
+[the Lua guide](lua.md), "Game names".
 
 Its `oms/` folder (format version 5) is the game's OMS toolchain: `oms/adv.oms`, the module `<game>.adv`, and
 `oms/globals.json`, the module `<game>.globals`, which `tools/base_mod_build.py` writes from the same registry as
@@ -288,8 +289,8 @@ record tables, with no game in it. It mounts with the base mod, as any requireme
 
 The launcher keeps a library in its home, shared by the profiles: `mods/<game>/` for each game, and `mods/common/`
 for packages with no `[game]` table. A profile it makes reads both, through its `[mods]` table
-([cli.md](cli.md), "Installing mods in the port"). On a profile's Mods tab, "Add a mod" takes an `.omp` file or a
-folder and copies it into the library:
+([commands and installing mods](cli.md), "Installing mods"). On a profile's Mods page, "Add a mod…" takes an `.omp`
+file or a folder and copies it into the library:
 
 - **Where it goes:** `mods/<game>/` by the manifest's `[game] profile`, else `mods/common/`.
 - **Its name there:** the package's id, as `<id>.omp` or a folder `<id>`. The name you ship it under does not
@@ -318,4 +319,4 @@ Packages are treated as untrusted input:
 - catalog files are at most 32 MiB each, and font files 64 MiB;
 - a package carries at most 512 Lua files, each at most 1 MiB;
 - a package contains no native code. It runs AGE bytecode inside the VM, and Lua source inside the engine's sandbox
-  ([lua.md](lua.md)): no bytecode, no native modules, and no access to files, processes or the network.
+  ([the Lua guide](lua.md)): no bytecode, no native modules, and no access to files, processes or the network.

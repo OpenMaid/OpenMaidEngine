@@ -2,17 +2,18 @@
 
 Open Maid Script (OMS) is the text language for AGE bytecode. Everything you write in a mod, whether a patch or a new
 script, is OMS that compiles to the same instructions the original games use. This page covers what you need to
-write mods. The full grammar and the exact lowering rules are in the language design
-(`../superpowers/specs/2026-10-06-open-maid-script-design.md`).
+write mods. The full grammar and the exact lowering rules are in
+[the language design](../superpowers/specs/2026-10-06-open-maid-script-design.md).
 
 The best way to learn the language is to decompile a script you want to change and read it:
 
 ```text
-Ome.Cli oms-decompile --script SC0000.BIN --level idiomatic --output build/SC0000.oms <game options>
+OME-Tool oms-decompile --script SC0000.BIN --level idiomatic --output SC0000.oms --profile <profile>
 ```
 
-Use the game options from your game guide ([games/README.md](games/README.md)). `--level idiomatic` names globals, scripts, library subroutines and dialogue lines. Without `--output` the source
-goes to the console. Use `--level raw` to see one instruction per line with its exact operand forms.
+Run it in a terminal in the release's folder, as in [your first mod](first-mod.md). `--level idiomatic` names globals,
+scripts, library subroutines and dialogue lines. Without `--output` the source goes to the console. Use `--level raw` to
+see one instruction per line with its exact operand forms.
 
 ## Files and units
 
@@ -20,8 +21,8 @@ Every file starts with `oms 1` (the language version), then one header that says
 
 | Header | Unit | Used for |
 |---|---|---|
-| `patch "SC0000.BIN" fingerprint "sha256:…"` | fragment | a patch in `patches/` ([patching.md](patching.md)) |
-| `script "NAME"` | script | a new script in `scripts/` ([new-scenes.md](new-scenes.md)) |
+| `patch "SC0000.BIN" fingerprint "sha256:…"` | fragment | a patch in `patches/` ([patching](patching.md)) |
+| `script "NAME"` | script | a new script in `scripts/` ([new scenes](new-scenes.md)) |
 | `module name.path` | module | declarations and library code, with no code of its own |
 
 Source is UTF-8. `//` and `/* … */` are comments. A newline ends a statement, unless the line ends inside brackets or
@@ -30,7 +31,7 @@ with an operator. `;` also separates statements.
 ## Modules: `use`
 
 `use` imports names. Each game has these modules, where `<game>` is its id (your game's identity block in
-[games/README.md](games/README.md) lists them):
+[the games page](games/README.md) lists them):
 
 - **`<game>.globals`:** every named global variable and table, from the game's global registry. The game's
   generated global reference lists them.
@@ -78,7 +79,7 @@ a used module declares.
 
 A `global` always needs its cell (`@ address`). The engine has no allocator for mod-owned globals yet, so you choose
 a cell no shipped script uses. Your game guide names the cells its examples use, and the range its saves keep.
-`../backlog.md` tracks finding free cells safely.
+[The backlog](../backlog.md) tracks finding free cells safely.
 
 The types are `int`, `float` and `str`, and arrays of them (`int[n]`, `int[r][c]`). A 2-D array declared with named
 columns reads by column: `unit_stats[i].max_fs`.
@@ -108,7 +109,7 @@ with unit[761] {
 
 A record is never a value. You cannot copy one record to another, or assign a whole record at once. The table
 layouts and what each field means are in the game's global reference, linked from its identity block. Record keys
-are numbers for now; naming them (`unit[<unit name>]`) is in `../backlog.md`.
+are numbers for now; naming them (`unit[<unit name>]`) is in [the backlog](../backlog.md).
 
 ## Expressions
 
@@ -170,9 +171,9 @@ get_cursor_virtual(out x, out y)         // outputs elsewhere are passed with ou
 ```
 
 Every opcode is also callable as `op_0x<hex>(…)`. The compiler checks each argument against the opcode's operand
-contract: an operand the engine writes must be a cell, and a code operand must be a sub or label. The full list,
-with what each operand means, is `../opcode-reference.md`. Under the `native` target only opcodes the original engine
-dispatches are allowed.
+contract: an operand the engine writes must be a cell, and a code operand must be a sub or label. The full list, with
+what each operand means, is [the opcode reference](../opcode-reference.md). Under the `native` target only opcodes the
+original engine dispatches are allowed.
 
 `@op(0x249, 0x2ae2, L[4])` emits one raw instruction with explicitly written operands. You rarely need it; the
 decompiler prints it at `--level raw`.
@@ -215,8 +216,8 @@ decompile as plain statements rather than dialogue lines. Copy those as they are
   Use it wherever an instruction takes a resource id, for example to register a scene
   (`scjump_scene_script_resource_ids[0x0] = asset "SCENE"`). Original assets keep their numeric ids.
 
-Your mod's selector is chosen when the mods link (`new-scenes.md`), so never write a packed id of your own scripts
-as a number. `run` and `asset` stay symbolic until the link.
+Your mod's selector is chosen when the mods link ([new scenes](new-scenes.md)), so never write a packed id of your own
+scripts as a number. `run` and `asset` stay symbolic until the link.
 
 ## Errors
 
@@ -240,4 +241,4 @@ Warnings do not stop the build. `oms-compile` prints them with `file:line:col`, 
   pointer the slot picks. The port halts the run there instead. A mod that passes such an index is unsafe for players on the
   original engine, so fix it rather than ship it.
 
-[troubleshooting.md](troubleshooting.md) covers errors that appear only when mods link.
+[Troubleshooting](troubleshooting.md) covers errors that appear only when mods link.

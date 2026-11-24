@@ -622,9 +622,10 @@ keeps the tasks and the runs).
 - **Its build.** `tools/publish_engine.py` publishes it after the engine's library, in the same engine jobs (NativeAOT
   compiles for its own system only), into `build/engine-publish/tool-<rid>/`. The build scripts copy it into the export
   (`--place-tool`). Neither the publish nor the packages ship its `.pdb`.
-- **Its size.** On Windows, 19.4 MB (19,365,888 bytes, local publish at `d873dfd7`, 2026-11-24), against the
-  engine library's 44.8 MB. The tool holds the mod layer, the compilers and the launcher's checks, but not Godot's
-  bindings or the engine's front end.
+- **Its size,** in CI's archives at `003b1a97` (release builds run 45502509721, 2026-11-24): on Windows 19.4 MB
+  (19,372,032 bytes) against the engine library's 44.8 MB (`OME.dll`, 44,777,984 bytes); on Linux 17.7 MB
+  (17,692,936 bytes) against the library's 42.8 MB (`OME.so`, 42,834,296 bytes). The tool holds the mod layer, the
+  compilers and the launcher's checks, but not Godot's bindings or the engine's front end.
 - **Its checks.**
   - The notices check reads the tool's kept dependency list (`tool-<rid>.deps.json`): `LuaCSharp`,
     `LuaCSharp.Annotations`, `Microsoft.NETCore.App` and `Tomlyn`.
@@ -640,7 +641,9 @@ keeps the tasks and the runs).
       by a failed Link check;
     - Ctrl+C, to the tool alone and to the process group.
 
-    It writes `TOOL OK: gates=2,5,7`.
+    It writes `TOOL OK: gates=2,5,7`. In the first CI run (45502509721), Ctrl+C to the tool alone ended the engine
+    after the 10 s grace (exit 137: the smoke's engine has no control channel), and to the group ended it at once
+    (exit 130).
   - The publisher requires the tool in both archives' checksum ledgers.
 
 ## Fewer files in a package (NativeAOT since 2026-11-18)

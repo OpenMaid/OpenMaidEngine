@@ -104,13 +104,15 @@ def identity(profile_id: str) -> list[str]:
         module_cells = [f"`{profile_id}.globals`, `{profile_id}.scripts` (generated)"]
     else:
         module_cells = [f"`{profile_id}.scripts` (generated; no `{profile_id}.globals`, the game has no registry yet)"]
-    module_cells += [f"`{name}` (`{path}`)" for name, path, _ in modules]
+    # The module's file is in the base mod: a link with words as its text (modding from a release spec §9.2, §9.3).
+    module_cells += [f"`{name}` ([its source in `{profile_id}-base`](../../../{path}))" for name, path, _ in modules]
     speakers = [f"{count} in `{name}`'s `enum speaker`" for name, _, count in modules if count is not None]
     table_cell = ", ".join(f"`{t['name']}[{t['records']}]` ({len(t.get('fields', {}))} fields)" for t in tables)
     points_cell = (", ".join(f"`{p}`" for p in points) + f" ([reference](../../{patch_point_reference(profile_id)}))"
                    if points else "none yet (fragments use offsets)")
     if persistence.get("writesEnabled"):
-        saves = f"enabled, in `games/{persistence.get('storageNamespace', profile_id)}/`"
+        saves = (f"enabled, in the profile's `SAVE/` (with no profile, in `games/"
+                 f"{persistence.get('storageNamespace', profile_id)}/` of the engine's data folder)")
     else:
         saves = "disabled (read-only game)"
 
@@ -122,14 +124,15 @@ def identity(profile_id: str) -> list[str]:
         ("Engine ABI", f"`{data['engineAbiId']}`"),
         ("Catalog revision", f"`{catalog['catalogRevision']}`"),
         ("Boot script", f"`{data['naturalBootScript']}`"),
-        ("Conventional install", f"`{install.parent.name}/{install.name}/` beside the repository"),
+        ("Install", f"anywhere: a profile made in the launcher names it; from source, `{install.parent.name}/"
+                    f"{install.name}/` beside the repository by default"),
         ("Port saves", saves),
         ("OMS modules", "; ".join(module_cells)),
         ("Speakers", "; ".join(speakers) if speakers else "no dialogue prelude yet"),
         ("Tables", f"{table_cell} ([reference](../../{global_reference(profile_id)}))" if tables else "none yet"),
         ("Named patch points", points_cell),
         ("Publisher's page", f"<{data['launcher']['site']}>" if data.get("launcher") else "none"),
-        ("Guide", f"[{profile_id}.md]({profile_id}.md)" if guide.exists() else "none yet"),
+        ("Guide", f"[{data['displayTitle']}'s guide]({profile_id}.md)" if guide.exists() else "none yet"),
     ]
     lines = [f"## {data['displayTitle']}", "", "| Fact | Value |", "|---|---|"]
     lines += [f"| {fact} | {value} |" for fact, value in rows]
@@ -152,14 +155,14 @@ def render() -> str:
         "its scripts use is handled, and it saves), P4 verified against the original to its ending. Modding says",
         "what a modder gets: M1 scripts, M2 documented data, M3 a base mod. A game is supported at P3 and M3; one",
         "below P3 is still being added and is not playable. The levels' gates are in",
-        "[adding-a-game.md](../../adding-a-game.md).",
+        "[Adding a game](../../adding-a-game.md).",
         "",
         "| Game | Id | Engine ABI | Play | Modding | Guide |",
         "|---|---|---|---|---|---|",
     ]
     for profile_id in profiles:
         data = manifest(profile_id)
-        guide = f"[{profile_id}.md]({profile_id}.md)" if (GAMES_DIR / f"{profile_id}.md").exists() else "none yet"
+        guide = f"[the guide]({profile_id}.md)" if (GAMES_DIR / f"{profile_id}.md").exists() else "none yet"
         play, modding = support(data)
         lines.append(f"| {data['displayTitle']} | `{profile_id}` | `{data['engineAbiId']}` | {play} | {modding} | "
                      f"{guide} |")

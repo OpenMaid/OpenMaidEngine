@@ -22,11 +22,11 @@ This version supports:
 - **script calls:** `maid.vm.call` runs one of the game's scripts from a handler, and the base mods' helpers change
   the game through its own scripts;
 - **`maid.state`:** a table that is saved beside each numbered save and comes back when that save is loaded;
-- **`maid.log`,** and **the console:** the driver's `lua` step runs a chunk in a running game;
+- **`maid.log`,** and **the console:** from a checkout, the driver's `lua` step runs a chunk in a running game;
 - **`math.random`,** which the driver's `rand-seed` makes repeatable for each mod;
 - **reloading:** `--lua-reload` runs a mod folder's changed `lua/` files without a restart, keeping `maid.state`.
 
-The design behind this guide is `../superpowers/specs/2026-11-10-lua-scripting-design.md`.
+The design behind this guide is [the Lua design](../superpowers/specs/2026-11-10-lua-scripting-design.md).
 
 Game-specific values (point names, which local holds what, the events and their fields) are in your game guide,
 `games/<game>.md`.
@@ -72,16 +72,19 @@ function on_award(event)
 end
 ```
 
-1. **Check it** with `omp check --mod my.double-exp` ([cli.md](cli.md)). The check compiles every Lua file and checks
-   every hook without running any of your code. The report's `lua:` section lists the event with your handler among
-   its subscribers ("The link report and the trace").
-2. **Run it** with `--mod my.double-exp` (`run-godot`'s `-Mod my.double-exp`). The startup log prints a `[lua]`
-   line with the mods that ship Lua and the number of handlers. Add `--lua-trace` (`-LuaTrace`) and win a battle:
+1. **Check it** with `OME-Tool omp check --mod my.double-exp --profile <profile>`, in a terminal in the release's folder
+   ([commands and installing mods](cli.md)). The profile must be in Extended mode, which Lua needs. The check compiles
+   every Lua file and checks every hook without running any of your code. The report's `lua:` section lists the event
+   with your handler among its subscribers ("The link report and the trace").
+2. **Run it** with `OME-Tool start --profile <profile> --mod my.double-exp`. The engine's output prints a `[lua]`
+   line with the mods that ship Lua and the number of handlers. Add `--lua-trace` and win a battle:
    `diagnostics/lua-trace.jsonl` gets a line per award, with the amount before and after your handler.
-3. **Get completion** in your editor with `omp lua-stubs --mod my.double-exp --output DIR` ("Editor definitions").
-4. **Pack it** with `omp build my.double-exp`, which writes `my.double-exp-1.0.0.omp` beside the folder.
+3. **Get completion** in your editor with `OME-Tool omp lua-stubs --mod my.double-exp --output DIR --profile
+   <profile>` ("Editor definitions").
+4. **Pack it** with `OME-Tool omp build my.double-exp --profile <profile>`, which writes `my.double-exp-1.0.0.omp`
+   beside the folder.
 
-Your game guide (`games/<game>.md`) lists its events and their fields, and ships this mod finished.
+Your game guide lists its events and their fields, and links this mod finished ([the games page](games/README.md)).
 
 When no event covers what you need, hook the instruction itself. The same mod as a point hook reads the frame's
 local by number, so it needs `vm` and depends on what your game guide says the local holds ("Point hooks"):
@@ -105,7 +108,7 @@ end
 ## The manifest
 
 Lua needs **format version 3** (`omp = 3`), which adds the `[lua]` table, `[[hooks]]` and the `lua/` folder. A
-version 3 loader still reads versions 1 and 2. All other keys are as in [packages.md](packages.md).
+version 3 loader still reads versions 1 and 2. All other keys are as in [packages](packages.md).
 
 - **`[game] target = "extended"`** is required for a mod with Lua. The port runs it, and `omp export` refuses it.
 - **`[lua] api`** is the `maid` API version the mod was written for. This engine provides `1`.
@@ -197,7 +200,7 @@ offset in it.
 ```toml
 [[hooks]]
 script = "SC0000.BIN"
-fingerprint = "sha256:…"   # Ome.Cli oms-patch --fingerprint SC0000.BIN <game options>
+fingerprint = "sha256:…"   # OME-Tool oms-patch --fingerprint SC0000.BIN --profile <profile>
 site = 0x…                 # a dword offset, as the disassembly and the page locator give it
 when = "after"             # or "before"
 handler = "hooks.lua:after_copy"
@@ -302,7 +305,7 @@ row.<column>, row[0]                            -- its cells, by column name or 
 ```
 
 - **Names.** The names, their shapes and their columns are in your game's global reference
-  ([games/README.md](games/README.md)). A name that a later version renames stays exported until the base mod's
+  ([the games page](games/README.md)). A name that a later version renames stays exported until the base mod's
   major version changes, so `version = ">=1, <2"` keeps a mod working.
 - **Indices are the game's,** from 0, as its scripts index: `levels[0]` is the first element. An index outside the
   table is an error. A table whose row count the registry does not know ends where the next named global starts.
@@ -331,7 +334,7 @@ row.<column>, row[0]                            -- its cells, by column name or 
   a handler at an instruction, not in `init.lua`, `ome.session.start` or the console. The trace names your mod
   ("The link report and the trace"). Your game guide lists the helpers and their bounds.
 - **Mounting.** The engine mounts a base mod only when an enabled mod requires it, and uses an installed package of
-  the same id instead when there is one ([packages.md](packages.md), "Base mods").
+  the same id instead when there is one ([packages](packages.md), "Base mods").
 
 ## Watches
 
@@ -371,7 +374,7 @@ The handler gets:
 | `ctx.name` | the global the cell belongs to; for a cell by address, the base mod's name for it if it has one, else nil |
 | `ctx.index`, `ctx.column` | the cell's row in a table and its column in a 2-D one; nil otherwise |
 | `ctx.old`, `ctx.new` | the value before the write and the value written: a number for an integer cell, a string for a string cell |
-| `ctx.writer` | what wrote: `"script"` (an instruction), `"mod"` (a mod's Lua), `"console"`, or `"engine"` (outside any instruction, or putting back a failed data file's delivery, [data-files.md](data-files.md)) |
+| `ctx.writer` | what wrote: `"script"` (an instruction), `"mod"` (a mod's Lua), `"console"`, or `"engine"` (outside any instruction, or putting back a failed data file's delivery, [data files](data-files.md)) |
 | `ctx.script`, `ctx.offset`, `ctx.site` | for `"script"`: the instruction's script, its offset in the linked script and its original offset (nil for one a patch inserted) |
 | `ctx.mod` | for `"mod"`: the mod whose handler wrote, or whose start-up code did; a base mod's helper's write is the calling mod's |
 
@@ -503,7 +506,7 @@ end
 - **Your own scripts.** A name your `[scripts]` lists is your script, before a game script of the same name: list
   `WAITER` and call `maid.vm.call("WAITER")`. The link report shows the record's catalog name beside it,
   `calls WAITER ($2$WAITER)`, and the trace names the record (`$2$WAITER.BIN`). The first name of `[scripts]` runs at
-  boot ([packages.md](packages.md), "Record 0 runs at boot"), so do not put a script you call first.
+  boot ([packages](packages.md), "Record 0 runs at boot"), so do not put a script you call first.
   `maid.vm.script_id` gives a record's packed id by its catalog name (`$2$WAITER`).
 - **A call cannot wait, save, load, or go on with a load's restore.** When the script reaches a wait (a text or input
   wait, a sleep, a transition, a text reveal, a movie, a dialog), a save (op `0x19e`), a load (op `0x19f` or
@@ -511,7 +514,7 @@ end
   the opcode: `calling <SCRIPT> failed: <SCRIPT>.BIN@0x5 (op 0xc8 sleep) waits (Sleep), and a called script cannot
   wait`. A script error inside it fails the call with the error's message, instead of opening AGE's error box. A
   present (ops `0x20c` and `0x222`) is not a wait. For anything interactive, ship a script and a patch that calls it
-  ([patching.md](patching.md)): a save inside it works.
+  ([patching](patching.md)): a save inside it works.
 - **`omp check` walks each listed script first,** with every script its `call-script` instructions name, and reads
   every instruction, reached or not:
   - an instruction that always waits, saves or loads, or that the port does not implement, is an error;
@@ -565,7 +568,7 @@ table (`maid.state.items[3].f is a function`). `--lua-errors halt` ends the run 
   mod finds it again when it is enabled again. So does a mod that is off for the session after an error.
 - **The state starts empty** in a new game, at the title, and after a load of a save that has no state file (a
   save made without Lua mods, or by native AGE). A state file that does not belong to its save, or that cannot be
-  read, is reported and gives empty state ([troubleshooting.md](troubleshooting.md), "Lua").
+  read, is reported and gives empty state ([troubleshooting](troubleshooting.md), "Lua").
 - **The game's save is unchanged:** `SAVEnn.DAT` is the same with and without a mod that only uses `maid.state`,
   and native AGE loads it. Native AGE does not read the state file.
 
@@ -680,18 +683,18 @@ or `string.dump`: nothing reaches files, processes, the clock or the network.
 which the game's own random instruction and effects draw from too. Your mod's rolls differ from run to run, and
 between two loads of one save, as the game's own do.
 
-**Under the driver's `rand-seed`** ([cli.md](cli.md), "Automated testing") each mod draws from a stream of its own,
-made from the seed and the mod's id. So a scenario that runs your mod rolls the same every time, inside a `pairs`
-loop too: a table is iterated in the same order in every run. What the game and the other mods draw does not move
-your stream. A load or a return to title does not restart it; the next `rand-seed` does. The step's result lists
-each mod's draws since the last `rand-seed`, as `mods=<id>x<count>`.
+**Under the driver's `rand-seed`** ([commands and installing mods](cli.md), "Automated testing") each mod draws from a
+stream of its own, made from the seed and the mod's id. So a scenario that runs your mod rolls the same every time,
+inside a `pairs` loop too: a table is iterated in the same order in every run. What the game and the other mods draw
+does not move your stream. A load or a return to title does not restart it; the next `rand-seed` does. The step's result
+lists each mod's draws since the last `rand-seed`, as `mods=<id>x<count>`.
 
 ## Errors and budgets
 
 | Bound | Value |
 |---|---|
 | A handler call | 1,000,000 Lua instructions |
-| A data file's delivery to its kind's handler ([data-files.md](data-files.md)) | 1,000,000 instructions, and 250 more for each value of the file, each table and array counting one |
+| A data file's delivery to its kind's handler ([data files](data-files.md)) | 1,000,000 instructions, and 250 more for each value of the file, each table and array counting one |
 | A mod's start-up code (`init.lua` and its handler files, together) | 10,000,000 instructions |
 | Handlers nested inside handlers (a subscriber inside an emit, a hook inside a called script), and rounds of watch handlers firing on each other's writes | 32 |
 | A script a handler calls (`maid.vm.call`), with the scripts it calls | 1,000,000 script instructions |
@@ -705,11 +708,12 @@ handler fails or runs past its budget:
 - the port's status line shows a notice;
 - the game goes on, and the third failure in a row switches that handler off for the session;
 - what the handler wrote before it failed stays. A data file's delivery is the one exception: the engine puts back
-  every cell it wrote ([data-files.md](data-files.md), "Delivery"). A handler that wants all or nothing checks what
+  every cell it wrote ([data files](data-files.md), "Delivery"). A handler that wants all or nothing checks what
   it will write before its first write.
 
-`--lua-errors halt` ends the run at the failing instruction instead ([cli.md](cli.md)), which is useful while
-writing a mod. A mod whose start-up code fails is off for the session, and so is every mod that requires it.
+`--lua-errors halt` ends the run at the failing instruction instead ([commands and installing mods](cli.md)), which is
+useful while writing a mod. A mod whose start-up code fails is off for the session, and so is every mod that requires
+it.
 
 Two things no budget bounds: a pattern that backtracks (`string.find`, `match`, `gmatch`, `gsub` with patterns like
 `a*a*a*…b`) can stall the game, and a mod can use up memory. If the game hangs with mods on, disable mods and enable
@@ -729,8 +733,9 @@ them again one at a time to find the one.
 
 Two mods whose `[lua] writes` lists name one global give an `interaction` line, in load order.
 
-`--lua-trace` ([cli.md](cli.md)) writes one JSON line per handler call to `diagnostics/lua-trace.jsonl`; each run
-starts the file anew. Two mods on one award, one dividing the amount and one doubling it, read:
+`--lua-trace` ([commands and installing mods](cli.md)) writes one JSON line per handler call to
+`diagnostics/lua-trace.jsonl`; each run starts the file anew. Two mods on one award, one dividing the amount and one
+doubling it, read:
 
 ```json
 {"mod":"mod.gap","handler":"gap.lua:on_award","hook":"<game>.experience.award","kind":"event","at":"ADDEXP.BIN@0x9a","ms":0.041,"instructions":0,"budget":1000000,"result":"ok","fields":[{"name":"amount","before":50,"after":25}]}
@@ -738,7 +743,7 @@ starts the file anew. Two mods on one award, one dividing the amount and one dou
 ```
 
 - `mod` is the handler's mod. A data file's delivery is the contributor's: `mod` names it, with `file` and the
-  kind's `owner`, and `handler` is the owner's ([data-files.md](data-files.md), "The trace").
+  kind's `owner`, and `handler` is the owner's ([data files](data-files.md), "The trace").
 - `instructions` is what the call ran, counted in steps of 1,000, so a short handler reads 0; `budget` is what it
   could run ("Errors and budgets").
 
@@ -762,12 +767,12 @@ starts the file anew. Two mods on one award, one dividing the amount and one dou
   `L[0x1]` or `arg[1] G[0x100]`), `name` when the base mod's layout names the cell, `before` and `after`. A write
   belongs to the handler running, so a base mod's helper's write is named for the mod that called it, with
   `through` naming the base mod. A call's first 1000 writes are listed, and `writes_not_listed` counts the rest.
-- `put_back`, on a failed data file's delivery, counts the cells the engine put back ([data-files.md](data-files.md),
+- `put_back`, on a failed data file's delivery, counts the cells the engine put back ([data files](data-files.md),
   "Delivery"); its `writes` stay listed.
 
 ## Editor definitions
 
-`omp lua-stubs --output DIR` ([cli.md](cli.md)) writes definitions for
+`omp lua-stubs --output DIR` ([commands and installing mods](cli.md)) writes definitions for
 [lua-language-server](https://luals.github.io/), the language server most editors use for Lua. It links the stack as
 `omp check` does (pass your mod and its dependencies with `--mod`) and writes:
 
@@ -779,7 +784,7 @@ starts the file anew. Two mods on one award, one dividing the amount and one dou
 - `<base mod id>.lua`: what `require("<base mod id>")` gives, with every scalar's name in `g` and every table's in
   `table(name)`, aliases too, and its helpers with the annotations its `lua/init.lua` gives them. One is written for
   the game's base mod even when no mod mounts it;
-- `<kind>.schema.json`: each accepted kind's shape, for data files rather than Lua ([data-files.md](data-files.md),
+- `<kind>.schema.json`: each accepted kind's shape, for data files rather than Lua ([data files](data-files.md),
   "Shapes"), with the `#:schema` line that points a data file at it.
 
 Point the editor at the folder in your mod's `.luarc.json`; the command prints the line to add:
@@ -805,10 +810,10 @@ reads them.
 
 ## Reloading
 
-Run with `--lua-reload` (`-LuaReload`; [cli.md](cli.md)) while you write a mod loaded from a folder. When a `.lua`
-file under its `lua/` changes, the port reads the mod's files again and checks them as the link does: their syntax,
-and that each handler your hooks name is still a top-level function of its file. Then, at the next instruction, it
-rebuilds the session:
+Run with `--lua-reload` ([commands and installing mods](cli.md)) while you write a mod loaded from a
+folder. When a `.lua` file under its `lua/` changes, the port reads the mod's files again and checks them as the link
+does: their syntax, and that each handler your hooks name is still a top-level function of its file. Then, at the next
+instruction, it rebuilds the session:
 
 1. each mod's `maid.state` is kept as it is;
 2. every mod's `init.lua` and handler files run again, in load order, so each mod's globals start again from what
@@ -837,8 +842,8 @@ watched. The console's environment starts again with the new session ("The conso
 
 ## The console
 
-The driver's `lua` step runs a chunk in a running game and returns what it returns ([cli.md](cli.md), "Automated
-testing"):
+**From source:** the driver's `lua` step runs a chunk in a running game and returns what it returns ([commands and
+installing mods](cli.md), "Automated testing"):
 
 ```text
 lua return maid.vm.g[0x100]

@@ -2,7 +2,7 @@
 
 A patch, or *fragment*, edits one original script in place and leaves everything else in it untouched. Several mods
 can patch the same script, and old saves keep working. Prefer a patch to a replacement whenever you can. A
-fragment is a file `patches/NAME.oms` in your mod ([packages.md](packages.md)).
+fragment is a file `patches/NAME.oms` in your mod ([packages](packages.md)).
 
 ## Anatomy
 
@@ -18,10 +18,11 @@ before site 0x1234 {
 }
 ```
 
-Your game guide has complete, working fragments ([games/README.md](games/README.md)).
+Your game guide has complete, working fragments ([the games page](games/README.md)).
 
-- **Header:** the script's catalog file name and the SHA-256 of its bytes. Print it with
-  `Ome.Cli oms-patch --fingerprint SCRIPT.BIN <game options>`. If the installed bytes differ, compilation and loading both fail and print the real fingerprint.
+- **Header:** the script's catalog file name and the SHA-256 of its bytes. Print it with `OME-Tool oms-patch
+  --fingerprint SCRIPT.BIN --profile <profile>`. If the installed bytes differ, compilation and loading both fail and
+  print the real fingerprint.
 - **Declarations:** `use`, `const`, `enum`, `global`, `local`, `table`, `inline`, and any `sub`s the operations call.
   New subs are appended after the original's code, so the patched script must not be able to run off its end into
   them: a `replace` of the script's last instruction has to end with `goto`, `return` or `exit` too.
@@ -33,7 +34,7 @@ A site names one instruction of the original script. Write it in one of three wa
 
 | Form | Example | Notes |
 |---|---|---|
-| offset | `site 0x877` | The dword offset shown by the page locator, `locate_page.py` and the decompiler. It must be the start of an instruction. |
+| offset | `site 0x877` | The dword offset shown by the page locator, `OME-Tool locate` and the decompiler. It must be the start of an instruction. |
 | label or sub | `site label_877`, `site adv_wait_page` | `label_<hex>` always names the instruction at that offset, even where the decompiled source prints no label. |
 | named patch point | `site <game>.area.point_name` | A stable name from the game's patch-point registry. It resolves to the right offset for the installed script revision. |
 
@@ -58,22 +59,23 @@ Your code falls through to whatever follows the site. Inside a block:
 - `local int x @ 0x3` names a slot the original uses. A local without `@`, and every temporary the compiler needs,
   goes into a fresh slot above all of the original's, so your code cannot clobber the original's values. Another
   mod patching the same script gets the same fresh slots, so do not keep a value in such a local across code another
-  mod may insert (`../backlog.md` tracks this).
+  mod may insert ([the backlog](../backlog.md) tracks this).
 
 ## Choosing a site
 
 Use the page locator in the port (**F2**, then **F3** to copy) and resolve it:
 
 ```text
-py -3.11 -X utf8 tools/locate_page.py SC0000 3 --context 12
+OME-Tool locate SC0000 3 --context 12 --profile <profile>
 ```
 
-Then decompile the script (`oms-decompile … --level idiomatic`) and read around the offsets it prints. Some
-patterns:
+It prints the page's start, its last text, its wait and the instructions around the wait. `locate SCRIPT@OFFSET`
+lists the instructions around any other offset, such as the page's start. Then decompile the script
+(`oms-decompile … --level idiomatic`) and read around the offsets it prints. Some patterns:
 
-- **A new page before page N:** use `before` on the instruction that starts page N. That is the
-  `reset-adv-text-layout` after the previous page's `wait-for-input` and `end-text-line`. Your game guide's
-  "First mod values" shows one.
+- **A new page before page N:** use `before` on the instruction that starts page N's drawing. That is the
+  `reset-adv-text-layout` after the previous page's `wait-for-input` and `end-text-line`, the end-text-line being
+  the page start `locate` gives. Your game guide's "First mod values" shows one.
 - **Change a value:** `replace site … operand N with …` on the instruction that sets it.
 - **Skip or rewrite a passage:** `replace site S through E`. Start and end on whole statements, and check the
   decompiled source for labels inside the region that code outside it jumps to.
@@ -85,7 +87,8 @@ patterns:
 A translation or update that replaces a script has different bytes and different offsets. A fragment fingerprints
 the bytes it was written against:
 
-- print fingerprints and decompile with the same game options (such as `--overlay-root`) you play with;
+- print fingerprints and decompile with the profile you play with, whose overlays (a translation's loose files)
+  are part of the base;
 - a mod that should work on several bases needs one fragment per base.
 
 A fragment whose base is not installed fails with a fingerprint mismatch. Your game guide lists the bases its
@@ -93,7 +96,7 @@ installs have.
 
 ## How several mods combine
 
-Every installed mod's fragments apply to the pristine original, in load order ([packages.md](packages.md)). The
+Every installed mod's fragments apply to the pristine original, in load order ([packages](packages.md)). The
 link report (`diagnostics/mod-link.txt`) classifies what it finds:
 
 | Situation | Result |
@@ -119,7 +122,7 @@ every original entry at its index and adds entries for new pages after them. So:
 
 Removing the mod again is less forgiving. A save made on a page the mod added has no such page in the original
 script. Loaded without the mod, it resumes on the scene's first page (observed on native AGE). The port warns when
-a save's mod stamp differs from the installed mods ([troubleshooting.md](troubleshooting.md)).
+a save's mod stamp differs from the installed mods ([troubleshooting](troubleshooting.md)).
 
 ## Compiled plans
 
@@ -133,5 +136,5 @@ the fingerprint differs. To see the patched result directly, compile fragments w
 patched scripts:
 
 ```text
-Ome.Cli oms-patch --source patches/opening.oms --output-dir build/patched
+OME-Tool oms-patch --source patches/opening.oms --output-dir patched --profile <profile>
 ```

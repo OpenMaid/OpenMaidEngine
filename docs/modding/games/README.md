@@ -11,13 +11,13 @@ runs it: P1 recognized (the engine reads all of it, and nothing runs), P2 boots,
 its scripts use is handled, and it saves), P4 verified against the original to its ending. Modding says
 what a modder gets: M1 scripts, M2 documented data, M3 a base mod. A game is supported at P3 and M3; one
 below P3 is still being added and is not playable. The levels' gates are in
-[adding-a-game.md](../../adding-a-game.md).
+[Adding a game](../../adding-a-game.md).
 
 | Game | Id | Engine ABI | Play | Modding | Guide |
 |---|---|---|---|---|---|
-| Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [arterial.md](arterial.md) |
-| Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [himegari.md](himegari.md) |
-| Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [kamidori.md](kamidori.md) |
+| Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
+| Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
+| Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
 
 ## Soukoku no Arterial
 
@@ -30,14 +30,14 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Engine ABI | `SYS4438` |
 | Catalog revision | `S4IC438` |
 | Boot script | `SYSTEM4.BIN` |
-| Conventional install | `games/arterial/` beside the repository |
-| Port saves | enabled, in `games/arterial/` |
-| OMS modules | `arterial.globals`, `arterial.scripts` (generated); `arterial.adv` (`mods/arterial-base/oms/adv.oms`) |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/arterial/` beside the repository by default |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/arterial/` of the engine's data folder) |
+| OMS modules | `arterial.globals`, `arterial.scripts` (generated); `arterial.adv` ([its source in `arterial-base`](../../../mods/arterial-base/oms/adv.oms)) |
 | Speakers | no dialogue prelude yet |
 | Tables | `character[1000]` (17 fields), `card[6000]` (40 fields), `talent[1000]` (6 fields), `skill[1000]` (7 fields), `item[2000]` (33 fields), `area_point[200]` (5 fields), `area_route[200]` (1 fields), `area_unit[200]` (9 fields), `deck[1000]` (14 fields), `party_member[100]` (12 fields), `ultimate[100]` (12 fields), `condition[32]` (7 fields), `battle[1000]` (11 fields), `battle_rule[100]` (13 fields), `recipe[2000]` (22 fields), `shop_entry[1000]` (14 fields), `opponent[1000]` (16 fields), `goal[1000]` (18 fields), `area_map[300]` (7 fields), `unit_routine[1000]` (7 fields), `cpu_profile[1000]` (5 fields), `scene[10000]` (3 fields), `profile[200]` (6 fields), `glossary[1000]` (7 fields), `tip[1000]` (7 fields), `cg[3000]` (4 fields), `music[50]` (2 fields) ([reference](../../global-reference-arterial.md)) |
 | Named patch points | `arterial.boot.data_layered`, `arterial.boot.data_ready`, `arterial.area.after_loaders`, `arterial.area.after_ready_handlers`, `arterial.battle.before_phases`, `arterial.battle.after_phases`, `arterial.experience.after_calculation` ([reference](../../patch-point-reference-arterial.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
-| Guide | [arterial.md](arterial.md) |
+| Guide | [Soukoku no Arterial's guide](arterial.md) |
 
 ## Himegari Dungeon Meister
 
@@ -50,14 +50,14 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Engine ABI | `SYS4422` |
 | Catalog revision | `S4IC422` |
 | Boot script | `SYSTEM4.BIN` |
-| Conventional install | `games/himegari/` beside the repository |
-| Port saves | enabled, in `games/himegari/` |
-| OMS modules | `himegari.globals`, `himegari.scripts` (generated); `himegari.adv` (`mods/himegari-base/oms/adv.oms`) |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/himegari/` beside the repository by default |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/himegari/` of the engine's data folder) |
+| OMS modules | `himegari.globals`, `himegari.scripts` (generated); `himegari.adv` ([its source in `himegari-base`](../../../mods/himegari-base/oms/adv.oms)) |
 | Speakers | 274 in `himegari.adv`'s `enum speaker` |
 | Tables | `unit[1000]` (49 fields), `item[1000]` (21 fields), `skill[300]` (17 fields), `stage_enemy[30]` (15 fields), `stage_catalog[1000]` (19 fields), `stage_goal[1]` (4 fields), `condition[30]` (8 fields), `element[16]` (2 fields), `class_change[1]` (5 fields), `character_profile[100]` (5 fields), `glossary_entry[200]` (5 fields), `magic_action[30]` (11 fields), `recipe[1000]` (7 fields), `card[100]` (17 fields), `card_list_entry[100]` (2 fields), `training_action[21]` (22 fields), `terrain[30]` (7 fields), `object_type[100]` (15 fields), `stage_object[50]` (11 fields), `map_texture[20]` (1 fields), `stage_map_texture[20]` (1 fields) ([reference](../../global-reference.md)) |
 | Named patch points | `himegari.experience.after_calculation`, `himegari.boot.data_layered`, `himegari.boot.data_ready`, `himegari.stage.after_loader`, `himegari.stage.after_ready_handlers`, `himegari.stage.after_round_handlers`, `himegari.stage.after_close_handlers_won`, `himegari.stage.after_close_handlers_lost`, `himegari.class_change.rules_run` ([reference](../../patch-point-reference.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
-| Guide | [himegari.md](himegari.md) |
+| Guide | [Himegari Dungeon Meister's guide](himegari.md) |
 
 ## Kamidori Alchemy Meister
 
@@ -70,14 +70,14 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Engine ABI | `SYS4433` |
 | Catalog revision | `S4IC433` |
 | Boot script | `SYSTEM4.BIN` |
-| Conventional install | `games/kamidori/` beside the repository |
-| Port saves | enabled, in `games/kamidori/` |
-| OMS modules | `kamidori.globals`, `kamidori.scripts` (generated); `kamidori.adv` (`mods/kamidori-base/oms/adv.oms`) |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/kamidori/` beside the repository by default |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/kamidori/` of the engine's data folder) |
+| OMS modules | `kamidori.globals`, `kamidori.scripts` (generated); `kamidori.adv` ([its source in `kamidori-base`](../../../mods/kamidori-base/oms/adv.oms)) |
 | Speakers | 114 in `kamidori.adv`'s `enum speaker` |
 | Tables | `unit[1000]` (44 fields), `item[2000]` (53 fields), `skill[1000]` (27 fields), `stage_enemy[30]` (15 fields), `stage_object[50]` (12 fields), `stage_reward[4]` (1 fields), `quest[2000]` (18 fields), `recipe[2000]` (24 fields), `condition[30]` (10 fields), `stage_catalog[1000]` (17 fields), `class_change[1]` (9 fields), `world_area[100]` (6 fields), `dig_table[200]` (4 fields), `character_profile[200]` (11 fields), `objective[2000]` (8 fields), `glossary_entry[1000]` (4 fields), `element[8]` (1 fields), `race[17]` (2 fields), `terrain[40]` (7 fields), `object_type[100]` (19 fields), `card[100]` (14 fields) ([reference](../../global-reference-kamidori.md)) |
 | Named patch points | `kamidori.experience.after_calculation`, `kamidori.boot.data_layered`, `kamidori.boot.data_ready`, `kamidori.stage.after_loader`, `kamidori.class_change.rules_run`, `kamidori.stage.after_info_reload`, `kamidori.stage.after_list_preview`, `kamidori.stage.after_ready_handlers`, `kamidori.stage.after_round_handlers`, `kamidori.stage.after_close_handlers` ([reference](../../patch-point-reference-kamidori.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
-| Guide | [kamidori.md](kamidori.md) |
+| Guide | [Kamidori Alchemy Meister's guide](kamidori.md) |
 
 ## Adding a game
 

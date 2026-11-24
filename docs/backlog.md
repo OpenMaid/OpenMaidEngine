@@ -293,19 +293,6 @@ still handled on their own. Each change should be behaviour-neutral and pass the
 
 ## Mod loader and modding
 
-- **Modding from a release.** A release ships the engine and the launcher only (`tools/publish_engine.py` publishes
-  `godot/OME.csproj`), so every modding guide starts from a source checkout:
-  - "Your first mod" needs the .NET SDK, Python 3.11 and Godot, and runs `dotnet run --project engine/Ome.Cli`,
-    `.\run-godot.cmd` and `tools/locate_page.py` from `age-reimpl/`;
-  - the guides expect the game at `games/<game>/` beside the repository, and some link text is a file's path
-    (`games/README.md`, `../backlog.md`).
-
-  The site's usability review found it (site plan §10.3, finding 10). The user wants it fixed on its own, once the
-  site's design and workflow settle (2026-11-22: "it's been an ongoing 'issue' that you need to repo to perform
-  modding"). Done when a release carries the mod commands and the page locator, and the guides start from a release
-  with the from-source steps marked as such. Its design is `superpowers/specs/2026-11-24-modding-from-a-release-design.md`
-  (accepted 2026-11-24), built on `feature/modding-from-release`; its first milestone moved the game's toolchain
-  into each base mod, so an exported build links fragments as a checkout does.
 - **Mod-owned globals.** `global` declarations must pin a cell (`@ address`). The linker-allocated and `saved`
   globals of the language design (OMS spec §5.2, §9.2) are not implemented, and which cells are free (and which a
   save keeps) is open (§13). Mods pick unused cells by hand meanwhile (`docs/modding/oms-language.md`). Done when

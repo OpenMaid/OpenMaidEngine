@@ -6,8 +6,8 @@ design's home. This plan keeps what each milestone checks and builds, what that 
 changed since the spec was accepted (§4).
 **Status:** milestone 0 measured (2026-11-24, §2); milestone 1 built (2026-11-24, §3.1), its gates passed (§2.4);
 milestone 2 built (2026-11-24, §3.2), its gate passed; milestone 3 built (2026-11-24, §3.3), its gates
-passed; milestone 4 built (2026-11-24, §3.4), its gates waiting on CI. §3 gets each later
-milestone's section before it starts.
+passed; milestone 4 built (2026-11-24, §3.4), its gates passed on CI the same day; milestone 5 built (2026-11-24,
+§3.5), gates 8 and 9 passed. §3 gets each later milestone's section before it starts.
 **Branch:** `feature/modding-from-release`, off `develop` at `e6b92761`. Its first commits are the spec (`ba5dbd18`,
 `13d0fd53`, `b45e6c0b`).
 
@@ -435,6 +435,13 @@ Neither run may leave a process of the group running (`/proc`, zombies aside, 5 
 job's smoke runs gates 2 and 7 with gate 5's version and refusal. They need the branch pushed and the release
 workflow dispatched.
 
+**Gates passed** (2026-11-24): the branch pushed at `003b1a97` on the user's word, and the release builds dispatched
+on it (run 45502509721) passed every job, with core validation dispatched beside it (45502566709). The Windows
+package job's verification passed with the report's `tool` section (AMD64, `windows-cui`). The Linux smoke wrote its
+four lines, `TOOL OK: gates=2,5,7` among them; Ctrl+C to the tool alone ended the engine after the grace (exit 137,
+10.0 s), to the group at once (exit 130). The sizes are in `docs/platform-portability.md`, "The mod tool in the
+release archives".
+
 **Built** (2026-11-24): the files above, with tests:
 - `test_publish_engine.py` covers the tool's publish command, its file check, the stamp, `--place-tool`, and the
   executable bit on POSIX;
@@ -450,6 +457,54 @@ workflow dispatched.
   checkout's port, passed with Ctrl+C left out: the version, the refusal, the compile, the fragment's link, the
   engine's own link (`[mods] layer SMOKE.BIN: script from smoke.fragment (base, patched by smoke.fragment)`), the
   relayed refusal and the stopped start. Ctrl+C on Linux runs in CI only.
+
+### 3.5 Milestone 5: the guides
+
+**The pass** (spec §9):
+- **From a release.** Every guide starts from a release unpacked anywhere, the game installed anywhere and a profile
+  made in the launcher. Commands read `OME-Tool <command> … --profile <profile>`, in a terminal in the release's
+  folder. "Your first mod", `cli.md`, `translating.md` and the README are rewritten; the others change where they
+  named a checkout's command or path.
+- **`cli.md`** names the game's options with a release in mind (`--game-root` needed without a profile), gains
+  `start` and its options, installs mods through the launcher's Mods page and a profile's folder, and holds the one
+  "From source" table (spec §9.1). A data folder without a profile file, and the bare engine's folder, stay as its
+  last paragraphs.
+- **From source:** the driver (`cli.md`'s "Automated testing", `translating.md`'s step 11, each game's driver
+  points) and the Lua console. Native AGE takes the release-side text: copy the install, add the exported files.
+- **Links.** A link's text is words. Example mods, driver scenarios, the driver's Arterial points and each base
+  mod's ADV module link into the repository, a folder with a trailing `/`, which the site maps to GitHub's `tree`
+  even from a downloaded bundle. Inline file names written as code became links; inside code blocks they name the
+  guide in words.
+- **The games page** (`modding_games_build.py`): its install row names a profile and the conventional install as
+  the from-source default, port saves go to the profile's `SAVE/`, and each module links its file in the base mod.
+- **Spec §9.5:** Kamidori's registries line and Himegari's are gone, Arterial's data tables are links, and `lua.md`
+  and `data-files.md` write their commands in full.
+- **Found on the way:** Kamidori's `import-scripts` line still passed `--overlay-root patch --allow-bmp-as-agf`,
+  which since M2 apply to the selected install, not the translated one. It now passes `--from-overlay-root` and
+  `--from-allow-bmp-as-agf`.
+- The backlog's "Modding from a release" is deleted; `AGENTS.md`'s trigger for modder-facing changes names the
+  guides' shape.
+
+**Gates** (2026-11-24):
+- **Gate 8.** An agent followed "Your first mod" on Himegari with CI's Windows archive at `003b1a97` (release
+  builds run 45502509721) unpacked in a scratch folder, an OME home of its own and the profile file written by hand.
+  Every step did what the guide says: `--help`, the fingerprint, `omp check`, `start` with the engine's `[mods]`
+  lines in the terminal and in `engine.log` (a `--lua-trace` run), the export's `SC0000.BIN`, and an `omp build`
+  whose rebuild gave the same bytes. Through `drive.py port start --package`, the line showed as its own page
+  between pages 2 and 3. Its findings changed the guide:
+  - step 1's `locate SC0000 3` lists the instructions around the wait, which on Himegari's third page leave the site
+    out of view, while page 4's `reset-adv-text-layout` is in it. The step now reads the output's `page start` and
+    lists it with `locate SCRIPT@OFFSET` (§4);
+  - the archive's top folder is the release's folder; how to close the game; a profile may start fullscreen;
+    `omp build` takes the folder, not `--mod`; Git Bash's `./OME-Tool.exe`; the export's folder; the base mod's
+    module has no file in a release.
+  Its Ctrl+C, from a shell with no console, reached nothing, so it ended the processes; Windows' Ctrl+C is M3's check
+  by hand (§3.3). A tool ended that way leaves the game running, which `cli.md` now says.
+- **Gate 2's named point** (§4): with the same archive, outside the repository and on the installed game, a fragment
+  at `himegari.experience.after_calculation` linked (`toolchain: himegari-base 1.3.0`), and its `.omp` linked from
+  the stored plan with no note.
+- **Gate 9.** The site built against the checkout's bundle with the new guides, and `check-site.mjs` passed: 14009
+  pages, 1,419,939 links, 477 of them to OME's files, every one a file the checkout has.
 
 ## 4. What changed since the spec
 
@@ -488,3 +543,5 @@ workflow dispatched.
   checked there.
 - **A NativeAOT publish copies a stale native `.pdb`** from `obj/` even with `DebugType=None`, so the tool's publish
   passes `-p:CopyOutputSymbolsToPublishDirectory=false` (§3.4).
+- **"Your first mod" finds the site from the page's start** (§3.5), which `locate SCENE PAGE` prints, listed with
+  `locate SCRIPT@OFFSET`: the listing around the wait, which the old step read, can leave the site out of view.
