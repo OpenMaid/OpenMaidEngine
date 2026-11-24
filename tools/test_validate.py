@@ -101,6 +101,8 @@ class GatePlanTests(unittest.TestCase):
             validate.LOW_MEMORY_DOTNET_ENVIRONMENT,
             engine.environment[:len(validate.LOW_MEMORY_DOTNET_ENVIRONMENT)],
         )
+        # The engine's tests run locate_page.py with validate.py's own interpreter (LocateTests).
+        self.assertIn(("OME_PYTHON", sys.executable), engine.environment)
         self.assertIn(
             "engine/Ome.Engine.Tests/Ome.Engine.Tests.csproj",
             engine.command,

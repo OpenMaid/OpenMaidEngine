@@ -5,8 +5,9 @@
 design's home. This plan keeps what each milestone checks and builds, what that settles for the later ones, and what
 changed since the spec was accepted (§4).
 **Status:** milestone 0 measured (2026-11-24, §2); milestone 1 built (2026-11-24, §3.1), its gates passed (§2.4);
-milestone 2 built (2026-11-24, §3.2), its gate passed; milestone 3 next. §3 gets each later milestone's section
-before it starts.
+milestone 2 built (2026-11-24, §3.2), its gate passed; milestone 3 built (2026-11-24, §3.3), its gates
+passed; milestone 4 next. §3 gets each later
+milestone's section before it starts.
 **Branch:** `feature/modding-from-release`, off `develop` at `e6b92761`. Its first commits are the spec (`ba5dbd18`,
 `13d0fd53`, `b45e6c0b`).
 
@@ -279,6 +280,111 @@ Godot build and `tools/test_paths.py`. All passed on 2026-11-24.
     `example.kamidori-prologue-line` with the same message, as §2.4's snapshot does;
   - `oms-decompile` of Himegari's `SC0000.BIN` to stdout, with its Japanese text, is byte-identical to `Ome.Cli`'s.
 
+### 3.3 Milestone 3: `locate` and `start`
+
+**`locate`** (spec §7), in `Ome.Commands`, so `Ome.Cli` has it too:
+- **The forms.** `locate SCENE PAGE` takes `3`, `P003` or `p3`; `locate SCRIPT@OFFSET` takes the `wait` or `text` part
+  of a locator, with a hex or decimal offset. `--context N` (default 8) and `--map FILE` as `locate_page.py` has
+  them.
+- **The map, by page** (`PageMapSearch`), the first that exists:
+  - `--map FILE`;
+  - with a profile (`--profile`, `--data-root`), its `diagnostics/page-maps/page-map-<SCENE>.jsonl`;
+  - without one, the bare engine's: `games/<namespace>/diagnostics/page-maps/` in Godot's user folder for the project
+    (`MachineState.DefaultFolder`, the game's `Persistence.StorageNamespace`);
+  - `Ome.Cli` only, and without a profile: the checkout's `build/games/<game>/`, where an editor build writes
+    (`CommandDefaults.PageMapFolder`), looked at before the bare engine's.
+
+  A missing map or page is refused (exit 1) with every place looked at. The first line printed names the map read.
+- **The script.** The run's link, as `omp explain` makes it (`ModInspection.Inspect` with the profile's mods and the
+  `--mod` packages). A script the stack patches or replaces is listed from the linked bytes, with a line naming the
+  mods and the plans; a patched one adds that the base offsets hold only without them. A script no mod touches comes
+  from the catalog with the profile's overlays. A mod's own new script is listed from its catalog record.
+- **The listing** (`ScriptListing`): the script decoded with the ABI's table (`Sys4Loader.Parse`), each line as
+  `sys4load.render_listing` gives it, which `locate_page.py` prints:
+  - the mnemonic is the table's label, or its semantic name where the label is unnamed (`u00…`, `dev_ukn…`, or the
+    opcode in hex), and an unnamed one is followed by `   ; op 0x…`;
+  - a string operand is `"text"`; a code target `label_<hex>`; an immediate `0x…`; a typed operand
+    `(<type> 0x…)`, with the type names of the metadata's `meta.arg_types`, and `<t0x… 0x…>` for a type it lacks;
+  - the annotations come from what a release has: `call-script`'s target from the catalog (`=SCENE.BIN`), and a
+    global's name from the base mod's layout (`=name`). `locate_page.py` reads its own from `build/` (the
+    registry's JSON with categories, `callscript-names.json`), so gate 6 compares the two without the ` =…`
+    annotations.
+- **The report** keeps `locate_page.py`'s lines: `SCENE P003`, the page start, the last text, the wait, the call
+  stack, the text, and the listing around the wait with `>>>` on it. By site it prints the listing alone.
+
+**`start`** (spec §8), in `Ome.Commands` and the tool only (`Ome.Cli` has no engine beside it):
+- **The command line.** `--profile` or `--data-root` names the profile (`ProfileLookup` for the id; a folder goes
+  through `ProfileStore.Open` and its trust, as the launcher's `--launch DIR` does). `--mod PATH` repeats; the
+  authoring flags (`--lua-dev`, `--lua-trace`, `--lua-reload`, `--lua-errors MODE`, `--text-log`, `--locator-hud`)
+  pass to the engine; `--engine-arg ARG` repeats and goes before Godot's `--`; whatever follows a `--` goes to the
+  engine unchanged, and `EngineCommands.For` refuses `--data-root` there.
+- **The checks.** `CheckOptions` gains `Mods`, which the Link check links with the profile's own
+  (`LinkComposition.Link`). A failed check is printed as the launcher's `--check` prints it, and stops the start
+  (exit 1).
+- **The engine** is `OME.exe` (`OME` elsewhere) beside the tool (`EngineProgram.BesideLauncher`, given the tool's own
+  folder), with `--engine-arg`s. `EngineLaunch.Run` gains a line callback, which `start` prints to stdout as each line
+  comes, and the extra environment the control channel needs. The log keeps the launcher's `[launcher]` lines.
+- **Ctrl+C** (§2.3, corrected below). `start` passes `--control --control-input shared --control-file
+  <temporary>/session.json`, with a token of its own in `OME_DRIVE_TOKEN`. On the first Ctrl+C it sends `hello` and
+  `close` over the channel and waits 10 seconds; then, or on a second Ctrl+C, it ends the process. The log's last
+  `[launcher]` line says which.
+- **`--control-input shared`** is new in the engine (`godot/Main.Drive.cs`). §2.3 missed that `--control` takes the
+  player's input: the port drops every real event, redirects the cursor warp and logs AGE's boxes instead of
+  showing them, since a driven run has nobody at it. With `shared` the channel serves its requests and the run is
+  otherwise a player's.
+
+**Tests:**
+- Gate 6, core: `ScriptListing` and `locate`'s report against `locate_page.py`'s on a synthetic script and map (the
+  Python run is in the test, as other tests run Python), with `P003`, the site form, a missing page, the map search
+  and a patched script.
+- Gate 6, workspace: each installed game's page maps that the checkout's `build/games/<game>/` holds, every page
+  against `locate_page.py`; and, since a few maps reach few instructions, every script's whole listing against
+  `locate_page.py --digests`.
+- `start`, core: with the stub engine (`Ome.Launcher.StubEngine`) beside a copy of the tool's build output: the
+  lines relayed and in the log, the exit code, a `--mod` that fails the Link check stopping it before the engine
+  runs, and `--data-root` refused after `--`. Ctrl+C is checked by hand on Windows, and on Linux in the smoke
+  (gate 7, M4).
+
+**Docs:** `tools-reference.md` (the tool's table, the engine's `--control-input`); `docs/modding/cli.md`;
+"Runtime page-location handoff" in `AGENTS.md` names `locate`; the driving design's control channel section.
+
+**Built** (2026-11-24):
+- `engine/Ome.Commands/` gained `ScriptListing`, `LocateCommand` and `StartCommand`. `locate` is a shared command;
+  `start` is dispatched by `OME-Tool` alone, and `Ome.Cli start` points to `run-godot` (exit 2).
+- `OpcodeContracts` keeps the metadata's operand type names (`OperandTypeNames`), which the listing prints.
+- `CommandInputs` gained `PageMapFolder` (`Ome.Cli`: `build/games/<game>/`) and `LinkBase`, which `omp` and `locate`
+  link with. `PageLocatorState` names the export's map folder (`MapFolder`) and makes `NormalizeScript` public.
+- `Ome.Launcher.Core`: `CheckOptions.Mods`, which `LinkComposition.Link` links after the profile's own;
+  `EngineLaunch.Run`'s `line`, `stopped` and `passed` callbacks and the `[launcher] the engine was stopped (…)` line;
+  `ProfileLookup.Checked`; `LauncherCommandLine.LocateProfile` and `PrintChecks`, public for `start`.
+- The engine's `--control-input exclusive|shared` (`godot/Main.Drive.cs`, `Main.Input.cs`).
+- `tools/locate_page.py` gained `--no-names`, `--listing SCRIPT` and `--digests`. Its page report is unchanged.
+  `validate.py` passes `OME_PYTHON` to the engine tests, which run it.
+- The tests' synthetic scripts go through `AsCompiled`, which gives them the header the Python loader requires
+  (F6 = 0x1C, and F8, F10 and F12 at the body's end). `ScriptAssembler` lays them out otherwise, and 114 test files
+  use it, so it stays as it is.
+- The driving design (`2026-11-03-game-driving-design.md`) stays as built; the flag lives in `tools-reference.md`,
+  "Port control channel".
+
+**Gates:** 6, core (`LocateTests`, 13 tests) and workspace (`LocateWorkspaceTests`, one per game), and `start`'s
+(`StartTests`, 10 tests), with the engine's 3,561 tests, the launcher's 86, the Godot build,
+`tools/test_validate.py` and core validation. All passed on 2026-11-24.
+
+**Checks beyond the gate:**
+- Every script lists identically in C# and Python: Himegari's 481, Kamidori's 732 and Arterial's 693.
+- The workspace gate's page maps came from a port run of each game's opening (`drive.py port`, 30 `advance`s
+  from SC0000's first page), whose pages the maps keep under the root scene, `SYSTEM4` (Himegari 30 pages, Kamidori 31, Arterial 31; with an older map of Himegari's SC0000, 95). With names,
+  `Ome.Cli locate SYSTEM4 12` on Himegari's map names the map and its time, then gives `locate_page.py`'s report,
+  but for the names' categories, which the base mod's layout lacks (`=adv_gfx_layer_index` where the Python
+  tool prints `=adv_gfx_layer_index(index-pointer)`).
+- **Ctrl+C on Windows**, by hand: a scratch harness ran the tool from a folder with a stand-in `OME.exe`, which ran
+  the checkout's port, and sent `CTRL_C_EVENT` to the tool's console. The first press closed the port over the
+  channel in about half a second (exit 0, `the engine was stopped (Ctrl+C: asked to close)`). With the stub engine,
+  which has no channel, one press ended it after the 10 s grace (`it did not close within 10 s (its control channel
+  had not started), so it was ended`), and a second press ended it at once (`a second Ctrl+C: ended`). The engine
+  runs on a console of its own (`CreateNoWindow`), so the press reaches the tool alone. On Linux it reaches the
+  engine too, which shares the terminal's process group; gate 7 checks that in M4.
+
 ## 4. What changed since the spec
 
 - **Gate 2** (spec §12) cannot link a fragment at a named patch point on the smoke's synthetic install, since a point
@@ -306,3 +412,6 @@ Godot build and `tools/test_paths.py`. All passed on 2026-11-24.
   launcher's Link check already calls it, so it is shared as it is. What moves is `Ome.Cli`'s handling around it.
 - **`--version` names the commit** from a second stamp, `OmeCommit` (§3.2), since `git describe` of a tagged commit
   is the tag alone.
+- **`--control` takes the player's input** (§3.3): M0's §2.3 chose the control channel for Ctrl+C without seeing that
+  the port, under `--control`, drops every real input event. `start` passes `--control-input shared`, new in the
+  engine, which keeps the channel and leaves the run a player's.

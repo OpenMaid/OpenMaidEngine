@@ -822,9 +822,10 @@ public partial class Main : Godot.Control
         };
         _engineThread.Start();
         StartLuaReload(userArgs);   // --lua-reload (Main.LuaReload.cs)
-        // --control [--control-file <json>]: the game-driving protocol (Main.Drive.cs).
+        // --control [--control-file <json>] [--control-input exclusive|shared]: the game-driving protocol
+        // (Main.Drive.cs).
         if (!_selftest && System.Array.IndexOf(userArgs, "--control") >= 0
-            && !StartDriveServer(ArgumentValue(userArgs, "--control-file")))
+            && !StartDriveServer(ArgumentValue(userArgs, "--control-file"), ArgumentValue(userArgs, "--control-input")))
         {
             GetTree().Quit(2);
             return;
@@ -1207,7 +1208,7 @@ public partial class Main : Godot.Control
         // Exports have no repository and may be installed read-only. Keep diagnostics with the
         // profile-owned Godot data instead of probing for an age-reimpl ancestor.
         return System.IO.Path.Combine(
-            _profilePersistence.DiagnosticsDirectory, "page-maps", PageLocatorState.MapFileName(scene));
+            _profilePersistence.DiagnosticsDirectory, PageLocatorState.MapFolder, PageLocatorState.MapFileName(scene));
 #endif
     }
 

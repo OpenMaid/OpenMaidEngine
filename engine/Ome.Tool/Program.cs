@@ -5,7 +5,8 @@ using Ome.Commands;
 using Ome.Engine.Frontend.Shell;
 
 using Utf8Console console = Utf8Console.Begin();
-string commands = string.Join(", ", ToolCommands.Names);
+// start is the tool's alone: it runs the engine beside it, which a checkout's Ome.Cli has not (spec §8).
+string commands = string.Join(", ", [.. ToolCommands.Names, "start"]);
 
 if (args.Length == 0 || args[0] is "--help" or "-h" or "help")
 {
@@ -26,6 +27,7 @@ if (args[0] == "--version")
     Console.WriteLine($"OME-Tool {version} (commit {commit})");
     return 0;
 }
+if (args[0] == "start") return StartCommand.Run(args, AppContext.BaseDirectory);
 if (!ToolCommands.Handles(args[0]))
 {
     Console.Error.WriteLine($"error: OME-Tool has no command '{args[0]}'; its commands: {commands} "

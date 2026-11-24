@@ -216,7 +216,9 @@ def build_gate_plan(
     tool_context: paths.ToolContext | None = None,
 ) -> list[Gate]:
     context = tool_context or paths.CONTEXT
-    profile_environment = tuple(context.subprocess_environment().items())
+    # OME_PYTHON: the interpreter the engine's tests run checkout tools with (LocateTests compares locate with
+    # locate_page.py), so they need no `py` launcher on Linux.
+    profile_environment = tuple(context.subprocess_environment().items()) + (("OME_PYTHON", sys.executable),)
     low_memory_profile_environment = LOW_MEMORY_DOTNET_ENVIRONMENT + profile_environment
     phases = selected_phases(level)
     gates = [

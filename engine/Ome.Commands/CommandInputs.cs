@@ -26,6 +26,9 @@ public sealed record CommandDefaults
     public required Func<OpcodeContracts> Contracts { get; init; }
     /// <summary>Where <c>picture</c> writes for a game when <c>--output-dir</c> is not given.</summary>
     public required Func<string, string> PictureFolder { get; init; }
+    /// <summary>The checkout's folder where an editor build writes a game's page maps, which <c>locate</c> reads when no
+    /// profile is named (spec §7.2); null for a program with no checkout.</summary>
+    public Func<string, string>? PageMapFolder { get; init; }
 
     /// <summary>OME-Tool's: no install unless one is named, the opcode metadata embedded in Ome.Engine, and pictures in
     /// <c>pictures/</c> of the current folder.</summary>
@@ -101,6 +104,13 @@ public sealed class CommandInputs
     /// catalog. <c>--no-names</c> gives none.</summary>
     public List<GameModule> Modules()
         => Has("--no-names") ? [] : GameToolchain.Modules(GameToolchain.Shipped(GameId), GameId, Catalog);
+
+    /// <summary>The engine's link base for the run (launcher spec §5.9): the embedded opcode metadata, the install's
+    /// catalog and the store with the profile's overlays. A toolchain that does not build is its
+    /// <see cref="ModLinkBase.ToolchainError"/>, which each compile reports (modding from a release spec §5.3).</summary>
+    public ModLinkBase LinkBase(Ome.Engine.Modding.LazyModRuntime lua)
+        => ModLinkBase.ForGame(GameId, Build.AbiId, Sys4Ini, Catalog, AssetStore)
+            with { Lua = lua, ProfileMode = Run.ProfileFile?.ModeName };
 
     /// <summary>Opens the inputs, printing the resolver's and the selection's warnings to <paramref name="error"/>.
     /// Throws <see cref="RunResolutionException"/> and <see cref="CommandUsageException"/> for what the command line

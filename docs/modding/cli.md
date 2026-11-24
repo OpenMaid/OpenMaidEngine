@@ -60,6 +60,24 @@ name is the file name the port's F5 list shows (an append's with its `$n$` prefi
 A movie under a picture's name is refused. The pictures a translation replaces: [translating.md](translating.md),
 step 8.
 
+## `locate`: from a page to its script
+
+`locate` turns what the port's page locator shows (**F2**, **F3** copies it) into the script and instructions behind
+it:
+
+| Command | What it does |
+|---|---|
+| `locate SCENE PAGE [--context N] [--map FILE] [--no-names] [--mod PATH …]` | Finds the page in the run's page map, such as `locate SC0000 3` or `locate SC0000 P003`, and prints where it starts, its last text instruction, the wait, the call stack, its text and the instructions around the wait, marked `>>>`. The first line names the map it read. |
+| `locate SCRIPT@OFFSET [--context N] [--no-names] [--mod PATH …]` | Prints the instructions around an offset, such as the `wait` or `text` part of a locator: `locate SC0000@0x2a91`. It needs no map. |
+
+The map is the one the profile's run wrote, in its `diagnostics/page-maps/`; a run from a checkout writes it in
+`build/games/<game>/`. `--map FILE` names another. A page number counts the pages of that run, so it can change when
+the run took another branch; the offset does not. If the map lacks the page, run the game to it again.
+
+With a profile or `--mod`, `locate` lists the script the run had. A line starting `script:` says when a mod patches
+or replaces it, and for a patched script, the wait's offset in the installed script, which is the offset a fragment
+names ([patching.md](patching.md)). `--no-names` leaves out the names of globals and called scripts.
+
 ## OMS tools
 
 | Command | What it does |
@@ -88,6 +106,12 @@ The full list, including the validation tools, is in `../tools-reference.md`.
 | `--lua-trace` | Write one JSON line per Lua handler call to `diagnostics/lua-trace.jsonl`: where it ran, how long it took, the event's fields before and after, the write a watch saw, every cell it wrote, and the scripts it called ([lua.md](lua.md), "The link report and the trace"). |
 | `--lua-reload` | While you write a mod: when a `.lua` file under the `lua/` of a mod loaded from a folder changes, check the mod's files and rebuild the Lua session at the next instruction, keeping `maid.state`. The startup log's `[lua] --lua-reload watches` line names the folders. A packed `.omp` is not watched, and a change to the manifest or `events/` needs a restart ([lua.md](lua.md), "Reloading"). |
 | `--text-log` | Write every string drawn without a catalog entry to `diagnostics/text-misses.jsonl`, every translated message narrowed to fit its window, with `width_percent`, the width it got, and every one cut at the bottom of its window, with `rows_cut`, the rows it lost. |
+
+In a release, `OME-Tool start` runs a profile with these: `--profile ID` or `--data-root DIR`, `--mod PATH`
+(repeatable), `--lua-dev`, `--lua-trace`, `--lua-reload`, `--lua-errors MODE`, `--text-log` and `--locator-hud`, and
+any other engine option after `--`. It runs the launcher's checks first, with the `--mod` packages, and starts
+nothing when one fails. It prints the engine's output as it comes, and the profile's `diagnostics/engine.log` keeps
+it. Ctrl+C closes the game, and a second Ctrl+C ends it at once.
 
 `run-godot.ps1` (or `run-godot.cmd`) passes these through as `-Mod PATH` (repeatable), `-NoMods`, `-Language TAG`,
 `-TextRoot DIR`, `-TextLog`, `-LuaErrors continue|halt`, `-LuaDev`, `-LuaTrace` and `-LuaReload`. Combine them with the game

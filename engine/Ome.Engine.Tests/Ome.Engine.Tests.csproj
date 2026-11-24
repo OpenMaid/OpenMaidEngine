@@ -42,6 +42,7 @@
     <!-- Built, not loaded: the launch tests (launcher plan §5.11) start it in the engine's place. -->
     <ProjectReference Include="..\Ome.Launcher.StubEngine\Ome.Launcher.StubEngine.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Ome.Launcher.Core\Ome.Launcher.Core.csproj" />
+    <ProjectReference Include="..\Ome.Commands\Ome.Commands.csproj" />
     <ProjectReference Include="..\Ome.Export\Ome.Export.csproj" />
   </ItemGroup>
 

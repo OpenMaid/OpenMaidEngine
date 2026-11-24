@@ -18,10 +18,7 @@ internal static class OmpCommand
         List<string> Packages() => inputs.Options("--mod").Select(Path.GetFullPath).ToList();
         // The Lua runtime checks each lua/ file (Lua scripting spec §13); it is created only when a mod ships Lua.
         using Ome.Engine.Modding.LazyModRuntime luaRuntime = Ome.Scripting.Lua.LuaModRuntime.Lazy();
-        // Launcher spec §5.9: the engine's link base, from the opcode metadata embedded in Ome.Engine. A toolchain that
-        // does not build is the base's ToolchainError, which each compile reports (modding from a release spec §5.3).
-        ModLinkBase linkBase = ModLinkBase.ForGame(inputs.GameId, inputs.Build.AbiId, inputs.Sys4Ini, inputs.Catalog,
-            inputs.AssetStore) with { Lua = luaRuntime, ProfileMode = inputs.Run.ProfileFile?.ModeName };
+        ModLinkBase linkBase = inputs.LinkBase(luaRuntime);
         string? dataRoot = inputs.Run.DataRoot;
         Ome.Mods.Launch.ProfileMods? modsTable = inputs.Run.Mods;
         string verb = args.Length > 1 ? args[1] : "";

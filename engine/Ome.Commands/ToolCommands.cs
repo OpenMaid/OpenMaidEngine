@@ -11,7 +11,8 @@ namespace Ome.Commands;
 public static class ToolCommands
 {
     /// <summary>The shared commands, as a usage line lists them.</summary>
-    public static IReadOnlyList<string> Names { get; } = ["omp", "oms-patch", "oms-compile", "oms-decompile", "picture"];
+    public static IReadOnlyList<string> Names { get; } =
+        ["omp", "oms-patch", "oms-compile", "oms-decompile", "picture", "locate"];
 
     public static bool Handles(string command) => Names.Contains(command);
 
@@ -33,6 +34,7 @@ public static class ToolCommands
                 "oms-compile" => OmsCompileCommand.Run(inputs),
                 "oms-decompile" => OmsDecompileCommand.Run(inputs),
                 "picture" => PictureCommand.Run(inputs),
+                "locate" => LocateCommand.Run(inputs),
                 _ => throw new ArgumentException($"{expanded[0]} is not a shared command"),
             };
         }

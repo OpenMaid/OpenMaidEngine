@@ -53,8 +53,10 @@ public sealed record ProfileCheckResult(IReadOnlyList<ProfileCheck> Checks, Inst
 /// <param name="MachineRegistry">The registry read of the game version rule; the machine's own when null.</param>
 /// <param name="MachineFolder">Where the network approvals are kept (<see cref="MachineState"/>); Godot's user folder
 /// by its rule when null, as the engine reads it.</param>
+/// <param name="Mods">Packages the Link check links with the profile's own, as the engine's <c>--mod</c> does
+/// (<c>OME-Tool start --mod</c>; modding from a release spec §8).</param>
 public sealed record CheckOptions(GameProfileRegistry? Registry = null, MachineRegistryReader? MachineRegistry = null,
-                                  string? MachineFolder = null);
+                                  string? MachineFolder = null, IReadOnlyList<string>? Mods = null);
 
 /// <summary>
 /// The checks of launcher spec §8.5, when a profile's page opens and again at Play. They write nothing: the link is
@@ -164,7 +166,7 @@ public static class ProfileChecks
         {
             try
             {
-                link = LinkComposition.Link(profile.Root, registry, options.MachineFolder);
+                link = LinkComposition.Link(profile.Root, registry, options.MachineFolder, options.Mods ?? []);
                 if (link.Report is not { } report)
                     Add(ProfileCheckKind.Link, CheckStatus.Failed, "a package does not open: "
                         + string.Join("; ", link.Discovery.Lines.Where(line => line.Stops)));

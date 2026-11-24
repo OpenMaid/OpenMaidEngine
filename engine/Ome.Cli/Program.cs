@@ -41,6 +41,13 @@ if (command == "run-lock") return RunLockCommand.Run(args);
 // intake looks at an install that has no profile yet (docs/adding-a-game.md, step 1), so it runs before a game is
 // selected and with the whole opcode catalog.
 if (command == "intake") return IntakeCommand.Run(args);
+// start is OME-Tool's alone (modding from a release spec §8), refused before --profile is looked up.
+if (command == "start")
+{
+    Console.Error.WriteLine("error: start is OME-Tool's: it runs a release's engine, which is beside the tool. In a "
+                            + "checkout, run the port with .\\run-godot.cmd, or drive it with tools/drive.py port");
+    return 2;
+}
 
 // --profile ID names a player profile in OME home (modding from a release spec §6.3): it becomes that profile's
 // --data-root, for the shared commands and this program's own alike.
@@ -57,6 +64,7 @@ if (Ome.Commands.ToolCommands.Handles(command))
         OpcodeTable = abi => OpcodeTableJson.Load(Paths.OpcodesJson, abi),
         Contracts = () => Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
         PictureFolder = game => Path.Combine(Paths.GameBuild(game), "pictures"),
+        PageMapFolder = Paths.GameBuild,
     });
 
 // Every option below reads the resolver's list (launcher spec §5.2): one occurrence of each single-valued option, the

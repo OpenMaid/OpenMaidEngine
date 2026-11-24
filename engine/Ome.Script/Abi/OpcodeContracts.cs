@@ -35,6 +35,7 @@ public sealed class OpcodeContracts
     private readonly Dictionary<int, HashSet<string>> _observedRevisions = new();
     private readonly HashSet<(int Opcode, int Operand)> _codeValues = new();
     private readonly Dictionary<(int Opcode, int Operand), NativeIndex> _uncheckedIndices = new();
+    private readonly Dictionary<int, string> _operandTypeNames = new();
 
     private OpcodeContracts(
         Dictionary<int, HashSet<int>> codeTargets,
@@ -50,6 +51,10 @@ public sealed class OpcodeContracts
 
     /// <summary>Registry semantic names (e.g. "show-text"), keyed by opcode.</summary>
     public IReadOnlyDictionary<int, string> SemanticNames => _semanticNames;
+
+    /// <summary>The operand type tags the registry names (<c>meta.arg_types</c>, e.g. 3 = <c>global-int</c>), as the
+    /// disassembly labels them; empty for contracts made for a test.</summary>
+    public IReadOnlyDictionary<int, string> OperandTypeNames => _operandTypeNames;
 
     /// <summary>Contracts with the given code-target positions and no access data (for tests).</summary>
     public static OpcodeContracts FromCodeTargets(IReadOnlyDictionary<int, int[]> codeTargets)
@@ -126,6 +131,10 @@ public sealed class OpcodeContracts
         foreach (var (op, revisions) in observed) contracts._observedRevisions[op] = revisions;
         contracts._codeValues.UnionWith(codeValues);
         foreach (var (key, table) in uncheckedIndices) contracts._uncheckedIndices[key] = table;
+        if (doc.RootElement.TryGetProperty("meta", out JsonElement meta)
+            && meta.TryGetProperty("arg_types", out JsonElement types))
+            foreach (JsonProperty type in types.EnumerateObject())
+                contracts._operandTypeNames[Convert.ToInt32(type.Name, 16)] = type.Value.GetString() ?? "";
         return contracts;
     }
 

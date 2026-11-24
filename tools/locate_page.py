@@ -4,13 +4,22 @@ Usage:
   py -3.11 -X utf8 tools/locate_page.py SC0000 14
   py -3.11 -X utf8 tools/locate_page.py --game kamidori SC0000 14
   py -3.11 -X utf8 tools/locate_page.py SC0000 14 --map path/to/page-map.jsonl --context 10
+  py -3.11 -X utf8 tools/locate_page.py --listing SC0000 [--no-names]
+  py -3.11 -X utf8 tools/locate_page.py --digests [--no-names]
 
 The Godot editor runtime writes build/games/<game>/page-map-<SCENE>.jsonl at each wait-for-input.
 Page numbers are run-relative conveniences; wait_script + wait_offset is the stable bytecode coordinate.
+
+``OME-Tool locate`` and ``Ome.Cli locate`` print the same report (modding from a release spec §7). ``--no-names``
+leaves out the registry's names (globals.json, callscript-names.json), which those commands take from the base mod's
+layout and the catalog instead. ``--listing`` prints a whole script's instruction lines, and ``--digests`` one JSON line
+per script of the corpus with the SHA-256 of its bytes and of its listing: the engine's workspace test compares them
+with the C# listing.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -53,7 +62,7 @@ def context_window(offsets: list[int], target: int, radius: int) -> tuple[int, i
     return max(0, index - radius), min(len(offsets), index + radius + 1)
 
 
-def disasm_context(script: str, target: int, radius: int) -> list[tuple[int, str, bool]]:
+def load_script(script: str) -> sys4load.Sys4Script:
     key = script.upper()
     if not key.endswith(".BIN"):
         key += ".BIN"
@@ -62,14 +71,42 @@ def disasm_context(script: str, target: int, radius: int) -> list[tuple[int, str
         raise ValueError(f"script {key} is not present in the override-aware corpus")
     scr = sys4load.load(scripts[key])
     sys4load.decode_code(scr)
+    return scr
+
+
+def instruction_lines(scr: sys4load.Sys4Script) -> list[tuple[int, str]]:
+    """Each instruction's offset and its text, as the listing renders it."""
     line_by_offset = {}
     for line in sys4load.render_listing(scr).splitlines():
         match = re.match(r"\s*0x([0-9a-fA-F]+):\s*(.*)", line)
         if match:
             line_by_offset[int(match.group(1), 16)] = match.group(2).rstrip()
-    offsets = [ins.offset for ins in scr.instructions]
-    begin, end = context_window(offsets, target, radius)
-    return [(off, line_by_offset.get(off, "?"), off == target) for off in offsets[begin:end]]
+    return [(ins.offset, line_by_offset.get(ins.offset, "?")) for ins in scr.instructions]
+
+
+def disasm_context(script: str, target: int, radius: int) -> list[tuple[int, str, bool]]:
+    lines = instruction_lines(load_script(script))
+    begin, end = context_window([offset for offset, _ in lines], target, radius)
+    return [(off, text, off == target) for off, text in lines[begin:end]]
+
+
+def listing_text(lines: list[tuple[int, str]]) -> str:
+    return "\n".join(f"0x{offset:05x}: {text}" for offset, text in lines)
+
+
+def digests() -> None:
+    """One JSON line per script of the corpus: its name, the SHA-256 of its bytes and of its listing text."""
+    for name, path in sorted(paths.scripts().items()):
+        try:
+            scr = sys4load.load(path)
+        except sys4load.Sys4Error:
+            continue                                # SYS4INI.BIN and the other catalogs share the extension
+        sys4load.decode_code(scr)
+        lines = instruction_lines(scr)
+        print(json.dumps({"script": name,
+                          "bytes": hashlib.sha256(path.read_bytes()).hexdigest(),
+                          "listing": hashlib.sha256(listing_text(lines).encode("utf-8")).hexdigest(),
+                          "instructions": len(lines)}, ensure_ascii=False))
 
 
 def parse_hex(value: object, field: str) -> int:
@@ -98,12 +135,31 @@ def report(record: dict, radius: int) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("scene", help="root scene, e.g. SC0000")
-    parser.add_argument("page", type=int, help="one-based runtime page number")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("scene", nargs="?", help="root scene, e.g. SC0000")
+    parser.add_argument("page", nargs="?", type=int, help="one-based runtime page number")
     parser.add_argument("--map", type=Path, dest="map_path", help="page-map JSONL (default: build/games/PROFILE/page-map-SCENE.jsonl)")
     parser.add_argument("--context", type=int, default=8, help="instructions on either side of the wait (default: 8)")
+    parser.add_argument("--no-names", action="store_true",
+                        help="leave out the registry's global and call-script names")
+    parser.add_argument("--listing", metavar="SCRIPT", help="print every instruction line of SCRIPT")
+    parser.add_argument("--digests", action="store_true",
+                        help="print the SHA-256 of each script's bytes and listing, one JSON line per script")
     args = parser.parse_args()
+    if args.no_names:
+        sys4load.GLOBAL_LABELS.clear()
+        sys4load.CALLSCRIPT_NAMES.clear()
+    if args.digests:
+        digests()
+        return 0
+    if args.listing:
+        try:
+            print(listing_text(instruction_lines(load_script(args.listing))))
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        return 0
+    if args.scene is None or args.page is None:
+        parser.error("give a scene and a page, --listing SCRIPT or --digests")
     scene = args.scene.upper().removesuffix(".BIN")
     map_path = args.map_path or default_map_path(scene)
     if not map_path.is_file():

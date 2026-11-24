@@ -322,7 +322,7 @@ and the exact FIELD/DRAWMINIMAP/RESETLAND copy/fallback/restore contract.
 
 | Tool | Purpose | Run | Reads → Writes |
 |---|---|---|---|
-| `locate_page.py` | Resolve a run-relative ADV page number to its canonical wait script/offset, last show-text instruction, call stack, and nearby disassembly. Pure selection/window logic is tested by `test_locate_page.py`. | `py -3.11 -X utf8 tools/locate_page.py [--game <game>] SC0000 14 [--map <jsonl>] [--context N]` | `build/games/<game>/page-map-<SCENE>.jsonl` + script corpus → stdout |
+| `locate_page.py` | Resolve a run-relative ADV page number to its canonical wait script/offset, last show-text instruction, call stack, and nearby disassembly. Pure selection/window logic is tested by `test_locate_page.py`. `locate` gives the same report from C#, in `Ome.Cli` and `OME-Tool` ("Mod tool", below). `--no-names` leaves out the registry's ` =…` names; `--listing SCRIPT` prints every instruction line of a script; `--digests` prints one JSON line per script of the corpus, with the SHA-256 of its bytes and of its listing, which `LocateWorkspaceTests` holds against the C# listing. | `py -3.11 -X utf8 tools/locate_page.py [--game <game>] SC0000 14 [--map <jsonl>] [--context N] [--no-names]`, or `… --listing SC0000`, or `… --digests` | `build/games/<game>/page-map-<SCENE>.jsonl` + script corpus → stdout |
 | `page_map_compare.py` | Localization gate 11 (spec §18.1): compare two runs' page maps page by page. Run A is an install translated in place with no catalog, run B the clean install with the catalog imported from it, over the same scenarios and `rand-seed` (`tools/drive/scenarios/kamidori-opening-pages.steps`). Required: A's `dialogue`, wraps joined and deliberate breaks kept, equals B's `presented` with whitespace collapsed (none between two wide characters), and the page counts match. Reviewed: the same with line breaks kept, and B's `cut` pages. Offsets are not compared. | `py -3.11 -X utf8 tools/page_map_compare.py A.jsonl B.jsonl [--report OUT.json] [--show N]` | two page maps → stdout (counts, then the first N pages per check), optional JSON report of every page; exit 1 when a required check fails |
 | `text_geometry_compare.py` | Localization gate 12 (spec §18.1): compare where text lands in two runs' screenshots. Run A is native AGE on an install translated in place, run B the port on the clean install with the package imported from it, over the scenario pair in `tools/drive/scenarios/geometry/` (Game driver, "Geometry pairs"). For each shot it measures, in the profile's ADV window (`GEOMETRY` in the tool), the column the name plate's bottom edge ends at and every run of text-coloured columns in each text row. A shot passes when the plate edges are within the tolerance and every run's first column in either shot has one in the other within it, or lies inside a run there (glyphs whose ink touches in one shot). GDI and the text server antialias differently, so pixels are not compared. Profiles: `kamidori`. Pillow is imported only to read shots. Tests: `test_text_geometry_compare.py` (synthetic shots; the shot tests skip without Pillow). | `py -3.11 -X utf8 tools/text_geometry_compare.py A_SHOTS B_SHOTS [NAME ...] [--game ID] [--tolerance PX] [--report OUT.json]` (NAME defaults to every `geometry-*.png` in both folders; tolerance 1) | two shot folders → stdout (one line per shot, then its problems), optional JSON report of every shot's measures; exit 1 when a shot fails or a named shot is missing |
 
@@ -427,10 +427,11 @@ therefore share one toolchain stamp, with the game's globals, OMS modules and pa
 (modding from a release spec §5.1). After `opcodes_build.py --build`, rebuild before `omp` sees the change. The other
 CLI commands, the shared ones among them (below), read `build/opcodes.json` live in `Ome.Cli`.
 
-**The commands `OME-Tool` shares.** `omp` with its verbs, `omp text`, `oms-patch`, `oms-compile`, `oms-decompile` and
-`picture` live in `engine/Ome.Commands` (modding from a release plan §3.2), which both programs run. `Ome.Cli` passes
-its checkout's defaults: the install `games/<game>/` when none is named, `build/opcodes.json` read live, and pictures
-in `build/games/<game>/pictures`. `OME-Tool`'s are in "Mod tool (`OME-Tool`)" below. Both write UTF-8 and give the
+**The commands `OME-Tool` shares.** `omp` with its verbs, `omp text`, `oms-patch`, `oms-compile`, `oms-decompile`,
+`picture` and `locate` live in `engine/Ome.Commands` (modding from a release plan §3.2, §3.3), which both programs
+run. `Ome.Cli` passes its checkout's defaults: the install `games/<game>/` when none is named, `build/opcodes.json`
+read live, pictures in `build/games/<game>/pictures`, and the page maps an editor run writes in `build/games/<game>/`.
+`start` is the tool's alone: `Ome.Cli start` says so (exit 2), since a checkout runs the port with `run-godot`. `OME-Tool`'s are in "Mod tool (`OME-Tool`)" below. Both write UTF-8 and give the
 console its code page back at exit, and both exit 2 with the message on an `ArgumentException`, a missing or wrong
 option.
 
@@ -1168,8 +1169,9 @@ call. F4 outside TITLE prints an unavailable reason and changes no state. Cancel
 The launcher does not seed story/profile state, jump to byte offsets, or force-switch an active child scene.
 
 **Godot page locator:** every editor/development run recreates `build/games/<game>/page-map-<SCENE>.jsonl`, so
-two games' same-named scenes keep separate maps; a packaged export writes the same automatic map below
-`user://games/<game>/diagnostics/page-maps`. A map the port cannot open (another running port holds it, or
+two games' same-named scenes keep separate maps; a packaged export writes the same automatic map below its
+profile's `diagnostics/page-maps/` (a player profile's `<data-root>/diagnostics/page-maps/`, else
+`user://games/<game>/diagnostics/page-maps`), where `OME-Tool locate` finds it. A map the port cannot open (another running port holds it, or
 the directory is read-only) logs a `[locator]` warning, and the run keeps no map. Each
 `wait-for-input` adds the
 run-relative page, page-start location, canonical wait script/offset, last show-text instruction and string
@@ -1185,7 +1187,8 @@ to `locate_page.py --map` when resolving a map copied from an export profile. `-
 `debug:LocatorHud`) shows `SC0000 P014 · wait SC0000@0x… · text SC0000@0x…` at launch; **F2**
 toggles it and **F3** copies the current locator to the clipboard. The offset remains authoritative because
 branching/state can shift page ordinals between runs. Resolve a reported page with
-`py -3.11 -X utf8 tools/locate_page.py SC0000 14`, adding `--game <game>` for a game other than Himegari.
+`py -3.11 -X utf8 tools/locate_page.py SC0000 14`, adding `--game <game>` for a game other than Himegari, or with
+`Ome.Cli locate SC0000 14`.
 
 ## Mod tool (`OME-Tool`)
 
@@ -1202,6 +1205,9 @@ base mod, and the install a profile or the command line names. Run it from a che
 | `OME-Tool` | prints its usage and its commands to stderr | 2 |
 | `OME-Tool --help` | the same, to stdout | 0 |
 | `OME-Tool omp …`, `oms-patch …`, `oms-compile …`, `oms-decompile …`, `picture …` | as in `Ome.Cli` (the commands' table above), with the defaults below | the command's |
+| `OME-Tool locate SCENE PAGE [--context N] [--map FILE] [--no-names] [--mod PATH …]` | a page of a run's page map (`3`, `P003` or `p3`), reported as `locate_page.py` reports it, after a `page map: PATH (written …)` line | 0; 1 when the map, the page or the script is not found; 2 for a usage error |
+| `OME-Tool locate SCRIPT@OFFSET [--context N] [--no-names] [--mod PATH …]` | the listing around an instruction (the `wait` or `text` part of a locator; a hex or decimal offset), with no map | the same |
+| `OME-Tool start (--profile ID \| --data-root DIR) [--mod PATH …] [flags] [--engine-arg ARG …] [-- ENGINE FLAGS]` | runs a profile as the launcher does, in the terminal: below | the engine's; 1 when a check refuses the start or no engine is beside the tool; 2 for a usage error |
 | `OME-Tool <another command>` | refused with the tool's commands: `Ome.Cli`'s others (`trace`, `data-export`, …) need a checkout | 2 |
 
 - **The install.** `--profile ID` (with `--home DIR`), `--data-root DIR` (a profile's folder), or `--game ID
@@ -1210,10 +1216,39 @@ base mod, and the install a profile or the command line names. Run it from a che
 - **The opcode metadata** is the copy embedded in `Ome.Engine`, as the linker's (`OpcodeTableJson.LoadEmbedded`,
   `OpcodeContracts.LoadEmbedded`).
 - **`picture`** writes to `--output-dir`, else `pictures/` in the current folder.
+- **`locate`'s map** is the first that exists of: `--map`; the profile's `diagnostics/page-maps/page-map-<SCENE>.jsonl`;
+  without a profile, `Ome.Cli`'s `build/games/<game>/` and then the bare engine's
+  `games/<namespace>/diagnostics/page-maps/` in Godot's user folder. A refusal lists every place it looked. Pages
+  match on the map's `root_scene` and `page`.
+- **`locate`'s script** is the one the run had. With a profile or `--mod`, the stack is linked as `omp explain`
+  links it: a script a mod patches or replaces is listed from the linked bytes, after a `script:` line naming the
+  mods and plans, and a patched script's line gives the wait's offset in the base script, which is the offset a
+  fragment names. A mod's new script is listed from its catalog record. A stack that does not link is reported on
+  `note:` lines, and what linked is listed. Without mods, the script is the install's, with the profile's overlays.
+- **`locate`'s listing** (`ScriptListing`) is `sys4load.render_listing`'s, line for line. Its names come from what a
+  release has: a `call-script` target from the catalog (`=SC0001.BIN`), a global's name from the game's base mod
+  layout (`=name`, the registry's names without their categories). `--no-names` leaves both out.
+- **`start`** finds the profile as the launcher does (`ProfileLookup` for an id; for a folder,
+  `LauncherCommandLine.LocateProfile`, as `--launch DIR` does), refuses one that needs review, and runs its checks with the `--mod` packages in the Link check
+  (`CheckOptions.Mods`). A check that fails is printed as `OME-Launcher --check` prints it, and the engine does not
+  start. It passes `--lua-dev`, `--lua-trace`, `--lua-reload`, `--lua-errors MODE`, `--text-log` and
+  `--locator-hud` to the engine, `--engine-arg ARG` before Godot's `--`, and whatever follows its own `--` as given
+  (`--data-root` and `--control` are refused there). The engine is the release's `OME.exe` (`OME` elsewhere) beside
+  the tool. Each line it writes is printed as it comes and kept in the profile's `diagnostics/engine.log`, as the
+  launcher keeps it.
+- **`start` and Ctrl+C.** The engine runs with `--control --control-input shared --control-file <temp>/session.json`
+  and a token of the tool's in `OME_DRIVE_TOKEN`. The first Ctrl+C sends `hello` and `close` over the channel and
+  waits 10 s; then, or on a second Ctrl+C, the tool ends the engine. The log's last `[launcher]` line and the tool's
+  last line give the reason, such as `the engine was stopped (Ctrl+C: asked to close); it exited with 0`.
 
 Tests: `engine/Ome.Engine.Tests/ToolTests.cs` runs it as a process (gate 5 of the plan, less its Windows part): its
 version, usage errors, `--profile`'s cases on a test home, the scan for `Paths`, and a copy of its build output
-outside any repository that checks a synthetic Kamidori install with its shipped toolchain.
+outside any repository that checks a synthetic Kamidori install with its shipped toolchain. `LocateTests` holds
+`locate` against `locate_page.py` on a synthetic scene and map (gate 6), with the map search, the names, a script a
+mod patches or replaces, and a stack that does not link. `LocateWorkspaceTests` (workspace, one per installed game)
+holds every script's listing against `locate_page.py --digests`, and every page of the checkout's page maps against
+its report. `StartTests` runs `start` from a copy of the tool's output with the stub engine beside it as `OME`.
+`locate_page.py` runs as `OME_PYTHON` (set by `validate.py`), else `py -3.11` on Windows and `python3` elsewhere.
 
 ## Launcher (`OME-Launcher`)
 
@@ -1738,7 +1773,8 @@ these flags; you need them directly only to drive the port from another client.
 
 | Flag (after `--`) | Effect |
 |---|---|
-| `--control` | Start the control server after the VM. Every other mouse, keyboard and joystick event is dropped for the whole run, so your own input cannot disturb it. Script cursor warps become injected moves (reported as `cursor_moved_to`) instead of moving your cursor. |
+| `--control` | Start the control server after the VM. Every other mouse, keyboard and joystick event is dropped for the whole run, so your own input cannot disturb it. Script cursor warps become injected moves (reported as `cursor_moved_to`) instead of moving your cursor, and AGE's message boxes are logged instead of shown. |
+| `--control-input exclusive\|shared` | `exclusive` (the default) is `--control` as above. `shared` serves the channel's requests and leaves the run a player's: real input, cursor warps and AGE's boxes as without `--control`. `OME-Tool start` uses it to close the engine on Ctrl+C. The port prints `input=…` on its `[drive] control on` line. |
 | `--control-file PATH` | Where to write the session file (default `<profile diagnostics>/drive-session.json`). It holds the `hello` fields plus `pid`, `pid_created` (on Windows), `port`, `token` and `started`, is written atomically, and is deleted on exit. |
 | `--data-root DIR` | Use `DIR` as the profile root (`SAVE/`, `SYS4REG.INI`, `diagnostics/`) instead of `user://games/<game>`: a save sandbox. |
 

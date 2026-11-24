@@ -28,10 +28,16 @@ public static class ProfileLookup
     {
         LauncherSettingsFile settings = LauncherSettingsStore.Load(home);
         foreach (string warning in settings.Warnings) warnings(warning);
-        ProfileEntry profile = Find(id, home, settings.Settings, machine)
+        return Checked(Find(id, home, settings.Settings, machine)
             ?? throw new ProfileLookupException(
                 $"no player profile has the id '{id}' in OME home {home.Root}; a game is named with --game ID, and a "
-                + "profile's folder with --data-root DIR");
+                + "profile's folder with --data-root DIR"));
+    }
+
+    /// <summary><paramref name="profile"/>, unless it needs review or cannot be used, which throws
+    /// <see cref="ProfileLookupException"/> with the reason.</summary>
+    public static ProfileEntry Checked(ProfileEntry profile)
+    {
         if (profile.NeedsReview) throw new ProfileLookupException(ReviewRefusal(profile));
         if (!profile.Usable)
             throw new ProfileLookupException($"{profile.Id} ({profile.Root}) cannot be used: {profile.Problem}");

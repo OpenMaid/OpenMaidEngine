@@ -159,8 +159,8 @@ public static class LauncherCommandLine
         foreach (string warning in settingsFile.Warnings) context.Error.WriteLine($"warning: {warning}");
         string machineFolder = context.CheckOptions?.MachineFolder ?? MachineState.DefaultFolder();
         MachineState Machine() => MachineState.Load(machineFolder);
-        ProfileEntry profile = Locate(parsed.Target!, home, settingsFile.Settings, Machine, context.WorkingDirectory,
-                                      context.Environment.Platform);
+        ProfileEntry profile = LocateProfile(parsed.Target!, home, settingsFile.Settings, Machine, context.WorkingDirectory,
+                                             context.Environment.Platform);
 
         if (parsed.Command == LauncherCommand.PrintCommand)
         {
@@ -178,7 +178,7 @@ public static class LauncherCommandLine
         if (parsed.Command == LauncherCommand.Check)
         {
             ProfileCheckResult checks = ProfileChecks.Run(profile, context.CheckOptions);
-            Print(checks, output);
+            PrintChecks(checks, output);
             return new LauncherOutcome(checks.CanPlay ? Success : Failure, WindowReason.None);
         }
 
@@ -188,7 +188,7 @@ public static class LauncherCommandLine
         if (!launched.Started)
         {
             output.WriteLine($"{profile.Id} is not started: {launched.Refusal}");
-            if (launched.LogPath == null) Print(launched.Checks, output);
+            if (launched.LogPath == null) PrintChecks(launched.Checks, output);
             return new LauncherOutcome(Failure, WindowReason.CheckFailed, Start(profile, launched));
         }
         if (launched.Failed)
@@ -196,16 +196,16 @@ public static class LauncherCommandLine
             output.WriteLine($"the engine exited with {launched.ExitCode}; the end of {launched.LogPath}:");
             foreach (string line in launched.LogTail) output.WriteLine($"  {line}");
             output.WriteLine("the checks, run again:");
-            Print(launched.Checks, output);
+            PrintChecks(launched.Checks, output);
             return new LauncherOutcome(Failure, WindowReason.StartFailed, Start(profile, launched));
         }
         return new LauncherOutcome(Success, WindowReason.None);
     }
 
     /// <summary>A profile by its id, else by its folder; a folder no profile lists is a root the launcher did not
-    /// create, which needs its review (spec §12).</summary>
-    private static ProfileEntry Locate(string target, OmeHome home, LauncherSettings settings, Func<MachineState> machine,
-                                       string workingDirectory, OmePlatform platform)
+    /// create, which needs its review (spec §12). <c>OME-Tool start</c> finds its profile so too.</summary>
+    public static ProfileEntry LocateProfile(string target, OmeHome home, LauncherSettings settings,
+                                             Func<MachineState> machine, string workingDirectory, OmePlatform platform)
     {
         if (ProfileLookup.Find(target, home, settings, machine) is { } byId) return byId;
         IReadOnlyList<ProfileEntry> profiles = ProfileStore.List(home, settings, machine);
@@ -229,7 +229,7 @@ public static class LauncherCommandLine
             : EngineProgram.Development(parsed.Engine, parsed.EngineArguments, context.WorkingDirectory);
 
     /// <summary>One line per check, and the link report under a link check that did not pass.</summary>
-    private static void Print(ProfileCheckResult checks, TextWriter output)
+    public static void PrintChecks(ProfileCheckResult checks, TextWriter output)
     {
         foreach (ProfileCheck check in checks.Checks)
         {

@@ -90,6 +90,9 @@ public sealed class PageLocatorState : System.IDisposable
     /// <summary>The map's file name for <paramref name="scene"/>: <c>page-map-&lt;SCENE&gt;.jsonl</c>.</summary>
     public static string MapFileName(string scene) => $"page-map-{NormalizeScript(scene)}.jsonl";
 
+    /// <summary>The folder of an exported engine's maps, in the profile's diagnostics folder.</summary>
+    public const string MapFolder = "page-maps";
+
     /// <summary>Where an editor or development run writes the map, and where <c>tools/locate_page.py</c> reads it:
     /// the profile's build directory, <c>build/games/&lt;profile&gt;</c>, so two games' same-named scenes never share
     /// a file.</summary>
@@ -281,7 +284,8 @@ public sealed class PageLocatorState : System.IDisposable
         }
     }
 
-    private static string NormalizeScript(string script)
+    /// <summary>A script's name as the map writes it: upper case, without <c>.BIN</c>.</summary>
+    public static string NormalizeScript(string script)
         => Path.GetFileNameWithoutExtension(script).ToUpperInvariant();
 
     private static string? Hex(int? value) => value is int v ? $"0x{v:x}" : null;

@@ -9,7 +9,9 @@ using Ome.Engine.Frontend.Control;
 // The driving protocol's port backend (docs/superpowers/specs/2026-11-03-game-driving-design.md §5). With
 // --control, a loopback server accepts the shared step protocol; requests run here on the main thread. Input is
 // injected as Godot input events tagged with DriveInputDevice, and every other input event is dropped, so the
-// player's own mouse and keyboard cannot disturb a driven run.
+// player's own mouse and keyboard cannot disturb a driven run. --control-input shared keeps the server for a run a
+// player plays (OME-Tool start, which closes the engine over it on Ctrl+C; modding from a release plan §3.3): real
+// input is kept, the cursor warps as it would, and AGE's boxes are shown rather than logged.
 public partial class Main
 {
     /// <summary>InputEvent.Device of injected events.</summary>
@@ -28,9 +30,18 @@ public partial class Main
         return index >= 0 && index + 1 < userArgs.Length ? userArgs[index + 1] : null;
     }
 
+    /// <summary>--control-input's values: <c>exclusive</c> (the default) drops real input for a driven run,
+    /// <c>shared</c> keeps it for a run a player plays.</summary>
+    public const string ExclusiveDriveInput = "exclusive", SharedDriveInput = "shared";
+
     /// <summary>Start the control server after the VM exists. Returns false (after reporting why) on failure.</summary>
-    private bool StartDriveServer(string? sessionPath)
+    private bool StartDriveServer(string? sessionPath, string? input)
     {
+        if (input is not (null or ExclusiveDriveInput or SharedDriveInput))
+        {
+            GD.PushError($"[drive] --control-input takes {ExclusiveDriveInput} or {SharedDriveInput}, not {input}");
+            return false;
+        }
         string token = System.Environment.GetEnvironmentVariable(DriveProtocol.TokenEnvironmentVariable) is
             { Length: > 0 } supplied ? supplied : DriveServer.NewToken();
         try
@@ -49,9 +60,9 @@ public partial class Main
             _driveServer = null;
             return false;
         }
-        _driveExclusiveInput = true;
+        _driveExclusiveInput = input != SharedDriveInput;
         GD.Print($"[drive] control on 127.0.0.1:{_driveServer.Port} session={_driveSessionPath} " +
-                 "input=exclusive");
+                 $"input={(_driveExclusiveInput ? ExclusiveDriveInput : SharedDriveInput)}");
         return true;
     }
 
@@ -80,7 +91,7 @@ public partial class Main
     /// reported with the next click.</summary>
     private bool RedirectCursorWarpToDrive(int virtualX, int virtualY)
     {
-        if (_driveServer == null) return false;
+        if (_driveServer == null || !_driveExclusiveInput) return false;
         _driveCursorWarp = (virtualX, virtualY);
         InjectDrivePointer(virtualX, virtualY);
         return true;

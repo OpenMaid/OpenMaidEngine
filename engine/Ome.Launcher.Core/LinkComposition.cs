@@ -17,8 +17,10 @@ internal static class LinkComposition
 {
     /// <summary>The link as <c>Ome.Cli</c>'s <c>omp check --data-root</c> makes it: the run resolved from the profile
     /// file, the catalog, the asset store with the profile's overlays, and the engine's link base with a Lua runtime
-    /// (spec §5.9). Gate 8 holds the two to the same text.</summary>
-    public static LinkCheck Link(string root, GameProfileRegistry registry, string? machineFolder)
+    /// (spec §5.9). Gate 8 holds the two to the same text. <paramref name="mods"/> join the profile's packages, as
+    /// <c>omp check --mod</c>'s do.</summary>
+    public static LinkCheck Link(string root, GameProfileRegistry registry, string? machineFolder,
+                                 IReadOnlyList<string> mods)
     {
         ResolvedRun run = RunResolver.Resolve([RunResolver.DataRootOption, root], root, registry, machineFolder);
         IReadOnlyList<string> arguments = run.Arguments;
@@ -34,7 +36,7 @@ internal static class LinkComposition
         using LazyModRuntime lua = LuaModRuntime.Lazy();
         ModLinkBase linkBase = ModLinkBase.ForGame(game.Profile.Id, build.AbiId, sys4Ini, catalog, store)
             with { Lua = lua, ProfileMode = run.ProfileFile?.ModeName };
-        using ModInspection inspection = ModInspection.Inspect(linkBase, run.DataRoot, [],
+        using ModInspection inspection = ModInspection.Inspect(linkBase, run.DataRoot, mods.Select(Path.GetFullPath).ToList(),
                                                                arguments.Contains(ModLaunchOptions.SkipFailedOption), run.Mods);
         ModLinkReport? report = inspection.Link?.Report;
         var dropped = (report?.Dropped ?? []).Concat(inspection.Discovery.FailedMods).Distinct()

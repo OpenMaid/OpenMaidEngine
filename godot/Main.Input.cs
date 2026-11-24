@@ -295,8 +295,10 @@ public partial class Main
         try
         {
             // A driven run (--control) has nobody to dismiss a modal box, and OS.Alert would block the main thread
-            // that serves the control channel; log the box instead (the timeline records it either way).
-            if (_driveServer != null) GD.Print($"[diagnostic] {message.Caption}: {message.Text.Replace("\n", " / ")}");
+            // that serves the control channel; log the box instead (the timeline records it either way). A run with
+            // --control-input shared has its player, who dismisses it.
+            if (_driveServer != null && _driveExclusiveInput)
+                GD.Print($"[diagnostic] {message.Caption}: {message.Text.Replace("\n", " / ")}");
             else
             {
                 (string caption, string text) = ShellBoxes.Present(message, _shellStrings);

@@ -147,8 +147,13 @@ public static class EngineLaunch
     /// error written to <c>diagnostics/engine.log</c> line by line, and returns when the engine exits. A refused start
     /// opens no log, so a running session's log is never cut off. <paramref name="started"/> is told of the process
     /// once it runs.</summary>
+    /// <param name="line">Told each line of the engine's output as the log gets it (<c>OME-Tool start</c> prints
+    /// them; modding from a release spec §8).</param>
+    /// <param name="stopped">Why the caller ended the engine, or null when it did not: the log's last line says so.</param>
+    /// <param name="passed">Told of the checks when they let the engine start, before it starts.</param>
     public static LaunchResult Run(ProfileEntry profile, EngineCommand command, CheckOptions? options = null,
-                                   Action<Process>? started = null)
+                                   Action<Process>? started = null, Action<string>? line = null,
+                                   Func<string?>? stopped = null, Action<ProfileCheckResult>? passed = null)
     {
         ProfileCheckResult checks = ProfileChecks.Run(profile, options);
         if (!checks.CanPlay)
@@ -157,6 +162,7 @@ public static class EngineLaunch
                 : "a check failed: " + string.Join("; ", checks.Checks.Where(check => check.Status == CheckStatus.Failed)
                                                          .Select(check => $"{check.Kind}: {check.Message}")),
                 null, [], checks);
+        passed?.Invoke(checks);
 
         string logPath = Path.Combine(profile.Root, DiagnosticsFolder, LogFile);
         Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
@@ -166,14 +172,15 @@ public static class EngineLaunch
         using (var process = new Process { StartInfo = command.StartInfo() })
         {
             var gate = new object();
-            void Line(string? line)
+            void Line(string? text)
             {
-                if (line == null) return;
+                if (text == null) return;
                 lock (gate)
                 {
-                    log.WriteLine(line);
-                    tail.Enqueue(line);
+                    log.WriteLine(text);
+                    tail.Enqueue(text);
                     if (tail.Count > TailLines) tail.Dequeue();
+                    line?.Invoke(text);
                 }
             }
             process.OutputDataReceived += (_, received) => Line(received.Data);
@@ -194,7 +201,10 @@ public static class EngineLaunch
             process.BeginErrorReadLine();
             process.WaitForExit();   // without a timeout it also waits for both streams to end
             exitCode = process.ExitCode;
-            lock (gate) log.WriteLine($"[launcher] the engine exited with {exitCode}");
+            lock (gate)
+                log.WriteLine(stopped?.Invoke() is { } reason
+                    ? $"[launcher] the engine was stopped ({reason}); it exited with {exitCode}"
+                    : $"[launcher] the engine exited with {exitCode}");
         }
         return exitCode == 0
             ? new LaunchResult(true, 0, null, logPath, [], checks)
