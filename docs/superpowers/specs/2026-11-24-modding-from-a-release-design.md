@@ -1,8 +1,10 @@
 # Modding from a release design
 
 **Date:** 2026-11-24
-**Status:** proposed. The user decided its four questions on 2026-11-24 (§15), and an independent agent review of
-the same day checked it against the code; §16 keeps what the review changed. Not yet accepted.
+**Status:** accepted by the user on 2026-11-24 ("Go ahead and get started"), after they decided its four questions
+(§15) and an independent agent review of the same day checked it against the code (§16 keeps what the review
+changed). Its plan, `docs/superpowers/plans/2026-11-24-modding-from-a-release.md`, keeps what changed since, the
+departures from this text included.
 **How it was decided:** the backlog items "Modding from a release" and "Toolchain packaging for exported ports"
 (`docs/backlog.md`, "Mod loader and modding"). The site's usability review found the first one (site plan §10.3,
 finding 10, in the `ome-site` repository: "a release ships the mod commands, and the guide then starts from a
