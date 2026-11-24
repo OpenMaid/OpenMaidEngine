@@ -310,23 +310,13 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("path: build/reference-bundle/*", self.reference)
         self.assertIn("if-no-files-found: error", self.reference)
 
-    def test_the_site_notice_sends_with_a_token_made_for_the_site_alone(self) -> None:
-        # notify-site.yml holds the one key that leaves this repository: a GitHub App's, from which each run makes a
-        # token that may write only the site repository's contents and is revoked when the job ends.
-        text = (WORKFLOW_DIRECTORY / "notify-site.yml").read_text(encoding="utf-8")
-        self.assertIn("permissions: {}", text)
-        self.assertIn("vars.SITE_REPOSITORY != ''", text)
-        self.assertIn("github.event.workflow_run.conclusion == 'success'", text)
-        self.assertIn("startsWith(github.event.workflow_run.head_branch, 'v')", text)
-        self.assertEqual(["secrets.SITE_DISPATCH_APP_KEY"], re.findall(r"secrets\.\w+", text))
-        token_step = text[text.index("uses: actions/create-github-app-token@"):text.index("- name: Send the site")]
-        self.assertIn("client-id: ${{ vars.SITE_DISPATCH_APP_CLIENT_ID }}", token_step)
-        self.assertIn("owner: ${{ steps.site.outputs.owner }}", token_step)
-        self.assertIn("repositories: ${{ steps.site.outputs.name }}", token_step)
-        self.assertEqual(["permission-contents: write"], re.findall(r"permission-[\w-]+: \w+", token_step))
-        self.assertNotIn("skip-token-revoke", token_step)
-        self.assertIn("GH_TOKEN: ${{ steps.token.outputs.token }}", text)
-        self.assertNotIn("GITHUB_TOKEN", text)
+    def test_no_workflow_holds_a_secret(self) -> None:
+        # Since the site's deploy runs on its own tags (its plan §15.5), no workflow here holds a key: each works with
+        # the run's own token alone.
+        workflows = sorted(WORKFLOW_DIRECTORY.glob("*.yml"))
+        self.assertIn(WORKFLOW, workflows)
+        for workflow in workflows:
+            self.assertNotIn("secrets.", workflow.read_text(encoding="utf-8"), workflow.name)
 
     def test_no_run_script_interpolates_an_expression(self) -> None:
         # An expression in run: is spliced into the shell text before it runs; values go through env: instead.

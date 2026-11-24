@@ -76,7 +76,6 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     ├── .github/dependabot.yml                weekly grouped GitHub Actions pin bumps against develop
     ├── .github/workflows/ffmpeg-sdk.yml      builds the minimal FFmpeg SDKs; dispatch drafts the deps-ffmpeg release
     ├── .github/workflows/release-build.yml   SHA-pinned Ubuntu 24.04 Linux/Windows x64 artifact jobs + tag-only promotion
-    ├── .github/workflows/notify-site.yml     after a tag's release run: an ome-release dispatch to the site's repository
     ├── run-godot.ps1 / run-godot.cmd         tracked development launcher + Windows wrapper;
     │                                          resolves Godot/game-root from parameters, environment,
     │                                          PATH, and the selected profile's conventional sibling install;
