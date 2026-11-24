@@ -105,6 +105,20 @@ public static class GameDataExporter
                                                                           name, from.Global))
                 kind.ValueNames.Add(new ExportValueName(name, from.First + element, language, text));
         }
+        // A category's bits (export plan §5): a rule's word names its one bit, and the game's names of a field's bits
+        // name the rule's bits from its first.
+        foreach (ExportCategory category in kind.Categories)
+            foreach (ExportCategoryRule categoryRule in category.Rules)
+            {
+                if (categoryRule.Word is { } word)
+                {
+                    kind.ValueNames.Add(new ExportValueName(category.Name, categoryRule.Offset, "", word));
+                    continue;
+                }
+                foreach ((int element, string language, string text) in GameNames(inputs, boot, rule, languages, report, id,
+                                                                              category.Name, categoryRule.BitsOf!))
+                    kind.ValueNames.Add(new ExportValueName(category.Name, categoryRule.Offset + element, language, text));
+            }
     }
 
     /// <summary>The strings of one of the game's tables of names, by element: each a string the boot left there,
@@ -242,20 +256,35 @@ public static class GameDataExporter
                 : registry.Resolve(table, reference);
         }
         IReadOnlyList<FieldLayout> published = kind.Fields.Select(Resolve).ToList();
+        IReadOnlyList<ExportCategory> categories = Categories(inputs, kind, published);
         var texts = new List<string>();
         // A title is a string field, a reference whose target's title the entity takes, or none (plan §4.1).
         if (kind.Title is { } title && registry.Resolve(table, title).IsString) texts.Add(title);
         texts.AddRange(kind.Text.Where(text => text != kind.Title));
         IReadOnlyList<FieldLayout> textFields = texts.Select(text => registry.Resolve(table, text)).ToList();
         var textArrays = new HashSet<string>(textFields.Select(field => field.Field), StringComparer.Ordinal);
-        var pictures = kind.Pictures.Select(picture => (picture.Name, Field: registry.Resolve(table, picture.Field), picture.Key))
+        // A frame's size is two fields of the record, and its blend a third (export plan §5): a map object's sheet, its
+        // first frame, and the mode DRAWOBJ draws it with.
+        var pictures = kind.Pictures.Select(picture => (picture.Name, Field: registry.Resolve(table, picture.Field), picture.Key,
+                                                        Frame: picture.Frame is { } frame
+                                                            ? (registry.Resolve(table, frame.Width), registry.Resolve(table, frame.Height))
+                                                            : ((FieldLayout Width, FieldLayout Height)?)null,
+                                                        Blend: picture.Blend is { } blend ? registry.Resolve(table, blend) : null))
             .ToList();
         // A sheet without a field is numbered by the record's own id.
         var sheets = kind.Sheets
             .Select(sheet => (Sheet: sheet, Field: sheet.Field is null ? null : registry.Resolve(table, sheet.Field))).ToList();
         IReadOnlyList<FieldLayout> sheetFields = [.. sheets.Select(pair => pair.Field).OfType<FieldLayout>()];
+        IReadOnlyList<(string Name, FieldLayout Field)> pictureParts =
+        [
+            .. pictures.Where(picture => picture.Frame is not null)
+                .SelectMany(picture => new[] { (picture.Name, picture.Frame!.Value.Width), (picture.Name, picture.Frame!.Value.Height) }),
+            .. pictures.Where(picture => picture.Blend is not null).Select(picture => (picture.Name, picture.Blend!)),
+        ];
+        IReadOnlyList<FieldLayout> frameFields = [.. pictureParts.Select(part => part.Field)];
         foreach ((string name, FieldLayout field) in pictures.Select(picture => (picture.Name, picture.Field))
-                     .Concat(sheets.Where(pair => pair.Field is not null).Select(pair => (pair.Sheet.Name, pair.Field!))))
+                     .Concat(sheets.Where(pair => pair.Field is not null).Select(pair => (pair.Sheet.Name, pair.Field!)))
+                     .Concat(pictureParts))
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
@@ -264,7 +293,7 @@ public static class GameDataExporter
         // (a card's slot beside its row).
         IReadOnlyList<FieldLayout> snippetFields = [.. published, .. KeyPartners(published, tableFields, joinedFields, table, joins),
                                                     .. textFields, .. pictures.Select(picture => picture.Field),
-                                                    .. sheetFields];
+                                                    .. sheetFields, .. frameFields];
         var entities = new List<ExportEntity>();
         (int first, int last) = kind.KeyRange ?? (0, table.Records - 1);
         for (int record = first; record <= Math.Min(last, table.Records - 1); record++)
@@ -322,6 +351,8 @@ public static class GameDataExporter
                     if (rows != null) entity.KeyedRows[field.Name] = rows;
                 }
             }
+            // Its categories (export plan §5), after its published fields, as the writer reads them.
+            foreach (ExportCategory category in categories) entity.Values.Add((category.Name, [CategoryOf(category, At)]));
             // A string is translated at its origin, which stands for the site the game draws it at (plan §4.6).
             foreach (FieldLayout field in textFields)
                 for (int element = 0; element < field.Elements; element++)
@@ -334,13 +365,32 @@ public static class GameDataExporter
                         if (language.String(text, store.Origin) is { } translated)
                             entity.Texts.Add(new ExportText(field.Name, element, translated, language.Tag));
                 }
-            foreach ((string name, FieldLayout field, int? key) in pictures)
+            foreach ((string name, FieldLayout field, int? key, (FieldLayout Width, FieldLayout Height)? frame,
+                      FieldLayout? blend) in pictures)
             {
                 var (cell, refused) = At(field, 0);
                 if (refused || cell.Number == 0 || inputs.Pictures == null) continue;
-                if ((key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number))
-                    is { } picture)
-                    entity.Pictures.Add((name, explicitPictures.Mark(picture)));
+                // Op 0x203's mode 1, the additive glow, as the record's blend gives it; a withheld blend leaves the
+                // picture out.
+                (ExportCell Cell, bool Refused)? mode = blend is null ? null : At(blend, 0);
+                if (mode is { Refused: true }) continue;
+                bool additive = mode?.Cell.Number == 1;
+                ExportPicture? picture;
+                if (frame is { } sizes)
+                {
+                    // The first frame of the record's sheet, as wide and as high as its fields give; a size a builder
+                    // did not write, or of 0, is no frame.
+                    var (width, widthRefused) = At(sizes.Width, 0);
+                    var (height, heightRefused) = At(sizes.Height, 0);
+                    if (widthRefused || heightRefused) continue;
+                    picture = width.Number is > 0 and <= int.MaxValue && height.Number is > 0 and <= int.MaxValue
+                        ? inputs.Pictures.Frame(cell.Number, ((int)width.Number, (int)height.Number), key, additive)
+                        : null;
+                }
+                else if (additive) picture = inputs.Pictures.Frame(cell.Number, null, key, additive);
+                else picture = key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number);
+                if (additive && picture is not null) picture = picture with { Additive = true };
+                if (picture is not null) entity.Pictures.Add((name, explicitPictures.Mark(picture)));
                 else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
             }
             // A cell of a sheet (plan §5): a number below the sheet's first, or above its last, is no picture.
@@ -378,8 +428,70 @@ public static class GameDataExporter
             .DistinctBy(field => field.Name).ToList();
         return new ExportKind(kind, table, tableFields, published, declared, entities)
         {
-            Joins = joins, JoinedFields = joinedFields,
+            Joins = joins, JoinedFields = joinedFields, Categories = categories,
         };
+    }
+
+    /// <summary>A kind's categories (export plan §5), each rule's categories being the mask's next bits: a word's one,
+    /// and a field's as many as the game has names for its bits.</summary>
+    private static IReadOnlyList<ExportCategory> Categories(ExportInputs inputs, KindDeclaration kind,
+                                                            IReadOnlyList<FieldLayout> published)
+    {
+        var categories = new List<ExportCategory>();
+        foreach (CategoryDeclaration category in kind.Categories)
+        {
+            var rules = new List<ExportCategoryRule>();
+            int offset = 0;
+            foreach (CategoryRule rule in category.Rules)
+            {
+                FieldLayout field = published.FirstOrDefault(other => other.Name == rule.Field)
+                                    ?? throw new ExportFailure($"{kind.Id}'s category {category.Name} reads {rule.Field}, "
+                                                               + "which the kind does not publish");
+                if (field.Elements != 1 || field.IsString)
+                    throw new ExportFailure($"{kind.Id}'s category {category.Name} reads {rule.Field}, which is not one "
+                                            + "integer cell of a record");
+                if (rule.Word is { } word)
+                {
+                    rules.Add(new ExportCategoryRule(field, word, offset, 1, null));
+                    offset += 1;
+                    continue;
+                }
+                string bits = field.Array.Format?.BitsOf
+                              ?? throw new ExportFailure($"{kind.Id}'s category {category.Name}: {rule.Field}'s bits have "
+                                                         + "no names, so its rule needs a word");
+                int count = inputs.Registry.Find(bits) is { Bank: GlobalBank.String, Dimensions.Count: 1 } names
+                    ? names.Dimensions[0]
+                    : throw new ExportFailure($"{kind.Id}'s category {category.Name}: {rule.Field}'s bits stand for the "
+                                              + $"values of {bits}, which is no list of the game's strings");
+                rules.Add(new ExportCategoryRule(field, null, offset, count, bits));
+                offset += count;
+            }
+            if (offset > 62)
+                throw new ExportFailure($"{kind.Id}'s category {category.Name} has {offset} categories, more than a mask "
+                                        + "of 62 bits holds");
+            categories.Add(new ExportCategory(category.Name, rules));
+        }
+        return categories;
+    }
+
+    /// <summary>An entity's mask in a category (export plan §5): the categories of the first rule that places it, 0 for
+    /// none, or null where a rule reads a withheld cell before one places it.</summary>
+    private static long? CategoryOf(ExportCategory category, Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
+    {
+        foreach (ExportCategoryRule rule in category.Rules)
+        {
+            var (cell, refused) = at(rule.Field, 0);
+            if (refused) return null;
+            long value = cell.Number;
+            if (rule.Word is not null)
+            {
+                if (value > 0 && value != rule.Field.Array.Format?.None) return 1L << rule.Offset;
+                continue;
+            }
+            long set = value & ((1L << rule.Bits) - 1);
+            if (set != 0) return set << rule.Offset;
+        }
+        return 0;
     }
 
     private static ExportCell Read(GameSession session, FieldLayout field, int record, int element)

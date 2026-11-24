@@ -107,7 +107,7 @@ public sealed record KindDeclaration(
     IReadOnlyList<string> Text,
     IReadOnlyList<string> Fields,
     IReadOnlyList<string> Filters,
-    IReadOnlyList<(string Name, string Field, int? Key)> Pictures,
+    IReadOnlyList<FieldPictureDeclaration> Pictures,
     IReadOnlyList<DescriptionDeclaration> Descriptions)
 {
     public IReadOnlyList<GroupDeclaration> Groups { get; init; } = [];
@@ -154,6 +154,10 @@ public sealed record KindDeclaration(
     /// field, in order: a unit that is a boss is marked "Boss".</summary>
     public IReadOnlyList<(string Field, string Word)> Marks { get; init; } = [];
 
+    /// <summary>The kind's categories (export plan §5), each a value the export works out for every entity from its
+    /// published fields and publishes as a field of its own: Arterial's card book tabs.</summary>
+    public IReadOnlyList<CategoryDeclaration> Categories { get; init; } = [];
+
     internal static KindDeclaration Parse(JsonElement kind)
         => new(
             kind.GetProperty("id").GetString()!,
@@ -170,14 +174,11 @@ public sealed record KindDeclaration(
             ExportDeclarations.Strings(kind, "text"),
             ExportDeclarations.Strings(kind, "fields"),
             ExportDeclarations.Strings(kind, "filters"),
-            // A picture is a field, or { field, key }: the colour the game draws transparent (export plan §5).
+            // A picture is a field, or { field, key, frame }: the colour the game draws transparent, and the first frame
+            // of a sheet whose frames the record's fields size (export plan §5).
             kind.TryGetProperty("pictures", out JsonElement pictures)
                 ? pictures.EnumerateObject().Where(pair => !ExportDeclarations.IsSheet(pair.Value))
-                    .Select(pair => pair.Value.ValueKind == JsonValueKind.String
-                        ? (pair.Name, pair.Value.GetString()!, (int?)null)
-                        : (pair.Name, pair.Value.GetProperty("field").GetString()!,
-                           pair.Value.TryGetProperty("key", out JsonElement key) ? key.GetInt32() : (int?)null))
-                    .ToList()
+                    .Select(pair => FieldPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
                 : [],
             kind.TryGetProperty("descriptions", out JsonElement descriptions)
                 ? descriptions.EnumerateArray().Select(DescriptionDeclaration.Parse).ToList()
@@ -219,6 +220,13 @@ public sealed record KindDeclaration(
                 ? marks.EnumerateArray().Select(mark => (mark.GetProperty("field").GetString()!,
                     mark.GetProperty("word").GetString()!)).ToList()
                 : [],
+            Categories = kind.TryGetProperty("categories", out JsonElement categories)
+                ? categories.EnumerateArray().Select(category => new CategoryDeclaration(
+                    category.GetProperty("name").GetString()!,
+                    category.GetProperty("rules").EnumerateArray().Select(rule => new CategoryRule(
+                        rule.GetProperty("field").GetString()!,
+                        rule.TryGetProperty("word", out JsonElement word) ? word.GetString() : null)).ToList())).ToList()
+                : [],
             ReferencedAs = kind.TryGetProperty("referenced_as", out JsonElement referenced)
                 ? referenced.EnumerateArray().Select(entry => new ReferenceHeadingDeclaration(
                     entry.GetProperty("field").GetString()!, entry.GetProperty("heading").GetString()!,
@@ -245,6 +253,45 @@ public sealed record GroupDeclaration(string Name, IReadOnlyList<string> Fields)
 {
     public string? Labels { get; init; }
     public string? RowLabel { get; init; }
+}
+
+/// <summary>A category of a kind (export plan §5): a mask the export works out for each entity by its rules, tried in
+/// turn, the first that places the entity deciding; an entity none places has none (0). A rule with a
+/// <see cref="CategoryRule.Word"/> places an entity whose field is above 0 and not the field's none (a reference's
+/// -1 is none) in that one category;
+/// a rule without one, in the category of each bit its field sets, the field's bits being named by a list of the
+/// game's strings (<c>bits_of</c>). The rules' categories are the mask's bits in order: a word's one bit, then a
+/// list's as many as it has strings. Arterial's card book: a card with ＬＰ is a leader, and any other is listed under
+/// each race it has.</summary>
+public sealed record CategoryDeclaration(string Name, IReadOnlyList<CategoryRule> Rules);
+
+/// <summary>One rule of a <see cref="CategoryDeclaration"/>: a published field of the kind, and the word of the one
+/// category it places an entity in, or null for the categories its bits name.</summary>
+public sealed record CategoryRule(string Field, string? Word);
+
+/// <summary>A picture a field of the record names (spec §5.4): <see cref="Field"/> holds its packed resource id.
+/// <see cref="Key"/> is the colour the game loads it with as its key (0xRRGGBB), drawn as nothing (export plan §5:
+/// Himegari's map sprites, DRAWCH@0x9c). Where <see cref="Frame"/> names two fields of the record, the picture is a
+/// sheet of frames and only its first is shown: its top left corner, as wide and as high as the two fields give, as
+/// DRAWOBJ draws a map object (export plan §5). <see cref="Blend"/> names a field of the record holding the mode op
+/// 0x203 draws the picture with: at 1, the additive glow, the picture is shown as it looks over black.</summary>
+public sealed record FieldPictureDeclaration(string Name, string Field, int? Key = null,
+                                             (string Width, string Height)? Frame = null, string? Blend = null)
+{
+    internal static FieldPictureDeclaration Parse(string name, JsonElement picture)
+    {
+        if (picture.ValueKind == JsonValueKind.String) return new FieldPictureDeclaration(name, picture.GetString()!);
+        (string, string)? frame = null;
+        if (picture.TryGetProperty("frame", out JsonElement sizes))
+        {
+            JsonElement[] pair = [.. sizes.EnumerateArray()];
+            frame = (pair[0].GetString()!, pair[1].GetString()!);
+        }
+        return new FieldPictureDeclaration(name, picture.GetProperty("field").GetString()!,
+                                           picture.TryGetProperty("key", out JsonElement key) ? key.GetInt32() : null,
+                                           frame,
+                                           picture.TryGetProperty("blend", out JsonElement blend) ? blend.GetString() : null);
+    }
 }
 
 /// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture

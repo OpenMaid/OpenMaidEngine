@@ -176,6 +176,23 @@ public class GameDataExportTests
                 ? new ExportPicture($"SHEET-{x}-{y}" + (key is { } k ? $"-key-{k:x6}" : ""),
                                     Encoding.ASCII.GetBytes($"png {x} {y}"), width, height)
                 : null;
+
+        // A sheet's first frame (export plan §5), named by its size, key and blend as the catalog source names it; the
+        // whole picture where the frame is as large or there is none, and none where it is larger.
+        public ExportPicture? Frame(long packedId, (int Width, int Height)? frame, int? key, bool additive)
+        {
+            if ((key is { } colour ? ResolveKeyed(packedId, colour) : Resolve(packedId)) is not { } picture) return null;
+            (int width, int height) = frame ?? (picture.Width, picture.Height);
+            if (width > picture.Width || height > picture.Height) return null;
+            bool whole = width == picture.Width && height == picture.Height;
+            return whole && !additive
+                ? picture
+                : picture with
+                {
+                    Name = picture.Name + (whole ? "" : $"-frame-{width}x{height}") + (additive ? "-add" : ""),
+                    Width = width, Height = height,
+                };
+        }
     }
 
     private static Script Asm(string name, IReadOnlyList<(int, Operand[])> code, params string[] strings)
@@ -824,6 +841,63 @@ public class GameDataExportTests
     }
 
     [Fact]
+    public void ACategoryIsTheMaskOfTheFirstRuleThatPlacesAnEntity()
+    {
+        // A kind's categories (export plan §5), as Arterial's card book files its cards: the handler's bits, named by the
+        // game's list as a mask's are, then a word for a granted skill. The sword's handler is 9, bits 0 and 3, of which
+        // the list names 0 to 2: bit 0. The shield has no handler and a skill: the word's bit, 3. The spear has no
+        // handler and a skill of -1, which is no skill: none.
+        ExportInputs game = Game();
+        string declarations = Declarations.Replace("\"fields\": [\"category\", \"price\", \"price.sell\", \"granted_skill\"]",
+                                                   "\"fields\": [\"category\", \"handler_script_id\", \"granted_skill\"]",
+                                                   StringComparison.Ordinal)
+            .Replace("\"filters\": [\"category\"],",
+                     "\"filters\": [\"category\", \"sort\"], \"categories\": [{\"name\": \"sort\", \"rules\": "
+                     + "[{\"field\": \"handler_script_id\"}, {\"field\": \"granted_skill\", \"word\": \"Skilled\"}]}],",
+                     StringComparison.Ordinal);
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, Registry = Registry(bitNames: true),
+            Declarations = ExportDeclarations.Parse(declarations), Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        long? Sort(int id) => Entity(result, "item", id).Values.Single(value => value.Field == "sort").Values[0];
+        Assert.Equal([1L, 8L, 0L], new[] { Sort(1), Sort(2), Sort(3) });
+        ExportKind item = result.Kinds.Single(kind => kind.Declaration.Id == "item");
+        Assert.Equal([new ExportValueName("sort", 1, "ja", "武器"), new ExportValueName("sort", 2, "ja", "防具"),
+                      new ExportValueName("sort", 3, "", "Skilled")],
+                     item.ValueNames.Where(name => name.Field == "sort").OrderBy(name => name.Value));
+        string root = Path.Combine(Path.GetTempPath(), "ome-export-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ExportWriter.Write(result, root, "abcdef012345", Manifest);
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = Path.Combine(root, "abcdef012345.sqlite"), Mode = SqliteOpenMode.ReadOnly, Pooling = false,
+            }.ToString());
+            connection.Open();
+            string? Scalar(string sql)
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = sql;
+                return command.ExecuteScalar()?.ToString();
+            }
+            // A published integer of its own, a filter here, with no place among the cells; a mask, its bits named.
+            Assert.Equal("int|1|1|", Scalar("SELECT type || '|' || published || '|' || filter || '|' || ifnull(address, '') "
+                                            + "FROM field WHERE kind = 'item' AND name = 'sort'"));
+            Assert.Equal("1,8,0", Scalar("SELECT group_concat(sort) FROM (SELECT sort FROM item ORDER BY id)"));
+            Assert.Equal("1", Scalar("SELECT bits FROM value_format WHERE kind = 'item' AND field = 'sort'"));
+            Assert.Equal("Skilled", Scalar("SELECT text FROM value_name WHERE kind = 'item' AND field = 'sort' AND value = 3"));
+            Assert.Equal("0", Scalar("SELECT count(*) FROM cell WHERE kind = 'item' AND field = 'sort'"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void AShownFieldsValuesHaveTheRegistrysWordsAndTheGamesNamesAndItsNumbersTheirFormat()
     {
         // The value facets (export plan §5): item_category's values are named by the game's table, element k naming
@@ -934,6 +1008,7 @@ public class GameDataExportTests
             Assert.Equal("skill", Scalar("SELECT to_kind FROM ref WHERE from_id = 1"));
             Assert.Equal("pictures/abcdef012345/ICON077.png", Scalar("SELECT file FROM picture WHERE id = 1"));
             Assert.Equal("1", Scalar("SELECT explicit FROM picture WHERE id = 1"));
+            Assert.Equal("0", Scalar("SELECT additive FROM picture WHERE id = 1"));
             Assert.Equal("ITINIT.BIN", Scalar("SELECT writer FROM cell WHERE id = 1 AND field = 'handler_script_id'"));
             // The field table: a column's row, a picture field, a reference, a description.
             Assert.Equal("1", Scalar("SELECT column_index FROM field WHERE kind = 'item' AND name = 'price.sell'"));
@@ -1707,6 +1782,41 @@ public class GameDataExportTests
         (string name, ExportPicture picture) = Assert.Single(Entity(result, "item", 1).Pictures);
         Assert.Equal(("icon", "ICON077-key-00ff00"), (name, picture.Name));
         Assert.Equal("ICON077", Assert.Single(GameDataExporter.Run(Game()).Kinds[0].Entities[0].Pictures).Picture.Name);
+    }
+
+    [Fact]
+    public void AFramedPictureIsTheFirstFrameItsRecordsFieldsSize()
+    {
+        // { field, frame }: a map object's sheet, whose first frame DRAWOBJ draws as wide and as high as the record's
+        // fields give (export plan §5). The sword's category is 2 and its sell price 5: a 2 by 5 frame of ICON077.
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse("""{"field": "icon", "frame": ["category", "price.sell"]}""");
+        ExportResult result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        (string name, ExportPicture picture) = Assert.Single(Entity(result, "item", 1).Pictures);
+        Assert.Equal(("icon", "ICON077-frame-2x5", 2, 5), (name, picture.Name, picture.Width, picture.Height));
+        // With a key, the frame is cut from the keyed picture.
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse(
+            """{"field": "icon", "frame": ["category", "price.sell"], "key": 65280}""");
+        result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        Assert.Equal("ICON077-key-00ff00-frame-2x5", Assert.Single(Entity(result, "item", 1).Pictures).Picture.Name);
+        // A size of 0 is no frame: the spear (item 3) has no sell price, so its picture is unresolved, not cut.
+        Assert.Empty(Entity(result, "item", 3).Pictures);
+        Assert.Contains(("item", 3, "icon", 78L), result.Report.UnresolvedPictures);
+        // A blend (export plan §5): the field holding the mode op 0x203 draws the picture with, whose 1 is the additive
+        // glow. The sword's granted skill is 1: its frame is asked for additive; with no frame, its whole picture is.
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse(
+            """{"field": "icon", "frame": ["category", "price.sell"], "blend": "granted_skill"}""");
+        result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        Assert.Equal("ICON077-frame-2x5-add", Assert.Single(Entity(result, "item", 1).Pictures).Picture.Name);
+        Assert.True(Assert.Single(Entity(result, "item", 1).Pictures).Picture.Additive);
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse("""{"field": "icon", "blend": "granted_skill"}""");
+        result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        Assert.Equal("ICON077-add", Assert.Single(Entity(result, "item", 1).Pictures).Picture.Name);
+        // A blend of another mode draws the picture as it is: the category, 2, is no additive glow.
+        declarations["kinds"]![0]!["pictures"]!["icon"] = JsonNode.Parse("""{"field": "icon", "blend": "category"}""");
+        result = GameDataExporter.Run(WithDeclarations(Game(), declarations.ToJsonString()));
+        Assert.Equal("ICON077", Assert.Single(Entity(result, "item", 1).Pictures).Picture.Name);
+        Assert.False(Assert.Single(Entity(result, "item", 1).Pictures).Picture.Additive);
     }
 
     [Fact]

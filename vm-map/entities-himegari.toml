@@ -468,6 +468,11 @@ exists = "name"
 title = "name"
 text = ["description"]
 fields = ["use_limit", "required_skill_id", "immunity_skill_id", "allowed_unit_ids", "resource_deltas"]
+# The type's sheet holds its frames side by side, and a row down for each state where it has states. FIELD loads it
+# with no colour key (FIELD@0x91aa), and DRAWOBJ draws the frame as wide and as high as the type's fields from the
+# sheet's left edge, the state's row down (DRAWOBJ@0x99 to 0x13f): the first frame is its top left corner. A shown
+# object is drawn with its glow mode (DRAWOBJ@0x150 to 0x1b0), which is 1, the additive glow, for the healing feathers.
+pictures = { sprite = { field = "sprite", frame = ["sprite_width", "sprite_height"], blend = "glow_mode" } }
 
 [kind.notes]
 use_limit = "How many times it acts before it stays as it is."

@@ -54,6 +54,7 @@ EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts
 # A language tag as a language package declares one (`en`, `pt-BR`).
 LANGUAGE_TAG = re.compile(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})*")
 KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "key_range", "title", "text", "fields", "filters", "pictures",
+             "categories",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
              "joins", "marks"}
 # A kind's `about` is the line the site shows on its card and its list: one line, a reader's.
@@ -137,6 +138,8 @@ class Field:
         self.column = column
         self.kind = {"GS": "string", "GF": "float", "G": "integer"}[bank(type_)]
         dims = globals_build.record_dims(type_, records) or [records]
+        # The global whose values its bits stand for, or whose strings name them (globals_build's value facets).
+        self.bits_of = entry.get("bits_of")
         self.single = len(dims) == 1 or column is not None
         width = dims[1] if len(dims) == 2 else 1
         self.width = 1 if self.single else width
@@ -577,9 +580,13 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                 errors.append(f"{where}: fields {ref} is a string field; strings are published only under text "
                               f"(export spec §5.5)")
             published(ref, label, field)
+    categories = kind.get("categories", {})
+    category_names = set(categories) if isinstance(categories, dict) else set()
     for ref in kind.get("filters", []):
+        if ref in category_names:
+            continue
         if ref not in fields:
-            errors.append(f"{where}: filter {ref!r} is not one of the kind's fields")
+            errors.append(f"{where}: filter {ref!r} is not one of the kind's fields or categories")
         else:
             one(ref, "filter", None)
 
@@ -596,12 +603,27 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                         f"{where}: picture {name}", errors)
             continue
         if isinstance(ref, dict):
-            # { field, key }: the colour the game loads the picture with as its key, drawn as nothing (export plan §5:
-            # Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB.
-            unknown_keys(ref, {"field", "key"}, f"{where}: picture {name}", errors)
+            # { field, key, frame, blend }: the colour the game loads the picture with as its key, drawn as nothing
+            # (export plan §5: Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB; the picture's first frame, its top left
+            # corner as wide and as high as two fields of the record give (a map object's sheet, DRAWOBJ); and a field
+            # of the record holding the mode op 0x203 draws the picture with, whose 1, the additive glow, the export
+            # shows as it looks over black (a healing feather). Any may be left out, not all.
+            unknown_keys(ref, {"field", "key", "frame", "blend"}, f"{where}: picture {name}", errors)
+            if not {"key", "frame", "blend"} & set(ref):
+                errors.append(f"{where}: picture {name}: a table names a key, a frame or a blend; a field alone is "
+                              f"written as its name")
+            if "blend" in ref:
+                one(ref["blend"], f"picture {name}'s blend", "integer")
             key = ref.get("key")
-            if not isinstance(key, int) or isinstance(key, bool) or not 0 <= key <= 0xFFFFFF:
+            if "key" in ref and (not isinstance(key, int) or isinstance(key, bool) or not 0 <= key <= 0xFFFFFF):
                 errors.append(f"{where}: picture {name}: key must be a colour 0xRRGGBB")
+            frame = ref.get("frame")
+            if "frame" in ref:
+                if not (isinstance(frame, list) and len(frame) == 2 and all(isinstance(f, str) for f in frame)):
+                    errors.append(f"{where}: picture {name}: frame must be [width, height], two fields of the record")
+                else:
+                    for size in frame:
+                        one(size, f"picture {name}'s frame", "integer")
             ref = ref.get("field")
         field = one(ref, f"picture {name}", "integer")
         if field is not None and refs.get(str(ref).partition(".")[0]) != globals_build.REF_PICTURE:
@@ -688,6 +710,7 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             check_heading(group["row_label"], f"{gwhere}: row_label", errors)
 
     check_text_blocks(game, table, kind, where, errors)
+    check_categories(game, kind, categories, published_fields, names, one, where, errors)
 
     # A note (the user, 2026-11-22): a line that explains a detail, keyed by what the infobox shows as one row: a field
     # outside every group, or a group.
@@ -696,7 +719,7 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
         errors.append(f"{where}: notes must be a table of field or group = text")
         notes = {}
     group_names = {group.get("name") for group in groups if isinstance(group, dict)}
-    shown_fields = set(published_fields) | set(text if isinstance(text, list) else [])
+    shown_fields = set(published_fields) | set(text if isinstance(text, list) else []) | category_names
     for key, note in notes.items():
         if key in grouped:
             errors.append(f"{where}: note {key}: the field is shown in group {grouped[key]!r}; note the group")
@@ -779,6 +802,58 @@ def check_text_blocks(game: Game, table: dict, kind: dict, where: str, errors: l
                 errors.append(f"{bwhere}: block {name} starts at line {run[0]}, within the block before it; the blocks "
                               "are in the order the game draws them and share no line")
             end = max(end, run[1])
+
+
+def check_categories(game: Game, kind: dict, categories, published_fields: list, names: set, one, where: str,
+                     errors: list[str]) -> None:
+    """A kind's categories (export plan §5): each a value the export works out for every record from its published
+    fields, by rules tried in turn, and publishes as a mask whose bits are named. A rule `{ field, word }` puts a record
+    whose field is above 0 and not the field's none in the category `word`, alone; a rule `{ field }` names a field whose
+    bits the game names (`bits_of` a list of strings) and puts a record in the category of each bit it sets. The first
+    rule that puts a record somewhere decides; a record none does has no category. Arterial's card book: a card with
+    ＬＰ is a leader, and any other is listed under each race it has."""
+    if not isinstance(categories, dict):
+        errors.append(f"{where}: categories must be a table of name = [rules]")
+        return
+    for name, rules in categories.items():
+        cwhere = f"{where}: category {name!r}"
+        if not isinstance(name, str) or not IDENTIFIER.fullmatch(name):
+            errors.append(f"{cwhere}: name must be a lowercase identifier")
+        elif name in names or name in ("id", "content_hash"):
+            errors.append(f"{cwhere}: {name} is also a field of table {kind.get('table')}, a description, a group or a "
+                          f"column of the kind's table")
+        else:
+            names.add(name)
+        if not isinstance(rules, list) or not rules:
+            errors.append(f"{cwhere}: must list its rules, each {{ field, word }} or {{ field }}")
+            continue
+        bits = 0
+        for rule in rules:
+            if not isinstance(rule, dict) or not isinstance(rule.get("field"), str):
+                errors.append(f"{cwhere}: each rule is {{ field, word }} or {{ field }}")
+                continue
+            unknown_keys(rule, {"field", "word"}, cwhere, errors)
+            ref = rule["field"]
+            if ref not in published_fields:
+                errors.append(f"{cwhere}: {ref!r} is not one of the kind's fields; a category is worked out from what "
+                              f"the page shows")
+                continue
+            field = one(ref, f"category {name}'s rule", "integer")
+            if "word" in rule:
+                check_heading(rule["word"], f"{cwhere}: word", errors)
+                bits += 1
+                continue
+            target = game.globals.get(field.bits_of) if field is not None and field.bits_of else None
+            type_ = str((target or {}).get("type") or "")
+            dims = globals_build.dims_of(type_) if type_.startswith("string[") else None
+            count = dims if dims and len(dims) == 1 else None
+            if field is not None and not count:
+                errors.append(f"{cwhere}: {ref} has no bits the game names (bits_of a list of strings); give the rule "
+                              f"a word")
+                continue
+            bits += count[0] if count else 0
+        if bits > 62:
+            errors.append(f"{cwhere}: its rules name {bits} categories, more than a mask of 62 bits holds")
 
 
 def check_labels(labels, shown: set, where: str, errors: list[str]) -> None:
@@ -1330,6 +1405,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "notes": k.get("notes", {}), "labels": k.get("labels", {}),
                    "qualifiers": k.get("qualifiers", []), "about": k.get("about"),
                    "marks": [{"field": field, "word": word} for field, word in k.get("marks", {}).items()],
+                   "categories": [{"name": name, "rules": rules} for name, rules in k.get("categories", {}).items()],
                    "referenced_as": [
                        {"field": field, "heading": entry if isinstance(entry, str) else entry["heading"],
                         "details": [] if isinstance(entry, str) else entry.get("details", []),

@@ -788,7 +788,7 @@ A stage, by current_stage_id. STINIT's stages are 1 to 968 and the appends' reac
 | `0x2a3706` | object_type_sprite_heights | high | investigation | DRAWOBJ@0x104 draw height, centring, and sprite-row stride (row = persistent state * height, @0xd9). |
 | `0x2a376a` | object_type_animation_frame_counts | high | investigation | DRAWOBJ@0xa2 animate-gfx-srcrect-loop with 100 ms per frame. |
 | `0x2a37ce` | object_type_state_mode | high | investigation | DRAWOBJ@0xb9 (mode 1 sprite row), SETOBJ@0x1b0/0x1d4 and FIELD@0x7581/0x75a5 (bit2 handling), FIELD@0x829 seeds persistent state for mode 1. |
-| `0x2a3832` | object_type_available_glow_mode | low | investigation | DRAWOBJ@0x1cd applies it via gfx-draw-color when runtime bit2 is set on a revealed tile. |
+| `0x2a3832` | object_type_available_glow_mode | high | investigation | DRAWOBJ draws every object at alpha 0 first (DRAWOBJ@0x172), then, when its runtime flag bit 2 is set and its tile is revealed (stage_revealed_tile_bitmask), at alpha 255 with this mode (DRAWOBJ@0x17b-0x1cf), as Himegari's DRAWOBJ does. Mode 1 is the additive glow of op 0x203. |
 | `0x2a3896` | object_type_interaction_class | low | investigation | FIELD@0x751b: bit 2 together with mode flag 0x428a&4 suppresses automatic interaction. |
 | `0x2a38fa` | object_type_use_limit | high | investigation | CHECKOBJ@0x11 and SETOBJ@0x176 block / deactivate the object once stage_object_use_counts reaches it; FIELD@0x7565. 0 means none. |
 | `0x2a395e` | object_type_use_count_resets_on_entry | high | investigation | FIELD@0x5a2: on a fresh map entry the object's use counter 0x37305 is reset to 0. Values: 1 Yes. |

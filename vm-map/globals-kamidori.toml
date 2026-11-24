@@ -5287,9 +5287,9 @@ name = "object_type_available_glow_mode"
 category = "data-table"
 type = "int[100]"
 value_domain = "gfx-draw-color mode, 1 for 回復の羽"
-usage = "DRAWOBJ@0x1cd applies it via gfx-draw-color when runtime bit2 is set on a revealed tile."
+usage = "DRAWOBJ draws every object at alpha 0 first (DRAWOBJ@0x172), then, when its runtime flag bit 2 is set and its tile is revealed (stage_revealed_tile_bitmask), at alpha 255 with this mode (DRAWOBJ@0x17b-0x1cf), as Himegari's DRAWOBJ does. Mode 1 is the additive glow of op 0x203."
 source = "investigation"
-confidence = "low"
+confidence = "high"
 
 [[global]]
 address = "0x2a3896"

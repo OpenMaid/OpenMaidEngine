@@ -10,8 +10,8 @@ site's reference section reads, built from the repository alone.
 
 The zip holds, at its root:
   bundle.json                        format, OME version, commit and dirty flag, the games, every other file's hash
-  games.json                         each game: its titles, engine build, support levels, store site, base mod, and
-                                     the paths of its generated references, which the guides link
+  games.json                         each game: its titles, engine build, support levels, store site, cover, base mod,
+                                     and the paths of its generated references, which the guides link
   opcodes.json                       vm-map/opcodes.toml as tools/opcodes_build.py emits it
   docs/modding/**                    the modding guides, as git tracks them
   games/<game>/globals.json          the registry's curated globals, tables, references and scopes (no auto map)
@@ -291,6 +291,9 @@ def _game_files(game: str, manifest: dict) -> tuple[dict[str, bytes], dict]:
         "script_revisions": list(manifest.get("scriptRevisions", [])),
         "support": dict(manifest["support"]),
         "site": manifest.get("launcher", {}).get("site"),
+        # The cover the launcher shows (launcher spec §8.7), the publisher's address and the picture's SHA-256, which the
+        # project site's list of databases shows from a copy it checks against the hash.
+        "cover": manifest.get("launcher", {}).get("cover"),
         "base_mod": {"id": base["id"], "version": base["version"]},
         "script_index": index is not None,
         "references": references,

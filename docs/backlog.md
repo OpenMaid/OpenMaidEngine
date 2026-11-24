@@ -584,50 +584,9 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     the registry does not name: resource ids at `0x3d40e0` to `0x3d42a0` and `0xfd43b` to `0xfd443`, the inline
     arrays at `0x2a2da4`, `0x2a2db5`, `0x2a2dc3`, `0x13ec57`, `0x13ec5b`, `0x13ec5f` and `0x3c9be9`
     (`INIT2@0x1e4` to `0x207`), and `0xfd410` (1).
-  - **Read at medium or low confidence, so not shown:** `object_type_action_command_id`,
-    `object_type_available_glow_mode` and `object_type_interaction_class`. A card's `visual_asset_id` is its
-    animation, a movie FIELD plays when it is dealt, which the site cannot show yet.
-- **Arterial's card categories.** The user (2026-11-24): "Cards in arterial are categorized by either Leader or Race
-  (ie the first category is leader, then you have Human, Object, Angel, etc). We should make that category a detail
-  so it's easier to filter/sort". The categories are the card book's tabs (INFOCD, the tab `G[0x43f675 +
-  G[0x43f674]]`): tab 0 lists the cards with ＬＰ (`card_leader_lp`, `INFOCD@0xa2b`), tabs 1 to 7 the cards with no
-  ＬＰ whose race bit tab − 1 is set (`card_race_flags`, 無機, 人間, 怪物, 天使, 悪魔, 魔神 and 英雄; `@0xa66` to
-  `0xa99`), and tab 8 every card with a race (`@0xa53`). The site has each card's races (`race_flags`, a filter) and
-  its ＬＰ, but not whether it is a leader: the game stores that only as having ＬＰ, and a leader card has races too,
-  which its tab does not use. A card that is no leader may have several races (21 distinct sets). Done when a card
-  shows the book's category (Leader, or its races) and the card list filters and sorts by it, from something the
-  declarations can say (a field derived from `leader_lp`, which the export has no form for yet).
-- **A page that lists the game databases.** The user (2026-11-24): "Having indivisual links to games on the front page
-  is going to get unwieldy (talking about the 'hero links' at the top of the homepage after the modding link). We
-  should probably have a game database overview page that lists them out, potentially with coverart like the english
-  wiki uses, and then we can link to that overview". The home page's hero has an action for each database, three now
-  (`ome-site`'s `src/pages/index.astro`, from `databases()` in `src/lib/sections.mjs`). Each game's profile manifest
-  names its cover on the publisher's site (`launcher.cover`, its `url` and `sha256`: Himegari's `eu10`, Kamidori's
-  `eu12` and Arterial's `eu13` `package.jpg`), which the launcher downloads on the player's consent, distributing no
-  game art (launcher spec §8.7; the user read the publisher's terms for that use on 2026-11-15). The reference
-  bundle's `games.json` carries only the manifest's `site`. Whether the site links the publisher's image or serves a
-  copy is the user's to decide. The page's address is one no game id may take, as `docs` and `api` are (export plan
-  §5). Done when the hero links one overview page in place of the databases, and the page lists each game's
-  database, with its cover if the user chooses that.
-- **A map object's sprite.** The user (2026-11-24): "Map objects in kamidori/himegari should display their sprite".
-  Neither game's `map_object` kind has a picture. A type's sprite is its own sheet (`object_type_sprite_asset_ids`),
-  its frames side by side, each `object_type_sprite_widths` by `object_type_sprite_heights`, and DRAWOBJ draws the
-  first frame, centred on the tile (Himegari `DRAWOBJ@0xcf` to `0x13f`, Kamidori `DRAWOBJ@0xfd` and `0x104`):
-  Himegari's MO005A.AGF, 960×60, is 魔物の渦's 16 frames of 60. Where a type's rows are its states, a row down is the
-  next state (Himegari's base, MO001A.AGF, 100×400, four rows); a sheet of 0 is not drawn (Himegari
-  `FIELD@0x91ab` to `0x921a`). The export's pictures are a record's own picture, whole, or a cell of one fixed sheet
-  numbered by a field: neither cuts a frame from the record's own sheet at a size its fields give. Done when a map
-  object's page and its list show its sprite's first frame, as the game draws it, through a picture form that takes
-  the frame's size from fields.
-- **The support levels explained on the home page.** The user (2026-11-24): "The front page mentions Play/Modding
-  values like P3/M3 but doesn't explain them, a table or two to describe the values would help". The home page's
-  games table gives each game's levels, with a sentence naming each track's ends and a link to the supported games
-  page (`ome-site`'s `src/pages/index.astro`). The levels' home is `adding-a-game.md` §1, a table for each track
-  (level, name, what is true, gate); `tools/modding_games_build.py` keeps their names (`PLAY_LEVELS`,
-  `MODDING_LEVELS`) for the generated games page, and the reference bundle's `games.json` carries each game's levels
-  but not what they mean. Done when the home page has a table for each track, each level with what it means for a
-  player or a modder, read from the bundle rather than copied into the site, with the bundle taking them from one
-  source in OME.
+  - **Read at medium or low confidence, so not shown:** `object_type_action_command_id` and
+    `object_type_interaction_class`. A card's `visual_asset_id` is its animation, a movie FIELD plays when it is dealt,
+    which the site cannot show yet.
 
 ## Platform and project
 

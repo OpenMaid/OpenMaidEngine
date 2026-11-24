@@ -743,6 +743,76 @@ def test_keyed_picture():
     check(code != 0 and "picture other: unknown key 'alpha'" in output, "a keyed picture has a field and a key")
 
 
+def test_framed_picture():
+    """A picture may be a sheet's first frame, sized by two one-cell integer fields of the record, { field, frame }, with
+    or without a key; the JSON keeps it. A table with neither a key nor a frame is refused."""
+    framed = GOOD.replace('other = "art.1" }', 'other = { field = "art.1", frame = ["level", "class"] } }', 1)
+    code, output, written = run(framed, write=True)
+    check(code == 0, f"a framed picture lints clean ({output.strip()[-300:]})")
+    hero = json.loads(written or "{}").get("kinds", [{}])[0]
+    check(hero.get("pictures", {}).get("other") == {"field": "art.1", "frame": ["level", "class"]},
+          "the JSON keeps a picture's frame")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'frame = ["level", "class"], key = 0x00ff00'))
+    check(code == 0, f"a framed picture may have a key ({output.strip()[-300:]})")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'frame = ["level"]'))
+    check(code != 0 and "picture other: frame must be [width, height], two fields of the record" in output,
+          "a frame is two fields")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'frame = ["level", "art"]'))
+    check(code != 0 and "picture other's frame art is a row of cells" in output, "a frame's size is one cell")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'frame = ["level", "name"]'))
+    check(code != 0 and "picture other's frame name must be a integer field" in output,
+          "a frame's size is an integer field")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'frame = ["level", "class"], blend = "handler"'))
+    check(code == 0, f"a picture may have a blend ({output.strip()[-300:]})")
+    code, output, _ = run(framed.replace('frame = ["level", "class"]', 'blend = "art"'))
+    check(code != 0 and "picture other's blend art is a row of cells" in output, "a blend is one cell")
+    code, output, _ = run(GOOD.replace('other = "art.1" }', 'other = { field = "art.1" } }', 1))
+    check(code != 0 and "picture other: a table names a key, a frame or a blend" in output,
+          "a picture table without a key, a frame or a blend is refused")
+
+
+def test_categories():
+    """A kind's categories: a mask worked out from its published fields by rules tried in turn, a word for a field that
+    is set or the game's names of a field's bits; the JSON keeps them, and filters, notes and labels may name one."""
+    global REGISTRY
+    saved = REGISTRY
+    rule = 'categories = { rank = [{ field = "handler", word = "Handled" }, { field = "class" }] }'
+    sorted_ = GOOD.replace('fields = ["class", "weapon", "weapon_level"]\nfilters = ["class"]\n',
+                           'fields = ["class", "weapon", "weapon_level", "handler"]\n'
+                           'filters = ["class", "rank"]\n' + rule + '\n'
+                           'notes = { rank = "Handled, or by class." }\n'
+                           'labels = { rank = "Rank" }\n', 1)
+    try:
+        REGISTRY = saved.replace('name = "hero_classes"\n', 'name = "hero_classes"\nbits_of = "foe_names"\n', 1)
+        code, output, written = run(sorted_, write=True)
+        check(code == 0, f"a kind's categories lint clean ({output.strip()[-300:]})")
+        hero = json.loads(written or "{}").get("kinds", [{}])[0]
+        check(hero.get("categories") == [{"name": "rank", "rules": [{"field": "handler", "word": "Handled"},
+                                                                     {"field": "class"}]}],
+              "the JSON keeps a kind's categories")
+        for change, message in [
+            ('categories = { class = [{ field = "class" }] }', "category 'class': class is also a field of table hero"),
+            ('categories = { rank = [] }', "category 'rank': must list its rules"),
+            ('categories = { rank = [{ field = "level", word = "Old" }] }',
+             "category 'rank': 'level' is not one of the kind's fields"),
+            ('categories = { rank = [{ field = "weapon" }] }',
+             "category 'rank': weapon has no bits the game names"),
+            ('categories = { rank = [{ field = "class", word = "" }] }', "category 'rank': word must be a line"),
+            ('categories = { rank = [{ field = "class", colour = 1 }] }', "category 'rank': unknown key 'colour'"),
+        ]:
+            code, output, _ = run(sorted_.replace(rule, change, 1))
+            check(code != 0 and message in output, f"refused: {message} ({output.strip()[-300:]})")
+        REGISTRY = saved
+        code, output, _ = run(sorted_)
+        check(code != 0 and "category 'rank': class has no bits the game names" in output,
+              "a bits rule needs a field whose bits the game names")
+        code, output, _ = run(GOOD.replace('filters = ["class"]', 'filters = ["class", "rank"]', 1))
+        check(code != 0 and "filter 'rank' is not one of the kind's fields or categories" in output,
+              "a filter names a field or a category")
+    finally:
+        REGISTRY = saved
+
+
 def test_loaded_where_and_joins():
     """A loaded table keeps the records whose field holds a value its where lists, publishes the fields of the record a
     row's reference reaches as table.field, and its kind may label it; a joined reference is keyed table.field.field."""
@@ -1008,6 +1078,8 @@ def main():
     test_joins_and_pairs()
     test_loaded_where_and_joins()
     test_keyed_picture()
+    test_framed_picture()
+    test_categories()
     test_the_repository_declarations()
     print("FAILURES:", len(FAILS))
     return 1 if FAILS else 0

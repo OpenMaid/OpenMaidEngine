@@ -47,10 +47,14 @@ exists = "name"
 title = "name"
 text = ["flavor"]
 fields = ["rarity", "race_flags", "cost", "control", "slots", "attack", "hp", "leader_lp", "talent_id", "price"]
-filters = ["rarity", "race_flags", "cost", "control"]
+filters = ["rarity", "category", "race_flags", "cost", "control"]
 # A card is named for its character, so one name has many cards: its rarity, cost and attack tell them apart.
 qualifiers = ["rarity", "cost", "attack"]
 pictures = { art = "picture.0" }
+# The card book's tabs (INFOCD@0xa16 to 0xa99): tab 0 lists the cards with ＬＰ, tabs 1 to 7 the cards with none whose
+# race is the tab's (race bit tab − 1), and tab 8 every card with a race. So a leader is in its tab alone, though it
+# has races too, and a card of several races is in each of their tabs.
+categories = { category = [{ field = "leader_lp", word = "Leader" }, { field = "race_flags" }] }
 
 [kind.labels]
 race_flags = "Races"
@@ -59,6 +63,7 @@ leader_lp = "Leader LP"
 talent_id = "Talents"
 
 [kind.notes]
+category = "The card book's tab: a leader's, or that of each race the card has."
 leader_lp = "A leader card has LP in the place of HP."
 slots = "How many items the card can carry; it grows with the card's level, to 3."
 price = "Buy is what a shop charges for it, sell what the game pays for each copy over 99."

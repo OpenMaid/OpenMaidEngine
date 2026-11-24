@@ -520,6 +520,11 @@ fields = [
     "use_limit", "use_count_resets_on_entry", "player_only", "required_skill_id", "immunity_skill_ids", "allowed_unit_ids",
     "turn_resource_deltas", "battle_stat_deltas",
 ]
+# The type's sheet holds its frames side by side, and a row down for each state where it has states. SETMAPTEX loads
+# it with no colour key (SETMAPTEX@0x1a1), and DRAWOBJ draws the frame as wide and as high as the type's fields from
+# the sheet's left edge, the state's row down (DRAWOBJ@0xb4 to 0x15a): the first frame is its top left corner. A shown
+# object is drawn with its glow mode (DRAWOBJ@0x16b to 0x1cf), which is 1, the additive glow, for the healing feathers.
+pictures = { sprite = { field = "sprite_asset_id", frame = ["sprite_width", "sprite_height"], blend = "available_glow_mode" } }
 
 [kind.notes]
 use_limit = "How many times one of them acts before it stays as it is."

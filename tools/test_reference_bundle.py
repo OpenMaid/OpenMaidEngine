@@ -169,6 +169,11 @@ class RepositoryBundleTests(unittest.TestCase):
                     self.assertIn(prefix + name, files)
                 self.assertTrue(any(name.startswith(prefix + "events/") for name in files))
                 self.assertEqual(rb.index_path(game["id"]).is_file(), game["script_index"])
+                # The launcher's cover, by the publisher's address and its hash, which the site checks its copy by.
+                cover = rb.profile_manifests()[game["id"]].get("launcher", {}).get("cover")
+                self.assertEqual(cover, game["cover"])
+                if cover is not None:
+                    self.assertEqual({"url", "sha256"}, set(cover))
                 self.assertEqual(game["script_index"], prefix + "scripts.json" in files)
                 context = paths.ToolContext.resolve(game["id"], environ={})
                 self.assertEqual(

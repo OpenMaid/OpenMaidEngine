@@ -19,6 +19,10 @@ public sealed record ExportPicture(string Name, byte[] Png, int Width, int Heigh
 
     /// <summary>Whether the declarations name it explicit, for the site to blur until a click.</summary>
     public bool Explicit { get; init; }
+
+    /// <summary>Whether the game draws it with op 0x203's additive glow (export plan §5): light added to what is under
+    /// it, which a light page would wash out, so the site shows it on a dark tile.</summary>
+    public bool Additive { get; init; }
 }
 
 /// <summary>Where the export's pictures come from: the game's catalog, through the engine's resource map, or a test's.
@@ -37,6 +41,15 @@ public interface IPictureSource
     /// colour <paramref name="key"/> (0xRRGGBB) transparent where one is given, as <see cref="ResolveKeyed"/> makes a
     /// picture; or null when there is no such picture or the cell lies outside it.</summary>
     ExportPicture? Cell(string sheet, int x, int y, int width, int height, int? key) => null;
+
+    /// <summary>The picture a packed resource id names, or its first frame where <paramref name="frame"/> gives one: its
+    /// top left corner of that size (export plan §5); with the colour <paramref name="key"/> (0xRRGGBB) transparent
+    /// where one is given, as <see cref="ResolveKeyed"/> makes a picture; and where <paramref name="additive"/>, as op
+    /// 0x203's mode 1 draws it over black: each pixel adds its colour, so its brightest channel is its alpha (a healing
+    /// feather's glow). A frame the size of the whole picture, not additive, is the picture as <see cref="Resolve"/>
+    /// or <see cref="ResolveKeyed"/> gives it. Null when the id names no picture or the frame is larger than it.
+    /// </summary>
+    ExportPicture? Frame(long packedId, (int Width, int Height)? frame, int? key, bool additive) => null;
 }
 
 /// <summary>A package a language of the export comes from (spec §6.4): what the site credits.</summary>
@@ -204,7 +217,19 @@ public sealed record ExportKind(KindDeclaration Declaration, TableLayout Table, 
     /// <summary>The game's names for its shown fields' columns (<c>columns_from</c>), its loaded tables' written
     /// table.field.</summary>
     public List<ExportColumnName> ColumnNames { get; } = [];
+    /// <summary>Its categories (export plan §5), whose values each entity's <see cref="ExportEntity.Values"/> holds after
+    /// its published fields', in order.</summary>
+    public IReadOnlyList<ExportCategory> Categories { get; init; } = [];
 }
+
+/// <summary>A kind's category as the export works it out (export plan §5): its rules, each with the published field it
+/// reads and the first of the mask's bits it places an entity in.</summary>
+public sealed record ExportCategory(string Name, IReadOnlyList<ExportCategoryRule> Rules);
+
+/// <summary>A rule of an <see cref="ExportCategory"/>: its field, the word of its one category or null, the mask's bit
+/// its first category is, and how many categories it has (1 for a word, else as many as the game's names of the
+/// field's bits, <see cref="BitsOf"/>).</summary>
+public sealed record ExportCategoryRule(FieldLayout Field, string? Word, int Offset, int Bits, string? BitsOf);
 
 /// <summary>What a value of a shown field means to a reader (plan §5): OME's word for it, in no language
 /// (<see cref="Language"/> empty), or the game's name for it, in the source language or a translation's. A mask's

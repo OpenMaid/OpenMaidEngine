@@ -1117,3 +1117,27 @@ authors.
   version in the Windows registry). The site's deploy exports on a Linux runner, where every game came out as the
   installer default, `1.00.0000`; `data-export --game-version` records the version given, and the site's
   `site.config.mjs` gives each game's.
+- **Three small site items** (2026-11-24, from the user's list that day; the backlog's items for them are gone):
+  - **A map object's sprite.** A picture may be `{ field, frame = [width, height] }`: the record's own sheet, cut to its
+    top left corner as wide and as high as two of its fields give, as DRAWOBJ draws a map object's first frame (Himegari
+    `DRAWOBJ@0x99` to `0x13f`, Kamidori `@0xb4` to `0x15a`). A size of 0 is no frame, and a frame the size of the whole
+    sheet is the sheet itself. A picture may also name a `blend`, a field holding the mode op 0x203 draws it with: at 1,
+    the additive glow, the picture is made as it looks over black, the added colour's brightest channel its alpha
+    (`-add` in its file's name), and the picture table marks it (`additive`), since light added to a light page is lost:
+    the site draws it on a dark tile. DRAWOBJ draws a shown object with its type's glow mode (Himegari `@0x150` to
+    `0x1b0`, Kamidori `@0x16b` to `0x1cf`), 1 for the healing feathers, whose sheets are opaque on black; Kamidori's
+    `object_type_available_glow_mode` is read at high confidence now, as Himegari's is. Himegari has 57 of its 58 types'
+    sprites and Kamidori 49 of 50: 異界の門, type 27, has no sheet in either game.
+  - **Arterial's card categories.** A kind's `categories` are derived fields: each tries its rules in order, and the
+    first that places a record gives its value, a mask with one bit per place. `{ field, word }` places a record whose
+    field is above 0 and not the field's none, in one place named by the word; `{ field }` places it by a mask field
+    whose registry entry names its bits (`bits_of`, a `string[N]` global), a place a bit. The export writes a category
+    as a published integer field with no address: a column of the kind's table, a row of `field`, one-bit
+    `value_format` and a `value_name` per place. Arterial's card has `category`, Leader where it has ＬＰ, else its
+    races, as the card book's tabs list them (INFOCD `@0xa2b` to `0xa99`): 338 leaders, every card placed. The site
+    shows it as a mask column the list filters and sorts by.
+  - **The games' covers.** The reference bundle's `games.json` gives each game's `cover`, its profile manifest's
+    `launcher.cover` (`url`, `sha256`). The site serves its own copy, checked against the hash, on a page that lists
+    the databases (the user: "they rehost it, so we can do the same since hotlinking tends to be looked down upon");
+    `databases` joins the paths no game id may take. The site's design is in its plan, `ome-site`
+    `docs/plans/2026-11-21-site-plan.md` §15.4.

@@ -129,8 +129,10 @@ public static class ExportWriter
             // the call's offset, and the count as the script sets it, signed (null for a relation with none).
             "CREATE TABLE relation (kind TEXT NOT NULL, id INTEGER NOT NULL, relation TEXT NOT NULL, script TEXT NOT NULL, "
             + "offset INTEGER NOT NULL, count INTEGER, PRIMARY KEY (kind, id, relation, script, offset))",
+            // A picture the game draws with the additive glow is marked (export plan §5), for the site to show it on
+            // a dark tile.
             "CREATE TABLE picture (kind TEXT NOT NULL, id INTEGER NOT NULL, name TEXT NOT NULL, file TEXT NOT NULL, "
-            + "explicit INTEGER NOT NULL, "
+            + "explicit INTEGER NOT NULL, additive INTEGER NOT NULL, "
             + "width INTEGER NOT NULL, height INTEGER NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (kind, id, name))",
             "CREATE TABLE cell (kind TEXT NOT NULL, id INTEGER NOT NULL, field TEXT NOT NULL, idx INTEGER NOT NULL, "
             + "bank TEXT NOT NULL, address INTEGER NOT NULL, raw TEXT, writer TEXT, PRIMARY KEY (kind, id, field, idx))",
@@ -187,6 +189,7 @@ public static class ExportWriter
         {
             var columns = new List<string> { "id INTEGER PRIMARY KEY" };
             columns.AddRange(kind.Published.Select(field => Quote(field.Name) + (field.IsArray ? " TEXT" : " INTEGER")));
+            columns.AddRange(kind.Categories.Select(category => Quote(category.Name) + " INTEGER"));
             columns.Add("content_hash TEXT NOT NULL");
             Execute(connection, $"CREATE TABLE {Quote(kind.Declaration.Id)} ({string.Join(", ", columns)})");
             foreach (ExportLoadedTable table in kind.Loaded)
@@ -283,12 +286,13 @@ public static class ExportWriter
                        JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count, declaration.About);
         WriteFields(connection, kind, kinds);
 
-        string[] columns = ["id", .. kind.Published.Select(field => field.Name), "content_hash"];
+        string[] columns = ["id", .. kind.Published.Select(field => field.Name),
+                            .. kind.Categories.Select(category => category.Name), "content_hash"];
         using var values = new Inserter(connection, id, columns);
         using var texts = new Inserter(connection, "text", "kind", "id", "field", "idx", "lang", "value");
         using var refs = new Inserter(connection, "ref", "from_kind", "from_id", "field", "idx", "to_kind", "to_id");
-        using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "explicit", "width", "height",
-                                          "hash");
+        using var pictures = new Inserter(connection, "picture", "kind", "id", "name", "file", "explicit", "additive", "width",
+                                          "height", "hash");
         using var cells = new Inserter(connection, "cell", "kind", "id", "field", "idx", "bank", "address", "raw", "writer");
         using var relations = new Inserter(connection, "relation", "kind", "id", "relation", "script", "offset", "count");
         foreach (ExportEntity entity in kind.Entities)
@@ -296,6 +300,9 @@ public static class ExportWriter
             var row = new List<object?> { entity.Id };
             foreach ((FieldLayout field, (string _, long?[] elements)) in kind.Published.Zip(entity.Values))
                 row.Add(field.IsArray ? JsonSerializer.Serialize(elements) : elements[0]);
+            // Its categories' masks (export plan §5), which follow its published fields' values.
+            foreach (ExportCategory category in kind.Categories)
+                row.Add(entity.Values.First(value => value.Field == category.Name).Values[0]);
             row.Add(ContentHash(entity));
             values.Row([.. row]);
             foreach (ExportText text in entity.Texts)
@@ -304,7 +311,7 @@ public static class ExportWriter
                 refs.Row(id, entity.Id, reference.Field, reference.Index, reference.ToKind, reference.ToId);
             foreach ((string name, ExportPicture picture) in entity.Pictures)
                 pictures.Row(id, entity.Id, name, $"pictures/{revision}/{picture.Name}.png", picture.Explicit ? 1 : 0,
-                             picture.Width, picture.Height, picture.Hash);
+                             picture.Additive ? 1 : 0, picture.Width, picture.Height, picture.Hash);
             foreach (ExportModderCell cell in entity.Cells)
                 cells.Row(id, entity.Id, cell.Field, cell.Index, BankName(cell.Bank), cell.Address, cell.Raw, cell.Writer);
             foreach (ExportRelation relation in entity.Relations)
@@ -415,6 +422,10 @@ public static class ExportWriter
                        pictureNames.Length == 0 ? null : string.Join(",", pictureNames), BankName(field.Array.Bank),
                        field.Array.Address, field.Array.Width, field.Column, ColumnNames(field), ColumnKind(field, kinds));
         }
+        // A category (export plan §5) is a published integer the export works out, not a cell: it has no place.
+        foreach (ExportCategory category in kind.Categories)
+            insert.Row(declaration.Id, category.Name, "int", 1, 0, declaration.Filters.Contains(category.Name) ? 1 : 0,
+                       null, null, null, null, null, null, null, null, null);
         foreach (DescriptionDeclaration description in declaration.Descriptions)
             insert.Row(declaration.Id, description.Name, "description", 0, 1, 0, null, null, null, null, null, null, null,
                        null, null);
@@ -453,6 +464,9 @@ public static class ExportWriter
                 if (format != null)
                     formats.Row(declaration.Id, name, format.Scale, format.Offset, format.Unit, format.BitsOf != null ? 1 : 0,
                                 format.None);
+            // A category is a mask whose bits its value names name.
+            foreach (ExportCategory category in kind.Categories)
+                formats.Row(declaration.Id, category.Name, null, null, null, 1, null);
         }
         using (var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text"))
             foreach (ExportValueName name in kind.ValueNames)

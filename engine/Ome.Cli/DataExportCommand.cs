@@ -222,8 +222,9 @@ internal static class DataExportCommand
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())))[..12];
     }
 
-    /// <summary>The catalog's pictures, decoded as <c>Ome.Cli picture</c> decodes them (spec §6.5), once each; and cells
-    /// cut from a sheet named by its catalog record (export plan §5), each sheet decoded once.</summary>
+    /// <summary>The catalog's pictures, decoded as <c>Ome.Cli picture</c> decodes them (spec §6.5), once each; cells
+    /// cut from a sheet named by its catalog record, each sheet decoded once; and a picture's first frame, as op 0x203's
+    /// additive glow draws it where asked (export plan §5).</summary>
     private sealed class CatalogPictures(ResourceMap resources, Sys4AssetCatalog catalog) : IPictureSource
     {
         private readonly Dictionary<long, ExportPicture?> _decoded = new();
@@ -235,23 +236,83 @@ internal static class DataExportCommand
             if (_cells.TryGetValue((sheet, x, y, width, height, key), out ExportPicture? known)) return known;
             ExportPicture? picture = null;
             if (Sheet(sheet) is { } decoded && x + width <= decoded.Image.Width && y + height <= decoded.Image.Height)
-            {
-                var pixels = new byte[width * height * 4];
-                for (int row = 0; row < height; row++)
-                    Array.Copy(decoded.Image.Pixels, ((y + row) * decoded.Image.Width + x) * 4, pixels, row * width * 4,
-                               width * 4);
-                // The sheet's colour key, as ResolveKeyed applies it: the game draws that colour as nothing.
-                if (key is { } colour)
-                    for (int at = 0; at < pixels.Length; at += 4)
-                        if (BlendMath.ColorKeyMatches(pixels[at], pixels[at + 1], pixels[at + 2], colour))
-                            pixels[at] = pixels[at + 1] = pixels[at + 2] = pixels[at + 3] = 0;
                 // Named by the sheet, the cell's place and size and the key, so two cells never share a file.
                 picture = new ExportPicture(
                     $"{decoded.Stem}-{x}-{y}-{width}x{height}" + (key is { } named ? $"-key-{named:x6}" : ""),
-                    PngWriter.Write(new RgbaImage(width, height, pixels)), width, height);
-            }
+                    PngWriter.Write(Cut(decoded.Image, x, y, width, height, key)), width, height);
             _cells[(sheet, x, y, width, height, key)] = picture;
             return picture;
+        }
+
+        private readonly Dictionary<(long, (int, int)?, int?, bool), ExportPicture?> _frames = new();
+
+        public ExportPicture? Frame(long packedId, (int Width, int Height)? frame, int? key, bool additive)
+        {
+            if (_frames.TryGetValue((packedId, frame, key, additive), out ExportPicture? known)) return known;
+            ExportPicture? picture = null;
+            if (resources.ResolveTexture(packedId) is { } entry)
+                try
+                {
+                    RgbaImage image = resources.DecodeTexture(entry);
+                    (int width, int height) = frame ?? (image.Width, image.Height);
+                    bool whole = width == image.Width && height == image.Height;
+                    if (whole && !additive)
+                        picture = key is { } colour ? ResolveKeyed(packedId, colour) : Resolve(packedId);
+                    else if (width <= image.Width && height <= image.Height)
+                    {
+                        RgbaImage cut = Cut(image, 0, 0, width, height, key);
+                        if (additive) Additive(cut.Pixels);
+                        // Named by the picture, the frame's size, the key and the blend, so a frame never shares a file
+                        // with the picture or another frame of it.
+                        picture = new ExportPicture(
+                            Path.GetFileNameWithoutExtension(entry.Name) + (whole ? "" : $"-frame-{width}x{height}")
+                            + (key is { } named ? $"-key-{named:x6}" : "") + (additive ? "-add" : ""),
+                            PngWriter.Write(cut), width, height);
+                    }
+                }
+                catch (Exception error) when (error is InvalidDataException or IOException)
+                {
+                    Console.Error.WriteLine($"data-export: picture {entry.Name}: {error.Message}");
+                }
+            _frames[(packedId, frame, key, additive)] = picture;
+            return picture;
+        }
+
+        /// <summary>Pixels as op 0x203's mode 1 draws them over black (SRCALPHA/ONE: each adds its colour times its
+        /// alpha), made a picture that a page draws over its own background as normal blending does: the added colour's
+        /// brightest channel becomes the alpha, and the colour is divided by it, so over black it is the same.</summary>
+        private static void Additive(byte[] pixels)
+        {
+            for (int at = 0; at < pixels.Length; at += 4)
+            {
+                int alpha = pixels[at + 3];
+                int r = pixels[at] * alpha / 255, g = pixels[at + 1] * alpha / 255, b = pixels[at + 2] * alpha / 255;
+                int added = Math.Max(r, Math.Max(g, b));
+                pixels[at + 3] = (byte)added;
+                if (added == 0)
+                {
+                    pixels[at] = pixels[at + 1] = pixels[at + 2] = 0;
+                    continue;
+                }
+                pixels[at] = (byte)(r * 255 / added);
+                pixels[at + 1] = (byte)(g * 255 / added);
+                pixels[at + 2] = (byte)(b * 255 / added);
+            }
+        }
+
+        /// <summary>The <paramref name="width"/> by <paramref name="height"/> pixels of <paramref name="image"/> from
+        /// (<paramref name="x"/>, <paramref name="y"/>), with the colour key applied as ResolveKeyed applies it: the
+        /// game draws that colour as nothing.</summary>
+        private static RgbaImage Cut(RgbaImage image, int x, int y, int width, int height, int? key)
+        {
+            var pixels = new byte[width * height * 4];
+            for (int row = 0; row < height; row++)
+                Array.Copy(image.Pixels, ((y + row) * image.Width + x) * 4, pixels, row * width * 4, width * 4);
+            if (key is { } colour)
+                for (int at = 0; at < pixels.Length; at += 4)
+                    if (BlendMath.ColorKeyMatches(pixels[at], pixels[at + 1], pixels[at + 2], colour))
+                        pixels[at] = pixels[at + 1] = pixels[at + 2] = pixels[at + 3] = 0;
+            return new RgbaImage(width, height, pixels);
         }
 
         private (string Stem, RgbaImage Image)? Sheet(string name)
