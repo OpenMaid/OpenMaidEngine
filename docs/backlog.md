@@ -304,10 +304,13 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   site's design and workflow settle (2026-11-22: "it's been an ongoing 'issue' that you need to repo to perform
   modding"). "Toolchain packaging for exported ports" below is the linking half of it. Done when a release carries the
   mod commands and the page locator, and the guides start from a release with the from-source steps marked as such.
+  Its design, with the next item's, is `superpowers/specs/2026-11-24-modding-from-a-release-design.md` (proposed
+  2026-11-24, waiting for the user's decisions).
 - **Toolchain packaging for exported ports.** Fragments compile against the repository's OMS modules
   (`oms/<game>/`), globals and patch points (`build/games/<game>/`). An exported port without the repository
   links only mods that need none of them (`tools-reference.md`, port `--mod`). Done when an export carries or
-  embeds these files and a fragment mod links in an exported build.
+  embeds these files and a fragment mod links in an exported build. Designed with the item above (its §5: the
+  toolchain moves into each game's base mod).
 - **Mod-owned globals.** `global` declarations must pin a cell (`@ address`). The linker-allocated and `saved`
   globals of the language design (OMS spec §5.2, §9.2) are not implemented, and which cells are free (and which a
   save keeps) is open (§13). Mods pick unused cells by hand meanwhile (`docs/modding/oms-language.md`). Done when
