@@ -6,11 +6,12 @@ Both packagers use this module:
   LICENSE.txt and COPYRIGHT.txt for the Godot release the packages are exported with (both packages), and the
   MinGW-w64 runtime's COPYING.MinGW-w64-runtime.txt for the runtime the Windows DLLs link statically (Windows only;
   tools/mingw_runtime_notices.py checks the links against it);
-- the check that THIRD_PARTY_NOTICES.md names every NuGet package a publish ships, read from the engine publish's
-  OME.deps.json and from the dependency list the launcher's publish kept (its single file bundles its own). A runtime
-  pack is named by its framework (Microsoft.NETCore.App).
+- the check that THIRD_PARTY_NOTICES.md names every NuGet package a publish ships, read from the dependency lists
+  the publishes kept: the engine's and the mod tool's (NativeAOT leaves theirs out) and the launcher's (its single
+  file bundles its own). A runtime pack is named by its framework (Microsoft.NETCore.App).
 The NuGet packages' own license files reach the package through the publish itself (Directory.Build.targets,
-target PublishPackageNotices): the engine's into its managed directory, the launcher's into OME-Launcher-notices/.
+target PublishPackageNotices): the engine's into its managed directory, the launcher's into OME-Launcher-notices/,
+the tool's into OME-Tool-notices/.
 """
 from __future__ import annotations
 
@@ -99,6 +100,14 @@ def verify_launcher_notices(deps_file: Path, notices_file: Path) -> list[str]:
     if not deps_file.is_file():
         raise ValueError(f"the launcher's dependency list was not found: {deps_file}; run tools/publish_launcher.py")
     return _named(shipped_packages(deps_file), notices_file, "the launcher's shipped NuGet packages")
+
+
+def verify_tool_notices(deps_file: Path, notices_file: Path) -> list[str]:
+    """The same for the mod tool, a NativeAOT program: `deps_file` is the list its publish kept
+    (tools/publish_engine.py, modding from a release spec §6.4)."""
+    if not deps_file.is_file():
+        raise ValueError(f"the tool's dependency list was not found: {deps_file}; run tools/publish_engine.py")
+    return _named(shipped_packages(deps_file), notices_file, "the tool's shipped NuGet packages")
 
 
 def _named(packages: list[str], notices_file: Path, what: str) -> list[str]:

@@ -41,6 +41,7 @@ FORBIDDEN_ENGINE_IMPORTS = re.compile(r"^(vcruntime|msvcp|concrt|vccorlib|ucrtba
                                       re.IGNORECASE)
 PE_MACHINE_AMD64 = 0x8664
 PE_SUBSYSTEM_WINDOWS_GUI = 2
+PE_SUBSYSTEM_WINDOWS_CUI = 3
 
 
 def pe_machine(path: Path) -> int:
@@ -116,6 +117,24 @@ def _objdump(objdump: str, path: Path) -> str:
     if process.returncode != 0:
         raise RuntimeError(f"objdump failed for {path.name}: {process.stderr.strip()}")
     return process.stdout
+
+
+def verify_tool(path: Path, objdump: str) -> dict[str, Any]:
+    """The mod tool beside the engine (modding from a release spec §6.4): an AMD64 console program, compiled ahead of
+    time as the engine's library is, so it may import only what that library may: no Visual C++ redistributable and no
+    .NET runtime. It is checked, never run."""
+    machine = pe_machine(path)
+    if machine != PE_MACHINE_AMD64:
+        raise ValueError(f"Windows tool is not AMD64 PE (0x{machine:04x}): {path.name}")
+    subsystem = pe_subsystem(path)
+    if subsystem != PE_SUBSYSTEM_WINDOWS_CUI:
+        raise ValueError(f"Windows tool is not a console program (subsystem {subsystem}): {path.name}")
+    imports, _ = parse_objdump(_objdump(objdump, path), frozenset())
+    forbidden = sorted(name for name in imports if FORBIDDEN_ENGINE_IMPORTS.match(name))
+    if forbidden:
+        raise ValueError(f"Windows tool imports what a player's Windows lacks: {', '.join(forbidden)}")
+    return {"program": path.name, "machine": "AMD64", "subsystem": "windows-cui",
+            "imports": sorted(imports, key=str.lower)}
 
 
 def verify_engine_library(path: Path, objdump: str) -> dict[str, Any]:

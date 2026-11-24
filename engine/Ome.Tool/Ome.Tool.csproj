@@ -25,4 +25,12 @@
     <OmePackageNoticeFolder>OME-Tool-notices</OmePackageNoticeFolder>
   </PropertyGroup>
 
+  <!-- -p:OmeDependencyList=FILE keeps the build's dependency list, which a NativeAOT publish leaves out: the program
+       holds the packages, and the release's notices check reads the list (tools/publish_engine.py). -->
+  <Target Name="KeepDependencyList" AfterTargets="Publish" Condition="'$(OmeDependencyList)' != ''">
+    <Error Condition="!Exists('$(ProjectDepsFilePath)')"
+           Text="the build's dependency list was not found: $(ProjectDepsFilePath)" />
+    <Copy SourceFiles="$(ProjectDepsFilePath)" DestinationFiles="$(OmeDependencyList)" />
+  </Target>
+
 </Project>

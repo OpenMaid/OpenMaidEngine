@@ -147,6 +147,12 @@ def windows_verification() -> bytes:
             "subsystem": "windows-gui",
             "natives": {name: "AMD64" for name in ("av_libglesv2.dll", "libHarfBuzzSharp.dll", "libSkiaSharp.dll")},
         },
+        "tool": {
+            "program": "OME-Tool.exe",
+            "machine": "AMD64",
+            "subsystem": "windows-cui",
+            "imports": ["ADVAPI32.dll", "KERNEL32.dll", "ole32.dll", "USER32.dll"],
+        },
     })
 
 
@@ -193,7 +199,7 @@ def create_artifacts(
     create_reference(reference)
 
     linux_info = build_info("linux-x64")
-    linux_ledger = linux_ledger or f"{'0' * 64}  OME\n{'2' * 64}  OME-Launcher\n".encode()
+    linux_ledger = linux_ledger or f"{'0' * 64}  OME\n{'2' * 64}  OME-Launcher\n{'4' * 64}  OME-Tool\n".encode()
     linux_archive = linux / publish_github_release.LINUX_ARCHIVE
     with tarfile.open(linux_archive, "w:gz") as archive:
         add_tar_bytes(
@@ -215,7 +221,8 @@ def create_artifacts(
     write_checksum(linux, linux_archive)
 
     windows_info = build_info("win-x64")
-    windows_ledger = windows_ledger or f"{'1' * 64}  OME.exe\n{'3' * 64}  OME-Launcher.exe\n".encode()
+    windows_ledger = windows_ledger or (
+        f"{'1' * 64}  OME.exe\n{'3' * 64}  OME-Launcher.exe\n{'5' * 64}  OME-Tool.exe\n".encode())
     verification = verification or windows_verification()
     windows_archive = windows / publish_github_release.WINDOWS_ARCHIVE
     with zipfile.ZipFile(windows_archive, "w", compression=zipfile.ZIP_DEFLATED) as archive:
@@ -498,15 +505,44 @@ class PublishGithubReleaseTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     publish_github_release.prepare_release_assets(TAG, TARGET, *directories)
 
-    def test_refuses_a_smoke_log_without_the_launchers_steps(self) -> None:
-        # Launcher plan §9.4: the engine's smoke, the launcher's check and the hand-over each leave their line.
-        self.assertEqual(("PACKAGE SMOKE OK: opcodes=548 ffmpeg-abi=3", "LAUNCHER CHECK OK: checks=6", "HAND-OVER OK"),
-                         publish_github_release.SMOKE_MARKERS)
-        engine, check, hand_over = publish_github_release.SMOKE_MARKERS
+    def test_refuses_archives_without_the_tool(self) -> None:
+        # Modding from a release spec §6.4, plan §3.4: both ledgers list the tool, and the Windows report checked it
+        # as an AMD64 console program that imports no Visual C++ runtime and no .NET runtime.
+        accepted = json.loads(windows_verification())
+
+        def tool(**changes):
+            return json_bytes(dict(accepted, tool=dict(accepted["tool"], **changes)))
+
         cases = (
-            (f"{engine}\n", f"{check}, {hand_over}"),
-            (f"{engine}\n{check}\nthe hand-over failed: with no argument the engine exited with 2\n", hand_over),
-            (f"{check}\n{hand_over}\n", engine),
+            ({"linux_ledger": f"{'0' * 64}  OME\n{'2' * 64}  OME-Launcher\n{'4' * 64}  OME-Tool.exe\n".encode()},
+             "Linux SHA256SUMS does not contain the packaged tool"),
+            ({"windows_ledger": f"{'1' * 64}  OME.exe\n{'3' * 64}  OME-Launcher.exe\n".encode()},
+             "Windows SHA256SUMS does not contain the packaged tool"),
+            ({"verification": json_bytes({key: value for key, value in accepted.items() if key != "tool"})},
+             "not accepted.*tool"),
+            ({"verification": tool(subsystem="windows-gui")}, "not accepted.*tool"),
+            ({"verification": tool(machine="I386")}, "not accepted.*tool"),
+            ({"verification": tool(imports=["KERNEL32.dll", "VCRUNTIME140.dll"])}, "not accepted.*tool"),
+            ({"verification": tool(imports="KERNEL32.dll")}, "not accepted.*tool"),
+        )
+        for overrides, message in cases:
+            with self.subTest(message), tempfile.TemporaryDirectory() as temporary:
+                directories = create_artifacts(Path(temporary), **overrides)
+                with self.assertRaisesRegex(ValueError, message):
+                    publish_github_release.prepare_release_assets(TAG, TARGET, *directories)
+
+    def test_refuses_a_smoke_log_without_the_launchers_steps(self) -> None:
+        # Launcher plan §9.4, modding from a release plan §3.4: the engine's smoke, the launcher's check, the tool's
+        # step and the hand-over each leave their line.
+        self.assertEqual(("PACKAGE SMOKE OK: opcodes=548 ffmpeg-abi=3", "LAUNCHER CHECK OK: checks=6",
+                          "TOOL OK: gates=2,5,7", "HAND-OVER OK"), publish_github_release.SMOKE_MARKERS)
+        engine, check, tool, hand_over = publish_github_release.SMOKE_MARKERS
+        cases = (
+            (f"{engine}\n", f"{check}, {tool}, {hand_over}"),
+            (f"{engine}\n{check}\nthe tool failed: omp check of the fragment exited with 1\n", f"{tool}, {hand_over}"),
+            (f"{engine}\n{check}\n{tool}\nthe hand-over failed: with no argument the engine exited with 2\n",
+             hand_over),
+            (f"{check}\n{tool}\n{hand_over}\n", engine),
         )
         for log, missing in cases:
             with self.subTest(missing), tempfile.TemporaryDirectory() as temporary:

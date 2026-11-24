@@ -26,6 +26,9 @@ PACKAGE_NAME = "OME-windows-x64"
 RUNTIME = "win-x64"
 # The launcher beside the engine (launcher spec §10, plan §9.3): its program, natives and notices.
 LAUNCHER = publish_launcher.LAYOUTS[RUNTIME]
+# The mod tool beside them (modding from a release spec §6.4): its program and its runtime's notices.
+TOOL_FILES = publish_engine.tool_files(RUNTIME)
+TOOL = publish_engine.TARGETS[RUNTIME].tool
 # The data folder Godot loads the engine from, exactly: the engine's NativeAOT library with the notices of the .NET
 # runtime it holds (tools/publish_engine.py), and the FFmpeg bundle. A .NET runtime file there would send Godot down its
 # hostfxr route (docs/platform-portability.md, "Fewer files in a package").
@@ -35,10 +38,12 @@ REQUIRED_FILES = (
     "OME.pck",
     *(f"{DATA_DIRECTORY}/{name}" for name in DATA_FILES),
     *LAUNCHER.files(),
+    *TOOL_FILES,
 )
 FORBIDDEN_FILES = (
     "OME",
     publish_launcher.LAYOUTS["linux-x64"].program,
+    publish_engine.TARGETS["linux-x64"].tool,
 )
 PROJECT_FILES = ("LICENSE", "README.md", "THIRD_PARTY_NOTICES.md")
 # Godot's notices, the MinGW-w64 runtime's, which the shim and FFmpeg DLLs link statically
@@ -58,11 +63,12 @@ def _resolved_directory(path: Path, label: str) -> Path:
 
 
 def verify_export(
-    export_directory: Path, objdump: str, launcher_deps: Path | None = None, engine_deps: Path | None = None
+    export_directory: Path, objdump: str, launcher_deps: Path | None = None, engine_deps: Path | None = None,
+    tool_deps: Path | None = None,
 ) -> tuple[Path, dict[str, Any]]:
-    """Check the export's files and PE files, and that THIRD_PARTY_NOTICES.md names every package the engine and the
-    launcher ship (`engine_deps` and `launcher_deps`: the dependency lists their publishes kept, by default
-    publish_engine's and publish_launcher's)."""
+    """Check the export's files and PE files, and that THIRD_PARTY_NOTICES.md names every package the engine, the
+    launcher and the tool ship (`engine_deps`, `launcher_deps` and `tool_deps`: the dependency lists their publishes
+    kept, by default publish_engine's and publish_launcher's)."""
     export_directory = _resolved_directory(export_directory, "Windows export")
     missing = [name for name in REQUIRED_FILES if not (export_directory / name).is_file()]
     if missing:
@@ -90,6 +96,9 @@ def verify_export(
     package_notices.verify_launcher_notices(
         launcher_deps or publish_launcher.dependency_list(LAUNCHER.runtime), REPO / "THIRD_PARTY_NOTICES.md"
     )
+    package_notices.verify_tool_notices(
+        tool_deps or publish_engine.tool_dependency_list(RUNTIME), REPO / "THIRD_PARTY_NOTICES.md"
+    )
     executable_machine = verify_windows_native.pe_machine(export_directory / "OME.exe")
     if executable_machine != verify_windows_native.PE_MACHINE_AMD64:
         raise ValueError(
@@ -109,6 +118,7 @@ def verify_export(
             data_directory / verify_windows_native.ENGINE_LIBRARY, objdump),
         "native": native_report,
         "launcher": verify_windows_native.verify_launcher(export_directory, LAUNCHER.program, LAUNCHER.natives),
+        "tool": verify_windows_native.verify_tool(export_directory / TOOL, objdump),
     }
 
 

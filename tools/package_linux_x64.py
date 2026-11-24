@@ -12,6 +12,7 @@ import queue
 import re
 import shlex
 import shutil
+import signal
 import stat
 import struct
 import subprocess
@@ -19,7 +20,7 @@ import tarfile
 import tempfile
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +35,9 @@ PACKAGE_NAME = "OME-linux-x64"
 RUNTIME = "linux-x64"
 # The launcher beside the engine (launcher spec §10, plan §9.3): its program, natives and notices.
 LAUNCHER = publish_launcher.LAYOUTS[RUNTIME]
+# The mod tool beside them (modding from a release spec §6.4): its program and its runtime's notices.
+TOOL_FILES = publish_engine.tool_files(RUNTIME)
+TOOL = publish_engine.TARGETS[RUNTIME].tool
 # The FFmpeg shim and the libraries it loads (native/ome_movie_ffmpeg/build-linux-x64.sh), with their notices.
 FFMPEG_FILES = (
     "libome_movie_ffmpeg.so",
@@ -54,10 +58,12 @@ REQUIRED_FILES = (
     "OME.pck",
     *(f"{DATA_DIRECTORY}/{name}" for name in DATA_FILES),
     *LAUNCHER.files(),
+    *TOOL_FILES,
 )
 FORBIDDEN_FILES = (
     publish_launcher.LAYOUTS["win-x64"].program,
     *publish_launcher.LAYOUTS["win-x64"].natives,
+    publish_engine.TARGETS["win-x64"].tool,
 )
 # The engine's NativeAOT library: what Godot calls to start it, and the only libraries it may need, those of glibc
 # itself, which every system has.
@@ -101,39 +107,49 @@ def _readelf(readelf: str, path: Path, *arguments: str) -> str:
     return process.stdout
 
 
-def verify_engine_library(path: Path, readelf: str = "readelf") -> dict[str, object]:
-    """Check the engine's NativeAOT library: an x86-64 ELF file that exports Godot's entry point, needs only glibc's
-    libraries, and no glibc newer than the package's floor."""
+def _verify_aot_binary(path: Path, readelf: str, label: str, export: str | None = None) -> dict[str, object]:
+    """Check a NativeAOT binary, the engine's library or the tool (`label` names it): an x86-64 ELF file that exports
+    `export` when given, needs only glibc's libraries, and no glibc newer than the package's floor."""
     with path.open("rb") as stream:
         header = stream.read(20)
     if (len(header) < 20 or header[:4] != b"\x7fELF" or header[4] != 2
             or struct.unpack_from("<H", header, 18)[0] != ELF_MACHINE_X86_64):
-        raise ValueError(f"Linux engine library is not an x86-64 ELF file: {path.name}")
-    symbols = _readelf(readelf, path, "--dyn-syms")
-    if not re.search(rf"\bGLOBAL\s+DEFAULT\s+\d+\s+{ENGINE_EXPORT}(?:@\S*)?\s*$", symbols, re.MULTILINE):
-        raise ValueError(f"Linux engine library does not export {ENGINE_EXPORT}: {path.name}; "
-                         "it is not a NativeAOT build")
+        raise ValueError(f"Linux {label} is not an x86-64 ELF file: {path.name}")
+    if export is not None:
+        symbols = _readelf(readelf, path, "--dyn-syms")
+        if not re.search(rf"\bGLOBAL\s+DEFAULT\s+\d+\s+{export}(?:@\S*)?\s*$", symbols, re.MULTILINE):
+            raise ValueError(f"Linux {label} does not export {export}: {path.name}; it is not a NativeAOT build")
     dynamic = _readelf(readelf, path, "--dynamic")
     needed = sorted(set(re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", dynamic)))
     foreign = [name for name in needed if name not in GLIBC_LIBRARIES]
     if foreign:
-        raise ValueError("Linux engine library needs libraries outside glibc: " + ", ".join(foreign))
+        raise ValueError(f"Linux {label} needs libraries outside glibc: " + ", ".join(foreign))
     versions = sorted(set(re.findall(r"\bGLIBC_(\d+(?:\.\d+)*)", _readelf(readelf, path, "--version-info"))),
                       key=_version)
     if not versions:
-        raise ValueError(f"could not determine the glibc the engine library needs: {path.name}")
+        raise ValueError(f"could not determine the glibc the {label} needs: {path.name}")
     floor = minimum_glibc()
     if _version(versions[-1]) > _version(floor):
-        raise ValueError(f"Linux engine library needs glibc {versions[-1]}, newer than the package's floor {floor}; "
+        raise ValueError(f"Linux {label} needs glibc {versions[-1]}, newer than the package's floor {floor}; "
                          f"link it on glibc {floor}, as the release workflow's manylinux container does")
-    return {"export": ENGINE_EXPORT, "needed": needed, "glibc": versions[-1]}
+    return {"needed": needed, "glibc": versions[-1]}
+
+
+def verify_engine_library(path: Path, readelf: str = "readelf") -> dict[str, object]:
+    """Check the engine's NativeAOT library, which exports Godot's entry point (_verify_aot_binary)."""
+    return {"export": ENGINE_EXPORT, **_verify_aot_binary(path, readelf, "engine library", ENGINE_EXPORT)}
+
+
+def verify_tool(path: Path, readelf: str = "readelf") -> dict[str, object]:
+    """Check the mod tool (modding from a release spec §6.4), a NativeAOT program (_verify_aot_binary)."""
+    return _verify_aot_binary(path, readelf, "tool")
 
 
 def verify_export(export_directory: Path, launcher_deps: Path | None = None, engine_deps: Path | None = None,
-                  readelf: str = "readelf") -> Path:
-    """Check the export's files and the engine's library, and that THIRD_PARTY_NOTICES.md names every package the engine
-    and the launcher ship (`engine_deps` and `launcher_deps`: the dependency lists their publishes kept, by default
-    publish_engine's and publish_launcher's)."""
+                  readelf: str = "readelf", tool_deps: Path | None = None) -> Path:
+    """Check the export's files, the engine's library and the tool, and that THIRD_PARTY_NOTICES.md names every package
+    the engine, the launcher and the tool ship (`engine_deps`, `launcher_deps` and `tool_deps`: the dependency lists
+    their publishes kept, by default publish_engine's and publish_launcher's)."""
     export_directory = _resolved_directory(export_directory, "Linux export")
     missing = [name for name in REQUIRED_FILES if not (export_directory / name).is_file()]
     if missing:
@@ -156,10 +172,14 @@ def verify_export(export_directory: Path, launcher_deps: Path | None = None, eng
     package_notices.verify_launcher_notices(
         launcher_deps or publish_launcher.dependency_list(LAUNCHER.runtime), REPO / "THIRD_PARTY_NOTICES.md"
     )
-    for executable in (export_directory / "OME", export_directory / LAUNCHER.program):
+    package_notices.verify_tool_notices(
+        tool_deps or publish_engine.tool_dependency_list(RUNTIME), REPO / "THIRD_PARTY_NOTICES.md"
+    )
+    for executable in (export_directory / "OME", export_directory / LAUNCHER.program, export_directory / TOOL):
         if os.name != "nt" and not os.access(executable, os.X_OK):
             raise ValueError(f"Linux export executable bit is not set: {executable}")
     verify_engine_library(data_directory / publish_engine.TARGETS[RUNTIME].library, readelf)
+    verify_tool(export_directory / TOOL, readelf)
     return export_directory
 
 
@@ -247,8 +267,9 @@ def create_package(
     epoch: int,
     launcher_deps: Path | None = None,
     engine_deps: Path | None = None,
+    tool_deps: Path | None = None,
 ) -> tuple[Path, Path]:
-    export_directory = verify_export(export_directory, launcher_deps, engine_deps)
+    export_directory = verify_export(export_directory, launcher_deps, engine_deps, tool_deps=tool_deps)
     output_directory = output_directory.resolve()
     expected_parent = (REPO / "build/package").resolve()
     if output_directory != expected_parent:
@@ -361,8 +382,10 @@ def smoke_command(package_root: Path) -> list[str]:
 LAUNCHER_CHECK_KINDS = ("Install", "Fingerprint", "Root", "Packages", "Link", "Lock")
 LAUNCHER_CHECK_MARKER = f"LAUNCHER CHECK OK: checks={len(LAUNCHER_CHECK_KINDS)}"
 HAND_OVER_MARKER = "HAND-OVER OK"
+# The smoke's tool step (modding from a release spec §12, gates 2, 5 and 7; plan §3.4).
+TOOL_MARKER = "TOOL OK: gates=2,5,7"
 # Every line an accepted smoke log holds; the release publisher requires them all.
-SMOKE_MARKERS = (SMOKE_MARKER, LAUNCHER_CHECK_MARKER, HAND_OVER_MARKER)
+SMOKE_MARKERS = (SMOKE_MARKER, LAUNCHER_CHECK_MARKER, TOOL_MARKER, HAND_OVER_MARKER)
 SMOKE_PROFILE = "smoke"
 SMOKE_GAME = "himegari"
 # One line of `OME-Launcher --check`: the status padded to eight, then `Kind: message`.
@@ -400,17 +423,17 @@ def scripts_the_modules_run(game: str) -> list[str]:
     return [f"{name}.BIN" for name in sorted(found)]
 
 
-def write_smoke_home(home: Path, game: str = SMOKE_GAME) -> Path:
+def write_smoke_home(home: Path, game: str = SMOKE_GAME, extra_scripts: Sequence[str] = ()) -> Path:
     """An OME home for `OME-Launcher --check smoke --home HOME`: `profiles/smoke/` in native mode on
     `installs/<game>/`. Its SYS4INI.BIN is the smallest complete catalog:
     - the header of the game's first catalog identity (`engine/Ome.Engine/Profiles/<game>.json`);
     - a directory of one archive, one placeholder entry and an empty entry for each script the game's OMS modules
-      run (scripts_the_modules_run), then an empty trailer as the engine reads one (no metadata, a zero-length
-      settings block, nothing after it), packed as LZSS literals.
+      run (scripts_the_modules_run) and each of `extra_scripts`, then an empty trailer as the engine reads one (no
+      metadata, a zero-length settings block, nothing after it), packed as LZSS literals.
     A header alone is refused, since its expanded size 0 fails (launcher plan §9). Returns the home."""
     identity = json.loads((REPO / f"engine/Ome.Engine/Profiles/{game}.json").read_text(encoding="utf-8"))
     identity = identity["catalogIdentities"][0]
-    names = ["@", *scripts_the_modules_run(game)]
+    names = ["@", *scripts_the_modules_run(game), *extra_scripts]
     directory = (struct.pack("<I", 1) + _cp932_field("DATA.ALF", 256) + struct.pack("<I", len(names))
                  + b"".join(_cp932_field(name, 64) + bytes(16) for name in names) + struct.pack("<II", 0, 0))
     packed = bytearray()
@@ -554,6 +577,292 @@ def released_copy(package_root: Path) -> Iterator[Path]:
         yield copy
 
 
+# The tool step's script, mods and expectations. The script is compiled into the smoke install, which lists it, and the
+# fragment patches it at its first instruction, naming one of the game's globals (its base mod's oms/globals.json).
+SMOKE_SCRIPT = "SMOKE.BIN"
+SMOKE_GLOBAL = "acting_entity_index"
+SMOKE_MOD = "smoke.fragment"
+BROKEN_MOD = "smoke.broken"
+# What the engine prints when it has linked the fragment under --quit-after-link (godot/Main.Mods.cs, Main.cs).
+LINKED_FRAGMENT = f"[mods] load order: {SMOKE_MOD} 1.0.0"
+QUIT_AFTER_LINK = "[mods] --quit-after-link: the stack linked; quitting"
+# What the engine prints when start passes it a game option beside a profile file (RunResolver).
+REFUSED_GAME_ROOT = "--game-root is refused with a profile file"
+# How long the tool has to end after SIGINT: its grace period (StartCommand.Grace, 10 s) and a margin.
+INTERRUPT_LIMIT_S = 30.0
+# How long a process of the start's group may take to end once the tool has.
+SURVIVOR_LIMIT_S = 5.0
+
+
+def smoke_script_source(game: str = SMOKE_GAME) -> str:
+    return f'oms 1\nscript "{SMOKE_SCRIPT.removesuffix(".BIN")}"\nuse {game}.globals\n\n    {SMOKE_GLOBAL} = 0x0\n    exit\n'
+
+
+def write_smoke_mods(mods: Path, header: str, game: str = SMOKE_GAME) -> tuple[Path, Path]:
+    """Two mod folders in `mods`: SMOKE_MOD, a fragment with the patch header `header` (what `oms-patch
+    --fingerprint` printed) that `use`s the game's globals and its ADV module, the base mod's toolchain, and assigns
+    SMOKE_GLOBAL, and BROKEN_MOD, which requires
+    a mod nobody has, so the Link check fails. Returns both."""
+    manifest = ('omp = 1\nid = "{id}"\nname = "{name}"\nversion = "1.0.0"\n\n[game]\nprofile = "' + game
+                + '"\ntarget = "native"\n')
+    fragment = mods / SMOKE_MOD
+    (fragment / "patches").mkdir(parents=True)
+    (fragment / "manifest.toml").write_text(manifest.format(id=SMOKE_MOD, name="Smoke: a fragment"),
+                                            encoding="utf-8", newline="\n")
+    (fragment / "patches/smoke.oms").write_text(
+        f"oms 1\n{header}\nuse {game}.globals\nuse {game}.adv\n\nbefore site 0x0 {{\n    {SMOKE_GLOBAL} = 0x1\n}}\n",
+        encoding="utf-8", newline="\n")
+    broken = mods / BROKEN_MOD
+    broken.mkdir(parents=True)
+    (broken / "manifest.toml").write_text(
+        manifest.format(id=BROKEN_MOD, name="Smoke: a missing requirement")
+        + '\n[[requires]]\nid = "smoke.missing"\n', encoding="utf-8", newline="\n")
+    return fragment, broken
+
+
+def tool_version_problems(run: SmokeRun, commit: str) -> list[str]:
+    """Gate 5: `OME-Tool --version` exits 0 with one line naming the package's commit."""
+    lines = run.output.strip().splitlines()
+    pattern = re.compile(rf"^OME-Tool \S+ \(commit {re.escape(commit[:12])}\)$")
+    if run.returncode != 0 or len(lines) != 1 or not pattern.match(lines[0]):
+        return [f"--version exited {run.exit()} and printed {run.output.strip()!r}, not one line naming commit "
+                f"{commit[:12]}"]
+    return []
+
+
+def tool_refusal_problems(run: SmokeRun) -> list[str]:
+    """Gate 5: a command the tool lacks exits 2 with the tool's own list."""
+    if run.returncode != 2 or "OME-Tool has no command 'trace'; its commands: " not in run.output:
+        return [f"a command the tool lacks exited {run.exit()}, not 2 with the tool's commands"]
+    return []
+
+
+def tool_check_problems(run: SmokeRun, game: str = SMOKE_GAME) -> list[str]:
+    """Gate 2: `omp check` links the fragment on the loose script, with the base mod's toolchain and its patch
+    points."""
+    problems = []
+    if run.returncode != 0:
+        problems.append(f"omp check of the fragment exited {run.exit()}")
+    toolchain = next((line for line in run.output.splitlines() if line.startswith(f"toolchain: {game}-base ")), None)
+    if toolchain is None:
+        problems.append(f"omp check named no toolchain of {game}-base")
+    elif any(part not in toolchain for part in ("oms/globals.json", "oms/adv.oms", "layout/points.json")):
+        problems.append(f"the toolchain line lacks the globals, the ADV module or the patch points: {toolchain}")
+    if f"{SMOKE_SCRIPT}: compiled patches/smoke.oms" not in run.output:
+        problems.append(f"omp check did not compile the fragment on {SMOKE_SCRIPT}")
+    return problems
+
+
+def _last_line(text: str) -> str:
+    lines = text.rstrip("\n").splitlines()
+    return lines[-1] if lines else ""
+
+
+def start_problems(run: SmokeRun, engine_log: str, code: int, line: str, label: str) -> list[str]:
+    """Gate 7: `start` relays the engine's lines and its exit code `code`, and the profile's engine.log keeps them:
+    `line`, one the engine prints, is in both, and the log's last line is the launcher's."""
+    problems = []
+    if run.returncode != code:
+        problems.append(f"{label}: start exited {run.exit()}, not the engine's {code}")
+    if f"OME-Tool: starting {SMOKE_PROFILE} with " not in run.output:
+        problems.append(f"{label}: start did not say it started the engine")
+    if line not in run.output:
+        problems.append(f"{label}: start did not relay the engine's line {line!r}")
+    if line not in engine_log:
+        problems.append(f"{label}: engine.log lacks the engine's line {line!r}")
+    if _last_line(engine_log) != f"[launcher] the engine exited with {code}":
+        problems.append(f"{label}: engine.log ends {_last_line(engine_log)!r}")
+    return problems
+
+
+def refused_start_problems(run: SmokeRun, log_before: str, log_after: str) -> list[str]:
+    """Gate 7: a `--mod` that fails the Link check stops the start (exit 1) before the engine runs, so the engine
+    prints nothing and engine.log is not touched."""
+    problems = []
+    if run.returncode != 1:
+        problems.append(f"a start with a broken mod exited {run.exit()}, not 1")
+    if f"{SMOKE_PROFILE} is not started: a check failed: Link" not in run.output:
+        problems.append("a start with a broken mod did not name the failed Link check")
+    if SMOKE_MARKER in run.output or log_after != log_before:
+        problems.append("a start with a broken mod ran the engine")
+    return problems
+
+
+def interrupt_problems(run: SmokeRun, engine_log: str, survivors: Sequence[int]) -> list[str]:
+    """Ctrl+C's path in the tool (plan §3.3), after SIGINT to the tool alone: it says it closes the engine, ends within
+    INTERRUPT_LIMIT_S, engine.log says the engine was stopped, and no process of the start is left."""
+    problems = group_interrupt_problems(run, survivors)
+    if "OME-Tool: closing the engine" not in run.output:
+        problems.append("after SIGINT the tool did not say it closes the engine")
+    if not _last_line(engine_log).startswith("[launcher] the engine was stopped (Ctrl+C"):
+        problems.append(f"after SIGINT engine.log ends {_last_line(engine_log)!r}")
+    return problems
+
+
+def group_interrupt_problems(run: SmokeRun, survivors: Sequence[int]) -> list[str]:
+    """Ctrl+C in a terminal, which sends SIGINT to the tool and the engine alike: whichever ends first, the tool ends
+    within INTERRUPT_LIMIT_S and leaves no process of the start running. Which lines it prints depends on which process
+    the signal reaches first, so they are not checked."""
+    problems = []
+    if run.returncode is None:
+        problems.append(f"after SIGINT the tool did not end within {INTERRUPT_LIMIT_S:.0f} s")
+    if survivors:
+        problems.append(f"after SIGINT the start left processes running: {', '.join(map(str, survivors))}")
+    return problems
+
+
+def _group_members(group: int) -> list[int]:
+    """The processes of process group `group` that still run (a zombie has ended, whether or not it is reaped)."""
+    members = []
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            fields = (entry / "stat").read_text(encoding="ascii", errors="replace").rsplit(")", 1)[1].split()
+        except (OSError, IndexError):
+            continue
+        # After the command's closing parenthesis: state, ppid, pgrp.
+        if len(fields) > 2 and fields[2] == str(group) and fields[0] != "Z":
+            members.append(int(entry.name))
+    return sorted(members)
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
+
+
+def _interrupt_start(command: list[str], cwd: Path, environment: dict[str, str], group: bool,
+                     timeout: float = SMOKE_TIMEOUT_S) -> tuple[SmokeRun, float | None, list[int]]:
+    """Run `start` as a terminal runs it, in a process group of its own that its engine joins, and once the engine has
+    printed SMOKE_MARKER send SIGINT to the tool alone, or with `group` to the whole group, as Ctrl+C in a terminal
+    does. The engine holds (`--hold`) until its standard input, the tool's, closes, which happens only afterwards.
+    Returns the run (returncode None when the tool outlived INTERRUPT_LIMIT_S), the seconds from the signal to its exit,
+    and the processes of the group still running SURVIVOR_LIMIT_S after it, which are then killed."""
+    process = subprocess.Popen(command, cwd=cwd, env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, start_new_session=True)
+    lines: list[str] = []
+    printed = threading.Event()
+
+    def read() -> None:
+        for raw in process.stdout:
+            text = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+            lines.append(text)
+            if SMOKE_MARKER in text:
+                printed.set()
+
+    reader = threading.Thread(target=read, daemon=True)
+    reader.start()
+    elapsed: float | None = None
+    survivors: list[int] = []
+    try:
+        if printed.wait(timeout):
+            sent = time.monotonic()
+            if group:
+                os.killpg(process.pid, signal.SIGINT)
+            else:
+                process.send_signal(signal.SIGINT)
+            try:
+                process.wait(INTERRUPT_LIMIT_S)
+                elapsed = time.monotonic() - sent
+            except subprocess.TimeoutExpired:
+                pass
+        else:
+            lines.append(f"(the engine did not print {SMOKE_MARKER} within {timeout:.0f} s)")
+    finally:
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+        # A process the tool left behind has SURVIVOR_LIMIT_S to end, then is killed.
+        deadline = time.monotonic() + SURVIVOR_LIMIT_S
+        while (survivors := _group_members(process.pid)) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        if survivors:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+        process.stdin.close()
+        reader.join(5)
+    return (SmokeRun(tuple(command), process.returncode if elapsed is not None else None, "\n".join(lines) + "\n"),
+            elapsed, survivors)
+
+
+def run_tool(folder: Path, log: Path, timeout: float = SMOKE_TIMEOUT_S) -> None:
+    """The smoke's tool step (modding from a release spec §12; plan §3.4), on a released_copy, in a scratch OME home
+    from write_smoke_home whose install also lists SMOKE_SCRIPT:
+    - gate 5: `--version` names the package's commit (BUILD-INFO.json), and a command the tool lacks exits 2;
+    - gate 2: `oms-compile` puts SMOKE_SCRIPT in the install, `oms-patch --fingerprint` gives its header, and
+      `omp check` links a fragment on it that uses the game's globals and its ADV module, the base mod's toolchain;
+    - gates 2 and 7: `start --mod FRAGMENT --engine-arg --headless -- --quit-after-link` has the engine link the
+      fragment itself and quit, and relays its lines and its exit 0, which engine.log keeps; with `-- --game-root DIR`
+      the engine refuses and start relays its exit 2; a `--mod` that fails the Link check stops the start before the
+      engine runs;
+    - Ctrl+C (plan §3.3): SIGINT to the tool alone takes its path (it asks the engine to close, and ends it after its
+      grace: the smoke runs before the control channel listens), and SIGINT to the process group, as a terminal sends
+      it, ends the start within INTERRUPT_LIMIT_S; neither leaves an engine running.
+    Appends every run to `log`, then TOOL_MARKER."""
+    folder = _resolved_directory(folder, "package copy")
+    tool = str(folder / TOOL)
+    commit = json.loads((folder / "BUILD-INFO.json").read_text(encoding="utf-8"))["source_commit"]
+    problems: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="ome tool ") as temporary:
+        scratch = Path(temporary)
+        environment = smoke_environment(scratch)
+        home = write_smoke_home(scratch / "home", extra_scripts=(SMOKE_SCRIPT,))
+        install = home / "installs" / SMOKE_GAME
+        engine_log = home / "profiles" / SMOKE_PROFILE / "diagnostics" / "engine.log"
+        game = ("--game", SMOKE_GAME, "--game-root", str(install))
+        profile = ("--profile", SMOKE_PROFILE, "--home", str(home))
+
+        def step(label: str, *arguments: str) -> SmokeRun:
+            run = _run_step([tool, *arguments], scratch, environment, timeout)
+            _append(log, f"== the tool, {label}: {' '.join(run.command)} (exited {run.exit()})", run.output)
+            return run
+
+        problems += tool_version_problems(step("its version", "--version"), commit)
+        problems += tool_refusal_problems(step("a command it lacks", "trace"))
+
+        source = scratch / "smoke.oms"
+        source.write_text(smoke_script_source(), encoding="utf-8", newline="\n")
+        compiled = step("compiling a script into the install", "oms-compile", "--source", str(source),
+                        "--output", str(install / SMOKE_SCRIPT), *game)
+        if compiled.returncode != 0:
+            problems.append(f"oms-compile exited {compiled.exit()}")
+        fingerprint = step("the script's patch header", "oms-patch", "--fingerprint", SMOKE_SCRIPT, *game)
+        header = next((line for line in fingerprint.output.splitlines()
+                       if line.startswith(f'patch "{SMOKE_SCRIPT}" fingerprint "sha256:')), None)
+        if header is None:
+            problems.append(f"oms-patch --fingerprint printed no header for {SMOKE_SCRIPT}")
+        else:
+            fragment, broken = write_smoke_mods(scratch / "mods", header)
+            problems += tool_check_problems(step("checking the fragment", "omp", "check", "--mod", str(fragment),
+                                                 *profile))
+            ran = step("start, the engine linking the fragment", "start", *profile, "--mod", str(fragment),
+                       "--engine-arg", "--headless", "--", "--quit-after-link")
+            problems += start_problems(ran, _read(engine_log), 0, LINKED_FRAGMENT, "the engine's link")
+            if QUIT_AFTER_LINK not in ran.output:
+                problems.append("the engine's link: the engine did not quit after linking")
+            refused = step("start, the engine refusing", "start", *profile, "--engine-arg", "--headless", "--",
+                           "--game-root", str(install))
+            problems += start_problems(refused, _read(engine_log), 2, REFUSED_GAME_ROOT, "the engine's refusal")
+            before = _read(engine_log)
+            stopped = step("start, a mod that fails the Link check", "start", *profile, "--mod", str(broken),
+                           "--engine-arg", "--headless", "--", "--package-smoke")
+            problems += refused_start_problems(stopped, before, _read(engine_log))
+            command = [tool, "start", *profile, "--engine-arg", "--headless", "--", "--package-smoke", "--hold"]
+            for group in (False, True):
+                interrupted, elapsed, survivors = _interrupt_start(command, scratch, environment, group, timeout)
+                label = "SIGINT to the process group" if group else "SIGINT to the tool"
+                _append(log, f"== the tool, start and {label}: {' '.join(command)} (exited {interrupted.exit()}"
+                        + (f", {elapsed:.1f} s after SIGINT" if elapsed is not None else "") + ")",
+                        interrupted.output, "engine.log ends: " + _last_line(_read(engine_log)),
+                        "left running: " + (", ".join(map(str, survivors)) or "nothing"))
+                problems += (group_interrupt_problems(interrupted, survivors) if group
+                             else interrupt_problems(interrupted, _read(engine_log), survivors))
+    if problems:
+        _append(log, "the tool failed: " + "; ".join(problems))
+        raise SmokeError("the tool failed: " + "; ".join(problems))
+    _append(log, TOOL_MARKER)
+
+
 def run_hand_over(folder: Path, log: Path, timeout: float = SMOKE_TIMEOUT_S) -> None:
     """The smoke's third step (launcher spec §5.6), on a released_copy, whose launcher it replaces with
     write_launcher_stub's stub; both runs start from a folder with no game.
@@ -597,10 +906,12 @@ def main() -> int:
     verify.add_argument("export_directory", type=Path)
     verify.add_argument("--launcher-deps", type=Path, help="the launcher's kept dependency list")
     verify.add_argument("--engine-deps", type=Path, help="the engine's kept dependency list")
+    verify.add_argument("--tool-deps", type=Path, help="the tool's kept dependency list")
     package = subparsers.add_parser("package")
     package.add_argument("export_directory", type=Path)
     package.add_argument("--launcher-deps", type=Path, help="the launcher's kept dependency list")
     package.add_argument("--engine-deps", type=Path, help="the engine's kept dependency list")
+    package.add_argument("--tool-deps", type=Path, help="the tool's kept dependency list")
     package.add_argument("--output-directory", type=Path, default=REPO / "build/package")
     smoke = subparsers.add_parser("smoke")
     smoke.add_argument("package_root", type=Path)
@@ -608,16 +919,18 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "verify":
-        print(verify_export(args.export_directory, args.launcher_deps, args.engine_deps))
+        print(verify_export(args.export_directory, args.launcher_deps, args.engine_deps, tool_deps=args.tool_deps))
         return 0
     if args.command == "smoke":
-        # Three steps, each adding to the log (launcher plan §9.4): the engine, the launcher's check, the hand-over.
+        # Four steps, each adding to the log (launcher plan §9.4, modding from a release plan §3.4): the engine, the
+        # launcher's check, the tool, the hand-over, which replaces the copy's launcher and so comes last.
         package_root = args.package_root.resolve()  # the launcher's steps run from scratch folders
         try:
             run_smoke(smoke_command(package_root), SMOKE_MARKER, args.log)
-            # The launcher's steps run on the package as a player has it: outside the repository.
+            # The launcher's and the tool's steps run on the package as a player has it: outside the repository.
             with released_copy(package_root) as copy:
                 run_launcher_check([str(copy / LAUNCHER.program)], args.log)
+                run_tool(copy, args.log)
                 run_hand_over(copy, args.log)
         except SmokeError as error:
             print(f"package smoke: {error}", flush=True)
@@ -626,7 +939,7 @@ def main() -> int:
     epoch = source_date_epoch()
     package_root, archive_path = create_package(
         args.export_directory, args.output_directory, build_metadata(epoch), epoch, args.launcher_deps,
-        args.engine_deps,
+        args.engine_deps, args.tool_deps,
     )
     print(package_root)
     print(archive_path)

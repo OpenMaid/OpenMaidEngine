@@ -219,6 +219,14 @@ public partial class Main : Godot.Control
                 GetTree().Quit(2);
                 return;
             }
+            // --quit-after-link: the start ends once the stack has linked, as `omp check` would link it but in the
+            // engine itself (the release smoke's gate 2, modding from a release plan §3.4).
+            if (Array.IndexOf(userArgs, "--quit-after-link") >= 0)
+            {
+                GD.Print("[mods] --quit-after-link: the stack linked; quitting");
+                GetTree().Quit(0);
+                return;
+            }
             if (_modLayer != null)
             {
                 // Spec §6.5: the linked layer's loose files outrank --overlay-root roots and the game root; its

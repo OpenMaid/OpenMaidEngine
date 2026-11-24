@@ -64,7 +64,8 @@ jobs:
           ldd --version | head -n 1
           git rev-parse HEAD
 
-      - name: Publish the engine library
+      - name: Publish the engine library and the tool
+        # publish_engine.py publishes OME-Tool after the library, under the same stamp (build/engine-publish/).
         run: |
           python3 -X utf8 tools/opcodes_build.py --build
           python3 -X utf8 tools/publish_engine.py --runtime linux-x64
@@ -119,7 +120,8 @@ jobs:
           "/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products '*' \
             -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property displayName
 
-      - name: Publish the engine library
+      - name: Publish the engine library and the tool
+        # publish_engine.py publishes OME-Tool after the library, under the same stamp (build/engine-publish/).
         run: |
           python -X utf8 tools/opcodes_build.py --build
           python -X utf8 tools/publish_engine.py --runtime win-x64

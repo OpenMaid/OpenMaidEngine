@@ -38,6 +38,11 @@ def engine_deps(root: Path) -> Path:
     return root / "engine.deps.json"
 
 
+def tool_deps(root: Path) -> Path:
+    """The dependency list the tool's publish kept, beside the fixture export."""
+    return root / "tool.deps.json"
+
+
 ENGINE_LIBRARY = f"{package_windows_x64.DATA_DIRECTORY}/{verify_windows_native.ENGINE_LIBRARY}"
 
 
@@ -71,13 +76,16 @@ def make_export(root: Path) -> Path:
     for name in (package_windows_x64.LAUNCHER.program, *package_windows_x64.LAUNCHER.natives):
         write_pe(export / name)
     write_launcher_deps(launcher_deps(root), "win-x64")
+    write_pe(export / package_windows_x64.TOOL, subsystem=verify_windows_native.PE_SUBSYSTEM_WINDOWS_CUI)
+    write_deps(tool_deps(root), "win-x64")
     return export
 
 
 def verify(export: Path, root: Path, objdump: str | None = None) -> dict:
     completed = Mock(returncode=0, stdout=objdump if objdump is not None else objdump_text(), stderr="")
     with patch.object(verify_windows_native.subprocess, "run", return_value=completed):
-        return package_windows_x64.verify_export(export, "objdump", launcher_deps(root), engine_deps(root))[1]
+        return package_windows_x64.verify_export(export, "objdump", launcher_deps(root), engine_deps(root),
+                                                 tool_deps(root))[1]
 
 
 class PackageWindowsX64Tests(unittest.TestCase):
@@ -172,6 +180,52 @@ class PackageWindowsX64Tests(unittest.TestCase):
                 change(export)
                 with self.assertRaisesRegex(ValueError, message):
                     verify(export, root)
+
+    def test_verify_checks_the_tool_beside_the_engine(self) -> None:
+        # Modding from a release spec §6.4: an AMD64 console program that imports what the engine's library may.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = verify(make_export(root), root)
+        self.assertEqual({"program": "OME-Tool.exe", "machine": "AMD64", "subsystem": "windows-cui"},
+                         {key: report["tool"][key] for key in ("program", "machine", "subsystem")})
+        self.assertIn("KERNEL32.dll", report["tool"]["imports"])
+        cases = (
+            (lambda export: (export / "OME-Tool.exe").unlink(), "missing: OME-Tool.exe"),
+            (lambda export: (export / "OME-Tool-notices/Microsoft.NETCore.App.Runtime.win-x64-LICENSE.TXT").unlink(),
+             "missing: OME-Tool-notices/Microsoft.NETCore.App.Runtime.win-x64-LICENSE.TXT"),
+            (lambda export: (export / "OME-Tool").write_bytes(b"linux"), "Linux-only files: OME-Tool"),
+            (lambda export: (export / "OME-Tool.pdb").write_bytes(b"symbols"), "debug symbols: OME-Tool.pdb"),
+            (lambda export: write_pe(export / "OME-Tool.exe"), "Windows tool is not a console program"),
+            (lambda export: write_pe(export / "OME-Tool.exe", machine=0x014C,
+                                     subsystem=verify_windows_native.PE_SUBSYSTEM_WINDOWS_CUI),
+             "Windows tool is not AMD64"),
+        )
+        for change, message in cases:
+            with self.subTest(message), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                export = make_export(root)
+                change(export)
+                with self.assertRaisesRegex(ValueError, message):
+                    verify(export, root)
+        # objdump answers for each file: only the tool's imports the Visual C++ runtime.
+        def objdump(arguments, **_):
+            return Mock(returncode=0, stderr="", stdout=objdump_text(
+                extra_import="VCRUNTIME140.dll" if arguments[-1].endswith("OME-Tool.exe") else None))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            export = make_export(root)
+            with patch.object(verify_windows_native.subprocess, "run", side_effect=objdump), \
+                    self.assertRaisesRegex(ValueError, "Windows tool imports what a player's Windows lacks: "
+                                                       "VCRUNTIME140.dll"):
+                package_windows_x64.verify_export(export, "objdump", launcher_deps(root), engine_deps(root),
+                                                  tool_deps(root))
+        # Without the tool's kept dependency list, the notices check cannot run, and the export is refused.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            export = make_export(root)
+            tool_deps(root).unlink()
+            with self.assertRaisesRegex(ValueError, "the tool's dependency list was not found"):
+                verify(export, root)
 
     def test_verify_requires_notices_for_every_shipped_package(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -103,6 +103,9 @@ cp -- "$repo_root/build/native/win-x64/"*.dll "$repo_root/build/native/win-x64/F
 # The launcher beside the engine, cross-built here with the SDK alone (launcher plan §3.2, §9.2): its own publish,
 # a step of its own after Godot's export has exited, so their memory peaks never overlap on the runner (§3.7).
 python3 -X utf8 "$script_dir/publish_launcher.py" --runtime win-x64 --into "$export_directory"
+# The mod tool beside them (modding from a release spec §6.4), which the engine's job published with the library on
+# Windows: NativeAOT compiles for its own system only.
+python3 -X utf8 "$script_dir/publish_engine.py" --runtime win-x64 --place-tool "$export_directory"
 
 python3 -X utf8 "$script_dir/package_windows_x64.py" verify "$export_directory" --objdump "$objdump"
 mapfile -t package_outputs < <(

@@ -88,8 +88,9 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
     │   ├── build-linux-x64.sh                 one-command pinned Linux export/package/smoke pipeline
     │   ├── build-windows-x64.sh               Linux-hosted Windows cross-export/package pipeline
     │   ├── dotnet_publish_proxy.py            guarded Godot export-time publish staging (hands Godot the engine library)
-    │   ├── publish_engine.py                  the engine's NativeAOT release library for a target, built on its own
-    │   │                                      system, checked and stamped with its commit (build/engine-publish/)
+    │   ├── publish_engine.py                  the engine's NativeAOT release library and the mod tool for a target,
+    │   │                                      built on its own system, checked and stamped with its commit
+    │   │                                      (build/engine-publish/); --place-tool puts the tool in an export
     │   ├── publish_launcher.py                the launcher's release publish for a target, its files checked
     │   │                                      and placed beside the engine in an export (build/launcher-publish/)
     │   ├── publish_github_release.py          guarded/retry-safe draft-first GitHub release promotion
@@ -533,7 +534,8 @@ match. A headless editor scan (`<Godot console> --headless --editor --quit --pat
 `tools/build-windows-x64.sh` produce their complete disposable artifacts under `build/export/`. Both take the
 engine's NativeAOT library from `tools/publish_engine.py`, run beforehand on the target's own system: its publish,
 kept dependency list and commit stamp are disposable `build/engine-publish/<rid>/`, `<rid>.deps.json` and
-`<rid>.json`. Both put the launcher beside the engine through `tools/publish_launcher.py`, whose publish and kept
+`<rid>.json`, and the same run's publish of the mod tool `build/engine-publish/tool-<rid>/` and
+`tool-<rid>.deps.json`, which the build scripts place beside the engine. Both put the launcher beside the engine through `tools/publish_launcher.py`, whose publish and kept
 dependency list are disposable `build/launcher-publish/<rid>/` and `build/launcher-publish/<rid>.deps.json`.
 
 `godot/Main.cs` retains the front-end's startup and runtime coordination. Behavior-neutral partial-class

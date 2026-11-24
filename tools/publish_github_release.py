@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Callable, Protocol
 
 import package_linux_x64
+import publish_engine
 import publish_launcher
 import reference_bundle
 import verify_windows_native
@@ -401,6 +402,16 @@ def _validate_windows_verification(data: bytes) -> None:
     }
     if report.get("launcher") != expected_launcher:
         mismatches["launcher"] = (report.get("launcher"), expected_launcher)
+    # The mod tool beside them (modding from a release spec §6.4): an AMD64 console program that imports no Visual C++
+    # redistributable and no .NET runtime.
+    tool = report.get("tool")
+    tool_imports = tool.get("imports") if isinstance(tool, dict) else None
+    if (not isinstance(tool, dict) or not isinstance(tool_imports, list)
+            or not all(isinstance(name, str) for name in tool_imports)
+            or {key: tool.get(key) for key in ("program", "machine", "subsystem")}
+            != {"program": publish_engine.TARGETS["win-x64"].tool, "machine": "AMD64", "subsystem": "windows-cui"}
+            or any(verify_windows_native.FORBIDDEN_ENGINE_IMPORTS.match(name) for name in tool_imports)):
+        mismatches["tool"] = (tool, "an AMD64 console OME-Tool.exe with no forbidden import")
     if mismatches:
         raise ValueError(f"WINDOWS-VERIFICATION.json is not accepted: {mismatches}")
 
@@ -483,6 +494,9 @@ def prepare_release_assets(
     ):
         if f"  {layout.program}\n".encode() not in ledger:
             raise ValueError(f"{label} SHA256SUMS does not contain the packaged launcher")
+    for ledger, runtime, label in ((linux_ledger, "linux-x64", "Linux"), (windows_ledger, "win-x64", "Windows")):
+        if f"  {publish_engine.TARGETS[runtime].tool}\n".encode() not in ledger:
+            raise ValueError(f"{label} SHA256SUMS does not contain the packaged tool")
 
     output_directory = output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
@@ -615,8 +629,11 @@ def promote_release(
             "name": title,
             "body": (
                 "Automated Linux and Windows x64 release built from `" + target + "`.\n\n"
+                "Each archive holds the engine (`OME`), the launcher (`OME-Launcher`) and the mod tool "
+                "(`OME-Tool`), the command line a mod author runs. "
                 "The Linux archive passed the dynamic opcode/FFmpeg package smoke, the launcher's check with "
-                "no display, and the engine's hand-over to the launcher. The Windows archive "
+                "no display, the tool's checks (linking a fragment with the shipped toolchain, and starting the "
+                "engine from it), and the engine's hand-over to the launcher. The Windows archive "
                 "passed structural AMD64 PE, payload, ABI export, and FFmpeg import verification without "
                 "executing the EXE. Each archive contains its detailed build metadata and payload ledger.\n\n"
                 "`" + reference_archive(tag) + "` is the reference bundle: the modding guides and the registries "

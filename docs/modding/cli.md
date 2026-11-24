@@ -97,6 +97,7 @@ The full list, including the validation tools, is in `../tools-reference.md`.
 | `--no-mods` | Load no mods at all, not even installed ones. |
 | `--allow-network-paths` | With a profile file, open the network paths (`\\host\share\…`) it names for this run without the launcher's approval ([troubleshooting.md](troubleshooting.md), "Startup refusals"). |
 | `--skip-failed-mods` | If the stack does not link, drop the mods involved, say so, and start with the rest. Without it a failed link stops startup (exit code 2). |
+| `--quit-after-link` | Link the stack as a start does, print its load order and layer, and quit with exit code 0 (2 if it does not link). It checks the link the engine itself makes; `omp check` prints the whole report. |
 | `--forget-mod ID` | Release a removed mod's selector (see below). Repeatable. |
 | `--data-root DIR` | Use `DIR` as the profile root instead of the default, for a separate set of mods and saves. When `DIR` holds a `profile.toml`, that file names the game and the install, and the game options are refused ([troubleshooting.md](troubleshooting.md), "Startup refusals"). |
 | `--language TAG` | Present the game's text in `TAG` for this run, whatever `OME.INI` says: the catalogs the mods (and `--text-root`) hold for it. `ja` draws the scripts' text as written; `x-pseudo` brackets and lengthens every string, with no catalog. The menus and dialogs take the mods' `[[engine]]` entries for `TAG`, then the engine's own table for it, along its fallback chain, then Japanese ([languages.md](languages.md), "Engine text"). |

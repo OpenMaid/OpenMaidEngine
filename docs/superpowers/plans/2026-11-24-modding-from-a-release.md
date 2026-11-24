@@ -6,7 +6,7 @@ design's home. This plan keeps what each milestone checks and builds, what that 
 changed since the spec was accepted (§4).
 **Status:** milestone 0 measured (2026-11-24, §2); milestone 1 built (2026-11-24, §3.1), its gates passed (§2.4);
 milestone 2 built (2026-11-24, §3.2), its gate passed; milestone 3 built (2026-11-24, §3.3), its gates
-passed; milestone 4 next. §3 gets each later
+passed; milestone 4 built (2026-11-24, §3.4), its gates waiting on CI. §3 gets each later
 milestone's section before it starts.
 **Branch:** `feature/modding-from-release`, off `develop` at `e6b92761`. Its first commits are the spec (`ba5dbd18`,
 `13d0fd53`, `b45e6c0b`).
@@ -385,6 +385,72 @@ Godot build and `tools/test_paths.py`. All passed on 2026-11-24.
   runs on a console of its own (`CreateNoWindow`), so the press reaches the tool alone. On Linux it reaches the
   engine too, which shares the terminal's process group; gate 7 checks that in M4.
 
+### 3.4 Milestone 4: the release
+
+**The files** (spec §6.4):
+- **`tools/publish_engine.py`** publishes the tool after the library, in the same run and under the same stamp, into
+  `build/engine-publish/tool-<rid>/`. It refuses any file but the program and the runtime's two notices in
+  `OME-Tool-notices/` (`tool_files`). The tool's project keeps its dependency list (`KeepDependencyList`,
+  `tool-<rid>.deps.json`). `--place-tool DIR` checks the stamp and the files, and copies them beside the engine in an
+  export.
+- **The workflow** names the engine jobs' step "Publish the engine library and the tool". Their upload of
+  `build/engine-publish/` and the package jobs' download already carry the new folder.
+- **`tools/build-*-x64.sh`** run `--place-tool` after the launcher's publish, before the payload is verified.
+- **The packagers** require the tool's files and refuse the other platform's tool.
+  - Linux: `OME-Tool` executable, an x86-64 ELF program that needs glibc alone, at most 2.28 (`verify_tool`, which
+    shares the library's check, `_verify_aot_binary`).
+  - Windows: `OME-Tool.exe` an AMD64 PE with the console subsystem, importing what the library may
+    (`verify_windows_native.verify_tool`). It goes into `WINDOWS-VERIFICATION.json` as `tool`.
+  - Both: the notices check reads the tool's list (`package_notices.verify_tool_notices`, `--tool-deps`).
+- **`publish_github_release.py`** validates the report's `tool` section and requires the tool in both ledgers. The
+  release notes name the three programs and the tool's checks. It requires the smoke's fourth line.
+- **Linux's smoke** gains the tool's step (`run_tool`), on the released copy, after the launcher's check and before
+  the hand-over, which replaces the copy's launcher. It writes `TOOL OK: gates=2,5,7` (`SMOKE_MARKERS`; the step is
+  in `tools-reference.md`):
+  - gate 5: `--version` names `BUILD-INFO.json`'s commit; a command the tool lacks exits 2 with its list;
+  - gate 2: on the smoke's install, which also lists `SMOKE.BIN`, `oms-compile` writes that script, `oms-patch
+    --fingerprint` gives its header, and `omp check` links a fragment on it that `use`s `himegari.globals` and
+    `himegari.adv`, with the toolchain line naming the base mod's three files;
+  - gates 2 and 7: `start --mod FRAGMENT --engine-arg --headless -- --quit-after-link` has the engine link the
+    fragment itself; the tool relays its lines and its exit 0, and `engine.log` keeps them. With `-- --game-root`
+    the engine refuses, and the tool relays its exit 2. A `--mod` that requires a missing mod stops the start
+    before the engine runs;
+  - Ctrl+C (§3.3), on `--package-smoke --hold`, below.
+- **The port's `--quit-after-link`** (`godot/Main.cs`): startup ends once the stack has linked. `--package-smoke`
+  returns before the engine resolves a game, so it cannot link a mod (§4).
+- **The README** names the tool and the guides' address.
+
+**Ctrl+C on Linux.** The smoke runs `start` in a process group of its own, as a terminal does, and signals it once the
+engine has printed its smoke line. The smoke runs before the control channel starts (`Main.cs`), so the close
+request fails and the tool ends the engine after its grace, which is the same on every run. Two runs:
+- **SIGINT to the tool alone** checks the tool's path: it says it closes the engine, ends within 30 s, and
+  `engine.log` ends with `the engine was stopped (Ctrl+C…`.
+- **SIGINT to the process group** is what a terminal sends. It reaches the engine too, and which process ends first
+  decides what the tool prints: a dead engine can end the run before the tool's handler names the reason. So only the
+  end is checked: the tool ends within 30 s.
+
+Neither run may leave a process of the group running (`/proc`, zombies aside, 5 s after the tool ends).
+
+**Gates:** 2, 5 (Windows) and 7, on CI: the Windows package job's `verify` runs gate 5's Windows part, and the Linux
+job's smoke runs gates 2 and 7 with gate 5's version and refusal. They need the branch pushed and the release
+workflow dispatched.
+
+**Built** (2026-11-24): the files above, with tests:
+- `test_publish_engine.py` covers the tool's publish command, its file check, the stamp, `--place-tool`, and the
+  executable bit on POSIX;
+- the packager tests cover the tool's files, its ELF and PE checks, its notices, a forbidden import, the smoke's four
+  steps in order and the tool step's checks;
+- `test_publish_github_release.py` covers the report's `tool` section, the ledgers and the fourth line;
+- `test_release_workflow.py` covers the build script's marker loop.
+
+**Checks beyond the gate:**
+- A win-x64 publish on this machine: `OME-Tool.exe` 19.4 MB, no `.pdb` (§4), AMD64 with the console subsystem. Its
+  list names `LuaCSharp`, `LuaCSharp.Annotations`, `Microsoft.NETCore.App` and `Tomlyn`.
+- The tool's step (`run_tool`) on Windows, against a folder with M3's tool and a stand-in `OME.exe` that ran the
+  checkout's port, passed with Ctrl+C left out: the version, the refusal, the compile, the fragment's link, the
+  engine's own link (`[mods] layer SMOKE.BIN: script from smoke.fragment (base, patched by smoke.fragment)`), the
+  relayed refusal and the stopped start. Ctrl+C on Linux runs in CI only.
+
 ## 4. What changed since the spec
 
 - **Gate 2** (spec §12) cannot link a fragment at a named patch point on the smoke's synthetic install, since a point
@@ -415,3 +481,10 @@ Godot build and `tools/test_paths.py`. All passed on 2026-11-24.
 - **`--control` takes the player's input** (§3.3): M0's §2.3 chose the control channel for Ctrl+C without seeing that
   the port, under `--control`, drops every real input event. `start` passes `--control-input shared`, new in the
   engine, which keeps the channel and leaves the run a player's.
+- **The engine links gate 2's mod under `--quit-after-link`**, a port flag new in M4 (§3.4), not in
+  `--package-smoke` as spec §12 says: the package smoke returns before the engine resolves a game.
+- **Ctrl+C on Linux is checked in two runs** (§3.4): to the tool alone, its exact path, and to the process group,
+  only its end. The order in which a terminal's SIGINT ends the two processes is not fixed, so the lines are not
+  checked there.
+- **A NativeAOT publish copies a stale native `.pdb`** from `obj/` even with `DebugType=None`, so the tool's publish
+  passes `-p:CopyOutputSymbolsToPublishDirectory=false` (§3.4).

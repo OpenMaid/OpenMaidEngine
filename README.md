@@ -48,6 +48,12 @@ these system libraries, which every desktop distribution has:
 
 Its command line (`OME-Launcher --check <profile>`) needs no display.
 
+Each archive also carries the mod tool (`OME-Tool`, or `OME-Tool.exe` on Windows), the command line a mod author
+runs in a terminal in the release's folder. It builds and checks mods (`omp`), compiles, patches and decompiles
+scripts (`oms-*`), finds the script behind a page of the game (`locate`), and starts the engine on a profile with
+mods, showing its output in the terminal (`start`). `OME-Tool --help` lists its commands and how to name the game.
+The modding guides start from a release: <https://github.com/OpenMaid/OpenMaidEngine/tree/HEAD/docs/modding>.
+
 `workspace` and `full` validation additionally require the extracted script corpus and disposable derived
 inputs described by the tools reference. `runtime` and `full` require Godot plus a valid game root. A
 selected requirement that is unavailable is an error, not a silent skip.

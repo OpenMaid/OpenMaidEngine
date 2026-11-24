@@ -36,10 +36,13 @@ def make_export(root: Path) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(f"fixture:{relative}".encode())
     write_elf(export / ENGINE_LIBRARY)
+    write_elf(export / package_linux_x64.TOOL)
     (export / "OME").chmod(0o755)
     (export / package_linux_x64.LAUNCHER.program).chmod(0o755)
+    (export / package_linux_x64.TOOL).chmod(0o755)
     write_deps(engine_deps(root), "linux-x64")
     write_launcher_deps(launcher_deps(root), "linux-x64")
+    write_deps(tool_deps(root), "linux-x64")
     return export
 
 
@@ -51,6 +54,11 @@ def launcher_deps(root: Path) -> Path:
 def engine_deps(root: Path) -> Path:
     """The dependency list the engine's publish kept, beside the fixture export."""
     return root / "engine.deps.json"
+
+
+def tool_deps(root: Path) -> Path:
+    """The dependency list the tool's publish kept, beside the fixture export."""
+    return root / "tool.deps.json"
 
 
 # What readelf reports for the engine's NativeAOT library (linux-x64, linked on glibc 2.28), by option.
@@ -77,7 +85,8 @@ def fake_readelf(outputs: dict[str, str] | None = None):
 
 def verify(export: Path, root: Path, deps: Path | None = None, readelf: dict[str, str] | None = None) -> Path:
     with patch.object(package_linux_x64.subprocess, "run", side_effect=fake_readelf(readelf)):
-        return package_linux_x64.verify_export(export, deps or launcher_deps(root), engine_deps(root))
+        return package_linux_x64.verify_export(export, deps or launcher_deps(root), engine_deps(root),
+                                               tool_deps=tool_deps(root))
 
 
 # THIRD_PARTY_NOTICES.md naming every package the fixtures ship.
@@ -322,7 +331,7 @@ class HandOverSmokeTests(unittest.TestCase):
 
 
 class SmokeStepsTests(unittest.TestCase):
-    def test_the_smoke_runs_its_three_steps_in_order_and_stops_at_a_failure(self) -> None:
+    def test_the_smoke_runs_its_four_steps_in_order_and_stops_at_a_failure(self) -> None:
         calls: list[tuple[str, object]] = []
 
         def step(name: str, fail: bool = False):
@@ -341,16 +350,73 @@ class SmokeStepsTests(unittest.TestCase):
                 with patch.object(sys, "argv", argv), \
                         patch.object(package_linux_x64, "run_smoke", step("engine")), \
                         patch.object(package_linux_x64, "run_launcher_check", step("check", failing == "check")), \
+                        patch.object(package_linux_x64, "run_tool", step("tool")), \
                         patch.object(package_linux_x64, "run_hand_over", step("hand-over")), \
                         patch("builtins.print"):
                     self.assertEqual(expected, package_linux_x64.main())
                 names = [name for name, _ in calls]
-                self.assertEqual(["engine", "check", "hand-over"] if failing is None else ["engine", "check"], names)
+                self.assertEqual(["engine", "check", "tool", "hand-over"] if failing is None else ["engine", "check"],
+                                 names)
+                if failing is None:
+                    # The tool's step and the hand-over run on the copy the launcher's check ran on.
+                    copy = Path(calls[1][1][0]).parent
+                    self.assertEqual([copy, copy], [Path(calls[2][1]), Path(calls[3][1])])
             # The engine's smoke runs where the package is; the launcher's steps on a released copy elsewhere.
             self.assertEqual(root.resolve() / "OME", Path(calls[0][1][0]))
             launcher = Path(calls[1][1][0])
             self.assertEqual(("OME-Launcher", "OME package"), (launcher.name, launcher.parent.name))
             self.assertNotIn(Path(directory).resolve(), launcher.parents)
+
+    def test_the_tools_runs_are_judged_as_gates_2_5_and_7_say(self) -> None:
+        def run(code, output):
+            return package_linux_x64.SmokeRun(("OME-Tool",), code, output)
+
+        commit = "0123456789abcdef0123456789abcdef01234567"
+        self.assertEqual([], package_linux_x64.tool_version_problems(
+            run(0, "OME-Tool 0.10.1 (commit 0123456789ab)\n"), commit))
+        self.assertEqual(1, len(package_linux_x64.tool_version_problems(
+            run(0, "OME-Tool 0.10.1 (commit fedcba987654)\n"), commit)))
+        self.assertEqual([], package_linux_x64.tool_refusal_problems(
+            run(2, "error: OME-Tool has no command 'trace'; its commands: omp, …\n")))
+        self.assertEqual(1, len(package_linux_x64.tool_refusal_problems(run(1, "crashed\n"))))
+
+        linked = ("toolchain: himegari-base 1.3.0 (<engine>/mods/himegari-base): oms/globals.json, oms/adv.oms, "
+                  "layout/points.json\nnote: [smoke.fragment] SMOKE.BIN: compiled patches/smoke.oms at load time\n")
+        self.assertEqual([], package_linux_x64.tool_check_problems(run(0, linked)))
+        self.assertEqual(2, len(package_linux_x64.tool_check_problems(
+            run(0, linked.replace(", layout/points.json", "").replace("SMOKE.BIN: compiled", "SMOKE.BIN: kept")))))
+
+        smoke = package_linux_x64.SMOKE_MARKER
+        started = f"OME-Tool: starting smoke with /x/OME; Ctrl+C closes it\n{smoke}\n"
+        log = f"[launcher] started\n{smoke}\n[launcher] the engine exited with 0\n"
+        self.assertEqual([], package_linux_x64.start_problems(run(0, started), log, 0, smoke, "smoke"))
+        problems = package_linux_x64.start_problems(run(1, "OME-Tool: starting smoke with /x/OME\n"),
+                                                    "[launcher] the engine exited with 1\n", 0, smoke, "smoke")
+        self.assertEqual(4, len(problems), problems)
+
+        refused = "smoke is not started: a check failed: Link: the stack does not link\n"
+        self.assertEqual([], package_linux_x64.refused_start_problems(run(1, refused), log, log))
+        self.assertEqual(1, len(package_linux_x64.refused_start_problems(run(1, refused), log, log + "more\n")))
+
+        closing = "OME-Tool: closing the engine; Ctrl+C again ends it\n"
+        stopped = ("[launcher] the engine was stopped (Ctrl+C: it did not close within 10 s (no session file), so it "
+                   "was ended); it exited with 137\n")
+        self.assertEqual([], package_linux_x64.interrupt_problems(run(137, closing), stopped, []))
+        self.assertEqual(4, len(package_linux_x64.interrupt_problems(run(None, ""), log, [4242])))
+        # SIGINT to the group: the lines depend on which process it reaches first; only the end is checked.
+        self.assertEqual([], package_linux_x64.group_interrupt_problems(run(-2, ""), []))
+        self.assertEqual(2, len(package_linux_x64.group_interrupt_problems(run(None, closing), [4242])))
+
+    def test_the_smoke_mods_are_a_fragment_and_a_mod_that_cannot_link(self) -> None:
+        header = 'patch "SMOKE.BIN" fingerprint "sha256:00"'
+        with tempfile.TemporaryDirectory() as directory:
+            fragment, broken = package_linux_x64.write_smoke_mods(Path(directory), header)
+            source = (fragment / "patches/smoke.oms").read_text(encoding="utf-8")
+            self.assertTrue(source.startswith(f"oms 1\n{header}\nuse himegari.globals\nuse himegari.adv\n"))
+            self.assertIn("acting_entity_index = 0x1", source)
+            self.assertIn('id = "smoke.fragment"', (fragment / "manifest.toml").read_text(encoding="utf-8"))
+            self.assertIn('[[requires]]\nid = "smoke.missing"', (broken / "manifest.toml").read_text(encoding="utf-8"))
+        self.assertIn('script "SMOKE"\nuse himegari.globals\n', package_linux_x64.smoke_script_source())
 
     def test_a_released_copy_is_outside_the_repository_and_removed_afterwards(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -446,6 +512,34 @@ class PackageLinuxX64Tests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "not an x86-64 ELF file: OME.so"):
                     verify(export, root)
 
+    def test_verify_requires_the_tool_beside_the_engine(self) -> None:
+        # Modding from a release spec §6.4: an x86-64 program that needs glibc's libraries alone, with its notices; not
+        # the Windows tool.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tool = make_export(root) / package_linux_x64.TOOL
+            with patch.object(package_linux_x64.subprocess, "run", side_effect=fake_readelf()):
+                # Unlike the engine's library, a program exports nothing.
+                self.assertEqual({"glibc": "2.28", "needed": sorted(package_linux_x64.GLIBC_LIBRARIES)},
+                                 package_linux_x64.verify_tool(tool))
+        cases = (
+            (lambda export: (export / "OME-Tool").unlink(), {}, "missing: OME-Tool$"),
+            (lambda export: (export / "OME-Tool-notices/Microsoft.NETCore.App.Runtime.linux-x64-LICENSE.TXT").unlink(),
+             {}, "missing: OME-Tool-notices/Microsoft.NETCore.App.Runtime.linux-x64-LICENSE.TXT"),
+            (lambda export: (export / "OME-Tool.exe").write_bytes(b"windows"), {}, "Windows-only files: OME-Tool.exe"),
+            (lambda export: write_elf(export / "OME-Tool", machine=183), {}, "Linux tool is not an x86-64 ELF file"),
+            (lambda export: None,
+             {"--dynamic": READELF["--dynamic"] + " 0x1 (NEEDED)             Shared library: [libicuuc.so.72]\n"},
+             "needs libraries outside glibc: libicuuc.so.72"),
+        )
+        for change, readelf, message in cases:
+            with self.subTest(message), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                export = make_export(root)
+                change(export)
+                with self.assertRaisesRegex(ValueError, message):
+                    verify(export, root, readelf=readelf)
+
     def test_verify_requires_the_launcher_beside_the_engine(self) -> None:
         # Launcher spec §10, plan §9.3: the program, its natives and its notices; not the Windows launcher; no symbols.
         cases = (
@@ -517,12 +611,13 @@ class PackageLinuxX64Tests(unittest.TestCase):
             ):
                 (temporary_root / "LICENSE").write_text("MIT\n", encoding="utf-8")
                 (temporary_root / "THIRD_PARTY_NOTICES.md").write_text(NOTICES, encoding="utf-8")
-                package_linux_x64.create_package(export, output, metadata, 123456789, deps, engine_deps(temporary_root))
+                package_linux_x64.create_package(export, output, metadata, 123456789, deps, engine_deps(temporary_root),
+                                                 tool_deps(temporary_root))
                 first = hashlib.sha256(
                     (output / f"{package_linux_x64.PACKAGE_NAME}.tar.gz").read_bytes()
                 ).hexdigest()
                 package_root, archive = package_linux_x64.create_package(
-                    export, output, metadata, 123456789, deps, engine_deps(temporary_root)
+                    export, output, metadata, 123456789, deps, engine_deps(temporary_root), tool_deps(temporary_root)
                 )
                 second = hashlib.sha256(archive.read_bytes()).hexdigest()
             self.assertEqual(first, second)
@@ -531,7 +626,8 @@ class PackageLinuxX64Tests(unittest.TestCase):
             self.assertTrue((package_root / "BUILD-INFO.json").is_file())
             checksums = (package_root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
             names = [line.split("  ", 1)[1] for line in checksums]
-            for name in ("OME", ENGINE_LIBRARY, "THIRD_PARTY_NOTICES.md", *package_linux_x64.LAUNCHER.files()):
+            for name in ("OME", ENGINE_LIBRARY, "THIRD_PARTY_NOTICES.md", *package_linux_x64.LAUNCHER.files(),
+                         *package_linux_x64.TOOL_FILES):
                 self.assertIn(name, names)
 
 

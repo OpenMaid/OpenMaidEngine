@@ -81,10 +81,11 @@ tool, and is the only job granted `contents: write` (which covers releases on Gi
 skip it and never receive write authority. It passes the run's built-in `github.token` as `GITHUB_TOKEN`, so no
 personal token or third-party release action is required. `publish_github_release.py` validates the
 version-like tag, both exact clean-build commit/target records, both external archive hashes, matching
-metadata/ledgers inside each archive, the accepted Linux package smoke (its three lines: the engine's, the
-launcher's check and the hand-over), and the Windows AMD64/ABI/import
-verification. It also requires each ledger to list the launcher, and the Windows report's `launcher` section to
-record an AMD64 windowed program with AMD64 natives (launcher plan §9.3). Then it generates one `RELEASE-SHA256SUMS`. Before touching any release it resolves the tag through
+metadata/ledgers inside each archive, the accepted Linux package smoke (its four lines: the engine's, the
+launcher's check, the tool's step and the hand-over), and the Windows AMD64/ABI/import
+verification. It also requires each ledger to list the launcher and the tool, the Windows report's `launcher`
+section to record an AMD64 windowed program with AMD64 natives (launcher plan §9.3), and its `tool` section an
+AMD64 console program with no forbidden import (modding from a release plan §3.4). Then it generates one `RELEASE-SHA256SUMS`. Before touching any release it resolves the tag through
 GitHub's git-ref API (dereferencing annotated tags) and requires that commit to equal `--target`; GitHub's
 `target_commitish` is not trusted because it can name a branch. It then creates a **draft** release (or resumes
 the single matching draft — drafts are invisible to GitHub's release-by-tag lookup, so they are found in the
@@ -591,6 +592,15 @@ tool adds to `PATH`), `linux-x64` on Linux with gcc. A release links the Linux l
 Linux packager. `--check` only checks that a complete publish for this checkout's commit is in place, as the build
 scripts do. `--dotnet` names another `dotnet`.
 
+The same run then publishes the mod tool, `OME-Tool` (`engine/Ome.Tool`; modding from a release spec §6), NativeAOT
+too, into `build/engine-publish/tool-<rid>/`, under the same stamp. That publish must hold exactly the program and
+the runtime pack's two notice files in `OME-Tool-notices/` (`publish_engine.tool_files`). The tool's project keeps
+its dependency list as `build/engine-publish/tool-<rid>.deps.json`. NativeAOT copies a native `.pdb` from `obj/`
+even with no symbols asked for, so the publish passes `-p:CopyOutputSymbolsToPublishDirectory=false`.
+`--place-tool DIR` checks the stamp and the tool's files, then copies them beside `OME`/`OME.exe` in the export `DIR`
+and makes the program executable, since a workflow artifact keeps no file modes. Each build script runs it after the
+launcher's publish (below).
+
 Then `publish_launcher.py` puts the launcher beside the engine (launcher plan §9.2). It is a step of its own after
 Godot has exited, so its memory peak never joins the export's (plan §3.7). It runs `dotnet publish` of
 `launcher/Ome.Launcher` for the target, whose project gives the release form (Launcher, "Publishing"), with one
@@ -605,7 +615,9 @@ and its natives, and any `.pdb`, and require the executable bit on `OME-Launcher
 hold exactly the engine's library, the runtime's two notice files and the FFmpeg bundle (`DATA_FILES`). The library is
 checked with `readelf` (`package_linux_x64.verify_engine_library`): an x86-64 ELF file that exports
 `godotsharp_game_main_init`, needs only glibc's own libraries, and needs no glibc newer than the FFmpeg manifest's
-`minimum_glibc` (2.28).
+`minimum_glibc` (2.28). The tool's files are required as the launcher's: `OME-Tool` with its executable bit and
+`OME-Tool-notices/`, not the Windows tool. `OME-Tool` is checked as the library is (`verify_tool`), but for the
+export.
 
 The packager adds `LICENSE`, `README.md`, `THIRD_PARTY_NOTICES.md`, Godot's notices, a source/dependency
 `BUILD-INFO.json`, and per-file `SHA256SUMS` to a stable top-level directory. It normalizes archive ownership,
@@ -620,11 +632,13 @@ as `Godot-LICENSE.txt` and `Godot-COPYRIGHT.txt`. They refuse either file if it 
 `OmeProgram`) copies the root `LICENSE*`, `THIRD-PARTY-NOTICES*` and `NOTICE*` files of every NuGet package it ships
 as `<package id>-<file name>`: the engine's into the data folder, the launcher's into `OME-Launcher-notices/`
 (`OmePackageNoticeFolder`). A NativeAOT publish leaves the runtime pack out of its file list, so the target adds it
-back for the engine. The verifiers require the .NET runtime pack's two, and the launcher's package notice files that
-`publish_launcher.LAYOUTS` lists. They also read two dependency lists, which the publishes kept: the engine's as
-`build/engine-publish/<rid>.deps.json` and the launcher's as `build/launcher-publish/<rid>.deps.json` (`verify`'s
-and `package`'s `--engine-deps` and `--launcher-deps` name other copies). They refuse an export that ships a NuGet
-package `THIRD_PARTY_NOTICES.md` does not name in backticks, and an export with either list missing. A shipped package is a package or
+back for the engine, and for the tool into `OME-Tool-notices/`. The verifiers require the .NET runtime pack's two,
+beside the engine and for the tool, and the launcher's package notice files that `publish_launcher.LAYOUTS` lists.
+They also read three dependency lists, which the publishes kept: the engine's as
+`build/engine-publish/<rid>.deps.json`, the tool's as `build/engine-publish/tool-<rid>.deps.json` and the launcher's
+as `build/launcher-publish/<rid>.deps.json` (`verify`'s and `package`'s `--engine-deps`, `--tool-deps` and
+`--launcher-deps` name other copies). They refuse an export that ships a NuGet package `THIRD_PARTY_NOTICES.md` does
+not name in backticks, and an export with any list missing. A shipped package is a package or
 runtime-pack library with runtime, native or resource assets; a runtime pack counts as its framework
 (`Microsoft.NETCore.App`). A Godot upgrade changes `release_tag` in `tools/godot-linux-x64.json`, and
 `test_package_notices.py` then fails until `notices/godot/` holds the new tag's files and pins.
@@ -666,18 +680,39 @@ debug builds). The launcher captures the engine's output live (launcher spec §8
 release engine's lines would wait in stdio's buffer and be lost when it is killed. `test_release_workflow.py`
 checks the setting.
 
-Two launcher steps follow, each adding to the log (launcher plan §9.4). Both run on the package as a player has it:
+Three steps follow, each adding to the log: the launcher's check, the tool's step and the hand-over (launcher plan
+§9.4, modding from a release plan §3.4). They run on the package as a player has it:
 a copy (hard links where it can) in `OME package`, a folder whose name has a space, in a temporary folder outside
 the repository, so the steps see only what the package holds; a `TMPDIR` inside the repository is refused. A program
 links with the toolchain it embeds wherever it runs (`ModLinkBase.ForGame`; modding from a release spec §5), and the
 synthetic install lists the scripts the game's ADV module runs, so that toolchain builds against it. Both steps run
-with `DISPLAY` and `WAYLAND_DISPLAY` removed, and with `HOME` and the XDG folders in a scratch folder, so neither
-reads nor writes the machine's own state.
+with `DISPLAY` and `WAYLAND_DISPLAY` removed, and with `HOME` and the XDG folders in a scratch folder, so none
+reads or writes the machine's own state.
 - **The launcher's check (gate 11):** `OME-Launcher --check smoke --home HOME`. The temporary home holds
   `profiles/smoke/` in native mode on a synthetic Himegari install. Its `SYS4INI.BIN` is the smallest complete
   catalog: the header of the first catalog identity in `engine/Ome.Engine/Profiles/himegari.json`, and a directory
   of one archive and one placeholder entry. The launcher must exit 0, with each of its six checks (Install,
   Fingerprint, Root, Packages, Link, Lock) passed. Then the log gets `LAUNCHER CHECK OK: checks=6`.
+- **The tool (modding from a release spec §12, gates 2, 5 and 7; plan §3.4)**, in a home of its own whose install
+  also lists `SMOKE.BIN`:
+  - `OME-Tool --version` must print one line naming `BUILD-INFO.json`'s commit, and a command the tool lacks must
+    exit 2 with its list;
+  - `oms-compile` writes `SMOKE.BIN` into the install, and `oms-patch --fingerprint` gives its patch header;
+  - `omp check --mod` of a fragment on it, which `use`s `himegari.globals` and `himegari.adv` and assigns a global,
+    must exit 0 with the toolchain line naming `oms/globals.json`, `oms/adv.oms` and `layout/points.json`;
+  - `start --mod FRAGMENT --engine-arg --headless -- --quit-after-link` has the engine link the fragment itself
+    and quit. The tool must relay the engine's `[mods] load order` line and its exit 0, and `engine.log` must keep
+    the line and end with the launcher's;
+  - with `-- --game-root DIR` the engine refuses, and the tool must relay its exit 2;
+  - a `--mod` that requires a missing mod must stop the start with exit 1, naming the failed Link check, before
+    the engine runs;
+  - Ctrl+C, with `--package-smoke --hold`, which holds the engine before its control channel listens. SIGINT to the
+    tool alone must take the tool's path: it says it closes the engine, ends it after its 10 s grace, and
+    `engine.log` ends with `the engine was stopped (Ctrl+C…`. SIGINT to the process group, as a terminal sends it,
+    reaches the engine too, so its lines depend on which process ends first. Only the end is checked: the tool ends
+    within 30 s, and neither run leaves a process of the start running.
+
+  Then the log gets `TOOL OK: gates=2,5,7`.
 - **The hand-over (launcher spec §5.6):** the copy's `OME-Launcher` is replaced by a shell script that records how
   it started (the hard link is removed first, so the package's own file is untouched). Both runs start from a folder
   with no game:
@@ -687,7 +722,7 @@ reads nor writes the machine's own state.
 
   Then the log gets `HAND-OVER OK`, and the copy is removed.
 
-`build-linux-x64.sh` and the release publisher both require all three lines (`package_linux_x64.SMOKE_MARKERS`).
+`build-linux-x64.sh` and the release publisher both require all four lines (`package_linux_x64.SMOKE_MARKERS`).
 
 The focused component commands are:
 
@@ -695,6 +730,7 @@ The focused component commands are:
 ./tools/bootstrap-godot-linux-x64.sh
 python3 -X utf8 tools/publish_engine.py --runtime linux-x64
 python3 -X utf8 tools/publish_launcher.py --runtime linux-x64 --into build/export/linux-x64
+python3 -X utf8 tools/publish_engine.py --runtime linux-x64 --place-tool build/export/linux-x64
 python3 -X utf8 tools/package_linux_x64.py verify build/export/linux-x64
 python3 -X utf8 tools/package_linux_x64.py package build/export/linux-x64
 python3 -X utf8 tools/package_linux_x64.py smoke build/package/staging/OME-linux-x64 --log build/package/package-smoke.log
@@ -723,8 +759,10 @@ PCK, and a data folder of exactly the engine library, the runtime's two notice f
 (`DATA_FILES`). It checks the library with objdump (`verify_windows_native.verify_engine_library`): an AMD64 PE that
 exports `godotsharp_game_main_init` and imports neither a Visual C++ redistributable nor a .NET runtime. It also
 requires the launcher: `OME-Launcher.exe`, an AMD64 PE with the Windows GUI subsystem, its three AMD64 natives, and
-its notices. It rejects Linux shared objects, the Linux launcher and any `.pdb`. It embeds `BUILD-INFO.json`,
-`WINDOWS-VERIFICATION.json` (whose `engine` and `launcher` sections record those checks), the notices (Third-party
+its notices. And it requires the tool: `OME-Tool.exe`, an AMD64 PE with the console subsystem that imports what the
+library may (`verify_windows_native.verify_tool`), and its notices. It rejects Linux shared objects, the Linux
+launcher and tool, and any `.pdb`. It embeds `BUILD-INFO.json`, `WINDOWS-VERIFICATION.json` (whose `engine`,
+`launcher` and `tool` sections record those checks), the notices (Third-party
 notices, above), and a complete `SHA256SUMS`. The normalized output is
 `build/package/windows-x64/OME-windows-x64.zip`.
 
@@ -735,6 +773,7 @@ Focused commands are:
 # on Windows, then copy build/engine-publish/ across:
 #   py -3.11 -X utf8 tools/publish_engine.py --runtime win-x64
 python3 -X utf8 tools/publish_launcher.py --runtime win-x64 --into build/export/windows-x64
+python3 -X utf8 tools/publish_engine.py --runtime win-x64 --place-tool build/export/windows-x64
 python3 -X utf8 tools/package_windows_x64.py verify build/export/windows-x64
 python3 -X utf8 tools/package_windows_x64.py package build/export/windows-x64
 ```
@@ -832,6 +871,9 @@ use the last `input-wait` event in `timeline.jsonl` as the authoritative manual 
   failed link unless `--skip-failed-mods`. The linked layer outranks `--overlay-root` roots and the game root. Flag
   semantics, the profile root's mod files, save stamps and where the toolchain comes from are documented for
   modders in `docs/modding/cli.md`.
+- `--quit-after-link` — startup ends once the stack has linked, exit 0 (`[mods] --quit-after-link: the stack
+  linked; quitting`); a failed link exits 2 as without it. The release smoke runs it through `OME-Tool start`, so
+  the engine's own link of a fragment is checked (modding from a release plan §3.4).
 - `--lua-errors continue|halt` — what a Lua handler's error does (Lua scripting spec §5.5): `continue` (the default)
   logs it to `diagnostics/lua.log`, shows a notice in the status line, and switches the handler off after its third
   failure in a row; `halt` ends the run at the instruction. Another value fails startup (exit 2). When a mod ships

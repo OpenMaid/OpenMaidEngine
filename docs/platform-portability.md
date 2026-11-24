@@ -595,13 +595,14 @@ Each archive carries the launcher beside the engine (launcher spec §10; plan §
     line.
 - **The hand-over.** With no user argument, and no `SYS4INI.BIN` beside the program or in the folder it was started
   from, the engine starts `OME-Launcher` from beside itself and exits (`LauncherHandOver`).
-- **Linux's smoke** (`package_linux_x64.py smoke`, required by `build-linux-x64.sh` and by the publisher) has three
+- **Linux's smoke** (`package_linux_x64.py smoke`, required by `build-linux-x64.sh` and by the publisher) has four
   steps:
   - the engine's `--package-smoke`;
   - the launcher's `--check` on a synthetic home, with no display;
+  - the mod tool's step (since modding from a release; next section);
   - the hand-over.
 
-  The launcher's two steps run on a copy outside the repository, as a player's would. The toolchain is the one the
+  The last three run on a copy outside the repository, as a player's would. The toolchain is the one the
   program embeds wherever it runs (modding from a release spec §5), and the synthetic install lists the scripts the
   game's ADV module runs, so the toolchain builds against it.
 - **Windows's checks stay structural:**
@@ -611,6 +612,36 @@ Each archive carries the launcher beside the engine (launcher spec §10; plan §
 
   On a Windows host (plan §9.5), the zip's `OME.exe` handed over to its own launcher, whose window drew, and the
   launcher's `--check` passed. CI does not run either program.
+
+### The mod tool in the release archives (modding from a release M4, 2026-11-24)
+
+Each archive carries the mod tool beside the engine and the launcher (modding from a release spec §6.4; plan §3.4
+keeps the tasks and the runs).
+- **Its files.** `OME-Tool` or `OME-Tool.exe` at the top, one NativeAOT program with no runtime beside it. The .NET
+  runtime's license and notices are in `OME-Tool-notices/`. The data folder's 11 files are unchanged.
+- **Its build.** `tools/publish_engine.py` publishes it after the engine's library, in the same engine jobs (NativeAOT
+  compiles for its own system only), into `build/engine-publish/tool-<rid>/`. The build scripts copy it into the export
+  (`--place-tool`). Neither the publish nor the packages ship its `.pdb`.
+- **Its size.** On Windows, 19.4 MB (19,365,888 bytes, local publish at `d873dfd7`, 2026-11-24), against the
+  engine library's 44.8 MB. The tool holds the mod layer, the compilers and the launcher's checks, but not Godot's
+  bindings or the engine's front end.
+- **Its checks.**
+  - The notices check reads the tool's kept dependency list (`tool-<rid>.deps.json`): `LuaCSharp`,
+    `LuaCSharp.Annotations`, `Microsoft.NETCore.App` and `Tomlyn`.
+  - On Windows, a structural check (`verify_windows_native.verify_tool`): an AMD64 PE with the console subsystem
+    that imports what the engine's library may (no Visual C++ redistributable, no .NET runtime). The report is
+    `WINDOWS-VERIFICATION.json`'s `tool` section, which the publisher validates.
+  - On Linux, `readelf` (`package_linux_x64.verify_tool`): an x86-64 ELF program that needs only glibc's libraries,
+    and no glibc newer than 2.28. Linux's smoke then runs the tool (`tools-reference.md`, "Linux x64 release
+    build"):
+    - its version and its refusal;
+    - a script compiled into a synthetic install, and a fragment on it linked with the shipped toolchain;
+    - `start` with the engine linking the fragment (`--quit-after-link`), relaying an engine refusal, and stopped
+      by a failed Link check;
+    - Ctrl+C, to the tool alone and to the process group.
+
+    It writes `TOOL OK: gates=2,5,7`.
+  - The publisher requires the tool in both archives' checksum ledgers.
 
 ## Fewer files in a package (NativeAOT since 2026-11-18)
 

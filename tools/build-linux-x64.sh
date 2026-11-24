@@ -103,6 +103,8 @@ cp -a -- "$repo_root/build/native/linux-x64/"*.so* "$repo_root/build/native/linu
 # The launcher beside the engine (launcher plan §9.2): its own publish, a step of its own after Godot's export has
 # exited, so their memory peaks never overlap on the runner (§3.7).
 python3 -X utf8 "$script_dir/publish_launcher.py" --runtime linux-x64 --into "$export_directory"
+# The mod tool beside them (modding from a release spec §6.4), which the engine's job published with the library.
+python3 -X utf8 "$script_dir/publish_engine.py" --runtime linux-x64 --place-tool "$export_directory"
 
 python3 -X utf8 "$script_dir/package_linux_x64.py" verify "$export_directory"
 mapfile -t package_outputs < <(
@@ -126,8 +128,9 @@ if [[ $smoke_status -ne 0 ]]; then
     echo "packaged Linux runtime smoke failed with exit code $smoke_status" >&2
     exit "$smoke_status"
 fi
-# The engine's smoke, the launcher's check with no display, and the hand-over (launcher plan §9.4).
-for marker in "PACKAGE SMOKE OK: opcodes=548 ffmpeg-abi=3" "LAUNCHER CHECK OK: checks=6" "HAND-OVER OK"; do
+# The engine's smoke, the launcher's check with no display, the tool (modding from a release plan §3.4) and the
+# hand-over (launcher plan §9.4).
+for marker in "PACKAGE SMOKE OK: opcodes=548 ffmpeg-abi=3" "LAUNCHER CHECK OK: checks=6" "TOOL OK: gates=2,5,7" "HAND-OVER OK"; do
     if ! grep -Fq "$marker" "$smoke_log"; then
         echo "packaged Linux runtime did not report its success marker: $marker" >&2
         exit 1
