@@ -55,6 +55,7 @@ public sealed partial class InputAndWaits : IFastForwardListener
         public volatile bool ModalMovieWaiting;
         public bool ModalMovieCancelled;
         public bool ModalMovieCancelPending;   // CancelNextModalMovie: a held action 4 stops the next movie
+        public bool ModalMovieSkippable;       // the waiting movie is a service movie (MovieFlagBits.IsServiceMovie)
         public GfxState? ForegroundGfx;
         public long TransitionStartedAtMs = -1;
     }

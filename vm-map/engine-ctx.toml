@@ -72,6 +72,11 @@ name = "input_hwnd"
 type = "void*"
 note = "input manager +0x1824: the window input_poll_cursor_client passes to ScreenToClient after GetCursorPos (the main window, read live 2026-11-03)"
 [[field]]
+offset = 0x1c30
+name = "click_suppressor"
+type = "int"
+note = "one-shot: input_flush_action_triggers@0x405380, scene_context_init_reset and engine_reload_current_script_and_reset_input set it when input_poll_raw_mouse_buttons reads the left or right button down; input_latch_mouse_click@0x485e20 then clears it instead of latching the next click (under CLICKONUP the release of the held button). 4.24N has it at the same offset (2026-11-25, the Verita sweep: a release ending a field walk into an event)"
+[[field]]
 offset = 0x1c34
 name = "mouse_wheel_delta"
 type = "int"

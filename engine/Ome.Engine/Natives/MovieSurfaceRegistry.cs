@@ -111,7 +111,8 @@ internal sealed class MovieSurfaceRegistry
     {
         get
         {
-            return _bySurface.Values.Any(binding => (binding.MovieFlags & 5) == 4 && !_completed.Contains(binding.PlaybackId));
+            return _bySurface.Values.Any(binding => MovieFlagBits.IsServiceMovie(binding.MovieFlags)
+                                                   && !_completed.Contains(binding.PlaybackId));
         }
     }
 

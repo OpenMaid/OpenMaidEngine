@@ -58,20 +58,23 @@ public sealed partial class InputAndWaits
         return entry.Result;
     }
 
-    /// <summary>The modal movie service polls native's input latch on its first tick, and a held action 4 stops the
-    /// movie: the next <see cref="PlayModalMovieToSurface"/> returns as cancelled at once.</summary>
+    /// <summary>The modal movie service polls native's input latch on its first tick, and a held action 4 stops a
+    /// service movie: the next <see cref="PlayModalMovieToSurface"/> returns as cancelled at once.</summary>
     public void CancelNextModalMovie() => _scene.ModalMovieCancelPending = true;
 
     /// <summary>Op 0x20f: play a movie to <paramref name="surfaceSlot"/> and park the engine thread until it reaches
-    /// its end or the player cancels it. The decoder stays asynchronous; the front end keeps publishing frames.</summary>
+    /// its end or the player cancels it, which only a service movie allows (<see cref="MovieFlagBits.IsServiceMovie"/>).
+    /// The decoder stays asynchronous; the front end keeps publishing frames.</summary>
     public void PlayModalMovieToSurface(long resourceId, int surfaceSlot, long movieFlags)
     {
-        bool cancelAtStart = _scene.ModalMovieCancelPending;
+        bool skippable = MovieFlagBits.IsServiceMovie(movieFlags);
+        bool cancelAtStart = _scene.ModalMovieCancelPending && skippable;
         _scene.ModalMovieCancelPending = false;
         AssetEntry? asset = _movies.ResolveModal(resourceId);
         if (asset == null) return;
 
         _scene.ModalMovieCancelled = cancelAtStart;
+        _scene.ModalMovieSkippable = skippable;
         _scene.ModalMovieWaiting = true;
         bool scriptSuspended = false;
         try
@@ -105,6 +108,7 @@ public sealed partial class InputAndWaits
             ResumeScriptAfterPresentation(scriptSuspended);
             _scene.ModalMovieWaiting = false;
             _scene.ModalMovieCancelled = false;
+            _scene.ModalMovieSkippable = false;
         }
     }
 }

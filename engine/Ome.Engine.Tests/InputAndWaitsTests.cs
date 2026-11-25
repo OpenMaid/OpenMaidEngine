@@ -170,6 +170,23 @@ public class InputAndWaitsTests
     }
 
     [Fact]
+    public void AnArmedSuppressorTakesTheNextClickAndNothingElse()
+    {
+        var interpreter = new FakeInterpreter
+        {
+            MouseAction = InputBindings.AdvanceAction, Polling = true, ClickSuppressorArmed = true,
+        };
+        InputAndWaits waits = RoutedWaits(interpreter, clickOnUp: true);
+
+        waits.MouseButton(0, pressed: false, 10, 20);
+        Assert.Equal("suppressed", interpreter.Calls[^1]);
+        Assert.DoesNotContain(interpreter.Calls, call => call.StartsWith("actions") || call.StartsWith("activate"));
+
+        waits.MouseButton(0, pressed: false, 10, 20);
+        Assert.Contains("actions 0x10", interpreter.Calls);
+    }
+
+    [Fact]
     public void AClickWhileNothingPollsStaysInTheLatch()
     {
         var interpreter = new FakeInterpreter { MouseAction = InputBindings.AdvanceAction, Polling = false };
@@ -446,6 +463,14 @@ public class InputAndWaitsTests
         }
         public bool TryRequestAdvWaitCoroutineYield() => false;
         public void HoldTriggers(int actionMask) => Record($"hold 0x{actionMask:x}");
+        public bool ClickSuppressorArmed { get; set; }
+        public bool TryConsumeClickSuppressor()
+        {
+            if (!ClickSuppressorArmed) return false;
+            ClickSuppressorArmed = false;
+            Record("suppressed");
+            return true;
+        }
     }
 
     // Frames as the front end makes them: move the clock 16 ms and wake the engine thread, until disposed.

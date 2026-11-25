@@ -44,6 +44,12 @@ it; git history keeps the record.
   - The op-`0xd5` timed sequence's poll (`timed_callback_sequence_tick`) is implemented from the decode and
     synthesized tests only. No native run has clicked during a sequence: HISTORY's lasts 50 ms, and the others run
     deep in gameplay (SHOWGROW is the one Himegari sequence with an abort pc).
+  - The window procedure's flush. `age_main_window_proc` sets the polling gate on `WM_ACTIVATE` (closed while a
+    windowed AGE is inactive) and at the menu loop's end, then calls `input_flush_action_triggers`
+    (4.24N `0x487e69`, `0x4885cc`). With a button down that arms the click suppressor, so the click that activates an
+    inactive window probably never advances a page ("The click suppressor"). The port models neither the gate nor
+    the activation flush. Driving it needs care: the driver keeps native polling while inactive
+    (`[native.keep_polling]`), and a port gate would need the same.
 
   Done when each case is driven natively and the port matches, or the case is shown unreachable in both games.
 - **One unexplained port crash on exit (2026-11-06).** A driven port exited with `0xC0000005` on `drive.py port

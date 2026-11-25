@@ -42,6 +42,9 @@ public interface IInterpreterInput
     bool TryRequestAdvWaitCoroutineYield();
     /// <summary>Hold triggers in native's input latch while nothing polls it.</summary>
     void HoldTriggers(int actionMask);
+    /// <summary>input_latch_mouse_click: a flush that found a mouse button down armed a one-shot suppressor, and the
+    /// next click clears it instead of latching. True means this click is that one.</summary>
+    bool TryConsumeClickSuppressor();
 }
 
 /// <summary>Where <see cref="IInterpreterInput.ApplyMouseWheel"/> sent one wheel delta.</summary>

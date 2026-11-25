@@ -71,8 +71,12 @@ public sealed class ImmediateSurfaceTextRenderer
     }
 
     /// <summary>Draws <paramref name="requests"/> from the pen at (<paramref name="x"/>, <paramref name="y"/>), each
-    /// advancing it by its cell, as a string outside aspect mode draws. A null <paramref name="destination"/> measures
-    /// only.</summary>
+    /// advancing it by its cell, as a string outside aspect mode draws. A blank is not drawn: a space or a control byte
+    /// moves the pen by the font's half width, <c>-lfWidth</c>, and the full-width space 0x8140 by twice that
+    /// (text_raster_string_cached and _uncached: 4.24N @0x45bfa0 and @0x45a730, 4.33G @0x45b600 and @0x459d90). Where
+    /// the blank's own cell is wider, as in a bold font (Verita's BUNKI indents a choice with 0x8140 in bold 20 px
+    /// Mincho, whose cell is 21), the text after it starts where native's does. A null <paramref name="destination"/>
+    /// measures only.</summary>
     private ImmediateSurfaceTextResult RenderGlyphs(
         RgbaImage? destination, int x, int y, IReadOnlyList<GlyphRasterRequest> requests, AdvTextStyle style)
     {
@@ -82,6 +86,12 @@ public sealed class ImmediateSurfaceTextRenderer
         int inkRight = x;
         foreach (GlyphRasterRequest request in requests)
         {
+            if (BlankHalves(request.Cp932Code) is int halves)
+            {
+                cursorX = checked(cursorX + GlyphMaskNarrowing.Scale(-halves * request.RequestedWidth,
+                                                                      request.WidthPercent));
+                continue;
+            }
             GlyphMask mask = _rasterizer.Rasterize(request);
             if (destination != null)
             {
@@ -190,6 +200,15 @@ public sealed class ImmediateSurfaceTextRenderer
     /// <summary>The characters AGE's glyph-string draws skip as blanks: a space, the full-width space and the control
     /// bytes.</summary>
     private static bool IsBlank(ushort? code) => code is < 0x21 or 0x8140;
+
+    /// <summary>A blank of the raster workers outside aspect mode, in half widths: 1 for a space or a single-byte
+    /// control byte (0x7F among them), 2 for 0x8140; null for a glyph they draw.</summary>
+    private static int? BlankHalves(ushort? code) => code switch
+    {
+        < 0x21 or 0x7f => 1,
+        0x8140 => 2,
+        _ => null,
+    };
 
     public static IReadOnlyList<GlyphRasterRequest> CreateRequests(
         string text,

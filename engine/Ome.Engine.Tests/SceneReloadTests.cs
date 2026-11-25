@@ -52,6 +52,9 @@ public class SceneReloadTests
             "_hiddenWindowWheelTriggers",
             // Input: the pointer stays where it is, and the reset polls the latch and discards it (TakeHeldTriggers).
             "_pointerX", "_pointerY", "_heldTriggers",
+            // The buttons GetAsyncKeyState reads, which a reset does not change, and the one-shot click suppressor
+            // (ctx+0x1c30), which the reset arms while a button is down and the next click clears (FlushActionTriggers).
+            "_mouseButtonState", "_clickSuppressorArmed",
             // The action op 0x104 dispatched last is a module global in native (0x5e73fc), which no reset touches.
             "_lastSteppedInputAction",
             // Read only with a mouse callback target (the scene's), and set when one registers.

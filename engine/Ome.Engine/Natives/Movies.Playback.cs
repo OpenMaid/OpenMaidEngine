@@ -10,7 +10,8 @@ namespace Ome.Engine.Natives;
 // thread, which publishes them (PublishServiced) where native's main loop pumps its messages.
 public sealed partial class Movies
 {
-    private readonly record struct Serviced(long PlaybackId, string? Name, int AssetId, RgbaImage? Frame);
+    private readonly record struct Serviced(long PlaybackId, string? Name, int AssetId, RgbaImage? Frame,
+                                            bool Looped = false);
 
     // Taken by the frame service, published by the engine thread.
     private readonly ConcurrentQueue<Serviced> _serviced = new();
@@ -30,7 +31,7 @@ public sealed partial class Movies
     // Engine thread: open the decoder now, so its stop time is known before the op returns.
     private bool TryOpen(MoviePayload movie, long playbackId, long resourceId, int assetId, long movieFlags,
                          long initialPositionMs, long startDelayMs, long? presentationDurationMs,
-                         out long? stopTimeMs)
+                         out long? stopTimeMs, bool restart = false)
     {
         stopTimeMs = null;
         if (_decoders == null) return false;
@@ -38,7 +39,7 @@ public sealed partial class Movies
         {
             MovieRuntime runtime = MovieRuntime.Open(
                 movie.Name, assetId, resourceId, movie, _decoders, movieFlags,
-                initialPositionMs, startDelayMs, presentationDurationMs, _time);
+                initialPositionMs, startDelayMs, presentationDurationMs, _time) with { Restarted = restart };
             stopTimeMs = runtime.Decoder.StopTimeMs;
             while (!_opened.TryAdd(playbackId, runtime))
                 if (_opened.TryRemove(playbackId, out var prior)) prior.Decoder.Dispose();
@@ -62,8 +63,13 @@ public sealed partial class Movies
         _requestedRates[playbackId] = rate;
     }
 
-    // Engine thread: the next frame service stops the decoder and its sound.
-    private void RequestStop(long playbackId) => _requestedStops.Enqueue(playbackId);
+    // Engine thread: the next frame service stops the decoder and its sound. A stopped movie loops no more.
+    private void RequestStop(long playbackId)
+    {
+        _loops.Remove(playbackId);
+        _rates.Remove(playbackId);
+        _requestedStops.Enqueue(playbackId);
+    }
 
     /// <summary>
     /// Once a frame, on the front end's thread: stop what the engine thread stopped, take the decoders it opened, apply
@@ -103,6 +109,14 @@ public sealed partial class Movies
             bool watchdogExpired = elapsedMs >= movie.WatchdogMs;
             if ((movie.Decoder.IsCompleted || watchdogExpired) && _completionNotified.Add(playbackId))
             {
+                // A looping movie that played to its end starts again (Loop, on the engine thread).
+                if (movie.Decoder.IsCompleted && movie.Decoder.Failure == null
+                    && MovieFlagBits.Loops(movie.MovieFlags))
+                {
+                    _serviced.Enqueue(new(playbackId, null, 0, null, Looped: true));
+                    serviced = true;
+                    continue;
+                }
                 if (movie.Decoder.Failure is { } failure)
                     _print($"movie decode failed {movie.Name}: {failure}");
                 if (watchdogExpired && !movie.Decoder.IsCompleted)
@@ -121,6 +135,7 @@ public sealed partial class Movies
         while (_serviced.TryDequeue(out Serviced item))
         {
             if (item.Frame is { } frame) PublishFrame(item.PlaybackId, item.Name!, item.AssetId, frame);
+            else if (item.Looped) Loop(item.PlaybackId);
             else Complete(item.PlaybackId);
         }
     }
@@ -139,6 +154,7 @@ public sealed partial class Movies
                 _feeds[playbackId] = new MovieAudioFeed(movie.Decoder, route, _sound);
             }
             _completionNotified.Remove(playbackId);
+            if (movie.Restarted) continue;
             _print($"movie started {movie.Name} playback={playbackId} " +
                    $"({movie.Decoder.StopTimeMs?.ToString() ?? "unknown"} ms from VFS" +
                    (movie.InitialPositionMs > 0 ? $", start={movie.InitialPositionMs}ms" : "") +

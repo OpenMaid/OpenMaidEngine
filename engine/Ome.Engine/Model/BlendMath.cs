@@ -26,8 +26,14 @@ public static class BlendMath
     public static long PingPong(long now, long start, long period)
     {
         if (period <= 0) return 0;
-        long u = ((now - start) % period + period) % period;
+        long u = CycleElapsed(now, start) % period;
         if (u >= period / 2) u = period - u;
         return u;
     }
+
+    /// <summary>How far a cyclic channel is past its start, as gfx_object_anim_interpolate counts it: the clock minus
+    /// the start in unsigned 32-bit arithmetic (4.24N 0x475259, 0x475378, 0x475730, 0x4757c0 and 0x475b91: SUB, then
+    /// an unsigned DIV). A start later than the clock, as a loaded save stamps it in the clock of the engine that wrote
+    /// it, wraps, and the channel keeps cycling.</summary>
+    public static long CycleElapsed(long now, long start) => unchecked((uint)(now - start));
 }

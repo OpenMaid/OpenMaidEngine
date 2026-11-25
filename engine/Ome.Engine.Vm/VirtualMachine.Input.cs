@@ -301,7 +301,7 @@ public sealed partial class VirtualMachine : IInterpreterInput
     private StepResult OpGetMouseButtonState(Instruction ins, int pc)
     {
         var a = ins.Args;
-        Write(a[0], _scene.MouseButtonState); return StepResult.Next;
+        Write(a[0], _mouseButtonState); return StepResult.Next;
     }
 
     // 0x106: active-device capability, zero when absent

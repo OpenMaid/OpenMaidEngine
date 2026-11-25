@@ -148,7 +148,6 @@ public sealed partial class VirtualMachine
         public long? HostedScenePackedId;            // set once the coordinator returned, until the scene enters
         public ExecFrame? InteractiveFrame;
         public ExecFrame? RawInputFrame;
-        public int MouseButtonState;
         public int MouseWheelDelta;
         public int MouseHorizontalWheelDelta;   // AGE 4.38D, ctx+0x1c38: op 0x2e5 reads and clears it
         // AGE 4.38D's stepped callbacks: how many steps op 0x104 cycles through (ctx+0x771ac, op 0x103) and the
@@ -339,7 +338,7 @@ public sealed partial class VirtualMachine
     }
 
     /// <summary>Update one native mouse-button bit (left=0x1, right=0x2 in Himegari).</summary>
-    public void UpdateMouseButtonState(int bit, bool pressed) => UpdateMaskBit(ref _scene.MouseButtonState, bit, pressed);
+    public void UpdateMouseButtonState(int bit, bool pressed) => UpdateMaskBit(ref _mouseButtonState, bit, pressed);
 
     /// <summary>Accumulate a signed native mouse-wheel delta until op 0x10d consumes it.</summary>
     public void QueueMouseWheelDelta(int delta)
@@ -1289,7 +1288,7 @@ public sealed partial class VirtualMachine
         // with its owner. The scene is no longer the run's first (SYSTEM4 skips LOGO/OP from now on), and a return to
         // title reloads the root the natural way: TITLE runs, and nothing ends the run at a scene's return.
         _scene = new();
-        TakeHeldTriggers();   // scene_context_init_reset polls the input latch and discards it
+        FlushActionTriggers();   // scene_context_init_reset flushes the input latch as input_flush_action_triggers does
         _audio.ResetScene();
         _tick.ResetScene();   // a root reload abandons every open block with its frames
         _shell.ResetScene();   // the system-menu fields, queued menu commands and callbacks; an open dialog is cancelled
@@ -1585,7 +1584,7 @@ public sealed partial class VirtualMachine
         }
         if (_cur.Script.IndexByOffset.TryGetValue(target, out int pc))
         {
-            TakeHeldTriggers();   // adv_input_service_poll flushes the latch before it dispatches (0x411294)
+            FlushActionTriggers();   // adv_input_service_poll flushes the latch before it dispatches (0x411294)
             _cur.CallStack.Add(HotspotReturnMarker);
             RunWaitCallback(pc);
             // A malformed callback must not leave its sentinel in the page's ordinary local-call stack.

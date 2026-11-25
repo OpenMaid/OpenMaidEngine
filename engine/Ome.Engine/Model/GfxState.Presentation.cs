@@ -718,14 +718,16 @@ public sealed partial class GfxState
                     // source, scaled by its alpha, is taken from what is under it (COUPANIME's movies, ATTACK).
                     alpha = a; strength = 0; blend = BlendKind.Subtractive; multiplyTint = true;
                 }
-                else if (o.StaticColorMode == 0 && o.OneShotColorBlend)
+                else if (o.DefaultColorMode && o.OneShotColorBlend)
                 {
                     alpha = a; strength = 0; blend = BlendKind.Alpha; multiplyTint = true;
                 }
-                else if (o.StaticColorMode == 0 && o.PostBindStaticColorBlend)
+                else if (o.DefaultColorMode && o.PostBindStaticColorBlend)
                 {
                     // FIELD suppresses a still-bound idle unit while its clone moves; CALLBACK_SETTING
                     // rebuilds the erased ADV backing and writes the configured opacity after binding it.
+                    // Native draws a mode other than 1, 2 and 3 as mode 0: Verita's DRAWMAP hides a map unit
+                    // with alpha 0 and mode 100.
                     // Pre-bind static alpha-zero CG initialization remains the opaque mode-0 path.
                     alpha = a; strength = 0; blend = BlendKind.Alpha; multiplyTint = true;
                 }
@@ -767,7 +769,7 @@ public sealed partial class GfxState
             else if (o.SrcAnim && o.SrcPeriod > 0 && o.SrcFrameCount >= 1)
             {
                 if (o.SrcStart < 0) o.SrcStart = nowMs;
-                long cell = SourceCellAt(o, nowMs);   // clamps a start stamp later than now (a restored clock)
+                long cell = SourceCellAt(o, nowMs);   // a start later than now (a loaded save's) wraps
                 srcX = o.SrcRect.X + (int)(cell % o.SrcColumns) * o.SrcRect.W;
                 srcY = o.SrcRect.Y + (int)(cell / o.SrcColumns) * o.SrcRect.H;
             }
@@ -805,7 +807,7 @@ public sealed partial class GfxState
             if (o.RotationEnabled && o.RotationPeriodMs > 0)
             {
                 if (o.RotationStartMs < 0) o.RotationStartMs = nowMs;
-                long elapsed = System.Math.Max(0, nowMs - o.RotationStartMs);
+                long elapsed = BlendMath.CycleElapsed(nowMs, o.RotationStartMs);
                 cycleAngle = ((elapsed % o.RotationPeriodMs) * 360) / o.RotationPeriodMs;
             }
             if (o.TranslationCycleEnabled && o.TranslationCyclePeriodMs > 0)

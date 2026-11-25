@@ -69,10 +69,11 @@ public interface IInputAndWaits
     // ---- the modal movie ----
 
     // Native op 0x20f uses a universal packed id and parks script execution until the movie reaches EOF or the player
-    // cancels it. The decoder stays asynchronous; the wait keeps the front end's frames coming.
+    // cancels it, which only a service movie allows (MovieFlagBits.IsServiceMovie). The decoder stays asynchronous; the
+    // wait keeps the front end's frames coming.
     void PlayModalMovieToSurface(long resourceId, int surfaceSlot, long movieFlags) { }
-    // The modal movie service polls native's input latch on its first tick, and a held action 4 stops the movie: the
-    // next PlayModalMovieToSurface returns as cancelled at once (VirtualMachine.InputLatch.cs).
+    // The modal movie service polls native's input latch on its first tick, and a held action 4 stops a service movie:
+    // the next PlayModalMovieToSurface returns as cancelled at once (VirtualMachine.InputLatch.cs).
     void CancelNextModalMovie() { }
 
     // ---- presentation and screen transitions ----

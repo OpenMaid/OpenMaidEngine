@@ -21,8 +21,9 @@ public sealed partial class VirtualMachine
         // renderer to the existing mutable target; it does not reload that surface with resource
         // id/movie bytes or apply color key 0. Keep the created surface's no-key state so MPEG
         // black remains opaque.
-        OfferHeldTriggersToModalMovie();
-        _waits.PlayModalMovieToSurface(resourceId, surfaceSlot, Read(a[2]));
+        long movieFlags = Read(a[2]);
+        if (MovieFlagBits.IsServiceMovie(movieFlags)) OfferHeldTriggersToModalMovie();
+        _waits.PlayModalMovieToSurface(resourceId, surfaceSlot, movieFlags);
         return StepResult.Next;
     }
 

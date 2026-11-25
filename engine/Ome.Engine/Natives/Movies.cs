@@ -36,6 +36,12 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
     private readonly MovieSurfaceRegistry _surfaces = new();
 
     private sealed record MaskPlayback(MovieMaskTransitionRequest Request, RgbaImage Captured);
+
+    // Engine thread only: what a looping movie opens again at its end (MovieFlagBits.Loops), and the rate op 0x246 gave
+    // a playback, which native's graph keeps through the restart. A stop forgets both (RequestStop).
+    private sealed record LoopSource(MoviePayload Payload, long ResourceId, int AssetId, int SurfaceSlot, long Flags);
+    private readonly Dictionary<long, LoopSource> _loops = new();
+    private readonly Dictionary<long, double> _rates = new();
     private readonly Dictionary<long, MaskPlayback> _masksByPlayback = new();
     private readonly Dictionary<int, long> _maskPlaybackBySurface = new();
 
@@ -149,6 +155,7 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
     {
         if (!_surfaces.TryGetBinding(surfaceSlot, out MovieSurfaceBinding binding)) return;
         QueueRate(binding.PlaybackId, rate);
+        if (double.IsFinite(rate) && rate > 0) _rates[binding.PlaybackId] = rate;
         _timeline?.Event("movie-rate", new()
         {
             ["surface"] = surfaceSlot,
@@ -209,9 +216,17 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
             _maskPlaybackBySurface[surfaceSlot] = playbackId;
         }
         _graphics.ForgetSurfaceColorKey(surfaceSlot);
-        // Movie surfaces inherit the selected game's primary size until a decoded frame supplies content.
-        if (mask == null) _graphics.SetSurfaceSize(surfaceSlot, _graphics.Canvas.Width, _graphics.Canvas.Height);
-        else _graphics.SetSurfaceSize(surfaceSlot, mask.Captured.Width, mask.Captured.Height);
+        // The surface keeps the size it was created with, which op 0x208 reads (gfx_surface_get_size reads the
+        // surface's +0x410/+0x414, and only the surface creators write them; 4.24N 0x4764b0): Verita's BTL centres its
+        // 128 x 192 death burst on the unit by it. Native refuses a movie on a slot with no surface (op 0x236 throws);
+        // the port gives such a slot the screen's size.
+        bool sizedHere = false;
+        if (mask != null) _graphics.SetSurfaceSize(surfaceSlot, mask.Captured.Width, mask.Captured.Height);
+        else if (!_graphics.TryGetSurfaceSize(surfaceSlot, out _))
+        {
+            _graphics.SetSurfaceSize(surfaceSlot, _graphics.Canvas.Width, _graphics.Canvas.Height);
+            sizedHere = true;
+        }
         try
         {
             MoviePayload movie = _assets.Read(asset);
@@ -233,13 +248,17 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
                 stopTimeMs = 0;
                 Complete(playbackId);
             }
+            else if (mask == null && MovieFlagBits.Loops(movieFlags))
+            {
+                _loops[playbackId] = new LoopSource(movie, resourceId, asset.PackedId, surfaceSlot, movieFlags);
+            }
             return started;
         }
         catch (Exception e)
         {
             AbandonMask(playbackId);
             _surfaces.Abandon(playbackId, out _);
-            _graphics.ForgetSurfaceSize(surfaceSlot);
+            if (sizedHere) _graphics.ForgetSurfaceSize(surfaceSlot);
             stopTimeMs = 0;
             _print($"movie read failed {asset.Name}: {e.Message}");
             return false;
@@ -284,6 +303,28 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
             ["playback"] = playbackId, ["surface"] = slot, ["cleared"] = cleared,
         });
         _wake();
+    }
+
+    // A looping movie reached its end. Native's tick stops it, seeks it to 0 and starts it again (4.24N engine_main_tick
+    // 0x412371..0x412393): the movie object, its surface and its rate stay, nothing is cleared, and op 0x23a still finds
+    // it playing. The port opens its decoder again from the start under the same playback.
+    private void Loop(long playbackId)
+    {
+        if (!_loops.TryGetValue(playbackId, out LoopSource? source)) return;   // stopped since
+        if (!_surfaces.TryGetBinding(source.SurfaceSlot, out MovieSurfaceBinding binding)
+            || binding.PlaybackId != playbackId)
+        {
+            _loops.Remove(playbackId);
+            return;
+        }
+        if (!TryOpen(source.Payload, playbackId, source.ResourceId, source.AssetId, source.Flags,
+                     initialPositionMs: 0, startDelayMs: 0, presentationDurationMs: null, out _, restart: true))
+        {
+            Complete(playbackId);
+            return;
+        }
+        if (_rates.TryGetValue(playbackId, out double rate)) QueueRate(playbackId, rate);
+        _timeline?.Event("movie-loop", new() { ["playback"] = playbackId, ["surface"] = source.SurfaceSlot });
     }
 
     // gfx_fill_surface_rect_worker(slot, the whole surface, 0, 0): every pixel transparent black.

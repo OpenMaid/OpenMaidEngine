@@ -99,7 +99,8 @@ public sealed partial class InputAndWaits
 
     /// <summary>
     /// The engine thread's advance (a routed click or advance key, or <see cref="SignalInput"/>): it cancels the modal
-    /// movie, finishes the reveal, forces a transition that a click may skip, or ends the text wait, in that order. A
+    /// movie if it is a service movie (any other plays on), finishes the reveal, forces a transition that a click may
+    /// skip, or ends the text wait, in that order. A
     /// transition click is consumed by the foreground lifecycle; it never pre-arms or advances the following stable
     /// input wait.
     /// </summary>
@@ -107,6 +108,7 @@ public sealed partial class InputAndWaits
     {
         if (_scene.ModalMovieWaiting)
         {
+            if (!_scene.ModalMovieSkippable) return;
             _scene.ModalMovieCancelled = true;
             _timeline?.State("modal-movie-cancel", new());
             _frameSignal.Set();

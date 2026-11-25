@@ -173,10 +173,52 @@ public class InputLatchTests
     }
 
     [Fact]
+    public void AFlushWithAButtonDownArmsTheClickSuppressorOnce()
+    {
+        // Verita's field walks while the left button is held, and an event starts with op 0xd5 (FIELD@0x3172):
+        // input_flush_action_triggers finds the button down and arms ctx+0x1c30, so the release reaches nothing.
+        var (vm, _) = Start(Assemble("SEQUENCE",
+            (0xd3, Array.Empty<Operand>()),
+            (0xd5, new[] { I(-1) })), Click);
+        vm.UpdateMouseButtonState(0x1, pressed: true);
+
+        vm.Run();
+
+        Assert.Equal(0, vm.HeldTriggers);
+        Assert.True(vm.TryConsumeClickSuppressor());
+        Assert.False(vm.TryConsumeClickSuppressor());
+    }
+
+    [Fact]
+    public void AFlushWithNoButtonDownLeavesTheNextClick()
+    {
+        var (vm, _) = Start(Assemble("FADE", (0x21, new[] { I(0), I(16) })), Click);
+        vm.UpdateMouseButtonState(0x1, pressed: true);
+        vm.UpdateMouseButtonState(0x1, pressed: false);
+
+        vm.Run();
+
+        Assert.False(vm.TryConsumeClickSuppressor());
+    }
+
+    [Fact]
+    public void TheTextWaitsDiscardDoesNotArmTheSuppressor()
+    {
+        // Op 0x72's entry polls the latch without reading the raw buttons.
+        var (vm, _) = Start(Assemble("WAIT", (0x72, new[] { I(0) })), Click);
+        vm.UpdateMouseButtonState(0x2, pressed: true);
+
+        vm.Run();
+
+        Assert.False(vm.TryConsumeClickSuppressor());
+    }
+
+    [Fact]
     public void AHeldClickCancelsTheNextModalMovie()
     {
-        // The run-state-0x2000 service polls the latch on its first tick, whatever EffectSkipOnClick says.
-        var (vm, host) = Start(Assemble("MOVIE", (0x20f, new[] { I(0x33), I(0), I(0) })), Click);
+        // The run-state-0x2000 service polls the latch on its first tick while a service movie (flags & 5 == 4) plays,
+        // whatever EffectSkipOnClick says.
+        var (vm, host) = Start(Assemble("MOVIE", (0x20f, new[] { I(0x33), I(0), I(4) })), Click);
 
         vm.Run();
 
@@ -184,6 +226,32 @@ public class InputLatchTests
         Assert.Single(host.ModalMovies);
         Assert.Equal(0, vm.HeldTriggers);
     }
+
+    [Theory]
+    [InlineData(0)]         // an ED, or Verita's OP, not yet seen: unlocked << 2
+    [InlineData(5)]         // bit 0 set
+    public void AHeldClickStaysThroughAModalMovieThatIsNoServiceMovie(long flags)
+    {
+        // Nothing polls the latch while such a movie plays (4.24N engine_main_tick@0x412010): the movie plays to its
+        // end and the click stays held.
+        var (vm, host) = Start(Assemble("MOVIE", (0x20f, new[] { I(0x33), I(0), I(flags) })), Click);
+
+        vm.Run();
+
+        Assert.Equal(0, host.ModalMovieCancels);
+        Assert.Single(host.ModalMovies);
+        Assert.Equal(Click, vm.HeldTriggers);
+    }
+
+    [Theory]
+    [InlineData(4, true)]
+    [InlineData(0x20004, true)]  // Kamidori's and Arterial's logos
+    [InlineData(6, true)]        // op 0x24d's mask movie
+    [InlineData(0, false)]
+    [InlineData(2, false)]       // Himegari's chapter movie
+    [InlineData(5, false)]
+    public void AServiceMovieHasBit2AndNotBit0(long flags, bool service)
+        => Assert.Equal(service, MovieFlagBits.IsServiceMovie(flags));
 
     // 0: handlers; 5: yield; 6: page continues; 12: handler A; 18: handler B.
     private static Script ControlYield()

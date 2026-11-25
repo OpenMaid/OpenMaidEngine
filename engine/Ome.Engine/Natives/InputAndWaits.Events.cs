@@ -197,9 +197,12 @@ public sealed partial class InputAndWaits
         // button-down otherwise. Menus read the polled state above, so a menu opened by this click starts with the
         // button already up, as natively.
         if (pressed == ClickOnUp) return false;
+        // input_latch_mouse_click: a latch flush made while a button was down (op 0xd5's start, a legacy fade, a
+        // hotspot dispatch, a scene reset) armed the one-shot suppressor; this click clears it and reaches nothing.
+        if (_interpreter.TryConsumeClickSuppressor()) return true;
         if (_scene.ModalMovieWaiting)
         {
-            Advance();
+            if (action >= 0) RouteModalMovieTrigger(1 << action);
             return true;
         }
         // While an effect service parks the VM, the trigger goes to the effect's poll or to the input latch, never to a
@@ -241,9 +244,14 @@ public sealed partial class InputAndWaits
             RouteEffectTrigger(1 << action);
             return true;
         }
+        if (_scene.ModalMovieWaiting)
+        {
+            RouteModalMovieTrigger(1 << action);
+            return true;
+        }
         if (_interpreter.TryLatchAdvCoroutineYieldTrigger(1 << action)) return true;
         if (action == AdvanceAction && _interpreter.TryLatchMessageSkipCancelClick()) return true;
-        if (!_scene.ModalMovieWaiting && !_interpreter.IsAdvTextWaitPolling)
+        if (!_interpreter.IsAdvTextWaitPolling)
         {
             RouteUnpolledTrigger(1 << action);
             return true;
@@ -251,11 +259,6 @@ public sealed partial class InputAndWaits
         if (_interpreter.TryActivateInputActions(1 << action)) return true;
         if (action == HideWindowAction && _interpreter.TryRequestAdvWaitCoroutineYield()) return true;
         if (action != AdvanceAction) return false;
-        if (_scene.ModalMovieWaiting)
-        {
-            Advance();
-            return true;
-        }
         if (!_text.IsAdvPagePresentationSuspended && !_interpreter.IsRawInputCallbackActive) Advance();
         return false;
     }
@@ -269,8 +272,13 @@ public sealed partial class InputAndWaits
             RouteEffectTrigger(actionMask);
             return true;
         }
+        if (actionMask != 0 && _scene.ModalMovieWaiting)
+        {
+            RouteModalMovieTrigger(actionMask);
+            return true;
+        }
         if (_interpreter.TryLatchAdvCoroutineYieldTrigger(actionMask)) return true;
-        if (actionMask != 0 && !_scene.ModalMovieWaiting && !_interpreter.IsAdvTextWaitPolling)
+        if (actionMask != 0 && !_interpreter.IsAdvTextWaitPolling)
         {
             RouteUnpolledTrigger(actionMask);
             return true;
@@ -280,11 +288,6 @@ public sealed partial class InputAndWaits
             && _interpreter.TryRequestAdvWaitCoroutineYield())
             return true;
         if (!HasAdvanceAction(actionMask)) return false;
-        if (_scene.ModalMovieWaiting)
-        {
-            Advance();
-            return true;
-        }
         if (!_text.IsAdvPagePresentationSuspended && !_interpreter.IsRawInputCallbackActive) Advance();
         return false;
     }
@@ -301,6 +304,21 @@ public sealed partial class InputAndWaits
     private void RouteEffectTrigger(int actionMask)
     {
         if (!TryPollEffectTriggers(actionMask, EffectSkipOnClick)) _interpreter.HoldTriggers(actionMask);
+    }
+
+    /// <summary>A trigger during op 0x20f's modal movie (run-state 0x2000), when no other service runs. The service
+    /// polls native's input latch only while a service movie plays (<see cref="MovieFlagBits.IsServiceMovie"/>), and
+    /// then action 4 seeks the movie to its end and the poll keeps the rest (4.24N engine_main_tick@0x412010, its
+    /// <c>local_76c</c> branch; 4.33G 0x4121a3). Otherwise nothing polls, and the latch keeps the trigger: the first
+    /// showing of an ED, or of Verita's or Arterial's OP, plays to its end.</summary>
+    private void RouteModalMovieTrigger(int actionMask)
+    {
+        if (_scene.ModalMovieSkippable && HasAdvanceAction(actionMask))
+        {
+            Advance();
+            actionMask &= ~(1 << AdvanceAction);
+        }
+        if (actionMask != 0) _interpreter.HoldTriggers(actionMask);
     }
 
     /// <summary>A trigger while no text wait polls (native run-state 0x80000000 clear), so no hotspot or op-0x97 binding
@@ -341,5 +359,6 @@ public sealed partial class InputAndWaits
         public bool TryActivatePointer(int x, int y) => false;
         public bool TryRequestAdvWaitCoroutineYield() => false;
         public void HoldTriggers(int actionMask) { }
+        public bool TryConsumeClickSuppressor() => false;
     }
 }

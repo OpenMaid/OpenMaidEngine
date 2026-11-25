@@ -9,6 +9,10 @@ internal sealed record MovieRuntime(string Name, int AssetId, long ResourceId, I
                                     long StartedAtTimestamp, long StartDelayMs,
                                     long? PresentationDurationMs, long WatchdogMs)
 {
+    /// <summary>A looping movie opened again at its end (<see cref="Model.MovieFlagBits.Loops"/>): the frame service
+    /// adopts it without a log line.</summary>
+    public bool Restarted { get; init; }
+
     /// <summary>Open the decoder now, on the caller's thread, so its stop time is known at once (op 0x23f).
     /// <see cref="StartedAtTimestamp"/> is <paramref name="time"/>'s timestamp at the open.</summary>
     public static MovieRuntime Open(string name, int assetId, long resourceId, MoviePayload payload,

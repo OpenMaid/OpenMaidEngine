@@ -1751,7 +1751,21 @@ and window procedure treat that state as the modal whole-movie service. This par
 until EOF or input cancellation, after which the script's following instructions release the object/surface.
 The port implements `0x20f` through a typed packed-movie resolver and a distinct modal host call. The existing
 asynchronous decoder publishes frames through the retained surface while only the VM thread is parked;
-EOF, mouse click, Accept, or Cancel resumes the wrapper so its scripted cleanup releases surface 42.
+EOF, or an action-4 trigger during a service movie (below), resumes the wrapper so its scripted cleanup releases
+surface 42.
+
+**The modal movie's skip (2026-11-25).** Op `0x20f` puts its movie in the surface-movie array, as op `0x236` does. The
+run-state `0x2000` service's first branch serves another object (`ctx+0x52bd0` in 4.33G, `+0x52c34` in 4.24N), and
+with none it clears `0x2000`; the bit comes back each tick while any surface movie lives, until the per-slot pass frees
+the movie at its end. A click reaches the movie only through the branch after it: when the per-slot pass found a
+service movie playing (`surface_movie_is_playing`, flags `& 5 == 4`), the service polls the latch, and action 4 makes
+`movie_skip_to_end_if_service` (4.33G `0x407800`, 4.24N `0x407cf0`) seek every service movie to its end. With any
+other flags nothing polls, the movie plays to its end, and the latch keeps the click. The scripts pass 4 (Himegari's and
+Verita's LOGO, Himegari's OP) or 0x20004 (Kamidori's LOGO and OP, Arterial's LOGO), but every game's ED, and Verita's
+and Arterial's OP, pass `unlocked << 2` from op `0x19d`, so their first showing cannot be skipped. The port skipped any
+modal movie on any click until the Verita sweep found it on 2026-11-25 (native played Verita's OP on through a click
+on a new sandbox). Now `MovieFlagBits.IsServiceMovie` decides it, for a click, a key, a joystick button and a held
+trigger alike (`InputAndWaits.Events.cs` `RouteModalMovieTrigger`; `InputLatchTests`).
 `0x236` retains its non-modal contract; native passes its packed resource operand through the same universal
 catalog opener as `0x20f`. Both paths now decode the MPEG audio pin through FFmpeg into timestamped stereo
 float PCM. Godot owns one `AudioStreamGenerator` per playback instance, applies the native flag-selected
@@ -2400,6 +2414,17 @@ shared previous timestamp and raises manager redraw-dirty `+0xb558` only when th
 Other retained mutations raise dirty directly; continuously varying cyclic channels keep it raised. The
 outer loop renders only for retained dirty state or a new movie frame. Merely completing an opcode `0xc8`
 sleep/poll interval is not itself a native graphics-dirty request.
+
+**A start later than the clock wraps (2026-11-25).** Every cyclic channel counts `current - start` in unsigned 32-bit
+arithmetic: a `SUB`, then an unsigned `DIV` for the period and another for the frame count (4.24N
+`gfx_object_anim_interpolate@0x475160`: color `0x475259`, scale `0x475378`, rotation `0x475730`, translation
+`0x4757c0`, spritesheet `0x475b91`). The starts `+0x20c`–`+0x21c` are saved, in the clock of the engine that wrote
+them: a native save carries the machine's uptime (Verita's slot 5 had `628915386` at objects `0x12c` and `0x12d`), a
+port save the port's run time (`1066687` there). Loaded where the clock has not reached the stamp, native's channels
+wrap and keep cycling. The port clamped the difference to 0, so they held their first cell, or their start, until the
+clock caught up: after any native save, and after a port save loaded by a newer run. The port now counts as native
+does (`BlendMath.CycleElapsed`; `GfxAnimationTests.ASpritesheetWhoseSavedStartIsLaterThanTheClockKeepsCycling`,
+`ACycleWhoseSavedStartIsLaterThanTheClockKeepsCycling`).
 
 FIELD's DEBUGMAP unit family is more tightly synchronized than the general model permits. At
 `FIELD@0x924a`, the script configures prototype handle `0x9c40` as `(period=200 ms, frames=4, columns=2)`.
@@ -3519,6 +3544,15 @@ then sets the blend from the object's colour mode (`obj+0x30`, op `0x203`'s oper
 | 1 | `SRCALPHA/ONE` | the source, scaled by its alpha, added to the target |
 | 2 | `ONE/ZERO` when the render target is a surface of kind 1, else the sprite's | a copy: the source replaces the target, its alpha with it |
 | 3 | `SRCALPHA/ONE` with `D3DBLENDOP_REVSUBTRACT` | the source, scaled by its alpha, taken from the target |
+
+Every other value is mode 0: the draws branch on 1, 2 and 3 alone (4.24N's `gfx_object_blit_d3d9@0x478790` too, read
+2026-11-25). Verita relies on it. DRAWMAP shows a map unit with its shown mode (0, 1 or 3) and hides one by writing
+alpha 0 without drawing it again, its mode then another table's value, 15 to 300 (`DRAWMAP@0x8c1`, `G[0x5ddc09]`). The
+port drew those modes opaque, so a hidden unit stayed where it was last drawn and seemed to follow the camera until a
+battle rebuilt the map: MP01B0201's unit 2, the healing crystal's glow (MO511, 64 × 96 sparkles on black, shown with
+mode 1 and hidden with 40), and MP01B0203's unit 17, the beast girl who flees after her battle (MO103D, hidden with
+66). The port now draws them as native does (`DefaultColorMode`; `RenderObjectBlendTests`); driven from the same save
+on 2026-11-25, native and the port both fade the crystal out with nothing left behind.
 
 The colour modulates the texture in every mode. A surface's kind is op `0x1f8`'s fourth operand, which the surface
 keeps at `+0x418` (`gfx_surface_texture_create`, `0x465fa0` in 4.24J and `0x477490` in 4.38D): 1 is a render target
@@ -5970,6 +6004,17 @@ source-over color/alpha interpolation. Layout measurement separately uses `GetTe
 the selected GDI font, so face, explicit `lfWidth`, and weight affect advances and wrapping as well as
 pixels.
 
+**Blanks in the raster workers (2026-11-25).** `text_raster_string_cached` and `text_raster_string_uncached` (4.33G
+`0x45b600` and `0x459d90`, 4.24N `0x45bfa0` and `0x45a730`) do not draw a blank. A space, or a single-byte control
+byte (0x7F among them), moves the pen by `-lfWidth` (text manager `+0x4d0`, which op `0x75` sets to minus half the
+size). The full-width space 0x8140 moves it twice that, and a glyph whose outline GDI refuses moves it by one or two
+halves as it is one or two bytes. Every other glyph moves the pen by its `gmCellIncX`. So in a bold font, whose cells
+are a pixel wider, text after a blank starts a pixel left of where its cell would put it. Verita's sweep found it on
+2026-11-25: BUNKI's tutorial choice indents two rows with 0x8140 in bold 20 px Mincho (`SC2010@0xe8d`, `0xeb1`), and the
+port drew them a pixel right of native. The port's draw outside aspect mode now does the same
+(`ImmediateSurfaceTextRenderer.RenderGlyphs`; `ImmediateSurfaceTextRendererTests`). The ADV layout measures with
+`GetTextExtentPoint32A` instead and is not affected.
+
 The shipped effect profiles use only modes 1 and 3:
 
 - mode 1 draws one effect-color copy at `(x+effect_x,y+effect_y)`, then the primary glyph; all 43
@@ -7442,8 +7487,9 @@ trigger, so a click made while nothing polls is still there for the next poll.
   at once without polling, and the latch keeps what it holds. Under fast-forward (or with action 6 held) the reveal
   does not poll.
 - The hidden-window wait (`0x411ee6`): any trigger ends it.
-- The modal movie service, run-state `0x2000` (`0x41205d`): action 4 stops the movie. It does not read
-  `EffectSkipOnClick`.
+- The modal movie service, run-state `0x2000` (`0x41205d`): while a service movie plays (flags `& 5 == 4`), action 4
+  stops the movie; any other movie is not polled, and the latch keeps the trigger ("The modal movie's skip"). It does
+  not read `EffectSkipOnClick`.
 - `adv_input_service_poll@0x411230` at a text wait. Op `0x72`'s entry normally discards the latch first (below), so
   the poll sees held triggers only at a wait that resumed without op `0x72`: the wait that op `0x7c` returns to after a
   Space hide. There the triggers count as fresh input: an op-`0x97` binding, then action 5 (hide again), then action
@@ -7477,8 +7523,26 @@ Nothing else polls. A script sleep (op `0xc8`, run-state 1) only tests `interval
     `iage_service_reload_current_script@0x45f550`);
   - `input_flush_action_triggers@0x405380`. Its callers are the legacy fades `0x21`–`0x25`, `0x2a`, `0x2e` and `0x36` as
     they start (not under fast-forward), op `0xd5` at cursor 0, `adv_input_service_poll` before a hotspot dispatch
-    (`0x411294`), the text view's hit activation, and the skip-click cancel.
+    (`0x411294`), the text view's hit activation, the skip-click cancel, and `age_main_window_proc` after it sets the
+    polling gate (`WM_ACTIVATE`, and the menu loop's end).
 - Op `0x199` clears only the service trigger mask `ctx+0xa0ce8`, not the latch.
+
+**The click suppressor (2026-11-25).** `input_flush_action_triggers` does more than discard. After it drops the latch
+it reads the raw buttons (`input_poll_raw_mouse_buttons`, `GetAsyncKeyState` for `VK_LBUTTON` and `VK_RBUTTON`, behind
+the polling gate). With either button down it sets `ctx+0x1c30`, a one-shot suppressor. `scene_context_init_reset` and
+the debug reload repeat the same sequence inline; op `0x72`'s entry, op `0xfa` and op `0x101` poll the latch without
+reading the buttons, so they do not arm it. `input_latch_mouse_click` (4.33G `0x485e20`, 4.24N `0x487690`) clears an
+armed suppressor instead of latching the click, so the next click a button makes reaches nothing. Under `CLICKONUP`
+that click is the release of the button held through the flush. 4.24N has the same code (`0x405430`) and offset.
+
+The Verita sweep found it on 2026-11-25. The field walks while the left button is held. Walking onto an event, FIELD
+starts a timed sequence (op `0xd5`, `FIELD@0x3172`) with the button still down, and the event runs (here
+`SC2000@0x3ac9`, the crystal of 日陰の遺跡). Native kept the event's first page when the button was let go, after 3, 6
+or 12 seconds alike; the port advanced it. The port now arms the suppressor at the same points
+(`VirtualMachine.FlushActionTriggers`) and takes it at the click latch (`InputAndWaits.RouteMouseButton`,
+`TryConsumeClickSuppressor`; `InputLatchTests`, `InputAndWaitsTests`). It does not model the window procedure's flush:
+the port has no polling gate and no activation flush (`docs/backlog.md`). Op `0x108`'s button state also moved out of
+the port's scene state, since `GetAsyncKeyState` does not change at a scene reset.
 
 **Native-driven 2026-11-05** (slow reveals: `[message] MessageSpeed=100`):
 
@@ -7665,7 +7729,8 @@ black. The flags the scripts pass (counted over the three games' scripts):
 | 2 | Himegari's SC0000 chapter movie (through `G[402620]`), the load callbacks' restarts (from saved state) | kept |
 | 6 | op `0x24d`'s mask movie | kept |
 
-No script passes bit 0 as a constant, so no shipped movie loops; the port has no loop. **Port:** `Movies.Complete`
+No Himegari, Kamidori or Arterial script passes bit 0 as a constant. *Correction (2026-11-25):* Verita's does, and the
+port now loops; see "Verita's looping movie and a movie surface's size", below. **Port:** `Movies.Complete`
 does what the tick does (`MovieSurfaceRegistry.End`): the movie's newest frame, or the surface's contents when none
 came, becomes the surface's own pixels, `ClearsSurfaceAtEnd` clears them unless `(flags & 3) == 2`, the binding goes
 and the next frame service stops the decoder. The surface is then an ordinary one, which a fill or a draw reaches
@@ -7674,6 +7739,33 @@ frame until the script released the surface: ADDEXP's banner stayed through SHOW
 its binding until the wrapper's release, as before; native's cancel was not read. Not compared with native on a
 screen: no drive reached a level-up after the change. The sweep found Kamidori's level-ups at parity before it
 (2026-11-10), so the banner's last frame probably shows nothing under its blend; the sweep looks at the next one.
+
+#### Verita's looping movie and a movie surface's size (2026-11-25)
+
+The Verita sweep found two movie differences in its second battle, in 日陰の遺跡. Both are fixed.
+
+**The loop flag.** CHMODE3, the 魔術&必殺 skill menu, plays its Power charge sparkle with flags `0x40001`
+(`CHMODE3@0x31c7`, `MVB001I.AGF`, 1,019 ms, on surface `0x7d`): the loop flag and the SE route. 4.24N's
+`engine_main_tick` tests `+0x43c` at the movie's end (`0x412368`). Set, it stops the movie (`0x463cb0`), seeks it to
+0 (`0x407cd0`) and starts it again (`movie_start_modal_playback@0x463c60`); the object, its surface and its rate
+stay, nothing is cleared, and op `0x23a` still finds it playing. Clear, it takes the end described above (`0x4123a6`).
+Native showed the sparkle over the charge level for as long as the menu was open; the port played it once.
+`MovieFlagBits.Loops` names the flag. At a looping movie's end the frame service hands the end to the engine thread,
+which opens the decoder again from 0 under the same playback and gives it the rate op `0x246` set
+(`Movies.Loop`); a decoder that failed ends the movie as before
+(`MoviesNativeTests.AMovieWithTheLoopFlagStartsAgainAtItsEndAndStaysBound`,
+`ALoopingMovieWhoseDecoderFailsEnds`). The sparkle then showed in every capture over eight seconds, as native's did.
+
+**A movie keeps its surface's size.** BTL's death effect (`BTL@0x69f3`–`0x6eab`) creates surface `0x2a` at 128 × 192,
+plays `MVB001A.AGF` into it (flags `0x40000`), and centres the movie on each dying unit by `get-texture-size 0x2a`
+(op `0x208`). Native's op `0x208` reads the surface's `+0x410`/`+0x414` (`gfx_surface_get_size@0x4764b0` in 4.24N);
+only the surface creators write them (`gfx_surface_texture_create`, `gfx_surface_mode1_create_tiles`), and the movie
+open copies the texture's description into its renderer without changing them. The port set a movie's surface to
+the screen's size at the start. That was from 2026-07-28, when it replaced an `(800, 600)` that assumed Himegari's
+SC0000 had just created a surface that size. So BTL drew the burst at (x − 512, y − 576), off the screen, and only the
+unit's fade showed. `Movies.StartMovie` now leaves the size alone; it gives a slot with no surface, which native
+refuses (op `0x236` throws), the screen's size (`MoviesNativeTests.AMovieKeepsItsSurfacesCreatedSize`,
+`AMovieOnASlotWithNoSurfaceTakesTheScreensSize`). The next kill showed the burst on both, frame for frame.
 
 #### A surface release deletes its movie (2026-11-07)
 
@@ -8054,7 +8146,8 @@ These were found while driving native AGE from a script for gate 7 and for the g
     gate once the window exists (profile `[native.keep_polling]`). It installs then, not at spawn, because the packed
     AGE.EXE unpacks at run time.
 - **The click latch.** `WM_LBUTTONDOWN`/`WM_RBUTTONDOWN` set a click latch (`ctx+0x13e0` bit 0/1, via
-  `input_latch_mouse_click@0x485e20`), unless `+0x1c30` suppresses it. With `g_dwClickOnUp@0x5c6030` (SYS4INI
+  `input_latch_mouse_click@0x485e20`), unless `+0x1c30` suppresses it ("The click suppressor": a latch flush made
+  while a button is down arms it, and it takes the next click). With `g_dwClickOnUp@0x5c6030` (SYS4INI
   `CLICKONUP`, loaded at `0x488080`) set, the latch is set on `WM_LBUTTONUP`/`WM_RBUTTONUP` instead; Himegari has
   `CLICKONUP=1`. Menus consume the polled state; everything else that reacts to a click consumes the latch.
   `adv_input_service_poll@0x411230` calls `input_poll_triggered_action_mask@0x460880` on the input manager

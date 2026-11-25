@@ -102,6 +102,31 @@ public class RenderObjectBlendTests
     }
 
     [Fact]
+    public void AModeOtherThan1To3IsMode0_AHiddenMapUnitVanishes()
+    {
+        // Verita's DRAWMAP draws a shown map unit, then hides it by writing alpha 0 without drawing it again,
+        // its mode another table's value (DRAWMAP@0x8c1: 100 for the third map's unit 12). Native blits any mode
+        // but 1, 2 and 3 as mode 0, so the unit vanishes; drawn opaque, it stayed where it last stood.
+        const long unit = 0x1325;
+        var g = new GfxState();
+        g.SetSurface(0x3e, resId: 0x1234, colorKey: -1);
+        g.BindDraw(unit, 0x3e, 0, 0, 68, 100, 480, 240);
+        g.SetStaticObjectColorResolved(unit, mode: 1, alpha: 0xff, rgb: 0xffffff);
+        Assert.Equal(BlendKind.Additive, g.SnapshotVisibleObjects().Single().Blend);
+
+        g.SetStaticObjectColorResolved(unit, mode: 100, alpha: 0, rgb: 0xffffff);
+        var hidden = g.SnapshotVisibleObjects().Single();
+        Assert.Equal(0, hidden.Alpha);
+        Assert.Equal(BlendKind.Alpha, hidden.Blend);
+        Assert.Equal(100, g.TryGet(unit)!.StaticColorMode);   // kept as written: a save stores obj+0x30
+
+        // Shown again, it is drawn, then given its shown mode.
+        g.BindDraw(unit, 0x3e, 0, 0, 68, 100, 500, 250);
+        g.SetStaticObjectColorResolved(unit, mode: 0, alpha: 0xff, rgb: 0xffffff);
+        Assert.Equal(255, g.SnapshotVisibleObjects().Single().Alpha);
+    }
+
+    [Fact]
     public void AdvCallbackRebuild_PostBindStaticAlphaControlsBackingOpacity()
     {
         const long backing = 0xd2f0;

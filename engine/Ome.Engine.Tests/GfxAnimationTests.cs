@@ -254,6 +254,38 @@ public class GfxAnimationTests
     }
 
     [Fact]
+    public void ASpritesheetWhoseSavedStartIsLaterThanTheClockKeepsCycling()
+    {
+        // A save stamps +0x21c in the clock of the engine that wrote it; native counts (clock - start) unsigned
+        // (4.24N 0x475b91), so a stamp ahead of the clock wraps instead of holding the first cell.
+        var g = new GfxState();
+        g.SetSurface(4, 0x37, -1);
+        g.BindDraw(7, 4, 0, 0, 16, 16, 0, 0);
+        g.SetSrcRect(7, frameCount: 4, columns: 4, period: 100);
+        g.TryGet(7)!.SrcStart = 628_915_386;   // native's uptime in Verita's slot 5
+
+        long[] cells = new long[] { 1000, 1100, 1200, 1300 }
+            .Select(now => (long)g.SnapshotVisibleObjects(now).Single().SrcX / 16).ToArray();
+
+        long first = unchecked((uint)(1000L - 628_915_386L)) / 100 % 4;
+        Assert.Equal([first, (first + 1) % 4, (first + 2) % 4, (first + 3) % 4], cells);
+    }
+
+    [Fact]
+    public void ACycleWhoseSavedStartIsLaterThanTheClockKeepsCycling()
+    {
+        var g = new GfxState();
+        g.SetSurface(4, 0x37, -1);
+        g.BindDraw(7, 4, 0, 0, 16, 16, 0, 0);
+        g.SetRotationCycle(7, 1000, (0, 0, 1));
+        g.TryGet(7)!.RotationStartMs = 628_915_386;
+
+        Assert.NotEqual(g.SnapshotVisibleObjects(1000).Single().Rotation.AngleDegrees,
+                        g.SnapshotVisibleObjects(1250).Single().Rotation.AngleDegrees);
+        Assert.Equal((long)unchecked((uint)(1000L - 628_915_386L)), BlendMath.CycleElapsed(1000, 628_915_386));
+    }
+
+    [Fact]
     public void PresentationReasons_PublishMutationOnce_AndSpritesheetOnlyAtCellBoundaries()
     {
         var g = new GfxState();

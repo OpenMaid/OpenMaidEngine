@@ -44,7 +44,7 @@ public sealed partial class VirtualMachine
     private void CancelMessageSkipFromClick()
     {
         _scene.QueuedInputCallbackMask = 0;   // input_flush_action_triggers
-        TakeHeldTriggers();
+        FlushActionTriggers();
         _saves.Profile.ReadMessageSkipEnabled = false;
         _skip.CancelMessageSkipFromClick();
         if (_skip.Settings.CancelMessageSkipOnClick == 2) _shell.RequestSettingCallback();

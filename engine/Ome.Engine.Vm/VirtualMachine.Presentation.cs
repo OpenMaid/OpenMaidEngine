@@ -76,7 +76,7 @@ public sealed partial class VirtualMachine
         // finalizes on the surface instead.
         if (AdvFastForwardActive) FinishOnColourIfNegative(Read(a[0]));
         else _graphics.UseFadeScratch((int)Read(a[0]));
-        DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
+        FlushActionTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceWithBlack(
             Gfx, (int)Read(a[0]), Read(a[1]), SurfaceBlackFadeDirection.FromBlack,
             AdvFastForwardActive);
@@ -92,7 +92,7 @@ public sealed partial class VirtualMachine
         // Begin (mode 1) fills 0x20 and the fade's end releases it; under fast-forward finalize(-1, 0) fills it black.
         if (AdvFastForwardActive) _graphics.FinishTransitionOnColour(0);
         else _graphics.UseFadeScratch((int)Read(a[0]));
-        DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
+        FlushActionTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceWithBlack(
             Gfx, (int)Read(a[0]), Read(a[1]), SurfaceBlackFadeDirection.ToBlack,
             AdvFastForwardActive);
@@ -109,7 +109,7 @@ public sealed partial class VirtualMachine
         // white.
         if (AdvFastForwardActive) _graphics.FinishTransitionOnColour(0xffffff);
         else _graphics.UseFadeScratch((int)Read(a[0]));
-        DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
+        FlushActionTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceToWhite(
             Gfx, (int)Read(a[0]), Read(a[1]),
             AdvFastForwardActive);
@@ -131,7 +131,7 @@ public sealed partial class VirtualMachine
             return refused;
         // Mode 4 never touches 0x20; under fast-forward the handler finalizes on the target.
         if (AdvFastForwardActive) FinishOnColourIfNegative(Read(a[1]));
-        DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
+        FlushActionTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.CrossfadeSurfaces(
             Gfx, (int)Read(a[0]), (int)Read(a[1]), Read(a[2]),
             AdvFastForwardActive);
@@ -219,7 +219,7 @@ public sealed partial class VirtualMachine
                 return refused;
             _graphics.BeginMosaicScratch((int)Read(a[0]));
         }
-        DiscardHeldTriggersUnlessFastForward();   // the handler polls the triggered actions and clears them
+        FlushActionTriggersUnlessFastForward();   // input_flush_action_triggers as the mosaic starts
         _waits.MosaicSurfaces(Gfx, (int)Read(a[0]), (int)Read(a[1]), Read(a[2]), AdvFastForwardActive);
         return StepResult.Next;
     }

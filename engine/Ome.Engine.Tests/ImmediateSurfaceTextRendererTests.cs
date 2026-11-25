@@ -51,6 +51,42 @@ public class ImmediateSurfaceTextRendererTests
         Assert.Equal((255, 255, 255, 255), Pixel(destination, 3, 2));
     }
 
+    /// <summary>GDI's synthetic bold: every cell one pixel wider than the font's half or full width.</summary>
+    private sealed class BoldCellRasterizer : IGlyphMaskRasterizer
+    {
+        public List<GlyphRasterRequest> Requests { get; } = new();
+
+        public GlyphMask Rasterize(GlyphRasterRequest request)
+        {
+            Requests.Add(request);
+            int cell = (request.Cp932Code <= 0xff ? request.PixelHeight / 2 : request.PixelHeight) + 1;
+            return new GlyphMask(
+                width: 1, height: 1, stride: 1,
+                originX: 0, originY: request.PixelHeight,
+                cellAdvanceX: cell, cellAdvanceY: 0, cellWidth: cell, cellHeight: request.PixelHeight,
+                coverage: [16]);
+        }
+    }
+
+    [Fact]
+    public void ABlankMovesThePenByTheFontsHalfWidthNotByItsCell()
+    {
+        // Verita's BUNKI indents a choice with 0x8140 in bold 20 px Mincho (SC2010@0xeb1): the raster workers skip a
+        // blank and move by -lfWidth, twice for 0x8140, so the bold cell's extra pixel is not taken.
+        var rasterizer = new BoldCellRasterizer();
+        var renderer = new ImmediateSurfaceTextRenderer(rasterizer);
+        AdvTextStyle style = Style() with { PrimaryFontSize = 20, Bold = true, FontFace = "ＭＳ 明朝" };
+
+        ImmediateSurfaceTextResult wide = renderer.Render(Image(64, 24), 0, 0, "\u3000あ", style);
+        ImmediateSurfaceTextResult narrow = renderer.Render(Image(64, 24), 0, 0, " A\u0001B", style);
+
+        Assert.Equal(20 + 21, wide.CursorX);
+        Assert.Equal(new TextExtent(20, 41), wide.Ink);
+        Assert.Equal(10 + 11 + 10 + 11, narrow.CursorX);
+        Assert.Equal(new TextExtent(10, 42), narrow.Ink);
+        Assert.DoesNotContain(rasterizer.Requests, request => request.Cp932Code is 0x20 or 0x01 or 0x8140);
+    }
+
     [Fact]
     public void UnsupportedCp932CharacterFailsBeforeRasterizationOrPixelMutation()
     {

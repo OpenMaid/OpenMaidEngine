@@ -59,7 +59,7 @@ public sealed partial class GfxState
         SetObjectColorResolved(handle, alpha, rgb);
         var o = GetOrCreate(handle);
         o.StaticColorMode = mode;
-        o.PostBindStaticColorBlend = mode == 0 && o.Visible;
+        o.PostBindStaticColorBlend = o.DefaultColorMode && o.Visible;
     }
 
     /// <summary>Op 0x231 (looping): set total frame count, column count and milliseconds per frame. Every
@@ -485,8 +485,7 @@ public sealed partial class GfxState
 
     private static long SourceCellAt(GfxObject o, long nowMs)
     {
-        long elapsed = System.Math.Max(0, nowMs - o.SrcStart);
-        return elapsed / o.SrcPeriod % o.SrcFrameCount;
+        return BlendMath.CycleElapsed(nowMs, o.SrcStart) / o.SrcPeriod % o.SrcFrameCount;
     }
 
     private static (long Packed, ColorTransitionState State) SampleOneShotColor(GfxObject o, long nowMs)
@@ -606,8 +605,7 @@ public sealed partial class GfxState
     private static double ScaleCycleWeight(long now, long start, long period)
     {
         if (period <= 0) return 0;
-        long elapsed = System.Math.Max(0, now - start);
-        long position = elapsed % period;
+        long position = BlendMath.CycleElapsed(now, start) % period;
         return 2.0 * System.Math.Min(position, period - position) / period;
     }
 

@@ -317,7 +317,8 @@ public class PresentedTextPlacementTests
         var surface = new RgbaImage(64, 8, new byte[64 * 8 * 4]);
         ImmediateSurfaceTextResult drawn = renderer.Render(surface, 0, 0, "ab", Style, widthPercent: 50);
 
-        Assert.Equal((new TextExtent(15, 35), 35), (measured.Ink!.Value, measured.CursorX));
+        // The space moves the pen by the 12 px font's half width, 6, as native's raster workers do, not by its cell.
+        Assert.Equal((new TextExtent(16, 36), 36), (measured.Ink!.Value, measured.CursorX));
         Assert.Equal((new TextExtent(0, 10), 10), (drawn.Ink!.Value, drawn.CursorX));
     }
 }

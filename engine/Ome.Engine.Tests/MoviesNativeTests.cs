@@ -146,6 +146,89 @@ public class MoviesNativeTests
     }
 
     [Fact]
+    public void AMovieKeepsItsSurfacesCreatedSize()
+    {
+        // Op 0x208 reads the surface's own size, which a movie does not change (4.24N gfx_surface_get_size 0x4764b0).
+        // Verita's BTL creates 0x2a at 128 x 192, plays its death burst into it and centres it on the unit by that size.
+        var decoder = new FakeMovieDecoder { StopTimeMs = 1000, Frame = new RgbaImage(2, 3, new byte[2 * 3 * 4]) };
+        MovieRig rig = RigWithSurface(slot: 0x2a, decoder: _ => decoder);
+        rig.Graphics.CreateSurface(0x2a, 128, 192);
+
+        rig.Movies.PlayToSurface("BTL", 0x332c, 0x2a, 0x40000, 0);
+        Assert.Equal((128, 192), rig.Graphics.SurfaceSize(0x2a));
+        rig.ServiceFrame();
+        Assert.Equal((128, 192), rig.Graphics.SurfaceSize(0x2a));
+        decoder.IsCompleted = true;
+        rig.ServiceFrame();
+        Assert.Equal((128, 192), rig.Graphics.SurfaceSize(0x2a));
+    }
+
+    [Fact]
+    public void AMovieOnASlotWithNoSurfaceTakesTheScreensSize()
+    {
+        MovieRig rig = new();
+
+        rig.Movies.PlayToSurface("BTL", 0x332c, 0x2a, 0x40000, 0);
+
+        Assert.Equal((800, 600), rig.Graphics.SurfaceSize(0x2a));
+    }
+
+    [Fact]
+    public void AMovieWithTheLoopFlagStartsAgainAtItsEndAndStaysBound()
+    {
+        // engine_main_tick (4.24N 0x412368): at the end, a movie whose flags have bit 0 (+0x43c) is stopped, sought to 0
+        // and started again, and never freed. Verita's CHMODE3 plays its Power charge sparkle so (flags 0x40001).
+        var decoders = new List<FakeMovieDecoder>();
+        MovieRig rig = RigWithSurface(decoder: _ =>
+        {
+            var decoder = new FakeMovieDecoder { StopTimeMs = 1000, Frame = Frame(0x40) };
+            decoders.Add(decoder);
+            return decoder;
+        });
+        rig.Movies.PlayToSurfaceAtPosition("CHMODE3", 0x516f, 9, 0x40001, 0, 300);
+        rig.Movies.SetPlaybackRate(9, 2.0);
+        rig.ServiceFrame();
+        Assert.Equal(300, rig.Decoders.OpenedInitialPositionMs);
+
+        decoders[0].IsCompleted = true;
+        rig.ServiceFrame();   // the frame service hands the end over; the engine thread opens the decoder again
+        rig.ServiceFrame();   // the next frame service adopts it
+
+        Assert.Equal(2, decoders.Count);
+        Assert.True(decoders[0].Disposed);
+        Assert.Equal(0, rig.Decoders.OpenedInitialPositionMs);   // from the start, not op 0x241's position
+        Assert.Equal([2.0], decoders[1].Rates);
+        Assert.True(rig.Movies.IsSurfaceActive(9));
+        Assert.False(rig.Movies.HoldsServiceWait);   // bit 0 set: no service movie
+        Assert.Equal(new byte[] { 0, 0x40, 0, 255 },
+            rig.Graphics.ResolveSurfaceTexture(9, 0x516f)!.Value.Image.Pixels);   // nothing cleared the surface
+        Assert.Single(rig.Log, line => line.StartsWith("movie started "));
+
+        rig.Graphics.ReleaseSurface(9);
+        decoders[1].IsCompleted = true;
+        rig.ServiceFrame();
+        rig.ServiceFrame();
+        Assert.Equal(2, decoders.Count);   // a released movie loops no more
+        Assert.Empty(rig.Movies.PlaybackDiagnostics().Playing);
+    }
+
+    [Fact]
+    public void ALoopingMovieWhoseDecoderFailsEnds()
+    {
+        var decoder = new FakeMovieDecoder { StopTimeMs = 1000 };
+        MovieRig rig = RigWithSurface(decoder: _ => decoder);
+        rig.Movies.PlayToSurface("CHMODE3", 0x516f, 9, 0x40001, 0);
+        rig.ServiceFrame();
+
+        decoder.Failure = "broken";
+        decoder.IsCompleted = true;
+        rig.ServiceFrame();
+
+        Assert.False(rig.Movies.IsSurfaceActive(9));
+        Assert.Single(rig.Decoders.Decoders);
+    }
+
+    [Fact]
     public void TheWatchdogCompletesAMovieWhoseDecoderNeverEnds()
     {
         MovieRig rig = RigWithSurface(decoder: _ => new FakeMovieDecoder { StopTimeMs = 1000 });
@@ -209,8 +292,8 @@ public class MoviesNativeTests
 
         Assert.Empty(rig.Movies.SurfaceDiagnostics());
         Assert.All(rig.Decoders.Decoders, decoder => Assert.True(decoder.Disposed));
-        // A movie's surface takes the screen's size until its first frame; the reset leaves the surface as it is.
-        Assert.Equal((800, 600), rig.Graphics.SurfaceSize(10));
+        // The reset leaves the surface as it is, with the size it was created with.
+        Assert.Equal((280, 352), rig.Graphics.SurfaceSize(10));
     }
 
     [Fact]

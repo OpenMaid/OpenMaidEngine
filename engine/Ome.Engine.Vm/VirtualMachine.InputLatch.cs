@@ -30,6 +30,8 @@ namespace Ome.Engine.Vm;
 /// <item>always: op 0x101, input_flush_action_triggers@0x405380 (legacy fade starts, op 0xd5, hotspot dispatch, the
 /// skip-click cancel) and a scene reset.</item>
 /// </list>
+/// The flush and the scene reset also arm the click suppressor while a mouse button is down
+/// (<see cref="FlushActionTriggers"/>).
 /// </summary>
 public sealed partial class VirtualMachine
 {
@@ -43,6 +45,8 @@ public sealed partial class VirtualMachine
     private const int AdvanceTrigger = 1 << AdvanceAction;
 
     private int _heldTriggers;   // logical action bits; bit 31 is the native menu's hide-window request
+    private int _mouseButtonState;   // GetAsyncKeyState's buttons, left 0x1 and right 0x2: device state a scene keeps
+    private bool _clickSuppressorArmed;   // ctx+0x1c30
 
     /// <summary>The triggers the latch holds (logical action bits).</summary>
     public int HeldTriggers => _heldTriggers;
@@ -57,6 +61,33 @@ public sealed partial class VirtualMachine
     }
 
     private int TakeHeldTriggers() => Take(ref _heldTriggers);
+
+    /// <summary>input_flush_action_triggers (4.33G 0x405380, 4.24N 0x405430), which scene_context_init_reset and the
+    /// debug reload repeat: take the latch and drop it, then arm the one-shot click suppressor (ctx+0x1c30) if the
+    /// left or right button is down (input_poll_raw_mouse_buttons, GetAsyncKeyState). The click that button latches
+    /// next, its release under CLICKONUP, then reaches nothing (<see cref="TryConsumeClickSuppressor"/>). Verita's
+    /// field walks while the button is held and starts an event through op 0xd5 (FIELD@0x3172), so letting go does
+    /// not advance the event's first page.</summary>
+    private void FlushActionTriggers()
+    {
+        TakeHeldTriggers();
+        if ((_mouseButtonState & 0x3) != 0) _clickSuppressorArmed = true;
+    }
+
+    /// <summary>The legacy transitions flush as they start, except under fast-forward.</summary>
+    private void FlushActionTriggersUnlessFastForward()
+    {
+        if (!AdvFastForwardActive) FlushActionTriggers();
+    }
+
+    /// <summary>input_latch_mouse_click (4.33G 0x485e20, 4.24N 0x487690): with the suppressor armed, a click clears it
+    /// and latches nothing. True means this click is the one it takes.</summary>
+    public bool TryConsumeClickSuppressor()
+    {
+        if (!_clickSuppressorArmed) return false;
+        _clickSuppressorArmed = false;
+        return true;
+    }
 
     /// <summary>Op 0x72's entry and op 0xfa poll the latch and discard it unless run-state 0x8000000
     /// (fast-forward) is on.</summary>
@@ -76,8 +107,9 @@ public sealed partial class VirtualMachine
         if ((TakeHeldTriggers() & AdvanceTrigger) != 0) _text.FinishTextRevealsUntilWait();
     }
 
-    /// <summary>The modal movie service (run-state 0x2000, engine_main_tick_with_exception_policy@0x41205d) polls on
-    /// its first tick: a held action 4 stops the movie. It does not read EffectSkipOnClick.</summary>
+    /// <summary>The modal movie service (run-state 0x2000) polls on its first tick while a service movie plays
+    /// (<see cref="Ome.Engine.Model.MovieFlagBits.IsServiceMovie"/>): a held action 4 stops the movie. It does not read EffectSkipOnClick.
+    /// For any other movie nothing polls, and the latch keeps what it holds.</summary>
     private void OfferHeldTriggersToModalMovie()
     {
         if ((TakeHeldTriggers() & AdvanceTrigger) != 0) _waits.CancelNextModalMovie();
