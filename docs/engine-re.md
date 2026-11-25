@@ -409,11 +409,11 @@ triaged"). The largest differences:
 
 **Himegari against 戦女神ZERO (2026-11-25).** 4.24J against 4.15D: 2 `same`, 346 `minor`, 54 `differs`; helpers 78 /
 10 / 14, one unpaired. 18 opcodes are only 4.24J's (`0x24b` to `0x24f`, `0x25a`, `0x25b`, `0x2c5` to `0x2cf`), and
-none only 4.15D's. Verita's 4.24N against 4.15D gives 2 / 328 / 72, so 4.24J is the nearest build. Not triaged yet.
-What the counts hide, and the largest differences:
-- 321 of the `minor` rows have one fact each. `script_frame_restore_saved_layout` (`0x40f2d0=0x409f70`), which the
-  depth-3 walk reaches from nearly every handler, indexes a 16-byte record in 4.24J (`shl 4`) and a 112-byte one in
-  4.15D (`imul 0x70`), at 18 sites. A saved frame's layout differs, which matters to the saves, not to a script's run.
+none only 4.15D's. Verita's 4.24N against 4.15D gives 2 / 328 / 72, so 4.24J is the nearest build. Its triage is
+"Himegari against 戦女神ZERO, triaged" below. What the counts hide, and the largest differences:
+- 321 of the `minor` rows have one fact each: the script frame record, `0x78` bytes in 4.24J and `0x70` in 4.15D,
+  which every handler indexes to write its length and `script_frame_restore_saved_layout` (`0x40f2d0=0x409f70`)
+  indexes at 18 sites.
 - The texture ops `0x32`, `0x33`, `0x35` and `0x37`, and the blend under `0x20c` and `0x222`: 4.24J's error messages
   (`GetTextureSurface`, `EnlargeTexture`, `BlurTexture`, `BlendTexture`) and operand reads that the report finds
   only in 4.24J.
@@ -658,6 +658,43 @@ device state (`0x46190`), `0x64` above from the graphics manager (`0x46678`) thr
 - The install root's 182 loose `.BIN` files, 19 `$n$` append records among them, and its 5 `.AGF` files are the
   updates' records. The port's store opens a loose file before the archives, as it does for Himegari's 49 patch
   scripts and Kamidori's `$n$` records, and the catalog scan and the store's corpus decode read them.
+
+### Himegari against 戦女神ZERO, triaged (2026-11-25)
+
+Every one of the report's 54 differing opcodes and 14 differing helpers has a disposition (`adding-a-game.md`, step
+4), and so has the unpaired helper. Each pair was decompiled from both images, `/v2`'s `EngineCtx *` parameters made
+plain integers in a rolled-back transaction, and compared with `tools/decomp_pair_diff.py`. Addresses are written
+4.24J's first, then 4.15D's. Of the 54 opcodes, 29 occur in no script of 戦女神ZERO (`build/games/bg0/intake.json`
+counts every decoded instruction), so a row's first question was whether the game reaches it.
+
+| Cause | Rows | Disposition |
+|---|---|---|
+| The script frame record is `0x78` bytes in 4.24J and `0x70` in 4.15D (the frame index at `ctx+0x53d14`, 4.15D `ctx+0x52370`) | the 321 `minor` rows with one fact: every handler writes its length into the current frame, and `script_frame_restore_saved_layout` (`0x40f2d0`=`0x409f70`) indexes the frame; ops `0x6e`, `0x94`, `0x15`, `0x102`, `0x104`, `0x13b`, `0x23b`; helpers `script_frame_dispose` (`0x40e610`=`0x408f40`) and `script_frame_load_resource` (`0x40e980`=`0x409740`, which also opens the script file inline in 4.24J) | noise: the port keeps its own frames and loads scripts from its own store. A saved frame is the saves' (below) |
+| Ops no script of 戦女神ZERO uses | `0x15`, `0x26`, `0x27`, `0x28`, `0x2b`, `0x2f`, `0x30`, `0x32`, `0x33`, `0x35`, `0x37`, `0x7d`, `0x82`, `0x89`, `0x8a`, `0x8e`, `0x91`, `0x92`, `0x95`, `0xaa`, `0xab`, `0x102`, `0x104`, `0x13b`, `0x144`, `0x190`, `0x19f`, `0x221`, `0x240`; the pattern transition `0x43c4a0`=`0x435ec0` and `0x43ea90`=`0x437000` that only some of them reach | not modelled for 4.15D: the port's handlers do what 4.24J's do, and a 4.15D game that uses one has it read then. One is known: 4.15D's `0x26` to `0x28` begin the transition whatever operand 3, the division count, holds, where 4.24J finishes it at once for a count of 0 or less |
+| The virtual full screen and the border, only 4.24J's | ops `0x109` and `0x10a` (484 and 427 sites): 4.15D writes the cursor's client coordinates as they are, and sets it with `ClientToScreen` and `SetCursorPos`; ops `0x8e`, `0x91`, `0x92`, `0x94`, `0x95` (bit `0x44`, 0.5); the present workers `gfx_render_frame` (`0x4820b0`=`0x46f020`) and `gfx_present_object_range` (`0x482230`=`0x46f180`), where 4.24J draws a border picture around the back buffer (`0x476230`) when the manager's `+0xb618` is set; the border offset in op `0x25`'s start; the unpaired `0x470d90` | not modelled: the port scales its own canvas, as for Verita |
+| The AGERC dialog's return | `engine_resume_presentation_after_dialog` (`0x405fc0`=`0x4058a0`), and through it ops `0x140`, `0x144`, `0x19e`, `0xaa`: 4.24J clears run-state bit `0x200000`, 4.15D traces `RestoreScreen Start` and `SetWindowPos Called` | not modelled: the engine shell replaces AGERC's dialogs |
+| Animation service flags that only op `0x24e` sets | op `0x243`, which 4.24J skips while flag bit 1 is set and 4.15D always runs; op `0x1f6` through `retained_gfx_objects_clear` (`0x47cab0`=`0x46bb20`), which 4.24J also clears the flags in when bit `0x10000` is set | the same in practice: `0x24e` is one of the 18 opcodes 4.15D does not have, so the port's flags stay 0 for its scripts |
+| What op `0x23a` asks | op `0x23a` (five sites, all polling a combat movie to its end): 4.15D writes whether the slot holds a movie object (`ctx+0x51350`), 4.24J the surface's movie state (`+0x42c`) | the same in practice: 4.15D's tick (`engine_main_tick_with_exception_policy`, `0x40b780` to `0x40b7a9`) deletes a movie that reaches its stop time and does not loop and sets the slot to 0, restarts one that loops, and ops `0x1f8` to `0x1fa` clear it too. That is the port's "bound and not completed, or looping" |
+| Op `0x19d`, inline in 4.15D | op `0x19d` (four sites: `CGMODE`, `HMODE`, `MMODE`, `ED`); the mark `asset_catalog_mark_resource_opened` (`0x44e410`=`0x443460`) | the same in practice for a base id: 4.15D compares the low short of the base catalog's mark table (`ctx+0x9ab74`, the catalog at `ctx+0x9a758` plus `0x41c`) with `id*0x6f99 - 0x4f50`, the low short of the mark both builds write (`id*0x53d6f99 + 0xb0b0b0b0`). It has no branch for an append's selector byte, in the test or the mark, and no `SaveVersion` gate. The galleries take their ids from tables, and whether one is an append's is read when they are driven |
+| A control byte in drawn text | the raster helpers `0x45a2c0`=`0x44f0c0`, `text_raster_string_uncached` (`0x459d90`=`0x44eba0`) and `text_raster_string_cached` (`0x45b600`=`0x4503f0`), the compare with 256; ops `0x6e`, `0x196`, `0x1d1`, `0x204`, `0x205`, and the unused `0x7d`, `0x82`, `0x89`, `0x8a`, `0x221` (`0x45d050`=`0x451e20`) | the same in practice: for a byte below `0x20` or `0x7f`, 4.24J advances as for a space and 4.15D asks the font for its glyph. No string 戦女神ZERO draws holds one: of its strings, only four have one, a tab, and they are operands of `comment`. The compare with 256 itself is dead code in 4.24J, under a test for `< 0x80` |
+| `set:AutoFreeTex` and `set:CreateObject`, only 4.24J reads | op `0x9` (`0x418f50`=`0x423510`), and the save reader `save_data_deserialize_and_begin_restore` (`0x40fd10`=`0x40eea0`) under ops `0xab`, `0x190`, `0x19f`, `0x1a1` | the same in practice: the catalog sets `CREATEOBJECT` 2 and has no `AUTOFREETEX`, so the port's `AutoFreeTex` is 0 and neither release runs |
+| The save format | `shared_profile_save` (`0x40c950`=`0x40fe70`), `shared_profile_payload_write` (`0x430a20`=`0x42b5d0`), `context_state_serialize` (`0x40d320`=`0x410610`), the save reader above, op `0x1ae`'s thumbnail (`0x434bf0`=`0x42f5c0`, `0x475420`=`0x4690c0`, a surface field `+0x1170` only 4.24J reads) | real, for the saves (`adding-a-game.md`, step 7; the profile keeps saves off until then). Known so far: with `SAVEVERSION` 300 both builds write SAVE.DAT's base unlock table and neither its append table (4.24J's needs 3.10). 4.24J writes the table with a two-dword header (`asset_catalog_prepare_base_unlock_save_table@0x404d40`: the private exponent XOR `0x87912345`, then the modulus), and its count 2 higher; 4.15D writes no header. The saved context and frames differ with the context's layout |
+| The save folder and the message box | `save_root_resolve` (`0x40b880`=`0x40dde0`, the Windows version check) and `age_show_message_box` (`0x409370`=`0x408870`) | not modelled: the port keeps saves in its profile's folder and shows its own dialogs |
+| Queued surface commands | `gfx_surface_command_lookup` (`0x47dfc0`=`0x46d010`; a command is 16 dwords in 4.24J, 9 in 4.15D) and `retained_gfx_surface_command_composite` (`0x47fbc0`=`0x46e920`, 1,071 lines against 245), under ops `0x20c`, `0x222` and `0x223` | the same in practice: 4.24J's composite adds the patterned kind of op `0x24f`, which 4.15D does not have. The alpha kind of op `0x223`, the only one 4.15D queues, runs the same two passes in both |
+| The crossfade, op `0x25` (1,053 sites) | `screen_transition_begin` (`0x439da0`=`0x4346d0`), `gfx_copy_surface_rect` (`0x477da0`=`0x46a720`, also op `0x207`), `gfx_object_blit_d3d9` (`0x4774c0`=`0x469fa0`) | partly the same in practice, partly to be checked against native at step 6. 4.24J's start splits draw mode 1 into a Direct3D switch whose cases 0 to 3, 7 and 9 serve ops 戦女神ZERO does not use. Its case 4, the crossfade, draws the target and presents it as 4.15D's does, but it leaves a different field: 4.24J stores argument 5 at `+0x2028`, 4.15D sets `+0x1fb0` to 1. 4.24J's copy also reads back a render-target source (`GetRenderTargetData`), which 4.15D locks directly. 4.24J's blit takes its destination as floats and clips it to sub-pixel precision; 4.15D's takes integers |
+| The software draw mode | `transition_surface_size_software_mode` (`0x433a40`=`0x42e420`) and `0x4354d0`=`0x42fea0` (a bit `0x800` test whose two branches store the same) | not modelled: they serve DirectDraw surfaces, draw mode 0, and the catalog sets `DRAWMODE` 1 |
+| Direct3D, D3DX and their traces | `0x489246`=`0x468f90` (4.24J links D3DX statically, 4.15D imports it), `d3d_device_reset` (`0x471290`=`0x464fd0`), and the `BlendTexture`, `CopyTexture`, `EnlargeTexture`, `BlurTexture` and `GetTextureSurface` error traces of ops `0x20c`, `0x222`, `0x207`, `0x32` to `0x37` | not modelled: the port's renderer replaces them |
+| A movie's container | `movie_to_texture_open_asset_graph` (`0x463e20`=`0x458620`), under ops `0x20f`, `0x236`, `0x241`, `0x240`: 4.24J reads the first 12 bytes and names the media subtype for a RIFF `AVI ` file, 4.15D lets DirectShow find it | not modelled: the port's decoder probes the container |
+| Sound | `sound_manager_start_channel` (`0x482f00`=`0x46fdb0`), `sound_buffer_start` (`0x484270`=`0x470de0`), `sound_stream_fill_quarter` (`0x483b70`=`0x4709e0`), under ops `0x72`, `0xb5`, `0xba`, `0xc4`, `0xfa`, `0x1bd`, `0x1d1` | the same in practice: 4.24J starts a channel from a position in milliseconds held at `manager+0x570[channel]`, as a byte skip in the buffer's `+0x246c`, but no instruction of 4.24J stores to that array except its own clear. The fill is the same code |
+| The same code | ops `0x196`, `0x1d1`, `0x1fa`, `0x23d`, `0x207`, `0x20c`, `0x222`, `0x223`, `0x236`, `0x20f`, `0x241` themselves: what differs is in the helpers above | noise |
+
+**Settled from step 1.** The catalog has no settings key and no file type the other games lack. Its `.DLL`
+(`AGERC.DLL`) and the 52 loose `.BIN` and four `.AGF` files of the install's root are settled as Verita's are
+("Himegari against Verita, triaged").
+
+**To check at step 6**, against native AGE: op `0x25`'s crossfade, its field and its copy from a render target;
+objects drawn at a fractional position, through the blit; and at step 7, the saves above. The galleries' ids, for op
+`0x19d`, are read when they are driven.
 
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 

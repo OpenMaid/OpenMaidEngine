@@ -767,6 +767,19 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     finds for the other games: op `0x1a7`'s operand 1 with no native access, and three unresolved calls.
   - **Its catalog** has Himegari's 36 settings keys in the same order and canvas, 800 by 600, and is the only one with
     `SAVEVERSION` 300 (`sys4-format-notes.md`); what a save's minor version 0 selects is read at step 7.
+  - **Step 4, the triage, is done (2026-11-25):** every differing row has a disposition (`engine-re.md`, "Himegari
+    against 戦女神ZERO, triaged"). 29 of the 54 differing opcodes occur in none of its scripts. Most of the rest are
+    the frame record's size, code the port replaces (the virtual full screen, AGERC's dialogs, Direct3D), or the
+    same in practice for every input its scripts give. What is left:
+    - **Step 6, against native:** op `0x25`'s crossfade (1,053 sites), whose start leaves a different field in each
+      build and whose copy reads a render target back only in 4.24J; and objects drawn at a fractional position,
+      which 4.24J's blit clips as floats and 4.15D's as integers.
+    - **Step 7, the saves:** SAVE.DAT's base unlock table has no header in 4.15D (4.24J writes the exponent and the
+      modulus before it), the saved context and frames follow the context's layout, and op `0x1ae`'s thumbnail reads
+      a field only 4.24J has.
+    - **The galleries** (`CGMODE`, `HMODE`, `MMODE`, `ED`): op `0x19d` in 4.15D handles no append's selector byte;
+      whether a gallery table holds an append id is read when they are driven.
+    - **Op `0x226`** has no handler yet (`query-gfx-scale-current`, one site in `DEBUGADV2.BIN`).
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

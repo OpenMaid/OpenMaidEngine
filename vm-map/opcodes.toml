@@ -3085,7 +3085,7 @@ leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = []
-evidence = "Ghidra /v2: op_0x109_get_cursor_virtual@0x428bb0 calls the cursor-position helper, converts client/display coordinates through the active VirtualFullScreen transform, and writes x/y to operands 1/2. The ADV chrome callbacks preserve x and then move y by alternating -1/+1 before op 0x10a."
+evidence = "Ghidra /v2: op_0x109_get_cursor_virtual@0x428bb0 calls the cursor-position helper, converts client/display coordinates through the active VirtualFullScreen transform, and writes x/y to operands 1/2. The ADV chrome callbacks preserve x and then move y by alternating -1/+1 before op 0x10a. 4.15D (戦女神ZERO, read 2026-11-25): op_0x109@0x415ec0 writes the cursor's client coordinates from input_poll_cursor_client as they are, with no border offset and no virtual full screen, which 4.15D does not have."
 
 [[opcode.semantics.args]]
 i = 1
@@ -3115,7 +3115,7 @@ leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = []
-evidence = "Ghidra /v2: op_0x10a_set_cursor_virtual@0x421590 maps virtual coordinates through the active VirtualFullScreen geometry and calls USER32 SetCursorPos. BUNKI@0x2b6 and SBUNKI@0x289 test G[0x3238], compute the default choice point, and call 0x10a when menu cursor auto-move is enabled; their disabled branches retain the physical position through 0x109. SC0000 also alternates the cursor by one vertical pixel after state-changing ADV button clicks. Windows answers SetCursorPos with a WM_MOUSEMOVE at the new point, and that message is what re-tests the hotspot hit (after op 0x7c cleared it on the hide-window path); engine_main_tick_with_exception_policy pumps messages every third iteration, before the callback's ret re-runs the wait (native-driven 2026-11-05, with the driver posting that WM_MOUSEMOVE). The port's op 0x10a moves its pointer through the same move path."
+evidence = "Ghidra /v2: op_0x10a_set_cursor_virtual@0x421590 maps virtual coordinates through the active VirtualFullScreen geometry and calls USER32 SetCursorPos. BUNKI@0x2b6 and SBUNKI@0x289 test G[0x3238], compute the default choice point, and call 0x10a when menu cursor auto-move is enabled; their disabled branches retain the physical position through 0x109. SC0000 also alternates the cursor by one vertical pixel after state-changing ADV button clicks. Windows answers SetCursorPos with a WM_MOUSEMOVE at the new point, and that message is what re-tests the hotspot hit (after op 0x7c cleared it on the hide-window path); engine_main_tick_with_exception_policy pumps messages every third iteration, before the callback's ret re-runs the wait (native-driven 2026-11-05, with the driver posting that WM_MOUSEMOVE). The port's op 0x10a moves its pointer through the same move path. 4.15D (戦女神ZERO, read 2026-11-25): op_0x10a@0x41e540 passes the two operands through ClientToScreen to SetCursorPos, with no border offset and no virtual full screen scaling."
 
 [[opcode.semantics.args]]
 i = 1
@@ -4257,7 +4257,7 @@ source = "investigation"
 confidence = "high"
 depends_on = []
 details = "Base ids use the low 24-bit index in the primary catalog marker table. A nonzero high-byte selector addresses that append catalog's independent table; selectors require SaveVersion 3.10 or later, and AGE's signed selector lookup only supports 1..127. Successful native catalog opens write the stamp `low16(index * 0x053d6f99 + 0xb0b0b0b0)` and its encrypted SAVE.DAT form. CGMODE tests CGINIT image ids and HMODE tests SPINIT scene-script ids through this predicate. Port status (2026-07-28): shared-profile import decodes both catalog sections, successful VFS opens mark resources, shared SAVE.DAT writes native-decodable encrypted markers, and the opcode returns the live profile predicate."
-evidence = "Ghidra /v2: op_0x19d_handler@0x427810 fetches operand 2, rejects packed append ids when `set:SaveVersion1/2` is older than 3.10, calls asset_catalog_is_resource_unlocked@0x415920 on ctx+0x9c24c, and writes the bool to operand 1. The helper selects base table +0x41c or append pointer table +0x3844 and compares the stored low word to `(short)index * 0x6f99 - 0x4f50`. asset_catalog_mark_resource_opened@0x44e410 writes the equivalent full stamp and encrypted profile marker after asset_open_indexed_entry succeeds. shared_profile_load decodes the catalog arrays with modular exponentiation before populating those tables. Corpus: four calls, in CGMODE, HMODE, MMODE, and ED. The installed port SAVE.DAT decodes to 7,966/13,208 base markers and 75/81 append markers; all 851 CGINIT gallery images and all 118 SPINIT H-scene scripts validate unlocked."
+evidence = "Ghidra /v2: op_0x19d_handler@0x427810 fetches operand 2, rejects packed append ids when `set:SaveVersion1/2` is older than 3.10, calls asset_catalog_is_resource_unlocked@0x415920 on ctx+0x9c24c, and writes the bool to operand 1. The helper selects base table +0x41c or append pointer table +0x3844 and compares the stored low word to `(short)index * 0x6f99 - 0x4f50`. asset_catalog_mark_resource_opened@0x44e410 writes the equivalent full stamp and encrypted profile marker after asset_open_indexed_entry succeeds. shared_profile_load decodes the catalog arrays with modular exponentiation before populating those tables. Corpus: four calls, in CGMODE, HMODE, MMODE, and ED. The installed port SAVE.DAT decodes to 7,966/13,208 base markers and 75/81 append markers; all 851 CGINIT gallery images and all 118 SPINIT H-scene scripts validate unlocked. 4.15D (戦女神ZERO, read 2026-11-25): op_0x19d@0x41c680 inlines the base catalog's test: with the mark table at ctx+0x9ab74 (the catalog at ctx+0x9a758, +0x41c) it writes whether entry id's low short equals (short)(id*0x6f99 - 0x4f50), the low short of the mark id*0x53d6f99 + 0xb0b0b0b0 that both builds write; otherwise 0. It has no SaveVersion gate and no branch for an append's selector byte, here or in the mark (0x443460)."
 
 [[opcode.semantics.args]]
 i = 1
@@ -5672,7 +5672,7 @@ leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = []
-evidence = "Ghidra /v2: op_0x1f6_clear_retained_gfx_objects@0x417430 passes ctx+0x46614 to retained_gfx_objects_clear@0x47cab0. The worker destroys every node in owner+0x408, resets its sentinel/count, and clears owner+0xb558/+0xb55c/+0xb564/+0xb568 plus bit 0x10000 state. DATA1: 293 calls in 146 scripts; 146 continue to 0x23d and 143 to 0x20e."
+evidence = "Ghidra /v2: op_0x1f6_clear_retained_gfx_objects@0x417430 passes ctx+0x46614 to retained_gfx_objects_clear@0x47cab0. The worker destroys every node in owner+0x408, resets its sentinel/count, and clears owner+0xb558/+0xb55c/+0xb564/+0xb568 plus bit 0x10000 state. DATA1: 293 calls in 146 scripts; 146 continue to 0x23d and 143 to 0x20e. 4.15D (戦女神ZERO, read 2026-11-25): its worker 0x46bb20 is 4.24J's without the clear of the animation service flags, which only op 0x24e sets and 4.15D does not have."
 
 [[opcode]]
 op = 0x1f7
@@ -7755,7 +7755,7 @@ leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = []
-evidence = "Ghidra /v2: op_0x23a_handler@0x42a440 indexes the surface table by operand 2, writes zero for a null slot, otherwise writes surface+0x42c != 0. All four corpus sites are movie completion polling loops: BTL checks active combat-movie surfaces 7+, while FIELD and USEMAGIC poll surface 42 between present-frame, frame-time sampling, and sleep(16)."
+evidence = "Ghidra /v2: op_0x23a_handler@0x42a440 indexes the surface table by operand 2, writes zero for a null slot, otherwise writes surface+0x42c != 0. All four corpus sites are movie completion polling loops: BTL checks active combat-movie surfaces 7+, while FIELD and USEMAGIC poll surface 42 between present-frame, frame-time sampling, and sleep(16). 4.15D (戦女神ZERO, read 2026-11-25): op_0x23a_query_movie_surface_active@0x422420 writes whether the slot's movie object at ctx+0x51350 exists. Its tick deletes a movie that reaches its stop time without looping and zeroes the slot (engine_main_tick_with_exception_policy 0x40b780..0x40b7a9), and ops 0x1f8 to 0x1fa clear it, so the answer is the port's: bound and not completed, or looping."
 
 [[opcode.semantics.args]]
 i = 1
@@ -8001,7 +8001,7 @@ leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = [0x242]
-evidence = "Ghidra handler 0x4182d0: if !(ctx+0x51b80 & 2), set retained-gfx owner+0xb55c (EngineCtx+0x51b70)=1 and zero owner+0xb564/+0xb568. gfx_object_apply_transform_channels treats force value 1 as immediate completion unless obj+0x2d0 bit 0 is set. SC0000 label_1235a calls it before present-frame."
+evidence = "Ghidra handler 0x4182d0: if !(ctx+0x51b80 & 2), set retained-gfx owner+0xb55c (EngineCtx+0x51b70)=1 and zero owner+0xb564/+0xb568. gfx_object_apply_transform_channels treats force value 1 as immediate completion unless obj+0x2d0 bit 0 is set. SC0000 label_1235a calls it before present-frame. 4.15D (戦女神ZERO, read 2026-11-25): op_0x243@0x417070 always forces completion and resets the clock; it has no flag word to test, and op 0x24e, the only op that sets 4.24J's, is not in 4.15D, so the port's flags stay 0 for its scripts."
 
 [[opcode]]
 op = 0x248
@@ -8814,7 +8814,7 @@ abi_source = "kelebek"
 name = "reveal-surface-wiped"
 category = "draw"
 summary = "(surface)(interval ms)(divisions)(type) — blocking wipe of a captured surface over the frame: types 0 to 3 wipe from the left, right, top or bottom edge in that many steps, and type 4 is op 0x27's type 0."
-details = "Native's command name is ComEfWp. A type outside 0..4 (signed) traces 「関数：ComEfWp エラー：Typeは0から1の間にしてください」 and does nothing else. With divisions above 0 and no fast-forward the handler begins pattern mode type (pattern_surface_transition_begin), which refuses a division count the screen's width (types 0, 1 and 4) or height (2 and 3) does not divide by with a SetLineFade trace and starts nothing; when it begins, the handler sets run-state 0x10, arms the interval timer and blocks in VM state 9. Otherwise it finishes on the surface at once (screen_transition_finalize: a negative slot fills 0x20 with black). In the shipped draw mode the tick counts the timer's periods: for modes 0 to 3 the surface shows in one rectangle that grows from the edge by the screen's width or height over divisions each period, drawn over the frame that was there, and the reveal is over after divisions periods. Action 4 forces it to its end. 創刻のアテリアル has 15 sites in 10 scripts; the first site of each script passes surface 2 with (1 ms, 64, type 0), (1 ms, 64, type 3) or (30 ms, 16, type 3). Neither Himegari nor Kamidori calls it."
+details = "Native's command name is ComEfWp. A type outside 0..4 (signed) traces 「関数：ComEfWp エラー：Typeは0から1の間にしてください」 and does nothing else. With divisions above 0 and no fast-forward the handler begins pattern mode type (pattern_surface_transition_begin), which refuses a division count the screen's width (types 0, 1 and 4) or height (2 and 3) does not divide by with a SetLineFade trace and starts nothing; when it begins, the handler sets run-state 0x10, arms the interval timer and blocks in VM state 9. Otherwise it finishes on the surface at once (screen_transition_finalize: a negative slot fills 0x20 with black). In the shipped draw mode the tick counts the timer's periods: for modes 0 to 3 the surface shows in one rectangle that grows from the edge by the screen's width or height over divisions each period, drawn over the frame that was there, and the reveal is over after divisions periods. Action 4 forces it to its end. 創刻のアテリアル has 15 sites in 10 scripts; the first site of each script passes surface 2 with (1 ms, 64, type 0), (1 ms, 64, type 3) or (30 ms, 16, type 3). Neither Himegari nor Kamidori calls it. 4.15D (戦女神ZERO, read 2026-11-25): op_0x26@0x418c00 has no test of operand 3, the division count: it begins the transition for any count unless skip is on, where 4.24J finishes it at once for a count of 0 or less. No script of 戦女神ZERO uses it, nor 0x27 or 0x28, which do the same."
 noop_headless = false
 waits = "may"
 leaves = ["falls"]
