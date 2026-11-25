@@ -74,7 +74,7 @@ public partial class Main
         // While op 0x142's gate is 0 the script-shared sections are read-only; native 設定 cannot open then.
         bool readOnly = !_waits.Invoke(() => _vm.MenuState).SystemMenuEnabled;
         var draft = new ShellOptionsDraft(new SettingsHost(this), _catalog.StartupSettings, readOnly,
-                                          _engineBuild.Rules.Shell.AutoMessagePage);
+                                          _engineBuild.Rules.Shell.AutoMessagePage, _engineBuild.Rules.Settings);
         PortOptions opened = _portOptions.Effective;
         // 設定's OK runs agerc_settings_apply and CALLBACK_SETTING.BIN even when nothing changed; ﾊﾞｰｼﾞｮﾝ情報's OK
         // runs neither, so the about view applies only an edit.
@@ -138,6 +138,9 @@ public partial class Main
         ShellSection section = option.SectionWith(_engineBuild.Rules.Shell.AutoMessagePage);
         if (option.AutoPageOnly && !_engineBuild.Rules.Shell.AutoMessagePage)
             throw new DriveProtocolException($"this game's options have no {option.Name}: its 設定 has no ｵｰﾄﾒｯｾｰｼﾞ page");
+        if (!_engineBuild.Rules.Settings.Binds(option.RegistrySection, option.RegistryKey))
+            throw new DriveProtocolException(
+                $"this game's options have no {option.Name}: its engine binds no {option.RegistrySection}:{option.RegistryKey}");
         OptionsPanel panel = OpenPanelForDriver(section);
         if (panel.SetOption(option, value) is not { } set)
         {

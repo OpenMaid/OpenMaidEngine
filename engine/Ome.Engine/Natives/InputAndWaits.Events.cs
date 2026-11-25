@@ -178,7 +178,10 @@ public sealed partial class InputAndWaits
     // The routing, on the engine thread. Each returns true when the game took the input, which the tests read.
     private bool RouteMouseWheel(int delta)
     {
-        bool advanceOnWheel = _settings?.LoadMessageInt(Sys4RegIniStore.AdvanceMesOnWheelKey, 0) == 1;
+        // A build that binds no message:AdvanceMesOnWheel (AGE 4.15D) has no wheel-down advance at all.
+        bool advanceOnWheel = _settings is { } settings
+                              && settings.Binds(Sys4RegIniStore.MessageSection, Sys4RegIniStore.AdvanceMesOnWheelKey)
+                              && settings.LoadMessageInt(Sys4RegIniStore.AdvanceMesOnWheelKey, 0) == 1;
         MouseWheelOutcome outcome = _interpreter.ApplyMouseWheel(delta, advanceOnWheel, _text.IsRevealing);
         if (outcome == MouseWheelOutcome.Advance
             && !_text.IsAdvPagePresentationSuspended && !_interpreter.IsRawInputCallbackActive)

@@ -42,9 +42,12 @@ public sealed record ShellOption(string Name, ShellSection Section, string Regis
     /// 文字単位時間.</summary>
     public string? DisabledWhile { get; init; }
 
-    /// <summary>Whether a profile on a build with or without the ｵｰﾄﾒｯｾｰｼﾞ page shows the option.</summary>
-    public bool IsVisible(Sys4StartupSettings settings, bool autoMessagePage = false) =>
-        (!AutoPageOnly || autoMessagePage) && VisibleRule(settings);
+    /// <summary>Whether a profile on a build with or without the ｵｰﾄﾒｯｾｰｼﾞ page shows the option, and on a build with
+    /// <paramref name="boundKeys"/> (its <c>SettingsRules</c>) only if they bind the option's key: AGE 4.15D binds no
+    /// message:AdvanceMesOnWheel, and its 設定 has no wheel check. Null checks no binding.</summary>
+    public bool IsVisible(Sys4StartupSettings settings, bool autoMessagePage = false, SettingsRules? boundKeys = null) =>
+        (!AutoPageOnly || autoMessagePage) && VisibleRule(settings)
+        && (boundKeys is null || boundKeys.Binds(RegistrySection, RegistryKey));
 
     /// <summary>The section that shows the option.</summary>
     public ShellSection SectionWith(bool autoMessagePage) =>
@@ -95,6 +98,7 @@ public static class ShellOptions
         {
             VisibleRule = Sys4RegIniStore.BindsAntiFont,
         },
+        // Check 0x3e9, which AGE 4.15D's page lacks, as its settings lack the key.
         new("wheel-advance", ShellSection.Message, "message", Sys4RegIniStore.AdvanceMesOnWheelKey, 0, 1, 1, OnOk),
         // ｻｳﾝﾄﾞ (page 102, as set:NoSetMusic nonzero picks it). The volumes are basis points, trackbars at
         // 100 - v / 100.

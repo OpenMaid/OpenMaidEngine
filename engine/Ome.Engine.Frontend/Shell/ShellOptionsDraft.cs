@@ -65,13 +65,15 @@ public sealed class ShellOptionsDraft
     /// <param name="settings">The profile's SYS4INI keys, which decide the visible options.</param>
     /// <param name="readOnly">True while op 0x142's gate is 0.</param>
     /// <param name="autoMessagePage">The engine build's <c>ShellRules.AutoMessagePage</c>.</param>
+    /// <param name="boundKeys">The engine build's <c>SettingsRules</c>: an option whose key they do not bind is not
+    /// shown. Null shows it.</param>
     public ShellOptionsDraft(IShellSettingsHost host, Sys4StartupSettings settings, bool readOnly,
-                             bool autoMessagePage = false)
+                             bool autoMessagePage = false, SettingsRules? boundKeys = null)
     {
         _host = host;
         ReadOnly = readOnly;
         AutoMessagePage = autoMessagePage;
-        Visible = ShellOptions.All.Where(o => o.IsVisible(settings, autoMessagePage)).ToArray();
+        Visible = ShellOptions.All.Where(o => o.IsVisible(settings, autoMessagePage, boundKeys)).ToArray();
         for (int category = 0; category < 4; category++) _openedVolumes[category] = host.Volume(category);
         for (int category = 1; category < 4; category++) _openedRoutes[category] = host.RouteEnabled(category);
         foreach (ShellOption option in ShellOptions.All)
@@ -173,7 +175,9 @@ public sealed class ShellOptionsDraft
                     if (Visible.Contains(option)) _host.SetTextAntialias(value != 0);
                     break;
                 case "wheel-advance":
-                    _host.SaveInt("message", Sys4RegIniStore.AdvanceMesOnWheelKey, value);
+                    // Shown only where the build binds the key: AGE 4.15D's 設定 has no wheel check, and its settings
+                    // writer no such key (docs/engine-re.md, "戦女神ZERO's settings and 設定").
+                    if (Visible.Contains(option)) _host.SaveInt("message", Sys4RegIniStore.AdvanceMesOnWheelKey, value);
                     break;
                 case "lower-bgm-on-voice":
                     _host.SaveInt("sound", "MusicFadeOnVoicePlaying", value);

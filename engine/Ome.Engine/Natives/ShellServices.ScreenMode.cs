@@ -31,7 +31,9 @@ public sealed partial class ShellServices
     /// nothing is stored and no callback runs.</summary>
     public void StartScreenMode(bool windowedArgument)
     {
-        _forceScreen = _settings?.LoadInt("display", "ForceScreen", 0) == 1;
+        // A build that binds no display:ForceScreen (AGE 4.15D) never keeps the window for it.
+        _forceScreen = _settings is { } settings && settings.Binds("display", "ForceScreen")
+                       && settings.LoadInt("display", "ForceScreen", 0) == 1;
         bool windowed = _settings == null || _settings.LoadInt("display", "ScreenMode", 0) != 0 || windowedArgument;
         _print($"[display] starting {(windowed ? "in a window" : "fullscreen")} " +
                $"(display:ScreenMode={_settings?.LoadInt("display", "ScreenMode", 0).ToString() ?? "none"}" +

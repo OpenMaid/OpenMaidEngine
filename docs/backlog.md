@@ -766,20 +766,17 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     sibling of `0x227` and `0x228`; `engine-re.md`, 戦女神ZERO). `operand_access.py --check-corpus` finds only what it
     finds for the other games: op `0x1a7`'s operand 1 with no native access, and three unresolved calls.
   - **Its catalog** has Himegari's 36 settings keys in the same order and canvas, 800 by 600, and is the only one with
-    `SAVEVERSION` 300 (`sys4-format-notes.md`); what a save's minor version 0 selects is read at step 7.
+    `SAVEVERSION` 300 (`sys4-format-notes.md`); its saves, version 3.0, have Himegari's layout (step 7).
   - **Step 4, the triage, is done (2026-11-25):** every differing row has a disposition (`engine-re.md`, "Himegari
     against 戦女神ZERO, triaged"). 29 of the 54 differing opcodes occur in none of its scripts. Most of the rest are
     the frame record's size, code the port replaces (the virtual full screen, AGERC's dialogs, Direct3D), or the
     same in practice for every input its scripts give. What is left:
-    - **Step 6, against native:** op `0x25`'s crossfade (1,053 sites), whose start leaves a different field in each
-      build and whose copy reads a render target back only in 4.24J; and objects drawn at a fractional position,
-      which 4.24J's blit clips as floats and 4.15D's as integers.
-    - **Step 7, the saves:** SAVE.DAT's base unlock table has no header in 4.15D (4.24J writes the exponent and the
-      modulus before it), the saved context and frames follow the context's layout, and op `0x1ae`'s thumbnail reads
-      a field only 4.24J has.
+    - **For the sweep (P4):** the middle of op `0x25`'s crossfade (1,053 sites), whose start leaves a different field
+      in each build and whose copy reads a render target back only in 4.24J; and objects drawn at a fractional
+      position, which 4.24J's blit clips as floats and 4.15D's as integers. The opening's crossfades end as native's
+      do (step 6).
     - **The galleries** (`CGMODE`, `HMODE`, `MMODE`, `ED`): op `0x19d` in 4.15D handles no append's selector byte;
       whether a gallery table holds an append id is read when they are driven.
-    - **Op `0x226`** has no handler yet (`query-gfx-scale-current`, one site in `DEBUGADV2.BIN`).
   - **Step 5, the driver, is done (2026-11-25):** `tools/drive/bg0.toml` names 4.15D's context, its `0x70`-byte frame
     record, the polling call, op `0x60`'s draw and the title's points (`engine-re.md`, "Driving native AGE").
     `drive.py --game bg0 native` reaches the title in a sandbox, reads positions, captures, counts a seeded draw (the
@@ -795,6 +792,18 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     op `0x25`'s crossfades and its draws match native; what neither shot shows is a crossfade's middle and an object
     moving by fractions of a pixel, which 4.15D's blit draws at whole pixels (the step 4 list above): the sweep (P4)
     compares those where a scene shows one.
+  - **Step 7 is done, and it stands at P3 (2026-11-25):** every opcode its scripts use has a handler, op `0x226`
+    with D3DX's decomposition (`catalog-scan` finds none unsupported), and every triage row has a disposition.
+    - **Settings:** its build binds 4.24J's keys less seven: no wheel advance, no ForceScreen and no virtual full
+      screen (`engine-re.md`, "戦女神ZERO's settings and 設定"). The options panel, the driver and the launcher follow
+      the build's keys, and `bg0-options.steps` leaves the same `SYS4REG.INI` on both targets.
+    - **Saves** are on. A numbered save is Himegari's layout as version 3.0, and its container is compressed: the
+      codec decided that by the minor version and now decides it by the major one, as native does. SAVE.DAT has no
+      append table below 3.10. Each target loads the other's saves, and `save-diff` shows only the time
+      (`bg0-save-load.steps`; `sys4-format-notes.md`).
+    - **Left as they are:** native 4.15D's SAVE.DAT drops the last two catalog slots' unlocks, which the port keeps
+      (a file of the full length, which native reads); and AGERC's dialog 10, コメントの入力, which no script of the
+      game opens.
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

@@ -87,6 +87,9 @@ public sealed class ProfilePageViewModel : ViewModel
             ? catalog
             : null;
 
+    /// <summary>The <c>SYS4REG.INI</c> keys the profile's game binds (<see cref="ProfileSettings.RulesFor"/>).</summary>
+    public Ome.Engine.Persistence.SettingsRules SettingsRules => ProfileSettings.RulesFor(Document?.Game);
+
     public ProfileCheckResult? Checks
     {
         get => _checks;

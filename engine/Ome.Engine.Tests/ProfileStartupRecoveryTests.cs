@@ -173,6 +173,48 @@ public class ProfileStartupRecoveryTests
         }
     }
 
+    /// <summary>AGE 4.15D binds seven fewer keys than 4.24J (engine_settings_save@0x45fbb0; EngineBuilds.Age415D):
+    /// the file the port writes for 戦女神ZERO is the one native 4.15D wrote at its exit.</summary>
+    [Fact]
+    public void Sys415BindsSevenFewerKeys()
+    {
+        string root = NewDirectory();
+        string path = Path.Combine(root, Sys4RegIniStore.FileName);
+        try
+        {
+            // 戦女神ZERO's SYS4INI pairs that reach SYS4REG.INI keys.
+            var startup = Sys4StartupSettings.FromPairs([
+                new("FONT", "ＭＳ 明朝"), new("ENABLEANTIFONT", "1"), new("FULLSCREENBIT", "32"), new("NOSETMUSIC", "3")]);
+            Sys4RegIniStore store = Sys4RegIniStore.ForPath(startup, path, EngineBuilds.Age415D.Rules.Settings);
+            // The driver's sandbox (tools/drive/bg0.toml) writes these two before the start.
+            store.SaveInt("display", "ScreenMode", 1);
+            store.SaveInt("sound", "Volume0", 0);
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            // A native 戦女神ZERO exit's file (2026-11-25, the driver's sandbox, tools/drive/scenarios/bg0-opening.steps).
+            string[] nativeLines =
+            [
+                "[display]", "UseDirectDrawEmuration=0", "UseWideSurface=0", "ScreenMode=1", "FullScreenBit=32",
+                "UseIVideoWindow=1", "DeviceType=0", "VertexProcessing=0", "PresentInterval=0", "TextureBit=32",
+                "PixelShader=-1",
+                "[sound]", "Sound=1", "Music=2", "SE=1", "Voice=1", "Movie=1", "UseDirectSound=1",
+                "UseDirectSoundEmuration=1", "DirectSoundCooperativeLevel=1",
+                "Volume0=0", "Volume1=-1", "Volume2=-1", "Volume3=-1", "Volume4=-1",
+                "MusicFadeOnVoicePlaying=1", "MusicFadeOnVoicePlayingVolume=50",
+                "[message]", "Font=ＭＳ 明朝", "RMouseEvent=0", "MessageSpeed=5", "MesWinAlpha=8", "UseAntiFont=1",
+                "AutoMessageTime0=500", "AutoMessageTime1=2000", "ReadTextSkip=0",
+                "[system]", "SaveBMPPath=", "UseMMX=1", "EffectSkipOnClick=0", "OutErrorLog=0",
+            ];
+            Assert.Equal(string.Join("\r\n", nativeLines) + "\r\n", File.ReadAllText(path, Encoding.GetEncoding(932)));
+            Assert.False(store.Binds("message", Sys4RegIniStore.AdvanceMesOnWheelKey));
+            Assert.False(store.Binds("display", "ForceScreen"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void Sys4433BindsTwoMoreKeys()
     {

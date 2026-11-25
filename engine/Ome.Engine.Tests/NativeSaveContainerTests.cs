@@ -116,6 +116,25 @@ public class NativeSaveContainerTests
                 file.AsSpan(NativeSaveContainerCodec.FixedPrefixSize + 4)));
     }
 
+    /// <summary>The major version, not the minor, decides the LZSS wrapper (the writer tests the argument it stores at
+    /// +0x11c): 戦女神ZERO's 3.0 is compressed, and a 1.10 is not.</summary>
+    [Theory]
+    [InlineData(3, 0, true)]
+    [InlineData(2, 0, true)]
+    [InlineData(1, 10, false)]
+    public void TheMajorVersionDecidesTheCompression(int major, int minor, bool compressed)
+    {
+        byte[] payload = new byte[4096];
+        var metadata = new NativeSaveMetadata(NativeSaveMagic.S4SD, 1, "test", Timestamp, 0, major, minor);
+
+        byte[] file = NativeSaveContainerCodec.Encode(payload, metadata, new NativeSaveEncodingOptions(0x12345678, 3));
+
+        Assert.Equal(compressed, NativeSaveContainerCodec.Compresses(metadata));
+        uint encodedDwords = BinaryPrimitives.ReadUInt32LittleEndian(file.AsSpan(0x124));
+        Assert.Equal(compressed, encodedDwords < (payload.Length + 8) / 4 * 2);
+        Assert.Equal(payload, NativeSaveContainerCodec.Decode(file).Payload);
+    }
+
     [Fact]
     public void EncodedChecksumAndExactDivisionRejectCorruption()
     {

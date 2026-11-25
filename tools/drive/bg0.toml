@@ -19,6 +19,15 @@ point = "adv.next"        # where `advance` clicks: the middle of the canvas
 "title.quit" = [700, 375]        # Quit
 "mode.normal" = [400, 299]       # 通常, the first of BUNKI's two game modes (-> SC0000)
 "mode.special" = [400, 329]      # 特別編
+# The character menu a right click opens on a page (MENU), read from native on 2026-11-25: nine orbs in a 3x3 grid round
+# the middle of the canvas (its find-hit-rectangle at 0x1dd, cells from x -125, -50 and 50 and y -125, -50 and 50 of
+# (400, 300), 75 or 100 px wide and tall; the inline arrays at 0x1338 to 0x136f). Another right click closes it. SAVE
+# and LOAD open the same page (SAVE), ten slots a page, and a slot asks セーブしますか？ or ロードしますか？ in SBUNKI,
+# with はい above いいえ.
+"menu.save" = [312, 387]         # SAVE, the lower left orb
+"menu.load" = [400, 387]         # LOAD, the lower middle orb
+"slot.0" = [400, 48]             # No.00, the first of the page's ten rows, 49 px apart
+"confirm.yes" = [355, 300]       # はい
 
 # Settings written into a sandbox profile's SYS4REG.INI before every sandboxed launch (as for the other games).
 # 4.15D has no display:VirtualFullScreen key, so only the window mode is set.

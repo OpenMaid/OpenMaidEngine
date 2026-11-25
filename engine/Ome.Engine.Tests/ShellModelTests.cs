@@ -555,6 +555,13 @@ public class ShellModelTests
         Assert.False(Option("smooth-text").IsVisible(Sys4StartupSettings.Empty));
         Assert.True(Option("smooth-text").IsVisible(Sys4StartupSettings.FromPairs([new("ENABLEANTIFONT", "1")])));
         Assert.True(Option("wheel-advance").IsVisible(Sys4StartupSettings.Empty));
+        // AGE 4.15D binds no message:AdvanceMesOnWheel, and its 設定 page has no wheel check (docs/engine-re.md,
+        // "戦女神ZERO's settings and 設定"); every other option of the panel it binds.
+        Assert.True(Option("wheel-advance").IsVisible(Sys4StartupSettings.Empty, boundKeys: EngineBuilds.Age424J.Rules.Settings));
+        Assert.False(Option("wheel-advance").IsVisible(Sys4StartupSettings.Empty, boundKeys: EngineBuilds.Age415D.Rules.Settings));
+        Assert.Equal(["wheel-advance"],
+            ShellOptions.All.Where(o => !o.AutoPageOnly && !EngineBuilds.Age415D.Rules.Settings.Binds(o.RegistrySection, o.RegistryKey))
+                .Select(o => o.Name));
     }
 
     // ---- the installed games ----

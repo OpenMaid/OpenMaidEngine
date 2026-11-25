@@ -107,12 +107,9 @@ public static class SharedProfilePayloadCodec
             foreach (uint value in selectors) writer.Write(value);
             WriteDwordArray(writer, payload.ExtendedValues);
         }
-        else if (payload.ExtendedSelectorCounts.Count != 0 || payload.ExtendedValues.Count != 0)
-        {
-            throw new InvalidDataException(
-                $"Shared profile version {metadata.SaveVersion1}.{metadata.SaveVersion2} " +
-                "cannot encode version-3.10 extended sections.");
-        }
+        // Below 3.10 the file has no append table, whatever the profile holds for one: 4.24J writes it only from 3.10
+        // (shared_profile_save@0x40c950), and 4.15D's has no branch for it (0x40fe70), so 戦女神ZERO's 3.0 SAVE.DAT
+        // never keeps an append catalog's unlocks.
 
         foreach (uint value in payload.ReservedTail) writer.Write(value);
         writer.Flush();

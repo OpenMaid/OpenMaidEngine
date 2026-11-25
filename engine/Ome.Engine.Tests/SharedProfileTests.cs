@@ -50,6 +50,39 @@ public class SharedProfileTests
         Assert.All(decoded.ReservedTail, value => Assert.Equal(0u, value));
     }
 
+    /// <summary>A version below 3.10 has no append table, so its SAVE.DAT keeps the base catalog's unlocks and drops an
+    /// append's, as native writes it (戦女神ZERO's 3.0; shared_profile_save, 4.15D 0x40fe70).</summary>
+    [Fact]
+    public void AVersionBelowThreeTenSavesNoAppendTable()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-shared-profile-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var identity = new NativeSaveIdentity(NativeSaveMagic.S4SD, 0x44353134, "戦女神ZERO", 3, 0);
+            var store = new DirectoryNativeDatStore(root, identity);
+            var profile = new SharedProfile();
+            profile.MarkCatalogResourceOpened(5);
+            profile.MarkCatalogResourceOpened(0x0100_0003);
+            profile.StoreInteger(0x10, 7);
+
+            profile.Save(store, Timestamp, 9);
+
+            NativeSaveDocument document = store.LoadShared()!;
+            SharedProfilePayload payload = SharedProfilePayloadCodec.Decode(document.Payload, document.Metadata);
+            Assert.Empty(payload.ExtendedSelectorCounts);
+            Assert.Empty(payload.ExtendedValues);
+            var loaded = new SharedProfile();
+            Assert.True(loaded.Load(store));
+            Assert.True(loaded.IsCatalogResourceUnlocked(5));
+            Assert.False(loaded.IsCatalogResourceUnlocked(0x0100_0003));
+            Assert.Equal(7, loaded.LoadInteger(0x10));
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void SharedPayloadRejectsMalformedTypedKeysAndTrailingData()
     {

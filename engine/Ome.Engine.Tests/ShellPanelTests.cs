@@ -271,6 +271,21 @@ public class ShellPanelTests
         Assert.DoesNotContain(host.Calls, c => c.StartsWith("antialias"));
     }
 
+    /// <summary>AGE 4.15D binds no message:AdvanceMesOnWheel: OK writes no such key, as native 戦女神ZERO's 設定 wrote
+    /// none (docs/engine-re.md, "戦女神ZERO's settings and 設定").</summary>
+    [Fact]
+    public void WhereTheBuildBindsNoWheelKeyOkWritesNone()
+    {
+        var host = new Host();
+        var draft = new ShellOptionsDraft(host, AntiFont, readOnly: false, boundKeys: EngineBuilds.Age415D.Rules.Settings);
+
+        Assert.DoesNotContain(draft.Visible, o => o.Name == "wheel-advance");
+        Assert.False(draft.Set("wheel-advance", 1));
+        Assert.True(draft.Commit());
+        Assert.DoesNotContain(host.Calls, c => c.Contains("AdvanceMesOnWheel"));
+        Assert.Contains("save system:EffectSkipOnClick=0", host.Calls);
+    }
+
     [Fact]
     public void WhileOp142IsOffTheDraftIsReadOnly()
     {

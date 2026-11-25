@@ -140,7 +140,7 @@ public sealed class OverviewViewModel : ViewModel
         if (Document == null || _page.Entry.NeedsReview) return null;
         try
         {
-            return ProfileSettings.Load(_page.Entry.Root, Startup ?? Sys4StartupSettings.Empty);
+            return ProfileSettings.Load(_page.Entry.Root, Startup ?? Sys4StartupSettings.Empty, _page.SettingsRules);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {

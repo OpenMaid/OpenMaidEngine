@@ -55,6 +55,7 @@ public sealed class Sys4RegIniStore
     private readonly int _defaultMusicRouteValue;
     private readonly int[] _routeValues = [0, 0, 1, 1, 1];
     private IniDocument? _document;
+    private readonly SettingsRules _rules;
 
     /// <param name="settingsRules">The engine build's bound keys (<see cref="SettingsRules"/>). Null means
     /// <see cref="SettingsRules.LoaderKeys"/>.</param>
@@ -64,7 +65,8 @@ public sealed class Sys4RegIniStore
     {
         if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("Settings path is required.", nameof(path));
         _path = Path.GetFullPath(path);
-        _bindings = (settingsRules ?? SettingsRules.LoaderKeys).BoundKeys;
+        _rules = settingsRules ?? SettingsRules.LoaderKeys;
+        _bindings = _rules.BoundKeys;
         _startupSettings = startupSettings ?? Sys4StartupSettings.Empty;
         _defaultMusicRouteValue = defaultMusicRouteValue;
         _routeValues[(int)AudioMixerCategory.Music] = defaultMusicRouteValue;
@@ -161,9 +163,7 @@ public sealed class Sys4RegIniStore
 
     /// <summary>Whether the engine build's settings loader binds this key (<see cref="SettingsRules"/>): a key it
     /// does not bind is no setting of that build.</summary>
-    public bool Binds(string section, string key)
-        => _bindings.Any(bound => string.Equals(bound.Section, section, StringComparison.OrdinalIgnoreCase)
-                                  && string.Equals(bound.Key, key, StringComparison.OrdinalIgnoreCase));
+    public bool Binds(string section, string key) => _rules.Binds(section, key);
 
     /// <summary>A [message] integer, or the native registered default when the key is absent.</summary>
     public int LoadMessageInt(string key, int defaultValue) => LoadInt(MessageSection, key, defaultValue);

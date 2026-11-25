@@ -258,6 +258,7 @@ public sealed partial class VirtualMachine
             ["get-gfx-geom3-b?"] = static (vm, ins, pc) => vm.OpGetGfxGeom3B(ins, pc),
             ["clone-gfx-object"] = static (vm, ins, pc) => vm.OpCloneGfxObject(ins, pc),
             ["query-gfx-rotation-current"] = static (vm, ins, pc) => vm.OpQueryGfxRotationCurrent(ins, pc),
+            ["query-gfx-scale-current"] = static (vm, ins, pc) => vm.OpQueryGfxScaleCurrent(ins, pc),
             ["query-gfx-translation-current"] = static (vm, ins, pc) => vm.OpQueryGfxTranslationCurrent(ins, pc),
             ["set-gfx-range-transform"] = static (vm, ins, pc) => vm.OpSetGfxRangeTransform(ins, pc),
             ["set-gfx-range-scale-current"] = static (vm, ins, pc) => vm.OpSetGfxRangeScaleCurrent(ins, pc),

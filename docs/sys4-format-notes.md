@@ -111,7 +111,7 @@ Himegari's in `DEPENDMOVIESOUND` (`2`), `SCREENX`/`SCREENY` (`1024`/`576`), `SAV
 among them. Its values differ in `SAVEPATH` (`Eushully\戦女神ZERO\SAVE`), `REGFILEPATH` (`Eushully\戦女神ZERO`),
 `COPYRIGHT` (`Copyright (c) Eushully 2008`), `SAVEVERSION` (`300`), `RCVERSION` (`20`), `VERREGPOS`
 (`455EE66A-17E3-4E66-9D3C-D630723C3B00`) and `REGKEY` (`1163847274`). It is the only `SAVEVERSION` of 300 among the
-games: what a save's minor version 0 selects is not read (`backlog.md`, "Onboard 戦女神ZERO").
+games. Its saves are version 3.0, with Himegari's layout (the save container's header, below).
 
 #### The font list (AGE 4.38D) — CONFIRMED (2026-11-19)
 
@@ -301,8 +301,8 @@ standalone `S3RT` layout documented below. The fixed `.DAT` header is `0x124` by
 | `0x0f4` | `0x14` | zero in every inspected file |
 | `0x108` | `0x10` | Win32 `SYSTEMTIME`: eight little-endian WORDs |
 | `0x118` | 4 | accumulated playtime in seconds |
-| `0x11c` | 4 | signed `SaveVersion1`, selecting the logical state layout |
-| `0x120` | 4 | signed `SaveVersion2`, selecting the payload-codec subversion |
+| `0x11c` | 4 | signed `SaveVersion1`, the major version: it selects the logical state layout, and from 2 the LZSS wrapper |
+| `0x120` | 4 | signed `SaveVersion2`, the minor version (`SAVEVERSION` modulo 100; 戦女神ZERO writes 0) |
 
 Observed profile identities are:
 
@@ -321,6 +321,10 @@ The port's Kamidori profile writes `"433G"`, the clean install's id.
 戦女神VERITA's 4.24N writes Himegari's 3.10 layout: a native numbered save made with the driver on 2026-11-25 has the
 banks `[2525977,1,438,1,1,1]` and graphics records of `0x2d4` bytes, and the codec writes it back byte for byte
 (`Ome.Cli save-info`).
+戦女神ZERO's 4.15D writes the same layout as version 3.0, stamped `"415D"` (`0x44353134`): its native numbered saves
+of 2026-11-25 have the banks `[593923,1,224,1,1,1]`, graphics records of `0x2d4` bytes and a compressed container,
+and the codec writes them back byte for byte. The port's save of the same page differs from native's only in the
+timestamp and the play time (`Ome.Cli save-diff --game bg0`).
 The game id is the SYS4INI header copy at `ctx+0xa0bc0`.
 
 The packed SYS4INI `SAVEVERSION` values `310` and `320` split into these major/minor fields by quotient
@@ -349,7 +353,8 @@ A `0x14`-byte codec frame begins at file offset `0x124`, and expanded data begin
 The logical payload is protected in this order:
 
 1. Prefix the payload with two DWORD CRCs over the payload: MSB-first CRC-32, then reflected CRC-32.
-2. For `SaveVersion2 >= 2`, optionally compress that checked buffer with the 4 KiB LZSS dialect and
+2. For `SaveVersion1 >= 2` (the major version, header `+0x11c`), optionally compress that checked buffer with the
+   4 KiB LZSS dialect and
    wrap it as `{original_bytes, consumed_bytes, stored_bytes, stored_data, padding}`. The first two
    lengths agree. If compression does not shrink the data, `stored_bytes == original_bytes` and the
    bytes are verbatim.
@@ -407,6 +412,12 @@ with two header DWORDs:
 | `0` | private exponent XOR `0x87912345` |
 | `1` | modular-exponentiation modulus |
 | `index + 2` | zero when locked/unseen; otherwise the encrypted resource marker |
+
+`catalog_count` is the length of the header and the table together: the slot count plus 2. AGE 4.15D (戦女神ZERO)
+passes the slot count itself (`shared_profile_save@0x40fe70`, the count at `ctx+0x9ab64`), so its file ends two slots
+early: the markers of the catalog's last two resources hold for a session and are lost when it ends. Its loader
+(`shared_profile_load@0x410190`) takes the file's length and decodes into a table `0x400` DWORDs longer than that, so
+it reads a file of the full length. The port writes the full length for every build.
 
 Loading computes `plain = cipher^private_exponent mod modulus`. A marker is available when its low word
 equals `low16(index * 0x053d6f99 + 0xb0b0b0b0)`. Native `asset_open_indexed_entry` writes that marker
@@ -776,7 +787,10 @@ three builds (read 2026-11-20): `text_history_append_typed_metadata` (op `0x1d2`
 the stack held. Nothing reads it for these records: History's renderer skips a metadata record and plays a voice
 record's DWORDs 5 and 6, and ops `0x1d3` and `0x1d4` read DWORDs 5, 6 and 10. The port writes 0, which is as good as
 any value the stack could leave. Native loads the port's save and shows the page and its History.
-`save-diff` does not compare the tail.
+`save-diff` does not compare the tail. AGE 4.15D's voice appender (`text_history_append_voice_pair@0x44ab60`, read
+2026-11-25) leaves it the same way; in 戦女神ZERO's saves of SC0000's fourth page the residue equals the record's voice
+id, and the rest of the tail is the port's byte for byte but for the string blob's padding, where native leaves heap
+residue as in `SAVE.DAT`.
 
 ### Numbered `SAVE%02d.STH` thumbnail — CONFIRMED
 

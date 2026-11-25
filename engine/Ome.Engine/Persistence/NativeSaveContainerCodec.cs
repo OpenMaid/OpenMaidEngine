@@ -97,7 +97,7 @@ public static class NativeSaveContainerCodec
         payload.CopyTo(checkedLogical.AsSpan(8));
         WriteLogicalChecksums(checkedLogical);
 
-        byte[] transformInput = metadata.SaveVersion2 >= 2
+        byte[] transformInput = Compresses(metadata)
             ? BuildCompressedWrapper(checkedLogical)
             : checkedLogical;
         byte[] encoded = ExpandTransform(transformInput, options.XorSeed, options.Multiplier);
@@ -146,7 +146,7 @@ public static class NativeSaveContainerCodec
         ValidateMultiplier(multiplier);
 
         byte[] transformInput = InverseTransform(encoded, seed, multiplier);
-        byte[] checkedLogical = metadata.SaveVersion2 >= 2
+        byte[] checkedLogical = Compresses(metadata)
             ? DecodeCompressedWrapper(transformInput)
             : transformInput;
         if (checkedLogical.Length < 8 || (checkedLogical.Length & 3) != 0)
@@ -163,6 +163,12 @@ public static class NativeSaveContainerCodec
             payload.ToArray(),
             checked(FixedPrefixSize + encodedLength));
     }
+
+    /// <summary>Whether the logical buffer goes through the LZSS wrapper: where the major version, SaveVersion1 at
+    /// header +0x11c, is 2 or more. The writer (4.24J save_container_encode_and_write@0x42fac0, 4.15D 0x42a6f0) tests
+    /// the argument it stores at +0x11c, and the reader (4.24J 0x42ff80) the major version it expects; 戦女神ZERO's
+    /// 3.0 is compressed (docs/sys4-format-notes.md).</summary>
+    public static bool Compresses(NativeSaveMetadata metadata) => metadata.SaveVersion1 >= 2;
 
     /// <summary>Read only the fixed native header, matching metadata-query opcode 0x1a0.</summary>
     public static NativeSaveMetadata ReadMetadata(ReadOnlySpan<byte> source)

@@ -1,4 +1,5 @@
 using Ome.Engine.Modding;
+using Ome.Engine.Persistence;
 using Ome.Engine.Profiles;
 using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
@@ -11,10 +12,15 @@ namespace Ome.Launcher.Core;
 
 /// <summary>
 /// The launcher's composition (engine layering spec §7.6): the one place in it that puts the engine's link together
-/// and so reads an engine build's ABI, as <c>Ome.Cli</c> does (<c>EngineBuildTests</c> allows this file alone).
+/// and so reads an engine build's ABI, as <c>Ome.Cli</c> does, and that finds a game's engine build
+/// (<c>EngineBuildTests</c> allows this file alone).
 /// </summary>
 internal static class LinkComposition
 {
+    /// <summary>The <c>SYS4REG.INI</c> keys the engine build of <paramref name="game"/> binds, which the Settings page
+    /// reads and writes the file with, as the engine does (<see cref="ProfileSettings.RulesFor"/>).</summary>
+    public static SettingsRules BoundSettings(GameProfileManifest game) => EngineBuilds.ForProfile(game).Rules.Settings;
+
     /// <summary>The link as <c>Ome.Cli</c>'s <c>omp check --data-root</c> makes it: the run resolved from the profile
     /// file, the catalog, the asset store with the profile's overlays, and the engine's link base with a Lua runtime
     /// (spec §5.9). Gate 8 holds the two to the same text. <paramref name="mods"/> join the profile's packages, as

@@ -143,6 +143,29 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0x226: (failure)(handle)(out scale x/y/z). Absent, or a matrix that does not decompose, writes failure=1 and
+    // leaves the outputs untouched.
+    private StepResult OpQueryGfxScaleCurrent(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (Gfx.TryQueryScaleCurrent(Read(a[1]), out var v))
+        {
+            WriteScalePercent(ins, 2, v.X); WriteScalePercent(ins, 3, v.Y); WriteScalePercent(ins, 4, v.Z);
+            Write(a[0], 0);
+        }
+        else Write(a[0], 1);
+        return StepResult.Next;
+    }
+
+    // Op 0x226's value. Where the ABI writes integers (SYS4415 0x421822, SYS4422 0x42a230) native truncates the factor
+    // and then multiplies the integer by 100 (FLD, _ftol, IMUL 0x64), so a 70% scale writes 0 and 150% writes 100.
+    // Where it writes floats (SYS4433 0x42b136) it multiplies the float by 100.0 and writes that.
+    private void WriteScalePercent(Instruction ins, int index, float factor)
+    {
+        if (IsFloatOperand(ins, index)) WriteFloat(ins.Args[index], (float)(factor * 100.0));
+        else Write(ins.Args[index], unchecked(NativeTruncate(factor) * 100));
+    }
+
     // 0x227: (failure)(handle)(out axis x/y/z)(out angle)
     private StepResult OpQueryGfxRotationCurrent(Instruction ins, int pc)
     {

@@ -86,7 +86,7 @@ public sealed class SettingsViewModel : ViewModel
         if (_page.Entry.Loaded?.Document == null || _page.Entry.NeedsReview) return null;
         try
         {
-            return ProfileSettings.Load(_page.Entry.Root, Startup ?? Sys4StartupSettings.Empty);
+            return ProfileSettings.Load(_page.Entry.Root, Startup ?? Sys4StartupSettings.Empty, _page.SettingsRules);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
@@ -211,9 +211,10 @@ public sealed class SettingsViewModel : ViewModel
     {
         if (!CanWrite || (windowed != null && !CanWriteDisplay)) return;
         Sys4StartupSettings? startup = Startup;
+        Ome.Engine.Persistence.SettingsRules rules = _page.SettingsRules;
         bool written = await _page.WriteAsync(entry =>
         {
-            ProfileSettings.Save(entry.Root, port, windowed, startup);
+            ProfileSettings.Save(entry.Root, port, windowed, startup, rules);
             return null;
         }, message => Result = S["overview.write-failed"] + " " + message);
         if (written) Result = null;

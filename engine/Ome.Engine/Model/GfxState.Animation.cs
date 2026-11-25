@@ -336,6 +336,18 @@ public sealed partial class GfxState
         return false;
     }
 
+    /// <summary>Op 0x226: query the current scale decomposed from the native scale matrix at obj+0x6c
+    /// (gfx_object_query_scale_current, 4.15D 0x46bc90, 4.24J 0x47cc30), the matrix the port keeps as
+    /// <c>ScaleCurrent</c>. False for an absent handle, or a matrix the decomposition refuses.</summary>
+    public bool TryQueryScaleCurrent(long handle, out (float X, float Y, float Z) current)
+    {
+        current = default;
+        if (!_scene.Objects.TryGetValue(handle, out var o)) return false;
+        var (x, y, z) = o.ScaleCurrent;
+        return AffineDecomposition.TryScale(
+            [[(float)x, 0f, 0f], [0f, (float)y, 0f], [0f, 0f, (float)z]], out current);
+    }
+
     /// <summary>Op 0x227: query the current axis-angle rotation stored at
     /// obj+0x1ec/+0x1f0/+0x1f4/+0x204, independently of the delayed target.</summary>
     public bool TryQueryRotationCurrent(

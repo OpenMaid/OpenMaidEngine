@@ -1071,6 +1071,7 @@ class Daemon:
 
     def open_settings(self, section: str, seconds: float = 15) -> tuple[int, dict[str, int]]:
         """Open 設定 at `section`'s tab from its menu command; returns the dialog and its pages by section."""
+        auto_page = self.has_auto_page()
         self.choose_menu(core.MENU_COMMANDS[core.SECTION_COMMANDS[section]])
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
@@ -1078,7 +1079,7 @@ class Daemon:
                 tabs = win32().dialog_item(hwnd, 0x417)
                 if win32()._class(hwnd) != "#32770" or not tabs or win32()._class(tabs) != "SysTabControl32":
                     continue
-                pages = self.settings_pages(hwnd)
+                pages = self.settings_pages(hwnd, auto_page)
                 if section in pages and win32().user32.IsWindowVisible(pages[section]):
                     return hwnd, pages
             time.sleep(0.05)
@@ -1089,14 +1090,16 @@ class Daemon:
         return win32().menu_item(self.menu_target(), core.MENU_COMMANDS["auto-settings"]) is not None
 
     @staticmethod
-    def settings_pages(dialog: int) -> dict[str, int]:
+    def settings_pages(dialog: int, auto_page: bool) -> dict[str, int]:
         """設定's pages by the controls each has, tested in this order: 動作環境's copy button 0x419, ｻｳﾝﾄﾞ's
-        trackbar 0x418, ﾒｯｾｰｼﾞ's wheel check 0x3e9, the trackbar 0x415 of 4.38D's ｵｰﾄﾒｯｾｰｼﾞ (ﾒｯｾｰｼﾞ and ｻｳﾝﾄﾞ have
-        one too), and その他's lone check 1000."""
+        trackbar 0x418, ﾒｯｾｰｼﾞ's wheel check 0x3e9, trackbar 0x415 (ﾒｯｾｰｼﾞ and ｻｳﾝﾄﾞ have one too), and その他's
+        lone check 1000. Where 設定 has 4.38D's ｵｰﾄﾒｯｾｰｼﾞ page (`auto_page`), the page left with trackbar 0x415 is that
+        one; otherwise it is ﾒｯｾｰｼﾞ, which in AGE 4.15D has no wheel check. The two pages have the same control ids
+        (docs/engine-re.md, "戦女神ZERO's settings and 設定")."""
         pages = {}
         for page in win32().child_dialogs(dialog):
-            for kind, control in (("system", 0x419), ("sound", 0x418), ("message", 0x3E9), ("auto", 0x415),
-                                  ("other", 1000)):
+            for kind, control in (("system", 0x419), ("sound", 0x418), ("message", 0x3E9),
+                                  ("auto" if auto_page else "message", 0x415), ("other", 1000)):
                 if win32().dialog_item(page, control):
                     pages.setdefault(kind, page)
                     break

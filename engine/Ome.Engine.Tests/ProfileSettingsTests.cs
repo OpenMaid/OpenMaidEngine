@@ -77,6 +77,28 @@ public sealed class ProfileSettingsTests : IDisposable
         Assert.Equal(before.AddHours(-1), File.GetLastWriteTimeUtc(registry));
     }
 
+    /// <summary>The files are read and written with the keys the game's engine build binds: 戦女神ZERO's AGE 4.15D has
+    /// no ForceScreen, so a file's 1 is no setting there, and a start mode written for it adds none of the seven keys
+    /// 4.15D lacks (EngineBuilds.Age415D).</summary>
+    [Fact]
+    public void TheFilesFollowTheGamesEngineBuild()
+    {
+        string registry = Path.Combine(_root, "SYS4REG.INI");
+        File.WriteAllText(registry, "[display]\r\nScreenMode=1\r\nForceScreen=1\r\n");
+        Assert.Same(Ome.Engine.Vm.EngineBuilds.Age415D.Rules.Settings, ProfileSettings.RulesFor("bg0"));
+        Assert.Same(Ome.Engine.Persistence.SettingsRules.LoaderKeys, ProfileSettings.RulesFor("no-such-game"));
+        Assert.True(ProfileSettings.Load(_root, Sys4StartupSettings.Empty, ProfileSettings.RulesFor("himegari")).ForceScreen);
+        Assert.False(ProfileSettings.Load(_root, Sys4StartupSettings.Empty, ProfileSettings.RulesFor("bg0")).ForceScreen);
+
+        File.Delete(registry);
+        ProfileSettings.Save(_root, windowed: true, startup: Sys4StartupSettings.Empty, rules: ProfileSettings.RulesFor("bg0"));
+        string written = File.ReadAllText(registry);
+        Assert.Contains("ScreenMode=1", written);
+        foreach (string key in new[] { "ForceScreen", "VirtualFullScreen", "AspectMode", "FullScreenWidth",
+                                       "FullScreenHeight", "LimitAero", "AdvanceMesOnWheel" })
+            Assert.DoesNotContain(key + "=", written);
+    }
+
     [Fact]
     public void AStartModeIsNotWrittenWithoutTheInstallNorWhileTheGameRuns()
     {

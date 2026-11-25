@@ -16,7 +16,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Game | Id | Engine ABI | Play | Modding | Guide |
 |---|---|---|---|---|---|
 | Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
-| Ikusa Megami ZERO | `bg0` | `SYS4415` | P2 (boots) | none | none yet |
+| Ikusa Megami ZERO | `bg0` | `SYS4415` | P3 (complete) | none | none yet |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
 | Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | M3 (base mod) | [the guide](verita.md) |
@@ -47,13 +47,13 @@ below P3 is still being added and is not playable. The levels' gates are in
 |---|---|
 | Game id | `bg0` (`--game bg0`) |
 | Title | Ikusa Megami ZERO (戦女神ZERO) |
-| Support | play P2 (boots); modding none |
+| Support | play P3 (complete); modding none |
 | Engine build | AGE `4.15D` |
 | Engine ABI | `SYS4415` |
 | Catalog revision | `S4IC415` |
 | Boot script | `SYSTEM4.BIN` |
 | Install | anywhere: a profile made in the launcher names it; from source, `games/bg0/` beside the repository by default |
-| Port saves | disabled (read-only game) |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/bg0/` of the engine's data folder) |
 | OMS modules | `bg0.scripts` (generated; no `bg0.globals`, the game has no registry yet) |
 | Speakers | no dialogue prelude yet |
 | Tables | none yet |

@@ -162,12 +162,12 @@ public sealed class InstallIntakeTests : IDisposable
     [Trait("Profile", "verita")]
     public void InstalledVeritaReadsAsItsObservationRecordsIt() => AssertInstalled("verita");
 
-    /// <summary>At P1 since 2026-11-25: one opcode its scripts use, 0x226, has no handler yet (docs/backlog.md,
+    /// <summary>Every opcode its scripts use has a handler since 2026-11-25, when 0x226 got one (docs/backlog.md,
     /// "Onboard 戦女神ZERO").</summary>
     [Fact]
     [Trait("Category", "Workspace")]
     [Trait("Profile", "bg0")]
-    public void InstalledZeroReadsAsItsObservationRecordsIt() => AssertInstalled("bg0", complete: false);
+    public void InstalledZeroReadsAsItsObservationRecordsIt() => AssertInstalled("bg0");
 
     /// <summary>A game's install: the intake names its profile, finds nothing new, and counts what the registry's
     /// observation counts (vm-map/opcodes.toml), though it decodes with the whole catalog. A game whose scripts still

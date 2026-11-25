@@ -1,5 +1,6 @@
 using Ome.Engine.Frontend.Shell;
 using Ome.Engine.Persistence;
+using Ome.Engine.Profiles;
 using Ome.Engine.Sys4;
 using Ome.Mods.Launch;
 
@@ -13,19 +14,30 @@ namespace Ome.Launcher.Core;
 /// <para>The game starts in a window when <c>ScreenMode</c> is not 0, and fullscreen by default
 /// (<c>engine_initialize_graphics_from_settings</c>, docs/engine-re.md). <c>display:ForceScreen</c> 1 does not change
 /// the start: it refuses every switch out of a window (<c>ShellServices.SwitchScreenMode</c>).</para>
+/// <para>Both files are read and written with the keys the game's engine build binds (<see cref="RulesFor"/>), as the
+/// engine reads and writes them: AGE 4.15D binds seven fewer than 4.24J, ForceScreen among them.</para>
 /// </summary>
 public sealed record ProfileSettings(PortOptions Port, bool Windowed, bool ForceScreen)
 {
     public const string DisplaySection = "display", ScreenModeKey = "ScreenMode", ForceScreenKey = "ForceScreen";
 
+    /// <summary>The <c>SYS4REG.INI</c> keys the engine build of the game <paramref name="gameId"/> binds
+    /// (<see cref="LinkComposition.BoundSettings"/>); the loader's keys for a game the engine does not know.</summary>
+    public static SettingsRules RulesFor(string? gameId)
+        => gameId != null && GameProfileRegistry.BuiltIn.Find(gameId) is { } game
+            ? LinkComposition.BoundSettings(game)
+            : SettingsRules.LoaderKeys;
+
     /// <param name="startup">The install's <c>SYS4INI.BIN</c> settings, whose values a missing key takes; empty when
     /// the install cannot be read.</param>
-    public static ProfileSettings Load(string root, Sys4StartupSettings startup)
+    /// <param name="rules">The game's keys (<see cref="RulesFor"/>); the loader's when null.</param>
+    public static ProfileSettings Load(string root, Sys4StartupSettings startup, SettingsRules? rules = null)
     {
         PortOptions port = new OmeIniStore(Path.Combine(root, PortOptions.FileName)).Load();
-        Sys4RegIniStore registry = Sys4RegIniStore.ForPath(startup, Path.Combine(root, Sys4RegIniStore.FileName));
+        Sys4RegIniStore registry = Sys4RegIniStore.ForPath(startup, Path.Combine(root, Sys4RegIniStore.FileName), rules);
         return new ProfileSettings(port, registry.LoadInt(DisplaySection, ScreenModeKey, 0) != 0,
-                                   registry.LoadInt(DisplaySection, ForceScreenKey, 0) == 1);
+                                   registry.Binds(DisplaySection, ForceScreenKey)
+                                   && registry.LoadInt(DisplaySection, ForceScreenKey, 0) == 1);
     }
 
     /// <summary>
@@ -38,10 +50,12 @@ public sealed record ProfileSettings(PortOptions Port, bool Windowed, bool Force
     /// install's <c>SYS4INI.BIN</c> settings, so the start mode is written only with them: without the install, the
     /// write would put the engine's defaults where the game's belong.</para>
     /// </summary>
+    /// <param name="rules">The game's keys (<see cref="RulesFor"/>), in whose order the file is written; the loader's
+    /// when null.</param>
     /// <exception cref="ProfileBusyException">The game runs the profile; nothing is written.</exception>
     /// <exception cref="ArgumentException">A start mode without the install's settings.</exception>
     public static void Save(string root, Func<PortOptions, PortOptions>? port = null, bool? windowed = null,
-                            Sys4StartupSettings? startup = null)
+                            Sys4StartupSettings? startup = null, SettingsRules? rules = null)
     {
         if (windowed != null && startup == null)
             throw new ArgumentException("the start mode is written with the install's SYS4INI settings", nameof(startup));
@@ -52,7 +66,7 @@ public sealed record ProfileSettings(PortOptions Port, bool Windowed, bool Force
             store.Save(port(store.Load()));
         }
         if (windowed is { } value)
-            Sys4RegIniStore.ForPath(startup!, Path.Combine(root, Sys4RegIniStore.FileName))
+            Sys4RegIniStore.ForPath(startup!, Path.Combine(root, Sys4RegIniStore.FileName), rules)
                 .SaveInt(DisplaySection, ScreenModeKey, value ? 1 : 0);
     }
 

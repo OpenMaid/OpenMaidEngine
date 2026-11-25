@@ -129,6 +129,29 @@ public sealed class EngineBuildTests
         Assert.Equal("UseAntiFont", keys[keys.ToList().FindIndex(key => key.Key == "AntiFontLevel") - 1].Key);
     }
 
+    /// <summary>4.15D's changes are the real rows of its triage (docs/engine-re.md, "Himegari against 戦女神ZERO,
+    /// triaged") and its settings: its loader binds seven fewer keys, in 4.24J's order otherwise.</summary>
+    [Fact]
+    public void FourFifteenDIsFourTwentyFourJPlusItsChanges()
+    {
+        EngineRules parent = EngineBuilds.Age424J.Rules, child = EngineBuilds.Age415D.Rules;
+        Assert.Equal(parent.Text, child.Text);
+        Assert.Equal(parent.Gfx, child.Gfx);
+        Assert.Equal(parent.Audio, child.Audio);
+        Assert.Equal(parent.Shell, child.Shell);
+        Assert.Equal("415D", child.Saves.VersionStamp);
+
+        string[] dropped =
+        [
+            "display:ForceScreen", "display:VirtualFullScreen", "display:AspectMode", "display:FullScreenWidth",
+            "display:FullScreenHeight", "display:LimitAero", "message:AdvanceMesOnWheel",
+        ];
+        Assert.Equal(parent.Settings.BoundKeys.Where(key => !dropped.Contains($"{key.Section}:{key.Key}")),
+                     child.Settings.BoundKeys);
+        Assert.All(dropped, name => Assert.False(child.Settings.Binds(name.Split(':')[0], name.Split(':')[1])));
+        Assert.Throws<ArgumentException>(() => child.Settings.Without("display", "LimitAero"));
+    }
+
     /// <summary>4.24N's changes are the real rows of its triage (docs/engine-re.md, "Himegari against Verita,
     /// triaged"): its furigana arm the glyph timer, a fade to zero clears the retained track when it is armed, its
     /// start-up guards slot 38 from the release worker too (docs/engine-re.md, "Engine-owned surfaces"), and its

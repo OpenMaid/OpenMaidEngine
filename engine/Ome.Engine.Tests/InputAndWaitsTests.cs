@@ -353,11 +353,40 @@ public class InputAndWaitsTests
         Assert.True(waits.StopAndReload.StopRequested);
     }
 
+    /// <summary>message:AdvanceMesOnWheel reaches the wheel routing only on a build that binds it: AGE 4.15D has no
+    /// such key (EngineBuilds.Age415D) and no wheel-down advance, so a file's 1 changes nothing there.</summary>
+    [Theory]
+    [InlineData("4.24J", true)]
+    [InlineData("4.15D", false)]
+    public void WheelAdvanceIsReadOnlyWhereTheBuildBindsIt(string build, bool advance)
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-wheel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            string path = Path.Combine(root, Ome.Engine.Persistence.Sys4RegIniStore.FileName);
+            File.WriteAllText(path, "[message]\r\nAdvanceMesOnWheel=1\r\n");
+            var store = new Ome.Engine.Persistence.Sys4RegIniStore(
+                path, 0, settingsRules: Ome.Engine.Vm.EngineBuilds.Find(build)!.Rules.Settings);
+            var interpreter = new FakeInterpreter();
+            InputAndWaits waits = RoutedWaits(interpreter, clickOnUp: false, out _, store);
+
+            waits.MouseWheel(-120);
+
+            Assert.Equal($"wheel -120 advance={advance}", interpreter.Calls[^1]);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     // The native over headless natives, routing to the interpreter given.
     private static InputAndWaits RoutedWaits(IInterpreterInput interpreter, bool clickOnUp)
         => RoutedWaits(interpreter, clickOnUp, out _);
 
-    private static InputAndWaits RoutedWaits(IInterpreterInput interpreter, bool clickOnUp, out Graphics graphics)
+    private static InputAndWaits RoutedWaits(IInterpreterInput interpreter, bool clickOnUp, out Graphics graphics,
+                                             Ome.Engine.Persistence.Sys4RegIniStore? settings = null)
     {
         var clock = new FrameClock();
         SkipAndAuto skip = SkipAndAuto.WithSystemClock();
@@ -365,7 +394,8 @@ public class InputAndWaitsTests
         graphics = Graphics.Headless();
         var waits = new InputAndWaits(skip, audio, new EngineTick(audio), graphics, Movies.Headless(graphics),
                                       ShellServices.Headless(), TextManager.Headless(graphics, skip), clock,
-                                      new PageLocatorState("SC0000", null), synchronizeExplicitPresentation: false)
+                                      new PageLocatorState("SC0000", null), synchronizeExplicitPresentation: false,
+                                      settings: settings)
         {
             ClickOnUp = clickOnUp,
         };
@@ -441,7 +471,10 @@ public class InputAndWaitsTests
         public int UpdateJoystickButtonState(int physicalButton, bool pressed) => 0;
         public void UpdateJoystickAxisState(int axis, double value) { }
         public MouseWheelOutcome ApplyMouseWheel(int delta, bool advanceMessageOnWheel, bool textRevealing)
-            => MouseWheelOutcome.Dropped;
+        {
+            Record($"wheel {delta} advance={advanceMessageOnWheel}");
+            return MouseWheelOutcome.Dropped;
+        }
         public MouseWheelOutcome ApplyMouseHorizontalWheel(int delta)
         {
             Record($"hwheel {delta}");

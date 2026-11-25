@@ -1,0 +1,32 @@
+# 戦女神ZERO's 設定, whose ﾒｯｾｰｼﾞ page has no wheel check (docs/engine-re.md, "戦女神ZERO's settings and 設定"): on
+# SC0000's first page `options` lists the options, with no wheel-advance on either target, and three `option` steps
+# set a control on the ﾒｯｾｰｼﾞ page, one on its Auto group and one on the ｻｳﾝﾄﾞ page. Natively AGERC's dialog, on the
+# port the options panel.
+#
+# Compare SYS4REG.INI after `stop`: on a fresh sandbox the two targets write the same file byte for byte (2026-11-25),
+# with MessageSpeed=30, AutoMessageTime0=900 and SE=0, and no AdvanceMesOnWheel or any other of the seven keys AGE
+# 4.15D does not bind:
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port start
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port run tools/drive/scenarios/bg0-options.steps
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port stop
+
+rand-seed 13
+wait-state script=OP timeout=120
+wait 3
+click adv.next                           # ends the opening movie
+wait-state script=TITLE timeout=60
+settle timeout=20
+click title.start
+wait-state script=BUNKI timeout=60       # the game-mode box (bg0-opening.steps)
+settle timeout=20
+click mode.normal
+wait-state top=SC0000@0xec7 timeout=60   # page 1
+settle timeout=20
+
+options                                  # the sandbox's values: no wheel-advance
+option message-speed 30
+option auto-wait-voice 900
+option se off
+wait 1
+options                                  # the values set above
+expect top=SC0000@0xec7

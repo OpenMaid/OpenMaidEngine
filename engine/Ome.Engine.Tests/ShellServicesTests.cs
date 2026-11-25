@@ -57,6 +57,33 @@ public class ShellServicesTests
         Assert.Null(shell.TakeCallbackScript());
     }
 
+    /// <summary>display:ForceScreen 1 keeps the window only on a build that binds the key: AGE 4.15D does not
+    /// (EngineBuilds.Age415D), so a file's 1 changes nothing there.</summary>
+    [Theory]
+    [InlineData("4.24J", true)]
+    [InlineData("4.15D", false)]
+    public void ForceScreenIsReadOnlyWhereTheBuildBindsIt(string build, bool forced)
+    {
+        string root = Path.Combine(Path.GetTempPath(), "ome-force-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            string path = Path.Combine(root, Sys4RegIniStore.FileName);
+            File.WriteAllText(path, "[display]\r\nScreenMode=1\r\nForceScreen=1\r\n");
+            var shell = new ShellServices(new Sys4RegIniStore(
+                path, 0, settingsRules: Ome.Engine.Vm.EngineBuilds.Find(build)!.Rules.Settings));
+
+            shell.StartScreenMode(windowedArgument: false);
+
+            Assert.Equal(forced, shell.ForceScreen);
+            Assert.Equal(!forced, shell.SwitchScreenMode(windowed: false, "the test"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void CallbackSettingComesBeforeCallbackWindowAndEachRunsOnce()
     {

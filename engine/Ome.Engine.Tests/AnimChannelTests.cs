@@ -70,6 +70,76 @@ public class AnimChannelTests
             (vm.Globals[11], vm.Globals[12], vm.Globals[13], vm.Globals[14]));
     }
 
+    // Op 0x226 decomposes the scale matrix obj+0x6c as D3DX does: each scale is its row's length, and a mirrored
+    // basis negates the largest, so a mirrored middle axis reads as a mirrored largest one.
+    private static VirtualMachine ScaleQuery(OpcodeTable t, (double X, double Y, double Z) scale)
+    {
+        var scene = ScriptAssembler.Assemble(t, "SCALE_QUERY", new List<(int, Operand[])>
+        {
+            (0x226, new[]{G(10), G(1), G(11), G(12), G(13)}), Exit(),
+        }, System.Array.Empty<string>());
+        var vm = new VirtualMachine(scene, t, new RecordingWaits());
+        vm.SeedGlobal(1, 0x4f8);
+        vm.Gfx.BindDraw(0x4f8, 1, 0, 0, 1, 1, 0, 0);
+        vm.Gfx.TryGet(0x4f8)!.ScaleCurrent = scale;
+        vm.Run();
+        return vm;
+    }
+
+    [Fact]
+    public void Op0x226_WritesTheTruncatedFactorTimesAHundredWhereTheAbiWritesIntegers()
+    {
+        // 4.15D 0x421822 and 4.24J 0x42a230: FLD, _ftol, IMUL 0x64. Only 戦女神ZERO's scripts use the op.
+        foreach (string abi in new[] { "SYS4415", "AGE-catalog" })
+        {
+            VirtualMachine vm = ScaleQuery(OpcodeTableJson.Load(Paths.OpcodesJson, abi), (1.5, -0.7, 2.0));
+            Assert.Equal(0, vm.Globals[10]);
+            Assert.Equal((100L, 0L, -200L), (vm.Globals[11], vm.Globals[12], vm.Globals[13]));
+        }
+    }
+
+    [Fact]
+    public void Op0x226_WritesTheFactorTimesAHundredAsAFloatFromSys4433()
+    {
+        // 4.33G 0x42b136: FMUL 100.0, then the float writer, which an integer cell truncates. No SYS4433 script uses
+        // the op, so its table lacks it: the catalog's entry is given SYS4433's write-float outputs.
+        var registry = System.Text.Json.Nodes.JsonNode.Parse(System.IO.File.ReadAllText(Paths.OpcodesJson))!;
+        var entry = registry["opcodes"]!.AsArray().Single(o => (string?)o!["op"] == "0x226")!;
+        foreach (var arg in entry["semantics"]!["args"]!.AsArray())
+            if ((int)arg!["i"]! >= 3) arg["access"] = new System.Text.Json.Nodes.JsonArray("write-float");
+        using var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(registry.ToJsonString()));
+        VirtualMachine vm = ScaleQuery(OpcodeTableJson.Load(stream), (1.5, -0.7, 2.0));
+        Assert.Equal(0, vm.Globals[10]);
+        Assert.Equal((150L, 70L, -200L), (vm.Globals[11], vm.Globals[12], vm.Globals[13]));
+    }
+
+    [Fact]
+    public void Op0x226_MissingObject_SetsFailureAndPreservesOutputs()
+    {
+        var t = OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4415");
+        var scene = ScriptAssembler.Assemble(t, "SCALE_QUERY_MISSING", new List<(int, Operand[])>
+        {
+            (0x55, new[]{G(1), I(0xdead)}), (0x55, new[]{G(11), I(7)}),
+            (0x55, new[]{G(12), I(8)}), (0x55, new[]{G(13), I(9)}),
+            (0x226, new[]{G(10), G(1), G(11), G(12), G(13)}), Exit(),
+        }, System.Array.Empty<string>());
+        var vm = new VirtualMachine(scene, t, new RecordingWaits());
+        vm.Run();
+        Assert.Equal(1, vm.Globals[10]);
+        Assert.Equal((7L, 8L, 9L), (vm.Globals[11], vm.Globals[12], vm.Globals[13]));
+    }
+
+    [Fact]
+    public void TheDecompositionRebuildsAZeroScaleAndKeepsAnUnmirroredOne()
+    {
+        Assert.True(AffineDecomposition.TryScale([[0f, 0f, 0f], [0f, 0f, 0f], [0f, 0f, 0f]], out var zero));
+        Assert.Equal((0f, 0f, 0f), zero);
+        Assert.True(AffineDecomposition.TryScale([[2f, 0f, 0f], [0f, 0.5f, 0f], [0f, 0f, 1f]], out var plain));
+        Assert.Equal((2f, 0.5f, 1f), plain);
+        Assert.True(AffineDecomposition.TryScale([[-1f, 0f, 0f], [0f, -1f, 0f], [0f, 0f, 1f]], out var turned));
+        Assert.Equal((1f, 1f, 1f), turned);   // two mirrors are a rotation
+    }
+
     [Fact]
     public void Op0x228_QueriesCurrentTranslation_NotTargetOrBasePosition()
     {

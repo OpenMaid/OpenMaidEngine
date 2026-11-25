@@ -47,19 +47,27 @@ public static class EngineBuilds
             Saves: new SaveRules(versionStamp: "424J", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
             Shell: new ShellRules(AutoMessagePage: false)));
 
-    /// <summary>AGE 4.15D, 戦女神ZERO's (its version resource; docs/engine-re.md, "Comparing engine builds"). It is
-    /// declared as 4.24J with nothing changed but its names: the game is at P1 (docs/adding-a-game.md), where nothing
-    /// of it runs, and each difference the revision diff lists joins this definition as it is read (the game's item in
-    /// docs/backlog.md).</summary>
+    /// <summary>AGE 4.15D, 戦女神ZERO's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its
+    /// changes are the real rows of the revision diff's triage (docs/engine-re.md, "Himegari against 戦女神ZERO,
+    /// triaged") and its settings ("戦女神ZERO's settings and 設定").</summary>
     public static EngineBuild Age415D { get; } = Age424J with
     {
         Id = "4.15D",
         AbiId = "SYS4415",
         Rules = Age424J.Rules with
         {
-            // The stamp follows the version, as 4.24J's, 4.24N's and 4.33G's do; no 4.15D save has been read. The
-            // record size is 4.24J's, unproven, and the revision diff shows a saved script frame laid out otherwise:
-            // the profile's writes stay off until a native save is read.
+            // engine_settings_save@0x45fbb0 writes 4.24J's keys but these seven, and none of their names is a string
+            // in the image: no virtual fullscreen, no ForceScreen, and no wheel-down advance (adv_input_service_poll
+            // @0x40ae90 has no such branch). A SYS4REG.INI native 4.15D wrote has exactly the rest.
+            Settings = Age424J.Rules.Settings
+                .Without("display", "ForceScreen").Without("display", "VirtualFullScreen")
+                .Without("display", "AspectMode").Without("display", "FullScreenWidth")
+                .Without("display", "FullScreenHeight").Without("display", "LimitAero")
+                .Without("message", "AdvanceMesOnWheel"),
+            // The stamp follows the version, and a numbered save has 4.24J's layout, its 0x2d4-byte graphics records
+            // and its six counts: native 4.15D's saves of SC0000's fourth page read and re-encode byte for byte, and
+            // the port's equal them (docs/sys4-format-notes.md; 2026-11-25). The in-memory frame record is 8 bytes
+            // shorter, but the saved frame is not.
             Saves = new SaveRules(versionStamp: "415D", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
         },
     };

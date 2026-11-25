@@ -337,14 +337,17 @@ the AGERC calls above, which only Verita's used before.
 - **The upstream catalog's labels are 4.15D's addresses.** Of the 207 opcodes whose Kelebek label is an address
   (`u00XXXXXX`), 206 name exactly 4.15D's handler for that opcode; `0xaf`'s `u00415480` is 0x10 short of 4.15D's
   `0x415490`. The catalog `tools/age_opcodes.py` started from was read from an engine of this generation.
-- **Op `0x226`, `query-gfx-scale-current`** (read 2026-11-25), its one opcode without a port handler, used once, at
-  `DEBUGADV2.BIN@0x931`. It is the scale sibling of `0x227` (rotation) and `0x228` (translation), and the same code in
+- **Op `0x226`, `query-gfx-scale-current`** (read 2026-11-25), the one opcode its scripts use that had no port
+  handler, used once, at `DEBUGADV2.BIN@0x931`. It is the scale sibling of `0x227` (rotation) and `0x228` (translation), and the same code in
   4.15D (`0x4217d0`) and 4.24J (`0x42a230`). `gfx_object_query_scale_current` (4.15D `0x46bc90`, 4.24J `0x47cc30`)
   finds the handle in the retained-object map at `gfx+0x408` and decomposes the matrix at the record's `+0x6c` (the
   translation query decomposes `+0x16c`). It returns the scale vector, or traces 「GetLocalMatrixS エラー：
   マトリックスの分割に失敗しました」 for a matrix that does not decompose. The handler writes operand 1 = 1 when the
-  object is absent or the matrix fails. Otherwise it writes the three values, truncated and times 100, to operands 3
-  to 5, and operand 1 = 0. 4.33G and 4.38D write them as floats (`vm-map/opcodes.toml`).
+  object is absent or the matrix fails. Otherwise it writes the three values to operands 3 to 5, and operand 1 = 0.
+  4.15D and 4.24J truncate each value and then multiply the integer by 100 (`FLD`, `_ftol`, `IMUL 0x64`), so a 70%
+  scale reads 0. 4.33G multiplies the float by 100.0 and writes it as a float (`0x42b0e0`). The decomposition
+  (`matrix4_decompose_affine@0x48d7c8`, D3DX's) takes each scale as its row's length and negates the largest when the
+  basis is mirrored. The port has the handler since 2026-11-25 (`vm-map/opcodes.toml`).
 
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
@@ -678,10 +681,10 @@ counts every decoded instruction), so a row's first question was whether the gam
 | Op `0x19d`, inline in 4.15D | op `0x19d` (four sites: `CGMODE`, `HMODE`, `MMODE`, `ED`); the mark `asset_catalog_mark_resource_opened` (`0x44e410`=`0x443460`) | the same in practice for a base id: 4.15D compares the low short of the base catalog's mark table (`ctx+0x9ab74`, the catalog at `ctx+0x9a758` plus `0x41c`) with `id*0x6f99 - 0x4f50`, the low short of the mark both builds write (`id*0x53d6f99 + 0xb0b0b0b0`). It has no branch for an append's selector byte, in the test or the mark, and no `SaveVersion` gate. The galleries take their ids from tables, and whether one is an append's is read when they are driven |
 | A control byte in drawn text | the raster helpers `0x45a2c0`=`0x44f0c0`, `text_raster_string_uncached` (`0x459d90`=`0x44eba0`) and `text_raster_string_cached` (`0x45b600`=`0x4503f0`), the compare with 256; ops `0x6e`, `0x196`, `0x1d1`, `0x204`, `0x205`, and the unused `0x7d`, `0x82`, `0x89`, `0x8a`, `0x221` (`0x45d050`=`0x451e20`) | the same in practice: for a byte below `0x20` or `0x7f`, 4.24J advances as for a space and 4.15D asks the font for its glyph. No string 戦女神ZERO draws holds one: of its strings, only four have one, a tab, and they are operands of `comment`. The compare with 256 itself is dead code in 4.24J, under a test for `< 0x80` |
 | `set:AutoFreeTex` and `set:CreateObject`, only 4.24J reads | op `0x9` (`0x418f50`=`0x423510`), and the save reader `save_data_deserialize_and_begin_restore` (`0x40fd10`=`0x40eea0`) under ops `0xab`, `0x190`, `0x19f`, `0x1a1` | the same in practice: the catalog sets `CREATEOBJECT` 2 and has no `AUTOFREETEX`, so the port's `AutoFreeTex` is 0 and neither release runs |
-| The save format | `shared_profile_save` (`0x40c950`=`0x40fe70`), `shared_profile_payload_write` (`0x430a20`=`0x42b5d0`), `context_state_serialize` (`0x40d320`=`0x410610`), the save reader above, op `0x1ae`'s thumbnail (`0x434bf0`=`0x42f5c0`, `0x475420`=`0x4690c0`, a surface field `+0x1170` only 4.24J reads) | real, for the saves (`adding-a-game.md`, step 7; the profile keeps saves off until then). Known so far: with `SAVEVERSION` 300 both builds write SAVE.DAT's base unlock table and neither its append table (4.24J's needs 3.10). 4.24J writes the table with a two-dword header (`asset_catalog_prepare_base_unlock_save_table@0x404d40`: the private exponent XOR `0x87912345`, then the modulus), and its count 2 higher; 4.15D writes no header. The saved context and frames differ with the context's layout |
+| The save format | `shared_profile_save` (`0x40c950`=`0x40fe70`), `shared_profile_payload_write` (`0x430a20`=`0x42b5d0`), `context_state_serialize` (`0x40d320`=`0x410610`), the save reader above, op `0x1ae`'s thumbnail (`0x434bf0`=`0x42f5c0`, `0x475420`=`0x4690c0`, a surface field `+0x1170` only 4.24J reads) | real, and handled at step 7 (2026-11-25): the port saves as native 4.15D does, and each target loads the other's saves (`sys4-format-notes.md`). A numbered save is 4.24J's layout, version 3.0, its frames and graphics records included: the in-memory frame record is shorter, the saved one is not. The container is compressed, since its major version is 3. SAVE.DAT has no append table (4.24J's needs 3.10). Both builds write the base unlock table with its two-dword header (`0x404d40`=`0x404980`: the private exponent XOR `0x87912345`, then the modulus), but 4.15D passes the slot count as the length of header and table together, so its file drops the last two slots. Its loader (`shared_profile_load@0x410190`) takes the file's length, so it reads the port's file, which keeps them as 4.24J's does. Op `0x1ae`'s thumbnail: the port's `.STH` equals native's |
 | The save folder and the message box | `save_root_resolve` (`0x40b880`=`0x40dde0`, the Windows version check) and `age_show_message_box` (`0x409370`=`0x408870`) | not modelled: the port keeps saves in its profile's folder and shows its own dialogs |
 | Queued surface commands | `gfx_surface_command_lookup` (`0x47dfc0`=`0x46d010`; a command is 16 dwords in 4.24J, 9 in 4.15D) and `retained_gfx_surface_command_composite` (`0x47fbc0`=`0x46e920`, 1,071 lines against 245), under ops `0x20c`, `0x222` and `0x223` | the same in practice: 4.24J's composite adds the patterned kind of op `0x24f`, which 4.15D does not have. The alpha kind of op `0x223`, the only one 4.15D queues, runs the same two passes in both |
-| The crossfade, op `0x25` (1,053 sites) | `screen_transition_begin` (`0x439da0`=`0x4346d0`), `gfx_copy_surface_rect` (`0x477da0`=`0x46a720`, also op `0x207`), `gfx_object_blit_d3d9` (`0x4774c0`=`0x469fa0`) | partly the same in practice, partly to be checked against native at step 6. 4.24J's start splits draw mode 1 into a Direct3D switch whose cases 0 to 3, 7 and 9 serve ops 戦女神ZERO does not use. Its case 4, the crossfade, draws the target and presents it as 4.15D's does, but it leaves a different field: 4.24J stores argument 5 at `+0x2028`, 4.15D sets `+0x1fb0` to 1. 4.24J's copy also reads back a render-target source (`GetRenderTargetData`), which 4.15D locks directly. 4.24J's blit takes its destination as floats and clips it to sub-pixel precision; 4.15D's takes integers |
+| The crossfade, op `0x25` (1,053 sites) | `screen_transition_begin` (`0x439da0`=`0x4346d0`), `gfx_copy_surface_rect` (`0x477da0`=`0x46a720`, also op `0x207`), `gfx_object_blit_d3d9` (`0x4774c0`=`0x469fa0`) | partly the same in practice; at step 6 the opening's crossfades ended in frames the same as native's to the pixel, and a crossfade's middle and an object at a fractional position are the sweep's (P4). 4.24J's start splits draw mode 1 into a Direct3D switch whose cases 0 to 3, 7 and 9 serve ops 戦女神ZERO does not use. Its case 4, the crossfade, draws the target and presents it as 4.15D's does, but it leaves a different field: 4.24J stores argument 5 at `+0x2028`, 4.15D sets `+0x1fb0` to 1. 4.24J's copy also reads back a render-target source (`GetRenderTargetData`), which 4.15D locks directly. 4.24J's blit takes its destination as floats and clips it to sub-pixel precision; 4.15D's takes integers |
 | The software draw mode | `transition_surface_size_software_mode` (`0x433a40`=`0x42e420`) and `0x4354d0`=`0x42fea0` (a bit `0x800` test whose two branches store the same) | not modelled: they serve DirectDraw surfaces, draw mode 0, and the catalog sets `DRAWMODE` 1 |
 | Direct3D, D3DX and their traces | `0x489246`=`0x468f90` (4.24J links D3DX statically, 4.15D imports it), `d3d_device_reset` (`0x471290`=`0x464fd0`), and the `BlendTexture`, `CopyTexture`, `EnlargeTexture`, `BlurTexture` and `GetTextureSurface` error traces of ops `0x20c`, `0x222`, `0x207`, `0x32` to `0x37` | not modelled: the port's renderer replaces them |
 | A movie's container | `movie_to_texture_open_asset_graph` (`0x463e20`=`0x458620`), under ops `0x20f`, `0x236`, `0x241`, `0x240`: 4.24J reads the first 12 bytes and names the media subtype for a RIFF `AVI ` file, 4.15D lets DirectShow find it | not modelled: the port's decoder probes the container |
@@ -692,9 +695,52 @@ counts every decoded instruction), so a row's first question was whether the gam
 (`AGERC.DLL`) and the 52 loose `.BIN` and four `.AGF` files of the install's root are settled as Verita's are
 ("Himegari against Verita, triaged").
 
-**To check at step 6**, against native AGE: op `0x25`'s crossfade, its field and its copy from a render target;
-objects drawn at a fractional position, through the blit; and at step 7, the saves above. The galleries' ids, for op
-`0x19d`, are read when they are driven.
+**Checked against native AGE.** At step 6, the opening's crossfades (op `0x25`) end as native's do. A crossfade's
+middle and objects drawn at a fractional position, through the blit, are compared by the sweep (P4). At step 7, the
+saves above. The galleries' ids, for op `0x19d`, are read when they are driven.
+
+### 戦女神ZERO's settings and 設定 (2026-11-25)
+
+Read in `/bg0/4.15D` and in the game's `AGERC.DLL`. That file is not packed, as Himegari's is not, so the two
+compare resource by resource; Kamidori's and 創刻のアテリアル's are packed.
+
+**The keys.** 4.15D's settings writer (`engine_settings_save@0x45fbb0`) writes 4.24J's `SYS4REG.INI` keys in 4.24J's
+order but seven, and none of the seven names is a string in the image: `display:ForceScreen`, `VirtualFullScreen`,
+`AspectMode`, `FullScreenWidth`, `FullScreenHeight` and `LimitAero`, and `message:AdvanceMesOnWheel`. Its defaults
+(`engine_settings_register_defaults@0x460210`) are 4.24J's. So the build has no virtual full screen and no
+ForceScreen, and its ADV poll (`adv_input_service_poll@0x40ae90`) has no branch that advances a page on a wheel turn
+down. The window procedure's wheel case (`age_main_window_proc@0x473030`) is 4.24J's.
+
+**The resources**, against Himegari's:
+
+- Menus 110 and 124 have the same bytes, so the bar is Himegari's ("Native menu bar — AGERC menu 110").
+- Dialogs 2 to 6, 8, 9, 101, 102, 104, 105 and 134 have the same bytes.
+- Page 100, ﾒｯｾｰｼﾞ, has no ﾏｳｽﾎｲｰﾙでﾒｯｾｰｼﾞを進める check (`0x3e9`), and its 文字の縁をなめらかにする check (`0x3e8`) is
+  wider.
+- Page 103, the start-up dialog's 起動時設定 ("The start-up settings dialog" below), adds a テクスチャ combo `0x422`
+  under 描画間隔. The one texture key either build binds is `display:TextureBit`; the page's procedure was not read.
+  The port opens no start-up dialog.
+- Dialog 10, op `0x144`'s editor (host command 10; "INPUTNAME native editor" below), is コメントの入力: its prompt
+  reads コメントを入力してください。(最大全角30文字), where Himegari's asks for a name of at most eight full-width
+  characters, and its edit is wider. No script of 戦女神ZERO uses op `0x144` (`build/games/bg0/intake.json`), so
+  nothing opens it; its procedure was not read.
+
+**The port.** The build's `SettingsRules` (`EngineBuilds.Age415D`) bind 4.24J's keys less the seven. A key the build
+does not bind has no effect, whatever the file holds (`SettingsRules.Binds`):
+
+- The file is written in the build's order with its keys, so a file the port writes for 戦女神ZERO has native's lines
+  (`ProfileStartupRecoveryTests.Sys415BindsSevenFewerKeys` holds it to a native file byte for byte). The launcher
+  writes it with the same keys (`ProfileSettings.RulesFor`).
+- A wheel turn down advances no page where the build binds no `AdvanceMesOnWheel`, and no ForceScreen keeps the window
+  where the build binds no `ForceScreen`.
+- The options panel shows an option only where the build binds its key, so 戦女神ZERO's ﾒｯｾｰｼﾞ section has no wheel
+  check, and 決定 writes no such key.
+- The driver finds 4.15D's ﾒｯｾｰｼﾞ page by its trackbar `0x415`, since it has no wheel check (`settings_pages` in
+  `tools/drive_native.py`).
+
+`bg0-options.steps` lists the options and sets three on both targets. The lists agree, with no wheel-advance, and the
+`SYS4REG.INI` each target wrote at its exit is the same file byte for byte (2026-11-25). The bar and the in-game 設定
+are 4.24J's less the one check, so the build needs no `ShellRules` entry.
 
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 

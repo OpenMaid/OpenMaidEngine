@@ -1494,6 +1494,9 @@ offsets.
 `arterial-auto-options.steps` sets the five controls of its 設定's ｵｰﾄﾒｯｾｰｼﾞ page and one on the ﾒｯｾｰｼﾞ page with
 `option` on SC0000's first page. Both targets list the same `options` before and after and leave identical
 `SYS4REG.INI` files (2026-11-19).
+`bg0-save-load.steps` is the save round trip for 戦女神ZERO, through the right-click menu, and `bg0-options.steps` sets
+three options of its 設定, which has no wheel check. Both pass on both targets, and the second leaves identical
+`SYS4REG.INI` files (2026-11-25).
 `arterial-new-scene.steps` plays the scene of `oms/examples/mods/example.arterial-new-scene` from the debug menu's
 map, with a quick save and load inside it, and returns to the map. Both targets reach the same offsets, and the
 scene's frames equal native's (2026-11-20). The two mods are exported for native AGE into one scratch copy, as its

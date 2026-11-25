@@ -42,6 +42,22 @@ public sealed record SettingsRules
         new("system", "OutErrorLog", "0"),
     ]);
 
+    /// <summary>Whether these keys bind <paramref name="section"/>:<paramref name="key"/>: a key a build does not bind is
+    /// no setting of that build, whatever a file holds.</summary>
+    public bool Binds(string section, string key)
+        => BoundKeys.Any(bound => string.Equals(bound.Section, section, StringComparison.OrdinalIgnoreCase)
+                                  && string.Equals(bound.Key, key, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>These keys without <paramref name="section"/>:<paramref name="key"/>, for a build whose loader does not
+    /// bind it.</summary>
+    public SettingsRules Without(string section, string key)
+    {
+        if (!Binds(section, key)) throw new ArgumentException($"{section}:{key} is not bound", nameof(key));
+        return new SettingsRules(BoundKeys.Where(bound => !(string.Equals(bound.Section, section, StringComparison.OrdinalIgnoreCase)
+                                                            && string.Equals(bound.Key, key, StringComparison.OrdinalIgnoreCase)))
+                                          .ToList());
+    }
+
     /// <summary>These keys with <paramref name="added"/> bound right after the key named <paramref name="after"/>.</summary>
     public SettingsRules BindingAfter(string after, Sys4RegIniKey added)
     {
