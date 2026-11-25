@@ -61,12 +61,14 @@ public static class EngineBuilds
             // bgm_fade_arm@0x465220 clears the retained track for a target of zero, as 4.33G's does; its bgm_play_track
             // compares the track alone, as 4.24J's does.
             Audio = Age424J.Rules.Audio with { ZeroFadeClearsTrack = true },
+            // Start-up (0x47c880) guards slot 38 from the release worker as well as 36 and 37, as 4.33G's does.
+            Gfx = Age424J.Rules.Gfx with { GuardsFrameSurface = true },
             // The SYS4REG.INI loader 0x46c1a0 binds display:VirtualFullScreenType after LimitAero, registered as 0;
             // it binds no AntiFontLevel.
             Settings = Age424J.Rules.Settings
                 .BindingAfter("LimitAero", new Sys4RegIniKey("display", "VirtualFullScreenType", "0")),
-            // The stamp follows the version, as 4.24J's and 4.33G's do; no 4.24N save has been read. The record size
-            // is 4.24J's, unproven: the profile's writes stay off until a native save is read.
+            // The stamp follows the version, as 4.24J's and 4.33G's do, and the record size is 4.24J's: both read
+            // from a native save on 2026-11-25 (sys4-format-notes.md, "Observed profile identities").
             Saves = new SaveRules(versionStamp: "424N", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
         },
     };
@@ -98,7 +100,7 @@ public static class EngineBuilds
                 PublisherMovesAliasedEffectGlyphs = true,
             },
             // Worker 0x486120 tests the record's bound bit before it returns the slot.
-            Gfx = Age424J.Rules.Gfx with { UnboundObjectReadsAbsent = true },
+            Gfx = Age424J.Rules.Gfx with { UnboundObjectReadsAbsent = true, GuardsFrameSurface = true },
             // bgm_play_track@0x469e90 returns early only for the retained track with the retained start mode, and
             // bgm_fade_arm@0x469f80 clears the retained track for a target of zero.
             Audio = Age424J.Rules.Audio with { PlayComparesStartMode = true, ZeroFadeClearsTrack = true },

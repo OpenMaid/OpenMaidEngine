@@ -24,6 +24,11 @@ public interface IScriptProvider
     /// names (Lua scripting spec §10). The engine's own lookups use <see cref="GetByName"/>.</summary>
     Script? GetByMountedName(string name) => GetByName(name);
 
+    /// <summary>The name of the catalog record a packed id selects, as asset_catalog_get_entry_name gives it (op 0x14b
+    /// loads the DLL its entry names); null when the id selects none or the provider has no catalog. Native names an id
+    /// that selects no record ERROR.</summary>
+    string? EntryName(long id) => null;
+
     /// <summary>Selectors of currently mounted append catalogs. Opcode 0x143 scans these in
     /// ascending order and executes record zero from each catalog.</summary>
     IReadOnlyList<int> MountedAppendSelectors => Array.Empty<int>();

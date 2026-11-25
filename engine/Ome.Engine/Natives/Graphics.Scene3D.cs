@@ -147,10 +147,21 @@ public sealed partial class Graphics
     /// <summary>
     /// The pixel shader level native keeps at manager +0xb62c (gfx_create_device_objects@0x4907f0, at device creation):
     /// display:PixelShader when it is 0, 1 or 2, otherwise what the device offers (2 for pixel shader 2.0 or above, 1
-    /// for 1.x, 0 below). The port's renderers take the device as 2. Op 0x326 is the only reader here: native builds the
-    /// snow only above 0.
+    /// for 1.x, 0 below). The port's renderers take the device as 2. Op 0x326 reads it (native builds the snow only above
+    /// 0), and so does start-up: the composite surfaces 36 and 37 are render targets of kind 1 at level 2 and of kind 2
+    /// below it (<see cref="CreateCompositeSurfaces"/>).
     /// </summary>
-    public int PixelShaderLevel { get; init; } = 2;
+    public int PixelShaderLevel
+    {
+        get => _pixelShaderLevel;
+        init
+        {
+            _pixelShaderLevel = value;
+            CreateCompositeSurfaces();
+        }
+    }
+
+    private int _pixelShaderLevel = 2;
 
     /// <summary>The level a display:PixelShader setting gives the port.</summary>
     public static int PixelShaderLevelFor(int setting) => setting is >= 0 and <= 2 ? setting : 2;

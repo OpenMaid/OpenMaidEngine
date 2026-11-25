@@ -359,7 +359,11 @@ public class ShellModelTests
     public void NoRuntimeSourceNamesAgercDll()
     {
         // Spec §9: the port opens no AGERC.DLL. Every string literal of the runtime projects, the Godot frontend and
-        // the native shim is checked; comments may still cite AGERC's functions.
+        // the native shim is checked for the file's name; comments may still cite AGERC's functions, and the opcodes
+        // named after it (load-agerc-module) are not the file. The one literal allowed is the module name op 0x14b's
+        // catalog entry gives, which the port compares with the name and never opens (ShellServices.AgercModuleName).
+        const string moduleNameSource = "engine/Ome.Engine/Natives/ShellServices.Agerc.cs";
+        int moduleNames = 0;
         var literal = new Regex(@"@""(?:[^""]|"""")*""|""(?:[^""\\\n]|\\.)*""");
         string[] roots =
         [
@@ -378,11 +382,15 @@ public class ShellModelTests
                 continue;
             files++;
             foreach (Match match in literal.Matches(File.ReadAllText(file)))
-                if (match.Value.Contains("agerc", StringComparison.OrdinalIgnoreCase))
-                    offenders.Add($"{relative}: {match.Value}");
+            {
+                if (!match.Value.Contains("agerc.dll", StringComparison.OrdinalIgnoreCase)) continue;
+                if (relative == moduleNameSource && match.Value == "\"AGERC.DLL\"") moduleNames++;
+                else offenders.Add($"{relative}: {match.Value}");
+            }
         }
         Assert.True(files > 100, $"only {files} runtime sources were found");
         Assert.Empty(offenders);
+        Assert.Equal(1, moduleNames);
     }
 
     [Fact]

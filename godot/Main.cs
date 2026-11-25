@@ -674,7 +674,9 @@ public partial class Main : Godot.Control
         {
             TraceOps = _gfxLogPath != null,
             SpriteAlphaTest = engineBuild.Rules.Gfx.SpriteAlphaTest,
+            GuardsFrameSurface = engineBuild.Rules.Gfx.GuardsFrameSurface,
             PixelShaderLevel = Graphics.PixelShaderLevelFor(SettingsStore?.LoadInt("display", "PixelShader", -1) ?? -1),
+            TextureBits = SettingsStore?.LoadInt("display", "TextureBit", 32) ?? 32,
         };
         _movies = new Movies(_graphics, new ResourceMovieAssets(resources), new FfmpegMovieDecoderFactory(),
                              new GodotAudioStreamDevice(this, _audioOutputLatencySeconds),

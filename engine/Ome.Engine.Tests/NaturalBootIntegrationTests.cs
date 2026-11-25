@@ -1,6 +1,7 @@
 using Ome.Engine.Diagnostics;
 using Ome.Engine.Hosting;
 using Ome.Engine.Model;
+using Ome.Engine.Natives;
 using Ome.Engine.Profiles;
 using Ome.Engine.Sys4;
 using Ome.Engine.Vm;
@@ -19,6 +20,7 @@ public class NaturalBootIntegrationTests
         public int AudioRequestCount { get; } = audioRequestCount;
     }
     private sealed class ReachedChmenuRosterException : Exception { }
+    private sealed class ReachedTitleWaitException : Exception { }
 
     private sealed record NaturalBootResult(
         OpcodeTable Table, Sys4ScriptProvider Scripts, VirtualMachine Vm,
@@ -97,6 +99,8 @@ public class NaturalBootIntegrationTests
         private int _kamidoriAdvLineBaseline;
         private int _kamidoriAdvAudioBaseline;
         private int _gameStartPollSleeps;
+        /// <summary>Stop the run at the next sleep of a frame or less, as TITLE's menu loop polls.</summary>
+        public bool StopAtNextPollSleep;
         public override long InputClockMilliseconds => _now;
 
         public NewGameInputHost(int titlePointerX = 400, int titlePointerY = 300)
@@ -137,6 +141,7 @@ public class NaturalBootIntegrationTests
 
         public override void Sleep(long duration)
         {
+            if (StopAtNextPollSleep && duration <= 1) throw new ReachedTitleWaitException();
             base.Sleep(duration);
             _now += Math.Max(1, duration);
             if (duration > 1) return;
@@ -325,6 +330,45 @@ public class NaturalBootIntegrationTests
         Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
         Assert.EndsWith("フレスラント王国の国土の大半を占める広大なマータ砂漠。", reachedAdv.Text);
         Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
+    /// <summary>Op 0x24a's counters (Graphics.TextureMemory) at 戦女神VERITA's title, where its menu loop first polls
+    /// (TITLE@0xd7), are native's surfaces' there. Native AGE's surface slots held two 1024 x 576 render targets and
+    /// 18,398,624 bytes of other textures at TITLE@0xd7 (read with Frida, 2026-11-25); its counters held 1,753,088 bytes
+    /// more, the display background's texture, which the port leaves out (docs/engine-re.md, "Texture memory
+    /// counters").</summary>
+    [Fact]
+    [Trait("Profile", "verita")]
+    public void VeritasTitleHoldsTheTexturesNativeCountsForOp0x24a()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("verita");
+        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        Assert.True(File.Exists(sys4Ini), $"verita install not found at {gameRoot}");
+        GameProfileManifest profile = GameProfileRegistry.BuiltIn.Find("verita")!;
+        OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, profile.EngineAbiId);
+        Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
+        var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
+        var scripts = new Sys4ScriptProvider(table, catalog, store);
+        var graphics = new Graphics(new ResourceMap(catalog, store), new FrameClock(), catalog.LogicalCanvas);
+        var rig = new AudioRig();
+        var host = new NewGameInputHost(183, 338) { AudioDevice = rig.Device, Clock = rig.Clock };
+        var sink = new KamidoriNaturalBootSink
+        {
+            OnEnter = name => host.StopAtNextPollSleep |= name.Equals("TITLE.BIN", StringComparison.OrdinalIgnoreCase),
+        };
+        var vm = new VirtualMachine(
+            scripts.RequireByName(profile.NaturalBootScript), table, host,
+            new VmOptions(MaxSteps: 5_000_000), scripts, sink,
+            build: EngineBuilds.ForProfile(profile), skipAndAuto: rig.Skip, audio: rig.Audio, tick: rig.Tick,
+            graphics: graphics);
+        host.Vm = vm;
+
+        Exception? exception = Record.Exception(() => vm.Run());
+
+        Assert.True(exception is ReachedTitleWaitException,
+            $"exception={exception?.GetType().Name ?? "none"}; halt={vm.HaltReason}; entered={string.Join(",", sink.Entered)}");
+        Assert.Null(vm.CompatibilityFailure);
+        Assert.Equal((4_718_592, 18_398_624), graphics.TextureMemory());
     }
 
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against

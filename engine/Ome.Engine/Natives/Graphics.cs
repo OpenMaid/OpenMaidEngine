@@ -51,6 +51,7 @@ public sealed partial class Graphics
         _screenWidth = canvas.Width;
         _screenHeight = canvas.Height;
         if (_screenWidth > 0 && _screenHeight > 0) _slotDims[0] = (_screenWidth, _screenHeight);
+        CreateCompositeSurfaces();
     }
 
     /// <summary>A native with no catalog and no screen, for a VM run without a front end: a created surface has its

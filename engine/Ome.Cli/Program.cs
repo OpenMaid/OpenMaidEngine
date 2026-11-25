@@ -524,7 +524,12 @@ if (command == "gfx")
         catalog, assetStore, Console.Error.WriteLine, assetOptions.AllowBmpAsAgf);
     var waits = new GfxTraceWaits();
     var traced = new List<string>();
-    var graphics = new Graphics(res, new FrameClock(), catalog.LogicalCanvas) { OpTrace = traced.Add };
+    var graphics = new Graphics(res, new FrameClock(), catalog.LogicalCanvas)
+    {
+        OpTrace = traced.Add,
+        SpriteAlphaTest = engineBuild.Rules.Gfx.SpriteAlphaTest,
+        GuardsFrameSurface = engineBuild.Rules.Gfx.GuardsFrameSurface,
+    };
     var session = new GameSession();
     foreach (var s in args.Where(a => a.Contains('=')))
     {

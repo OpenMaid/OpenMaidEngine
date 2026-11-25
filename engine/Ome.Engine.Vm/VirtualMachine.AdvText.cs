@@ -163,9 +163,10 @@ public sealed partial class VirtualMachine
         if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
         _text.History.DefineLayout((int)Read(a[0]), (int)Read(a[1]), (int)Read(a[2]),
                                    (int)Read(a[3]), (int)Read(a[4]));
-        // adv_text_layout_define@0x4550e0 (DrawMode 1) creates the layout's blank surface at
-        // slot layout+0x14; the text native allocates its pixels when text is drawn.
-        Gfx.RecordBlankSurfaceCreated(_text.History.GetLayoutSnapshot((int)Read(a[0])).Slot + 0x14);
+        // adv_text_layout_define@0x4550e0 (DrawMode 1) creates the layout's blank surface at slot layout+0x14, at the
+        // layout's size, again on each define; the text native draws into it.
+        AdvTextLayoutSnapshot layout = _text.History.GetLayoutSnapshot((int)Read(a[0]));
+        _graphics.CreateSurface(layout.Slot + 0x14, layout.Width, layout.Height);
         return StepResult.Next;
     }
 
@@ -279,6 +280,36 @@ public sealed partial class VirtualMachine
         int surface = (int)Read(a[0]), x = (int)Read(a[1]), y = (int)Read(a[2]);
         string text = ReadStr(a[3]);
         _text.DrawStringToSurface(surface, x, y, text, _text.Style, Present(text, ins, a[3]));
+        return StepResult.Next;
+    }
+
+    // 0x89 (surface slot, x, y, string): the string drawn as the ADV glyph builders draw (text_draw_string_adv_route,
+    // 4.24J 0x44fd70, 4.24N 0x450840). With AntiFont on it is op 0x204's draw; with it off, text_draw_string_primary_or_ruby
+    // starts a string of render mode 1 to 3 at the effect offsets. It has no surface test of its own: its rasterizers
+    // size the slot first, so an empty slot draws nothing and one outside 0..999 draws nothing with op 0x208's trace. Its
+    // redirect of surface 0 to 30 needs flags of the draw-mode-0 backend that DrawMode 1 leaves 0, so the port has none
+    // (docs/engine-re.md, "Op 0x89, a string drawn as the ADV text is").
+    private StepResult OpDrawAdvString(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        long slot = Read(a[0]);
+        string text = ReadStr(a[3]);
+        if (text.Length == 0) return StepResult.Next;
+        if (TextureSizeRefuses(slot))
+        {
+            _waits.ReportWarning($"{At(ins)}: surface slot {slot} is outside 0..999; nothing is drawn, as AGE draws "
+                                 + $"nothing with the trace 「{TextureSizeTrace(slot)}」");
+            return StepResult.Next;
+        }
+        if (!_graphics.TryGetSurfaceSize((int)slot, out var size) || size.W <= 0 || size.H <= 0) return StepResult.Next;
+        int x = (int)Read(a[1]), y = (int)Read(a[2]);
+        AdvTextStyle style = _text.Style;
+        if (!_text.TextAntialias && style.RenderMode != 0)
+        {
+            x = unchecked(x + style.EffectOffsetX);
+            y = unchecked(y + style.EffectOffsetY);
+        }
+        _text.DrawStringToSurface((int)slot, x, y, text, style, Present(text, ins, a[3]));
         return StepResult.Next;
     }
 

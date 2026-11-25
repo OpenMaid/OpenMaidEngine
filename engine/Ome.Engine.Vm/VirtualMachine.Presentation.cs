@@ -6,16 +6,15 @@ namespace Ome.Engine.Vm;
 
 public sealed partial class VirtualMachine
 {
-    // Under DRAWMODE=1 (both games), screen_transition_begin@0x439da0 creates scratch surface 0x20 for the black and
-    // white fades (modes 0-3) and for modes 5-7 and 9, which sets that record's created flag. The crossfade (mode 4)
-    // and the strip reveals 0x27/0x28 composite their surfaces directly. screen_transition_finalize@0x4399c0, the
-    // fast-forward path, fills 0x20 only for a negative surface, the black or white endpoint (docs/engine-re.md,
-    // "Legacy transitions and scratch surface 0x20").
-    private void MarkLegacyTransitionScratchWritten() => Gfx.MarkSurfaceContentWritten(0x20);
-
-    private void MarkScratchIfFinalizeFills(long surface)
+    // Under DRAWMODE=1 (every game), screen_transition_begin@0x439da0 creates scratch surface 0x20 for the black and
+    // white fades (modes 0-3), whose tick releases it as the fade ends, and for modes 5-7 and 9, which keep it; the
+    // create sets that record's created flag. The crossfade (mode 4) and the strip reveals 0x27/0x28 composite their
+    // surfaces directly. screen_transition_finalize@0x4399c0, the fast-forward path, creates and fills 0x20 only for a
+    // negative surface, the black or white endpoint, and keeps it (docs/engine-re.md, "Legacy transitions and scratch
+    // surface 0x20").
+    private void FinishOnColourIfNegative(long surface)
     {
-        if (surface < 0) MarkLegacyTransitionScratchWritten();
+        if (surface < 0) _graphics.FinishTransitionOnColour(0);
     }
 
     // 0x223: target surface crossfade over two object ranges
@@ -23,7 +22,7 @@ public sealed partial class VirtualMachine
     {
         var a = ins.Args;
         if (SurfaceSlotRefused(ins, Read(a[1])) is { } refused) return refused;
-        Gfx.RecordTransitionTargetCreated((int)Read(a[1]));   // gfx_queue_surface_alpha_transition
+        _graphics.PrepareTransitionTarget((int)Read(a[1]));   // gfx_queue_surface_alpha_transition
         Gfx.QueueSurfaceAlphaTransition(Read(a[0]), (int)Read(a[1]), Read(a[2]), (int)Read(a[3]),
             Read(a[4]), (int)Read(a[5]), Read(a[6]), Read(a[7])); return StepResult.Next;
     }
@@ -33,7 +32,7 @@ public sealed partial class VirtualMachine
     {
         var a = ins.Args;
         if (SurfaceSlotRefused(ins, Read(a[1])) is { } refused) return refused;
-        Gfx.RecordTransitionTargetCreated((int)Read(a[1]));   // gfx_queue_patterned_surface_transition
+        _graphics.PrepareTransitionTarget((int)Read(a[1]));   // gfx_queue_patterned_surface_transition
         Gfx.QueuePatternedSurfaceTransition(
             Read(a[0]), (int)Read(a[1]), Read(a[2]), (int)Read(a[3]),
             Read(a[4]), (int)Read(a[5]), (int)Read(a[6]), (int)Read(a[7]),
@@ -73,9 +72,10 @@ public sealed partial class VirtualMachine
         // Under fast-forward the handler finishes on the surface, where a negative slot is the black endpoint.
         if ((AdvFastForwardActive ? FinishedTransitionSurfaceRefused(ins, Read(a[0]))
                                   : TransitionSurfaceSlotRefused(ins, Read(a[0]))) is { } refused) return refused;
-        // Begin (mode 0) fills 0x20 with black; under fast-forward the handler finalizes on the surface instead.
-        if (AdvFastForwardActive) MarkScratchIfFinalizeFills(Read(a[0]));
-        else MarkLegacyTransitionScratchWritten();
+        // Begin (mode 0) fills 0x20 with black and the fade's end releases it; under fast-forward the handler
+        // finalizes on the surface instead.
+        if (AdvFastForwardActive) FinishOnColourIfNegative(Read(a[0]));
+        else _graphics.UseFadeScratch((int)Read(a[0]));
         DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceWithBlack(
             Gfx, (int)Read(a[0]), Read(a[1]), SurfaceBlackFadeDirection.FromBlack,
@@ -89,7 +89,9 @@ public sealed partial class VirtualMachine
         var a = ins.Args;
         // Under fast-forward the handler finishes on black (finalize(-1)) and never reads the slot.
         if (!AdvFastForwardActive && TransitionSurfaceSlotRefused(ins, Read(a[0])) is { } refused) return refused;
-        MarkLegacyTransitionScratchWritten();   // begin (mode 1) or, under fast-forward, finalize(-1) fills 0x20
+        // Begin (mode 1) fills 0x20 and the fade's end releases it; under fast-forward finalize(-1, 0) fills it black.
+        if (AdvFastForwardActive) _graphics.FinishTransitionOnColour(0);
+        else _graphics.UseFadeScratch((int)Read(a[0]));
         DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceWithBlack(
             Gfx, (int)Read(a[0]), Read(a[1]), SurfaceBlackFadeDirection.ToBlack,
@@ -103,7 +105,10 @@ public sealed partial class VirtualMachine
         var a = ins.Args;
         // Under fast-forward the handler finishes on white (finalize(-1)) and never reads the slot.
         if (!AdvFastForwardActive && TransitionSurfaceSlotRefused(ins, Read(a[0])) is { } refused) return refused;
-        MarkLegacyTransitionScratchWritten();   // begin (mode 3) or, under fast-forward, finalize(-1) fills 0x20
+        // Begin (mode 3) fills 0x20 and the fade's end releases it; under fast-forward finalize(-1, 0xffffff) fills it
+        // white.
+        if (AdvFastForwardActive) _graphics.FinishTransitionOnColour(0xffffff);
+        else _graphics.UseFadeScratch((int)Read(a[0]));
         DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.FadeSurfaceToWhite(
             Gfx, (int)Read(a[0]), Read(a[1]),
@@ -125,7 +130,7 @@ public sealed partial class VirtualMachine
                  is { } refused)
             return refused;
         // Mode 4 never touches 0x20; under fast-forward the handler finalizes on the target.
-        if (AdvFastForwardActive) MarkScratchIfFinalizeFills(Read(a[1]));
+        if (AdvFastForwardActive) FinishOnColourIfNegative(Read(a[1]));
         DiscardHeldTriggersUnlessFastForward();   // input_flush_action_triggers as the fade starts
         _waits.CrossfadeSurfaces(
             Gfx, (int)Read(a[0]), (int)Read(a[1]), Read(a[2]),
@@ -175,7 +180,7 @@ public sealed partial class VirtualMachine
         // pattern_surface_transition_begin/_tick draw the surface itself; with no divisions or under fast-forward,
         // the handler finalizes on the surface.
         bool finishesAtOnce = AdvFastForwardActive || Read(a[2]) <= 0;
-        if (finishesAtOnce) MarkScratchIfFinalizeFills(Read(a[0]));
+        if (finishesAtOnce) FinishOnColourIfNegative(Read(a[0]));
         _waits.RevealSurfaceWithPattern(
             Gfx,
             new SurfacePatternTransitionRequest(
@@ -203,16 +208,16 @@ public sealed partial class VirtualMachine
         {
             // The handler finishes on the target alone, where a negative slot is the black endpoint.
             if (FinishedTransitionSurfaceRefused(ins, Read(a[1])) is { } finishRefused) return finishRefused;
-            MarkScratchIfFinalizeFills(Read(a[1]));
+            FinishOnColourIfNegative(Read(a[1]));
         }
         else
         {
-            // Begin copies both surfaces (to 0x24 and 0x25) through gfx_copy_surface_rect, which tests neither slot,
-            // and creates 0x20 blank.
+            // Begin copies both surfaces (to 0x24 and 0x25, which its end creates again as start-up did) through
+            // gfx_copy_surface_rect, which tests neither slot, and creates 0x20 blank, which stays.
             if ((TransitionSurfaceSlotRefused(ins, Read(a[0])) ?? TransitionSurfaceSlotRefused(ins, Read(a[1])))
                 is { } refused)
                 return refused;
-            MarkLegacyTransitionScratchWritten();
+            _graphics.BeginMosaicScratch((int)Read(a[0]));
         }
         DiscardHeldTriggersUnlessFastForward();   // the handler polls the triggered actions and clears them
         _waits.MosaicSurfaces(Gfx, (int)Read(a[0]), (int)Read(a[1]), Read(a[2]), AdvFastForwardActive);

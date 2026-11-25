@@ -67,16 +67,8 @@ public sealed partial class GfxState
         WriteSurfaceRecord(slot, RecordCreated, 1);
     }
 
-    /// <summary>Record a gfx_surface_create_blank whose pixels the host owns (op 0x70's layout surface, a
-    /// missing 0x223/0x24f target): resource id -1, created flag 1.</summary>
-    public void RecordBlankSurfaceCreated(int slot)
-    {
-        WriteSurfaceRecord(slot, RecordResourceId, -1);
-        WriteSurfaceRecord(slot, RecordCreated, 1);
-    }
-
-    /// <summary>The 0x223/0x24f producers create their target surface only when the slot is empty (or
-    /// sized differently, which this model cannot see).</summary>
+    /// <summary>An op 0x223/0x24f target on a native with no screen (Graphics.PrepareTransitionTarget): an empty slot's
+    /// record is written as gfx_surface_create_blank writes it, resource id -1 and created flag 1.</summary>
     public void RecordTransitionTargetCreated(int slot)
     {
         if (_surfaces.ContainsKey(slot)) return;
@@ -167,12 +159,14 @@ public sealed partial class GfxState
         CurrentRenderTargetSlot = slot is >= 0 and < 1000 ? (int)slot : -1;
     }
 
-    /// <summary>Op 0x23d: release the transient surface range while retaining system-owned low slots.</summary>
-    public void ReleaseSurfaceRange(int firstSlot, int count)
+    /// <summary>The release worker over a range: op 0x23d's transient slots, or all 1,000 for AutoFreeTex. It passes over
+    /// a slot <paramref name="guarded"/> names (the graphics native's release guards).</summary>
+    public void ReleaseSurfaceRange(int firstSlot, int count, Func<int, bool>? guarded = null)
     {
         int end = checked(firstSlot + count);
         for (int slot = firstSlot; slot < end; slot++)
         {
+            if (guarded?.Invoke(slot) == true) continue;   // the worker leaves a guarded slot's record and surface
             WriteSurfaceRecord(slot, RecordResourceId, -1);   // retained_gfx_release_surface
             _surfaces.Remove(slot);
             _createdSurfaces.Remove(slot);
@@ -180,7 +174,8 @@ public sealed partial class GfxState
             _scene.SurfaceTransitions.Remove(slot);
             _scene.MovieMaskTransitions.Remove(slot);
         }
-        if (CurrentRenderTargetSlot >= firstSlot && CurrentRenderTargetSlot < end)
+        if (CurrentRenderTargetSlot >= firstSlot && CurrentRenderTargetSlot < end
+            && guarded?.Invoke(CurrentRenderTargetSlot) != true)
             CurrentRenderTargetSlot = -1;
         MarkRetainedMutation();
     }

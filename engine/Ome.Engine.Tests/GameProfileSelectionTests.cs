@@ -100,8 +100,9 @@ public sealed class GameProfileSelectionTests
         Assert.Equal("SYS4438", Ome.Engine.Vm.EngineBuilds.ForProfile(arterial).AbiId);
     }
 
-    /// <summary>戦女神VERITA is at P2 (docs/adding-a-game.md): its own boot reaches the title, a new game and the first
-    /// ADV page, and nothing of it saves. Its build is declared from 4.24J.</summary>
+    /// <summary>戦女神VERITA is at P3 (docs/adding-a-game.md): every opcode has a handler, its build is declared from
+    /// 4.24J, and its saves load on native AGE and the port alike (tools/drive/scenarios/verita-save-load.steps).
+    /// </summary>
     [Fact]
     public void VeritaIsBeingAddedFromHimegarisBuild()
     {
@@ -111,11 +112,10 @@ public sealed class GameProfileSelectionTests
                      (verita.SysFrontendId, verita.EngineBuildId, verita.EngineAbiId, verita.NaturalBootScript));
         Assert.Equal(["SYS4424"], verita.ScriptRevisions);
         Assert.True(verita.Matches(new GameCatalogIdentity("S4IC424", "戦女神VERITA")));
-        Assert.Equal(("P2", "none"), (verita.Support.PlayId, verita.Support.ModdingId));
-        Assert.False(verita.Support.IsPlayable);
-        // No native save of 4.24N has been read: its saves stay off.
-        Assert.False(verita.PersistenceWritesEnabled);
-        Assert.NotNull(verita.Persistence.ReadOnlyReason);
+        Assert.Equal(("P3", "none"), (verita.Support.PlayId, verita.Support.ModdingId));
+        Assert.True(verita.Support.IsPlayable);
+        Assert.True(verita.PersistenceWritesEnabled);
+        Assert.Null(verita.Persistence.ReadOnlyReason);
         Assert.Equal(310, verita.Persistence.ExpectedPackedSaveVersion);
         Assert.Equal([2525977, 1, 438, 1, 1, 1], verita.Persistence.BankDimensions.ToArray());
         Assert.Null(verita.DirectSceneDiagnostics);

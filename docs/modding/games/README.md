@@ -18,7 +18,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
-| Ikusa Megami VERITA | `verita` | `SYS4424` | P2 (boots) | none | none yet |
+| Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | none | none yet |
 
 ## Soukoku no Arterial
 
@@ -86,13 +86,13 @@ below P3 is still being added and is not playable. The levels' gates are in
 |---|---|
 | Game id | `verita` (`--game verita`) |
 | Title | Ikusa Megami VERITA (戦女神VERITA) |
-| Support | play P2 (boots); modding none |
+| Support | play P3 (complete); modding none |
 | Engine build | AGE `4.24N` |
 | Engine ABI | `SYS4424` |
 | Catalog revision | `S4IC424` |
 | Boot script | `SYSTEM4.BIN` |
 | Install | anywhere: a profile made in the launcher names it; from source, `games/verita/` beside the repository by default |
-| Port saves | disabled (read-only game) |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/verita/` of the engine's data folder) |
 | OMS modules | `verita.scripts` (generated; no `verita.globals`, the game has no registry yet) |
 | Speakers | no dialogue prelude yet |
 | Tables | none yet |

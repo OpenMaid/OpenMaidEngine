@@ -1,4 +1,4 @@
-namespace Ome.Engine.Vm;
+namespace Ome.Engine.Model;
 
 /// <summary>
 /// Float arithmetic as native AGE's x87 does it: the exact result of two exact operands, rounded once to a float.

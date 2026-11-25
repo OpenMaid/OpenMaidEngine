@@ -130,14 +130,15 @@ public sealed class EngineBuildTests
     }
 
     /// <summary>4.24N's changes are the real rows of its triage (docs/engine-re.md, "Himegari against Verita,
-    /// triaged"): its furigana arm the glyph timer, a fade to zero clears the retained track when it is armed, and its
+    /// triaged"): its furigana arm the glyph timer, a fade to zero clears the retained track when it is armed, its
+    /// start-up guards slot 38 from the release worker too (docs/engine-re.md, "Engine-owned surfaces"), and its
     /// settings loader binds one more key.</summary>
     [Fact]
     public void FourTwentyFourNIsFourTwentyFourJPlusItsChanges()
     {
         EngineRules parent = EngineBuilds.Age424J.Rules, child = EngineBuilds.Age424N.Rules;
         Assert.Equal(parent.Text with { FuriganaArmsGlyphTimer = true }, child.Text);
-        Assert.Equal(parent.Gfx, child.Gfx);
+        Assert.Equal(parent.Gfx with { GuardsFrameSurface = true }, child.Gfx);
         Assert.Equal(parent.Audio with { ZeroFadeClearsTrack = true }, child.Audio);
         Assert.Equal(parent.Shell, child.Shell);
         Assert.Equal("424N", child.Saves.VersionStamp);

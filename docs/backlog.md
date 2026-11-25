@@ -628,8 +628,8 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
 - **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
   "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". It
-  stands at **P2** since 2026-11-24 (its manifest's `support`), on `feature/verita`: the engine names its install,
-  decodes all of it, and boots it by its own route through the title to SC0000's first page; nothing of it saves.
+  stands at **P3** since 2026-11-25 (its manifest's `support`), on `feature/verita`: every opcode has a handler, its
+  build is declared, and its saves load on native AGE and the port alike.
   The install is `games/verita/`
   (`PROJECT-STRUCTURE.md`); its nearest build is Himegari's 4.24J.
   - **Done for P0 and P1.** The intake passes every check (`build/games/verita/intake.json`): 2,130 scripts (1,809
@@ -659,18 +659,46 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     skipped before any work, as the six opcodes without a handler are not on its route. The natural boot test
     (`VeritaSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage`) is the terminal gate of
     `validate.py --level full --game verita`, and the opening scenario passes on the port as on native, at the same
-    VM positions and with the same shots. Next: the six opcodes, the settings and the saves (step 7).
-  - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
-    and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` `load-agerc-module` and `0x24a` (`FIELD.BIN`),
-    `0x35` (`BTL.BIN`) and `0x89` (`ALCHEMY.BIN`), one site each. The three AGERC ones are read (`engine-re.md`,
-    "Comparing engine builds", Verita); `0x24a` writes the texture memory counters: the bytes of the textures
-    held by surfaces of kinds 1 and 2 and by the others (`gfx_surface_texture_create` adds them,
-    `gfx_surface_texture_release` subtracts them), and a third value only ever set to 0. `0x35` copies a surface
-    rectangle (its one site the whole screen, surface `0x66` to `0x67`), and `0x89` draws a string.
-  - **`FIELD.BIN` calls 17 `AGERC.DLL` map functions** through those opcodes: the wall, land and event polygons, the
-    move, and the collision, land and event queries. The port cannot load a Windows DLL on every platform, so they are
-    to be implemented in the engine from Himegari's `AGERC.DLL`, the copy whose code is readable. Verita's installed
-    copy is packed: its code is to be dumped from a running game and compared before the port relies on Himegari's.
+    VM positions and with the same shots.
+  - **Step 7's AGERC ops are done (2026-11-24):** `0x14b` `load-agerc-module`, `0x14c` `set-agerc-export` and
+    `0x14d` `call-agerc-export` (37 sites, all in `FIELD.BIN`) run `FIELD.BIN`'s 17 `AGERC.DLL` map functions in the
+    engine (`AgercMap`): the wall, land and event polygons, the move, and the collision, land and event queries, read
+    instruction for instruction in Himegari's `AGERC.DLL` and compared with Verita's own, dumped from a running game
+    (`engine-re.md`, "Comparing engine builds", Verita).
+  - **Op `0x24a` is done (2026-11-25):** `get-texture-memory` writes native's texture memory counters, and the graphics
+    native holds the surfaces native's engine makes for itself, so they count and size alike: the composite surfaces
+    36 and 37 and their release guards, op `0x70`'s layout surfaces, the 0x223/0x24f targets and scratch 32
+    (`engine-re.md`, "Engine-owned surfaces and texture memory"). Verita's title holds native's slots exactly; the
+    display background's texture, of the machine's device size, is left out.
+  - **Ops `0x35` and `0x89` are done (2026-11-25), so every opcode has a handler** (`catalog-scan`: 262 opcodes, none
+    unsupported). `0x35` `mosaic-copy-surface-rect` is native `MosaicTexture` (its one site `BTL@0x8f4b`, the battle
+    start's mosaic of render target `0x66` into `0x67`), and `0x89` `draw-adv-string` draws a string as the ADV text
+    is (its one site `ALCHEMY@0x2674`, `#######` for a price that does not fit) (`engine-re.md`, "Op 0x35, the mosaic
+    copy" and "Op 0x89, a string drawn as the ADV text is"). Neither site has been reached on either target.
+  - **Its settings and shell are 4.24J's (2026-11-25):** menu 110, the in-game 設定 and its pages compare equal
+    resource by resource, so it needs no `ShellRules` entry, and `EngineBuilds.Age424N` binds its one extra
+    `SYS4REG.INI` key. Its start-up settings dialog, which the port has for no game, adds virtual fullscreen controls
+    (`engine-re.md`, "The start-up settings dialog").
+  - **Its saves, and so P3, are done (2026-11-25):** a native save reads as the profile has it (stamp `"424N"`,
+    version 3.10, Himegari's `0x2d4` records; `sys4-format-notes.md`, "Observed profile identities") and the codec
+    writes it back byte for byte. `writesEnabled` is on. `tools/drive/scenarios/verita-save-load.steps` passes on
+    both targets, each loads the other's save, and `save-diff` shows only the time stamp between the two targets'
+    saves, before and after the cross-load.
+  - **The save thumbnails differ from native's by one level (found 2026-11-25), to settle before the merge.** In
+    4,888 of the 23,460 pixels of the `.STH`, all in its lower half. The thumbnail is the page composed into render
+    target 2 (`SAVE@0xd43`) and shrunk to 204 x 115 into surface `0x8a` by op `0x32`. Two causes, both older than
+    the branch:
+    - **The reference renderer blends unlike the hardware.** The port draws a render target with it, and the screen
+      with the GPU renderer, whose page equals native's to the pixel. On SC0000's page 4, `reference-diff` with
+      tolerance 0 finds 125,789 pixels apart by 1 or 2, all under the translucent message window (rows 360 to 575),
+      with no scaled draw. Most are one level darker in the reference: its integer blend truncates
+      (`SoftwareAffineRasterizer`). The port's shrink of the reference frame reproduces the port's thumbnail.
+    - **The port's op `0x32` shrink rounds exact halves away from zero.** Shrinking native's own screen as the port
+      does gives native's thumbnail but for three pixels, each an exact .5 average (192.5 gives native 192), and the
+      turning wait icon. The port's area-weighted sampler (`RgbaSurfaceOps.ScaleCopyRect`) was written from the
+      observed path, not from native's downsampler (`engine-re.md`, "Scaled surface rectangle copy").
+    Done when native's downsampler's arithmetic is the port's, the reference renderer blends a translucent layer as
+    the GPU renderer and native do, and a thumbnail made on the same page equals native's but for the wait icon.
   - **The compiler census** finds two shapes Himegari's and Kamidori's have none of: 5 conditional jumps with no
     target and 2 negative immediates (`build/games/verita/compiler-census.json`). Open Maid Script's round trip (M1)
     shows whether it keeps them.

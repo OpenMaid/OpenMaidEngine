@@ -97,9 +97,15 @@ public sealed partial class Graphics
         LoadSurfacePixels(resourceId, slot, colorKey);
     }
 
-    /// <summary>Op 0x1fa: release one surface.</summary>
+    /// <summary>Op 0x1fa: release one surface. The release worker leaves a guarded slot as it is, record included
+    /// (<see cref="IsReleaseGuarded"/>).</summary>
     public void ReleaseSurface(int slot)
     {
+        if (IsReleaseGuarded(slot))
+        {
+            OpTrace?.Invoke($"release-surface slot={slot} guarded");
+            return;
+        }
         ReleaseSurfacePixels(slot);
         State.ClearSurface(slot);
     }
@@ -112,10 +118,10 @@ public sealed partial class Graphics
     }
 
     /// <summary>The release worker over a range (op 0x23d's fixed [42,1000), and the AutoFreeTex releases over all
-    /// 1,000 slots).</summary>
+    /// 1,000 slots). It passes over a guarded slot (<see cref="IsReleaseGuarded"/>).</summary>
     public void ReleaseSurfaceRange(int firstSlot, int count)
     {
-        State.ReleaseSurfaceRange(firstSlot, count);
+        State.ReleaseSurfaceRange(firstSlot, count, IsReleaseGuarded);
         ReleaseSurfacePixelRange(firstSlot, count);
         OpTrace?.Invoke($"release-surface-range first={firstSlot} count={count}");
     }
@@ -126,6 +132,33 @@ public sealed partial class Graphics
         var size = _slotDims.TryGetValue(slot, out var d) ? (d.W, d.H) : (0, 0);
         OpTrace?.Invoke($"get-tex-size slot={slot} -> {size.Item1}x{size.Item2}");
         return size;
+    }
+
+    /// <summary>display:TextureBit, which engine_initialize_graphics_from_settings reads once (32 registered): the bits
+    /// a texel takes in <see cref="TextureMemory"/>.</summary>
+    public int TextureBits { get; init; } = 32;
+
+    /// <summary>
+    /// Op 0x24a: native's two texture memory counters, the bytes of the textures its surfaces hold, the render targets
+    /// (kinds 1 and 2) first, then the rest. gfx_surface_texture_create adds a texture's width × height ×
+    /// display:TextureBit / 8 to one of them and gfx_surface_texture_release subtracts it, in 32-bit arithmetic. A
+    /// large image's tiles together have its size, so each surface counts its own size, and native's device gives every
+    /// texture the size asked for. Native's count was its surfaces' at the logo, the title and the first field
+    /// (Verita, 2026-11-25), but for one texture the port leaves out: the display background's, which takes its size
+    /// from the Direct3D device (1024 × 428 there, 1,753,088 bytes; docs/engine-re.md, "Texture memory counters").
+    /// </summary>
+    public (int RenderTargets, int Others) TextureMemory()
+    {
+        int renderTargets = 0, others = 0;
+        foreach (int slot in LiveSurfaceSlots())
+        {
+            if (!_slotDims.TryGetValue(slot, out var size)) continue;
+            int bytes = unchecked(size.H * size.W * TextureBits) / 8;
+            if (_alphaRenderTargets.Contains(slot) || _opaqueRenderTargets.Contains(slot))
+                renderTargets = unchecked(renderTargets + bytes);
+            else others = unchecked(others + bytes);
+        }
+        return (renderTargets, others);
     }
 
     /// <summary>Op 0x20b: a clipped alpha/RGB fill of a surface.</summary>
@@ -155,10 +188,6 @@ public sealed partial class Graphics
         });
     }
 
-    /// <summary>The scratch surface op 0x32's mixed-axis copy goes through (gfx_scale_copy_surface_rect@0x47c6c0).
-    /// </summary>
-    public const int ScaleCopyScratchSurface = 0x20;
-
     /// <summary>
     /// Op 0x32 (gfx_scale_copy_surface_rect@0x47c6c0; 4.33G the same): a scaled copy. When one axis grows and the
     /// other shrinks, native goes through scratch surface 32: it creates a blank surface there as large as the larger
@@ -178,10 +207,10 @@ public sealed partial class Graphics
             CopySurfaceRect(copy);
             return;
         }
-        CreateSurface(ScaleCopyScratchSurface, Math.Max(copy.Width, copy.DestinationWidth),
+        CreateSurface(ScratchSurface, Math.Max(copy.Width, copy.DestinationWidth),
                       Math.Max(copy.Height, copy.DestinationHeight));
         CopySurfaceRect(copy);
-        ReleaseSurface(ScaleCopyScratchSurface);
+        ReleaseSurface(ScratchSurface);
     }
 
     // Whether both of a copy's surfaces are there: native traces a missing one and copies nothing.
@@ -231,6 +260,103 @@ public sealed partial class Graphics
             ["destination_w"] = copy.DestinationWidth,
             ["destination_h"] = copy.DestinationHeight,
         });
+    }
+
+    /// <summary>
+    /// Op 0x35, native MosaicTexture (gfx_mosaic_texture: 4.24J 0x479ac0, 4.24N 0x47add0, 4.33G 0x480400, 4.38D
+    /// 0x48ee10; docs/engine-re.md, "Op 0x35, the mosaic copy"). The destination's record reads created first, whatever
+    /// follows. Native refuses with its trace a missing surface, the same surface twice, a dot of 0 and a rectangle
+    /// outside its surface. Otherwise it walks the destination rectangle's size from the source rectangle's origin, so
+    /// the source rectangle only places the reads, and each dot x dot block takes the source pixel at its top-left
+    /// corner, opaque when the source is a render target. The destination keeps its pixels outside the rectangle.
+    /// </summary>
+    public SurfaceMosaicResult MosaicSurfaceRect(SurfaceMosaicCopy copy)
+    {
+        State.MarkSurfaceContentWritten(copy.DestinationSurface);
+        if (MosaicRefusal(copy) is { } refusal)
+            return new(SurfaceMosaicOutcome.Refused, "関数：MosaicTexture エラー：" + refusal);
+        int width = unchecked(copy.DestinationRight - copy.DestinationLeft);
+        int height = unchecked(copy.DestinationBottom - copy.DestinationTop);
+        if (width <= 0 || height <= 0) return new(SurfaceMosaicOutcome.Copied);
+        long dot = copy.Dot;
+        if (dot < 0)
+        {
+            // Native indexes its line buffer at x / dot, which is negative from x = -dot on.
+            if (width > -dot)
+                return new(SurfaceMosaicOutcome.WritesBeforeLineBuffer, $"dot {copy.Dot} over {width} pixels");
+            dot = -dot;   // one column, and the rows of -dot's blocks
+        }
+
+        RgbaImage? source = SurfacePixels(copy.SourceSurface);
+        RgbaImage? destination = SurfacePixels(copy.DestinationSurface);
+        if (destination == null && _slotDims.TryGetValue(copy.DestinationSurface, out var dimensions)
+            && dimensions.W >= 0 && dimensions.H >= 0)
+            destination = new RgbaImage(dimensions.W, dimensions.H, new byte[checked(dimensions.W * dimensions.H * 4)]);
+        if (source == null || destination == null)
+        {
+            System.Console.Error.WriteLine(
+                $"surface mosaic unresolved source={copy.SourceSurface} destination={copy.DestinationSurface}");
+            return new(SurfaceMosaicOutcome.Copied);
+        }
+        // The last pixel each axis samples, which the source rectangle's test does not cover.
+        long lastX = copy.SourceLeft + (width - 1) / dot * dot, lastY = copy.SourceTop + (height - 1) / dot * dot;
+        if (lastX >= source.Width || lastY >= source.Height)
+            return new(SurfaceMosaicOutcome.ReadsPastSource,
+                       $"pixel ({lastX},{lastY}) of surface {copy.SourceSurface}, which is {source.Width}x{source.Height}");
+
+        var updated = new RgbaImage(destination.Width, destination.Height, (byte[])destination.Pixels.Clone());
+        bool opaque = SurfaceKind(copy.SourceSurface) != 0;   // native forces the alpha of a kind other than 0
+        byte[] from = source.Pixels, to = updated.Pixels;
+        for (int y = 0; y < height; y++)
+        {
+            long sampleRow = (copy.SourceTop + (y - y % dot)) * source.Width + copy.SourceLeft;
+            int row = (copy.DestinationTop + y) * updated.Width + copy.DestinationLeft;
+            for (int x = 0; x < width; x++)
+            {
+                int at = checked((int)(sampleRow + (x - x % dot)) * 4), into = (row + x) * 4;
+                to[into] = from[at];
+                to[into + 1] = from[at + 1];
+                to[into + 2] = from[at + 2];
+                to[into + 3] = opaque ? (byte)255 : from[at + 3];
+            }
+        }
+        _surfaceImages[copy.DestinationSurface] = KeepOpaque(copy.DestinationSurface, updated);
+        NoteCopySources(copy.SourceSurface, copy.DestinationSurface);
+        RequestPresentation();
+        _timeline?.Event("surface-mosaic", new()
+        {
+            ["source"] = copy.SourceSurface, ["source_x"] = copy.SourceLeft, ["source_y"] = copy.SourceTop,
+            ["destination"] = copy.DestinationSurface,
+            ["destination_x"] = copy.DestinationLeft, ["destination_y"] = copy.DestinationTop,
+            ["w"] = width, ["h"] = height, ["dot"] = copy.Dot,
+        });
+        return new(SurfaceMosaicOutcome.Copied);
+    }
+
+    // MosaicTexture's refusals in its order, each the text after 「関数：MosaicTexture エラー：」.
+    private string? MosaicRefusal(SurfaceMosaicCopy copy)
+    {
+        if (!HoldsSurface(copy.SourceSurface))
+            return $"転送元テクスチャが作成されていません． TEXTURE={copy.SourceSurface}";
+        if (!HoldsSurface(copy.DestinationSurface))
+            return $"転送先テクスチャが作成されていません． TEXTURE={copy.DestinationSurface}";
+        if (copy.SourceSurface == copy.DestinationSurface)
+            return $"転送先と転送元が同じですTEXTURE = {copy.DestinationSurface}";
+        if (copy.Dot == 0) return "モザイクサイズの指定が不正ですsize = 0";
+        if (OutsideSurface(copy.SourceSurface, copy.SourceLeft, copy.SourceTop, copy.SourceRight, copy.SourceBottom))
+            return $"転送元の座標が不正です ({copy.SourceLeft},{copy.SourceTop})-({copy.SourceRight},{copy.SourceBottom})";
+        if (OutsideSurface(copy.DestinationSurface, copy.DestinationLeft, copy.DestinationTop, copy.DestinationRight,
+                           copy.DestinationBottom))
+            return $"転送先の座標が不正です ({copy.DestinationLeft},{copy.DestinationTop})-"
+                   + $"({copy.DestinationRight},{copy.DestinationBottom})";
+        return null;
+    }
+
+    // MosaicTexture's rectangle test: left | top | (width - right) | (height - bottom) is negative, in 32 bits.
+    private bool OutsideSurface(int slot, int left, int top, int right, int bottom)
+    {
+        (int W, int H) size = _slotDims.GetValueOrDefault(slot);
+        return unchecked(left | top | (size.W - right) | (size.H - bottom)) < 0;
     }
 
     /// <summary>Op 0x20e: clear the selected render target's pixels; the backbuffer (-1) clears at its next
@@ -323,9 +449,11 @@ public sealed partial class Graphics
     {
         foreach (ISurfaceListener listener in _listeners) listener.SurfaceRangeReleasing(firstSlot, count);
         int end = checked(firstSlot + count);
-        for (int slot = firstSlot; slot < end; slot++) _renderTargetSnapshots.Remove(slot);
+        for (int slot = firstSlot; slot < end; slot++)
+            if (!IsReleaseGuarded(slot)) _renderTargetSnapshots.Remove(slot);
         for (int slot = firstSlot; slot < end; slot++)
         {
+            if (IsReleaseGuarded(slot)) continue;
             _surfaceImages.Remove(slot);
             _surfaceCopySources.Remove(slot);
             _surfaceColorKeys.Remove(slot);
@@ -333,7 +461,8 @@ public sealed partial class Graphics
             _alphaRenderTargets.Remove(slot);
             _opaqueRenderTargets.Remove(slot);
         }
-        for (int slot = firstSlot; slot < end; slot++) _surfaceResources.Remove(slot);
+        for (int slot = firstSlot; slot < end; slot++)
+            if (!IsReleaseGuarded(slot)) _surfaceResources.Remove(slot);
         foreach (ISurfaceListener listener in _listeners) listener.SurfaceRangeReleased(firstSlot, count);
         _timeline?.Event("surface-range-release", new() { ["first"] = firstSlot, ["count"] = count });
     }

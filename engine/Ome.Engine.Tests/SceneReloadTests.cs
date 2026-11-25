@@ -101,6 +101,8 @@ public class SceneReloadTests
             // scratch arrays and the viewport each walk sets before it draws; and the skipped-light report, once a run
             // (Graphics.Scene3DLowering.cs).
             "_sceneEffectsLastMs", "_leafClip", "_leafLight", "_effectViewport", "_skippedLightReported",
+            // The pixel-shader level start-up reads once, which picks the composite surfaces' kind.
+            "_pixelShaderLevel",
             // Parts set after construction, and tracing.
             "_movies", "_listeners", "TraceOps", "OpTrace",
         ],

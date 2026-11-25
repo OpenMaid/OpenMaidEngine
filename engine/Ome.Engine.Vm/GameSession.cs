@@ -44,6 +44,9 @@ public sealed partial class GameSession
     public AdvTextHistory TextHistory { get; } = new();
     /// <summary>The EngineCtx-lifetime diagnostic accumulator shared across script/scene VMs.</summary>
     public DiagnosticOutputState DiagnosticOutput { get; } = new();
+    /// <summary>AGERC.DLL's map, which lives as long as AGE's program: every scene VM of the session calls the same one.
+    /// </summary>
+    public AgercMap AgercMap { get; } = new();
 
     public GameSession(SharedProfile? sharedProfile = null, INativeDatStore? nativeDatStore = null,
                        AudioMixerSettings? audioMixerSettings = null)
@@ -74,9 +77,9 @@ public sealed partial class GameSession
     {
         // Each run has its own skip and auto native, and an audio native over it (audio builds one; without it the run
         // plays nothing). The mixer settings are the session's. Its save native reads and writes the session's profile
-        // and store, and its shell native appends to the session's diagnostic text.
+        // and store, and its shell native appends to the session's diagnostic text and calls the session's AGERC map.
         SkipAndAuto skip = SkipAndAuto.WithSystemClock();
-        var shell = ShellServices.Headless(DiagnosticOutput);
+        var shell = ShellServices.Headless(DiagnosticOutput, AgercMap);
         shell.WakeWaitsWith(waits.WakeInputCallbackService);
         var vm = new VirtualMachine(
             script, table, waits, options, provider, sink, TextHistory,

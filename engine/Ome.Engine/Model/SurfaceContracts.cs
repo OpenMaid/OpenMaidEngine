@@ -15,6 +15,26 @@ public readonly record struct SurfaceRectCopy(
                destinationX, destinationY, width, height) { }
 }
 
+/// <summary>Op 0x35's request (native MosaicTexture): both rectangles as edges, each right and bottom the origin plus
+/// the extent as the handler adds them in 32 bits, and the block's edge in pixels.</summary>
+public readonly record struct SurfaceMosaicCopy(
+    int SourceSurface, int DestinationSurface,
+    int SourceLeft, int SourceTop, int SourceRight, int SourceBottom,
+    int DestinationLeft, int DestinationTop, int DestinationRight, int DestinationBottom, int Dot);
+
+/// <summary>What op 0x35 did: it copied (an empty rectangle copies nothing, as native's does), native refused it with
+/// the trace in <see cref="SurfaceMosaicResult.Detail"/>, or native reads or writes memory there that the port does not
+/// model.</summary>
+public enum SurfaceMosaicOutcome
+{
+    Copied,
+    Refused,
+    ReadsPastSource,
+    WritesBeforeLineBuffer,
+}
+
+public readonly record struct SurfaceMosaicResult(SurfaceMosaicOutcome Outcome, string Detail = "");
+
 public enum SurfaceBlackFadeDirection
 {
     FromBlack,

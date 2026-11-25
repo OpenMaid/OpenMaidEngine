@@ -103,6 +103,18 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0x24a (out_render_targets) (out_unused) (out_others): native's texture memory counters, in that order; the second
+    // is a counter AGE only ever sets to 0 (Verita 0x467eb2).
+    private StepResult OpGetTextureMemory(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        var (renderTargets, others) = _graphics.TextureMemory();
+        Write(a[0], renderTargets);
+        Write(a[1], 0);
+        Write(a[2], others);
+        return StepResult.Next;
+    }
+
     // 0x20b: clipped alpha/RGB fill of a mutable surface
     private StepResult OpFillSurfaceRect(Instruction ins, int pc)
     {
@@ -136,6 +148,35 @@ public sealed partial class VirtualMachine
             (int)Read(a[0]), (int)Read(a[1]), (int)Read(a[2]), (int)Read(a[3]),
             (int)Read(a[4]), (int)Read(a[5]), (int)Read(a[6]), (int)Read(a[7]),
             (int)Read(a[8]), (int)Read(a[9])));
+        return StepResult.Next;
+    }
+
+    // 0x35 (source, destination, source x, y, width, height, destination x, y, width, height, dot): native
+    // MosaicTexture. Native writes the destination's record before anything else and reads the source's surface
+    // unchecked, so a slot outside 0..999 halts; its own refusals trace and do nothing more.
+    private StepResult OpMosaicCopySurfaceRect(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (SurfaceSlotRefused(ins, Read(a[1])) is { } refused) return refused;
+        if (SurfaceSlotRefused(ins, Read(a[0])) is { } refused2) return refused2;
+        int Arg(int index) => unchecked((int)Read(a[index]));
+        // The handler adds each extent to its origin in 32 bits.
+        SurfaceMosaicResult result = _graphics.MosaicSurfaceRect(new SurfaceMosaicCopy(
+            Arg(0), Arg(1),
+            Arg(2), Arg(3), unchecked(Arg(2) + Arg(4)), unchecked(Arg(3) + Arg(5)),
+            Arg(6), Arg(7), unchecked(Arg(6) + Arg(8)), unchecked(Arg(7) + Arg(9)), Arg(10)));
+        switch (result.Outcome)
+        {
+            case SurfaceMosaicOutcome.Refused:
+                _waits.ReportWarning($"{At(ins)}: skipped, as AGE skips it with the trace 「{result.Detail}」");
+                break;
+            case SurfaceMosaicOutcome.ReadsPastSource:
+                HaltReason ??= $"mosaic-reads-past-source: {At(ins)}: AGE reads {result.Detail}, past its rows";
+                return StepResult.Halt;
+            case SurfaceMosaicOutcome.WritesBeforeLineBuffer:
+                HaltReason ??= $"mosaic-dot-negative: {At(ins)}: AGE writes before its line buffer for a {result.Detail}";
+                return StepResult.Halt;
+        }
         return StepResult.Next;
     }
 

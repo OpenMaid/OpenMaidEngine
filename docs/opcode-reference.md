@@ -203,6 +203,18 @@ The first result is the native direct-history redraw direction/state (-1, 0, or 
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x85`; scope=Himegari SYS4422. Ghidra /v2: op_0x85_handler@0x4163d0 calls text_history_clear@0x455d70 on the text manager. The worker destroys the 0x48-byte record vector and clears the 8-byte logical index vector. Corpus: two sites in each of 143 normal ADV scripts bracket the retained backlog lifetime.
 
+### 0x89 `draw-adv-string` (draw-adv-string, argc 4)
+- **observed by:** verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
+- **semantic status:** investigated
+- **summary:** (surface_slot)(x)(y)(string) - draws the string into the surface as the ADV glyph builders draw text, in the current font, colours and render mode: with message:UseAntiFont on, as draw-string (0x204) does; with it off, a string of render mode 1 to 3 starts at the effect offsets.
+- **operand access:** `1` read · `2` read · `3` read · `4` read-string
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x89`; scope=Himegari SYS4422. Native read 2026-11-25: Verita 4.24N op_0x89_handler@0x41fd00 (length 9 words) calls text_draw_string_adv_route@0x450840 (Himegari /v2 op_0x89_handler@0x41f180 and 0x44fd70, the same code) on the text manager. With text manager +0x544 set it calls text_draw_antialiased_effect_string (render mode +0x558 not 0) or text_draw_antialiased_plain_string, which under DrawMode 1 are text_raster_string_cached and text_raster_string_uncached at (x, y), draw-string's workers; with it clear, text_draw_string_primary_or_ruby(surface, x, y, string, +0x54c, +0x550, mode, 0, 0). Both rasterizers call gfx_surface_get_size@0x4764b0 first and draw nothing for a 0 width or height. Live read (Frida, Verita at FIELD, 2026-11-25): text +0x408 = ctx+0x1c38, its +0x1f7c 0 and +0x1f88 0, +0x544 1, +0x558 3. The one retail site is Verita's ALCHEMY@0x2674, which draws ####### at (0x1ab, row) on surface 0x83 for a price past 9,999,999, where the price itself is draw-formatted-integer's. Kamidori 4.33G and Arterial 4.38D were not read. Port 2026-11-25: VirtualMachine.AdvText.cs OpDrawAdvString.
+
+An empty string draws nothing. The worker has no surface test of its own: its rasterizers size the slot first (gfx_surface_get_size), so an empty slot draws nothing and one outside 0..999 draws nothing with the trace 関数：GetTextureSize エラー：不正なtexture %d, unlike draw-string, which reads the surface table unchecked. Surface 0 becomes surface 30 with a dirty-rectangle report when the draw-mode-0 backend's +0x1f7c is set and its +0x1f88 is 1; only that backend's setup and the screen-mode switch write them, Verita read 0 and 0 at its first field under DrawMode 1, and the port never redirects (docs/engine-re.md, Op 0x89, a string drawn as the ADV text is).
+
 ### 0x8b `set-text-line-spacing` (u0041B3D0, argc 1)
 - **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`
@@ -1033,32 +1045,35 @@ On success native writes the removed value. On empty, the release handler still 
 - **observed by:** verita (SYS4424)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
 - **semantic status:** investigated
-- **summary:** (entry) - loads the DLL the catalog entry names (Verita: AGERC.DLL) as the module set-agerc-export looks names up in, freeing the one loaded before. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
+- **summary:** (entry) - loads the DLL the catalog entry names (Verita: AGERC.DLL) as the module set-agerc-export looks names up in, freeing the one loaded before. The port's module is its own AGERC: it loads AGERC.DLL and halts on any other name.
 - **operand access:** `1` read
+- **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **depended on by:** 0x14c
-- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14b`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14b_load_agerc_module@0x422080 and Verita 4.24N @0x422c00, the same code (revision diff same). Length 3 words. FreeLibrary(ctx+0x6dc18, Verita +0x6dc7c) when set, then LoadLibraryA(asset_catalog_get_entry_name(operand 1)) into it; a failed load throws. Only the entry's name is used: the DLL is the install folder's, which AGE already loaded for its menus, and the catalog's bytes are not read. The label was Kelebek's placeholder u0041FF50. Only Verita's FIELD.BIN uses it, once: FIELD@0x0 passes 0x5118, entry 20760, AGERC.DLL (docs/engine-re.md, Comparing engine builds, Verita).
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14b`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14b_load_agerc_module@0x422080 and Verita 4.24N @0x422c00, the same code (revision diff same). Length 3 words. FreeLibrary(ctx+0x6dc18, Verita +0x6dc7c) when set, then LoadLibraryA(asset_catalog_get_entry_name(operand 1)) into it; a failed load throws. Only the entry's name is used: the DLL is the install folder's, which AGE already loaded for its menus, and the catalog's bytes are not read. The label was Kelebek's placeholder u0041FF50. Only Verita's FIELD.BIN uses it, once: FIELD@0x0 passes 0x5118, entry 20760, AGERC.DLL (docs/engine-re.md, Comparing engine builds, Verita). scene_context_init_reset frees the module and zeroes the 100 export slots (Verita 0x40beb6); the DLL stays loaded for AGE's menus, so its statics outlive it. Port 2026-11-24: VirtualMachine.Agerc.cs, the module and slots in the shell native's scene (ShellServices.Agerc.cs).
 
 ### 0x14c `set-agerc-export` (set-agerc-export, argc 2)
 - **observed by:** verita (SYS4424)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
 - **semantic status:** investigated
-- **summary:** (slot, name) - binds slot (0..99) to the AGERC.DLL export the string names, for call-agerc-export. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
+- **summary:** (slot, name) - binds slot (0..99) to the AGERC.DLL export the string names, for call-agerc-export. A name the module does not export raises the error box 「name のアドレス取得に失敗しました．」 with ERRORCODE = 127. The port halts on a slot of 100 or more, whose error text native formats from an operand past the instruction, and on a bind before any load.
 - **operand access:** `1` read · `2` read-string
+- **control (port handler):** waits never; leaves falls, jumps
 - **grounding:** source=investigation, confidence=high
 - **depends on:** 0x14b
 - **depended on by:** 0x14d
-- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita).
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita). The missing-name throw carries flags 0x10007 (Verita 0x422d55) and the text at 0x573dbc. Port 2026-11-24: VirtualMachine.Agerc.cs; the names are AGERC.DLL's 20 exports (AgercMap).
 
 ### 0x14d `call-agerc-export` (call-agerc-export, argc 6)
 - **observed by:** verita (SYS4424)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
 - **semantic status:** investigated
-- **summary:** (slot, result, cells, count, ref, value) - calls the AGERC.DLL export bound to slot with count integer cells from cells' address as an array, the address of ref's cell and value; the export may change the cells, and its return goes to result. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **operand access:** `1` read · `2` write · `3` address · `4` read · `5` address · `6` read
+- **summary:** (slot, result, cells, count, ref, value) - calls the AGERC.DLL export bound to slot with count integer cells from cells' address as an array, the address of ref's cell and value; the export may change the cells, and its return goes to result. The port runs AGERC's 17 map functions, as native's code does them, and halts on an unbound slot, an export that runs past the cells or the DLL's tables, and a shell export.
+- **operand access:** `1` read (AGERC export slot 0..99, untested) · `2` write · `3` address · `4` read · `5` address · `6` read
+- **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **depends on:** 0x14c
-- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x429ee0 and Verita 4.24N @0x42aa70, the same code (revision diff same). Length 13 words. Copies operand-4 cells from operand 3's address into a new int array, decoding each (rol 11, xor anti_tamper_a, rol 7), calls ctx+0x6dc1c[operand 1] (Verita +0x6dc80) as __stdcall fn(owner window, array, count, &operand-5 cell, operand 6), encodes the array back into the cells and writes the return to operand 2. Operand 5's cell address is passed as is, not decoded. Only Verita's FIELD.BIN uses it, 19 sites (docs/engine-re.md, Comparing engine builds, Verita).
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x429ee0 and Verita 4.24N @0x42aa70, the same code (revision diff same). Length 13 words. Copies operand-4 cells from operand 3's address into a new int array, decoding each (rol 11, xor anti_tamper_a, rol 7), calls ctx+0x6dc1c[operand 1] (Verita +0x6dc80) as __stdcall fn(owner window, array, count, &operand-5 cell, operand 6), encodes the array back into the cells and writes the return to operand 2. Operand 5's cell address is passed as is, not decoded. Only Verita's FIELD.BIN uses it, 19 sites (docs/engine-re.md, Comparing engine builds, Verita). Port 2026-11-24: VirtualMachine.Agerc.cs over AgercMap, the map functions read instruction for instruction in Himegari's AGERC.DLL and compared with Verita's; it writes back only the cells the export changed, which leaves memory as native's write-back does.
 
 ### 0x191 `absolute-value` (absolute-value, argc 2)
 - **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
@@ -2009,6 +2024,18 @@ SYS4433 maps selector 0..4 to native pattern modes 8..12. The worker implements 
 
 Both revision handlers convert origin/extent operands into paired edge rectangles, validate the two surfaces, mark the destination dirty, and dispatch to direct copy, area-weighted shrink, interpolating enlargement, or a two-pass mixed-axis route through scratch surface 0x20, which it creates over slot 32 and releases after, so a script surface there is lost (the port does the same). Kamidori's only two calls, ALLMAP@0x4e2 and SAVE@0xbb6, downsample the full 1024x576 surface 2 into a 384x216 thumbnail on surfaces 193 and 195. The portable host implements that observed shrink contract with an area-weighted RGBA sampler; equal-sized rectangles continue through the established exact-copy path.
 
+### 0x35 `mosaic-copy-surface-rect` (mosaic-copy-surface-rect, argc 11)
+- **observed by:** verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
+- **semantic status:** investigated
+- **summary:** (source_surface)(destination_surface)(source_x)(source_y)(source_width)(source_height)(destination_x)(destination_y)(destination_width)(destination_height)(dot) - native MosaicTexture: each dot x dot block of the destination rectangle takes the source pixel at the block's top-left corner, counted from the source rectangle's origin and over the destination rectangle's size; a render-target source gives opaque pixels.
+- **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read · `11` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x35`; scope=Himegari SYS4422. Native read 2026-11-25: Verita 4.24N op_0x35_handler@0x41ea20 (length 0x17 words) adds each extent to its origin in 32 bits and, under draw mode 1 (ctx+0x992f4), calls gfx_mosaic_texture@0x47add0 (Himegari /v2 0x479ac0, Kamidori 4.33G 0x480400, Arterial 4.38D 0x48ee10: the same code); draw mode 0 calls the backend at ctx+0x1c38 instead. gfx_surface_lockable_level0@0x477ca0 gives a plain texture's level 0, or a render target's GetRenderTargetData copy, which IDirect3DDevice9::UpdateSurface writes back whole. The one retail site is Verita's BTL@0x8f4b: each 16 ms callback of the battle start renders object range 0xc350+4 into render target 0x66 and mosaics it into render target 0x67 (both 1024x576, kind 2) at a dot of 1 + the tick count, 75 ticks. Port 2026-11-25: VirtualMachine.Surface.cs over Graphics.MosaicSurfaceRect.
+
+The destination's record reads created first, whatever follows. A missing surface, the same surface twice, a dot of 0 or a rectangle outside its surface traces 関数：MosaicTexture エラー：... and copies nothing; the port reports the trace as a warning. The source rectangle's extent is only tested: the reads walk the destination's, so a larger destination reads past the source rectangle, and past its surface where the port halts. A negative dot indexes native's line buffer below 0 once the destination is wider than it, where the port halts too. A render-target destination is read back and written back whole, so its pixels outside the rectangle stay (docs/engine-re.md, Op 0x35, the mosaic copy).
+
 ### 0x36 `mosaic-transition-surfaces` (u00419C00, argc 3)
 - **observed by:** arterial (SYS4438), verita (SYS4424)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4438`
@@ -2141,7 +2168,7 @@ The handler clears the map embedded at retained-gfx owner+0x408, resets its coun
 - **operand access:** `1` read (surface 0..999, untested)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
-- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1fa`; scope=Himegari SYS4422. Ghidra handler 0x4224a0 (dispatch ctx[0x26c93+0x1fa]); frees ctx+0x52bd4[operand1*4] via vtbl, then FUN_00474e40(operand1). retained_gfx_release_surface writes only the surface record's resource id -1; the packed key and created flag stay (2026-11-03).
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1fa`; scope=Himegari SYS4422. Ghidra handler 0x4224a0 (dispatch ctx[0x26c93+0x1fa]); frees ctx+0x52bd4[operand1*4] via vtbl, then FUN_00474e40(operand1). retained_gfx_release_surface writes only the surface record's resource id -1; the packed key and created flag stay (2026-11-03). It leaves a slot whose release guard start-up set as it is, record included: the composite surfaces 36 and 37, and slot 38 from 4.24N (2026-11-25, docs/engine-re.md, Engine-owned surfaces; port Graphics.IsReleaseGuarded).
 
 Port (2026-11-07): MovieSurfaceRegistry.Release drops the slot's movie binding whatever its playback state, as do create-texture, set-texture and 0x249. Kamidori's FIELD@0xbbf8 waits out its chest effect on the anim clock, releases surface 0x2a here and MES recreates it for the pickup text; the port's earlier guard kept an unfinished movie bound and showed its last frame instead of the text.
 
@@ -2807,6 +2834,16 @@ Port status (2026-07-29): implemented as retained signed-dword graphics configur
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x249`; scope=Himegari SYS4422. Ghidra /v2: op_0x249_load_raw_texture_surface@0x424b20 is instruction-length 7 and is contract-identical to gfx_op_0x1f9_load_surface through release, unchanged packed operand, asset_open_indexed_entry, RGB colorkey conversion, load failure, and cleanup. Its only relevant distinction is mode-1 gfx_surface_mode1_ctor, a tiled large-image wrapper: gfx_tiled_surface_create@0x432ff0 splits logical dimensions into ordinary mode-0 child textures; gfx_tiled_surface_upload_agf@0x431a10 decodes/uploads regions; gfx_tiled_surface_blit@0x4316b0 subdivides logical source rectangles. Corpus literals include FIELD 0x32da..0x32dd -> SO005/SO007/SO008A/SO007A. The former claim that only 0x249 bypasses scene normalization was wrong because native never performs scene normalization for 0x1f9 either.
+
+### 0x24a `get-texture-memory` (get-texture-memory, argc 3)
+- **observed by:** verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
+- **semantic status:** investigated
+- **summary:** (out_render_targets, out_unused, out_others) - writes native's texture memory counters: the bytes of the textures its surfaces hold as render targets (kinds 1 and 2), 0, and the bytes of the rest. The port counts its surfaces the same way, leaving out the display background's texture, whose size is the Direct3D device's.
+- **operand access:** `1` write · `2` write · `3` write
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x24a`; scope=Himegari SYS4422. Native read 2026-11-25: Verita 4.24N op_0x24a_handler@0x42b160 (Himegari /v2 @0x42a5d0, the same code) writes operand 1 from 0x5c7d00, 2 from 0x5c7d08 and 3 from 0x5c7d04, length 7 words. gfx_surface_texture_create (Verita 0x466a20) adds width x height x display:TextureBit / 8 of the size the device gave (GetLevelDesc) to 0x5c7d00 for kinds 1 and 2 and to 0x5c7d04 for the others; gfx_surface_texture_release (0x466bb0) subtracts it; 0x5c7d08 is only ever set to 0 (0x467eb2). A Frida trace of 943 creates and releases from the logo to the first field (Verita, 2026-11-25): every size came back as asked, at 32 bits, and the counters were the 1,000 surface slots' textures (ctx+0x46678+0xa590) plus the display background's (gfx +0xb5fc), 1024 x 428 from the device's +0x470/+0x474, 1,753,088 bytes, at the logo, the title and the field. Only Verita's FIELD.BIN uses it, once, at 0x3109: its debug overlay, which runs while global 0xc0ba06 or 0x2547 is set, as only the DEBUGMAP and DEBUGBTL scripts set them, draws each value / 1024 (docs/engine-re.md, Texture memory counters). The label was Kelebek's placeholder u004163C0. Port 2026-11-25: VirtualMachine.Surface.cs over Graphics.TextureMemory; the graphics native holds the surfaces native's engine makes for itself (the composite surfaces 36 and 37, op 0x70's layout surfaces, docs/engine-re.md, Engine-owned surfaces), so Verita's title counts as native's slots do (NaturalBootIntegrationTests).
 
 ### 0x24d `play-movie-mask-transition` (play-movie-mask-transition, argc 12)
 - **observed by:** arterial (SYS4438), himegari (SYS4422)
@@ -4001,15 +4038,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x34`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
-### 0x35 `u00419AF0` (u00419AF0, argc 11)
-- **observed by:** verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read · `11` read
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x35`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
 ### 0x37 `u00419C90` (u00419C90, argc 11)
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
@@ -4255,15 +4283,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x84`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x89 `u0041B2E0` (u0041B2E0, argc 4)
-- **observed by:** verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **operand access:** `1` read · `2` read · `3` read · `4` read-string
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x89`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x8a `u0041B330` (u0041B330, argc 6)
 - **observed by:** none in recorded corpora
@@ -4796,15 +4815,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x245`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x24a `u004163C0` (u004163C0, argc 3)
-- **observed by:** verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **operand access:** `1` write · `2` write · `3` write
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x24a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x257 `257` (257, argc 5)
 - **observed by:** none in recorded corpora

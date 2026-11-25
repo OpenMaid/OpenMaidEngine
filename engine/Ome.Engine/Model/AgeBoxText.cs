@@ -62,6 +62,9 @@ public static class AgeBoxText
     public const string FileNumberInvalid = "error.file-number";
     /// <summary>A file that does not open: <c>{0}</c> is its name, <c>{1}</c> the Windows error code.</summary>
     public const string FileOpenFailed = "error.file-open";
+    /// <summary>Op 0x14c found no export of that name in the AGERC module: <c>{0}</c> is the name, <c>{1}</c> the
+    /// Windows error code.</summary>
+    public const string AgercExportMissing = "error.agerc-export";
     /// <summary>A resource id whose high byte names no mounted append catalog: <c>{0}</c> is the selector.</summary>
     public const string AppendCatalogMissing = "error.append-catalog";
     /// <summary>A resource id past its append catalog: <c>{0}</c> is the name native gives it (ERROR), <c>{1}</c> the
@@ -103,6 +106,7 @@ public static class AgeBoxText
         [ScriptDepthLimit] = "ファイルの階層が深すぎます．最大は{0}です．",
         [FileNumberInvalid] = "ファイル番号 {0} は不正な値です．",
         [FileOpenFailed] = "{0} を開くことが出来ません．\nERROR CODE = {1}",
+        [AgercExportMissing] = "{0}のアドレス取得に失敗しました．\n\nERRORCODE = {1}",
         [AppendCatalogMissing] = "拡張ファイル情報ファイル {0} は読み込まれていません．",
         [AppendFileOpenFailed] = "拡張ファイル {0} を開くことが出来ません．{1}",
     };

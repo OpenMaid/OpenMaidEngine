@@ -45,8 +45,9 @@ public readonly record struct ShellMenuRequest(ShellMenuRequestKind Kind, Messag
 /// addition 4; milestone 9): what the native menu and its dialogs, and the scripts, share. It owns the state a script
 /// can read or change that the shell also reads (op 0x142's system-menu gate, op 0x148/0x149's strip delay, op 0x10f's
 /// system-key mask), the menu commands queued for the interpreter, the callback scripts they and a screen-mode switch
-/// launch, op 0x1b2 to 0x1b4's diagnostic text, the engine's dialogs (<c>ShellServices.Dialogs.cs</c>) and the screen
-/// mode (<c>ShellServices.ScreenMode.cs</c>). Its devices are the window and the front end's dialogs.
+/// launch, op 0x1b2 to 0x1b4's diagnostic text, the engine's dialogs (<c>ShellServices.Dialogs.cs</c>), the screen
+/// mode (<c>ShellServices.ScreenMode.cs</c>) and the AGERC.DLL code scripts call, ops 0x14b to 0x14d
+/// (<c>ShellServices.Agerc.cs</c>). Its devices are the window and the front end's dialogs.
 /// </summary>
 /// <remarks>
 /// <para>The menu state the shell shows (VmMenuState) stays a composition at the VM, which asks each owner (plan §3.2,
@@ -87,6 +88,11 @@ public sealed partial class ShellServices
         // EngineCtx +0x6da7c (op 0x10f): the window procedure's system-key disable mask. Bit 0 suppresses F1's screenshot
         // BMP, bit 9 (0x200) swallows F10's menu-bar focus.
         public int SystemKeyDisableMask;
+        // Engine thread: the AGERC module op 0x14b loaded (EngineCtx +0x6dc18, Verita +0x6dc7c) and op 0x14c's export
+        // slots (+0x6dc1c, Verita +0x6dc80; ShellServices.Agerc.cs). scene_context_init_reset frees the one and zeroes
+        // the other.
+        public bool AgercModuleLoaded;
+        public readonly string?[] AgercExports = new string?[AgercExportSlots];
     }
 
     // Volatile: the front end reads the system-key mask and the show delay, and queues its requests, from its own
@@ -99,20 +105,25 @@ public sealed partial class ShellServices
     /// <param name="diagnostics">Op 0x1b2's text, which a session shares across its scene VMs as native's EngineCtx
     /// keeps it across frames; a new one by default.</param>
     /// <param name="print">Where the display log lines go.</param>
+    /// <param name="agercMap">AGERC.DLL's map, which lives as long as the program does: a session shares it across its
+    /// scene VMs. A new one by default.</param>
     public ShellServices(Sys4RegIniStore? settings = null, IWindowDevice? window = null, IShellDialogs? dialogs = null,
-                         DiagnosticOutputState? diagnostics = null, Action<string>? print = null)
+                         DiagnosticOutputState? diagnostics = null, Action<string>? print = null,
+                         AgercMap? agercMap = null)
     {
         _settings = settings;
         _window = window;
         _dialogs = dialogs;
         _diagnostics = diagnostics ?? new DiagnosticOutputState();
         _print = print ?? (_ => { });
+        AgercMap = agercMap ?? new AgercMap();
     }
 
     /// <summary>A shell native without a window or dialogs (tests, tools, a headless session): a screen-mode switch
-    /// changes only the state, and a dialog stays open until a stop. <paramref name="diagnostics"/> is op 0x1b2's text,
-    /// a new one by default.</summary>
-    public static ShellServices Headless(DiagnosticOutputState? diagnostics = null) => new(diagnostics: diagnostics);
+    /// changes only the state, and a dialog stays open until a stop. <paramref name="diagnostics"/> is op 0x1b2's text
+    /// and <paramref name="agercMap"/> AGERC.DLL's map, new ones by default.</summary>
+    public static ShellServices Headless(DiagnosticOutputState? diagnostics = null, AgercMap? agercMap = null)
+        => new(diagnostics: diagnostics, agercMap: agercMap);
 
     /// <summary>What to call when a menu request is queued: the waits' wake, so a text wait takes it at once.</summary>
     public void WakeWaitsWith(Action wake) => _wake = wake ?? throw new ArgumentNullException(nameof(wake));

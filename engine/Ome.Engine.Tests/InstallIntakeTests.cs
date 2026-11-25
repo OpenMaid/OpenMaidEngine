@@ -149,19 +149,18 @@ public sealed class InstallIntakeTests : IDisposable
     [Trait("Profile", "kamidori")]
     public void InstalledKamidoriReadsAsItsObservationRecordsIt() => AssertInstalled("kamidori");
 
-    /// <summary>Still below P3 (its saves are off), but every opcode its scripts use has a handler since
-    /// 2026-11-19.</summary>
+    /// <summary>Every opcode its scripts use has a handler since 2026-11-19.</summary>
     [Fact]
     [Trait("Category", "Workspace")]
     [Trait("Profile", "arterial")]
     public void InstalledArterialReadsAsItsObservationRecordsIt() => AssertInstalled("arterial");
 
-    /// <summary>At P1 since 2026-11-24: six opcodes its scripts use have no handler yet (docs/backlog.md, "Onboard
-    /// 戦女神VERITA").</summary>
+    /// <summary>Every opcode its scripts use has a handler since 2026-11-25 (docs/backlog.md, "Onboard 戦女神VERITA").
+    /// </summary>
     [Fact]
     [Trait("Category", "Workspace")]
     [Trait("Profile", "verita")]
-    public void InstalledVeritaReadsAsItsObservationRecordsIt() => AssertInstalled("verita", complete: false);
+    public void InstalledVeritaReadsAsItsObservationRecordsIt() => AssertInstalled("verita");
 
     /// <summary>A game's install: the intake names its profile, finds nothing new, and counts what the registry's
     /// observation counts (vm-map/opcodes.toml), though it decodes with the whole catalog. A game whose scripts still

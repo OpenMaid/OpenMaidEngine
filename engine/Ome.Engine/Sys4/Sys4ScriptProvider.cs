@@ -69,6 +69,8 @@ public sealed class Sys4ScriptProvider : IScriptProvider
         return null;
     }
 
+    public string? EntryName(long id) => Catalog.ResolvePacked(id)?.Name;
+
     public Script? GetByName(string name)
     {
         string key = name;

@@ -274,19 +274,47 @@ game's scripts use.
   the queries two to eight cells. Every installed `AGERC.DLL` but Arterial's exports these, besides the shell's
   `_OperateMenu`, `_ShowDialog` and `_GetInstance` (Arterial's has only those three). Verita's catalog also lists an
   `AGERC.DLL` (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`").
-- **The map functions**, read in Himegari's `AGERC.DLL` (`/support/AGERC.DLL`, whose code is not packed), where
-  Verita's installed copy has every export at the same address; Verita's own code is not read yet, as its copy is
-  packed. They keep one map in the DLL's statics: up to 100 wall, 100 land and 100 event polygons of up to 100 points
-  each. Each `_SetMap*P{X,Y}` copies 10,000 ints (point `k` of polygon `p` at `100p + k`), each `*PN`, `_SetMapWallCr`
-  and `_SetMapLandIdx` 100, whatever count the script passes; `_SetMapParams` takes the three polygon counts and
-  `_SetChParams` a move (from x, y, to x, y) and a radius, with its square. `_InitRect` computes every polygon's
-  bounding box; it resets the minimums but starts the maximums from the box's last values, so a box only grows, which
-  changes no answer, as the box only culls before the exact tests. `_FindClash` walks the wall polygons whose `Cr` is
-  1 and whose box the move's reaches, from the polygon and edge the cells name, and for the first edge the move
-  crosses, or whose distance from the move's end is at most the radius, writes the polygon, edge, contact point and
-  move end into its cells and returns 1. `_GetLand` returns the land index (`_SetMapLandIdx`) of the first land
-  polygon holding the point, and `_GetEv` the first event polygon's number; both 0 for none. This is the decompiler's
-  reading; the point-in-polygon test (`0x10004620`) and the segment test (`0x10004570`) are not read yet.
+- **The map functions**, read in Himegari's `AGERC.DLL` (`/support/AGERC.DLL`, whose code is not packed) instruction
+  for instruction. Verita's installed copy is packed; its code was dumped from a running Verita with Frida
+  (`build/engines/verita/agerc-dump/`, base `0x10000000`, 1,171,456 bytes) and compared with capstone: the 17 map
+  exports and their helpers pair instruction for instruction (21 functions, no difference), 20 exports at the same
+  addresses. Only addresses differ: the statics are `0x32a0` higher, the helpers `0x150` (`0x10004530` side,
+  `0x10004570` segment test, `0x10004620` point in polygon, `0x10006b30` `_ftol2`, at `0x10004680`, `0x100046c0`,
+  `0x10004770` and `0x10007240`), and `_ftol2`'s SSE2 flag moved from `0x100a1b18` to `0x100a60f8`. The functions
+  keep one map in the DLL's statics, all zero at load: up to 100 wall, 100 land and 100 event polygons of up to 100
+  points each. Each `_SetMap*P{X,Y}` copies 10,000 ints (point `k` of polygon `p` at `100p + k`), each `*PN`,
+  `_SetMapWallCr` and `_SetMapLandIdx` 100, whatever count the script passes; `_SetMapParams` takes the three polygon
+  counts and `_SetChParams` a move (from x, y, to x, y) and a radius, with its square. `_InitRect` copies every
+  polygon's points into an interleaved `(x, y)` table, which the queries and the segment test read (the point tables
+  only `_FindClash`'s arithmetic does), and computes its box; it resets the minimums but starts the maximums from the
+  box's last values, so a box only grows, which changes no answer, as the box only culls before the exact tests.
+  - The helpers: `side` is 1 when `(y3 - y1)(x2 - x1) > (y2 - y1)(x3 - x1)` (a signed compare), else -1, so a point
+    on the line is on the -1 side. Two segments cross when neither's ends are on one side of the other's line (each
+    product of sides below 1). A polygon holds a point when the segment from it to `(-1, -1)` crosses an odd number
+    of its edges, the closing edge included, with the point count read as 16 bits.
+  - `_GetLand` returns the land index (`_SetMapLandIdx`) of the first land polygon whose box (inclusive) and outline
+    hold the point, and `_GetEv` the first event polygon's number; both 0 for none, so event polygon 0 reads as none.
+  - `_FindClash` walks the wall polygons from the cells' first, those whose `Cr` is 1 and whose box the move's ends,
+    grown by the radius, reach. Every polygon's edges start at the cells' edge, not only the first polygon's, and the
+    closing edge is never tested. An edge parallel to the move is skipped. For the first edge the move crosses it
+    writes the contact point (integer division, truncating), moves the move's end there, and writes 0 for "at an
+    end". Otherwise the edge's nearest point to the move's end: the squared length and the end's projection are kept
+    as floats, an end of the edge when the projection falls outside it (written with 1), else `x1 - dx*r` and
+    `y1 - r*dy` with `r` their quotient, each step rounded to a float ("The x87 runs at single precision": AGE calls
+    the DLL on its VM thread) and truncated by `_ftol2` (`cvttsd2si`). A nearest point within the radius is written
+    with the move's end and 1 returned.
+  - The DLL stays loaded for AGE's menus, so op `0x14b`'s `FreeLibrary` never unloads it: the map lives as long as
+    the program, through op `0x9`'s scene reset (`scene_context_init_reset` frees only the module handle and zeroes the
+    100 slots, Verita `0x40beb6`) and a numbered load, and no save keeps it.
+- **The port** (2026-11-24): `VirtualMachine.Agerc.cs` runs the three ops; the module and the slots are the shell
+  native's scene (`ShellServices.Agerc.cs`), and the map is `AgercMap` (`engine/Ome.Engine/Natives/AgercMap.cs`),
+  which a session shares across its scene VMs. The port's module is its own AGERC: op `0x14b` loads `AGERC.DLL` and
+  halts on any other name. Op `0x14c` shows native's box for a name AGERC does not export (ERRORCODE 127, flags
+  `0x10007`) and halts on a slot of 100 or more, whose error text native formats from an operand past the
+  instruction. Op `0x14d` halts on an unbound slot, where AGE calls address 0, and where an export reads past the
+  cells or indexes past one of the DLL's tables, which native does without a test; it writes back only the cells the
+  export changed, which leaves memory as native's write-back does. `AgercOpsTests` holds the functions to geometry
+  worked out from the code and FIELD's 19 calls to the cells their exports read.
 
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
@@ -2716,6 +2744,54 @@ last frame stays on screen. Unlike the 終了 dialog, nothing dims it.
   (`godot/Win32ClassicCheckBox.cs`, `Win32GroupBox.cs`, `Win32Trackbar.cs`, `Win32TabControl.cs`, `Win32Edit.cs`,
   `Win32Edges.cs`) remain in the history before that change.
 
+**The start-up settings dialog** (read 2026-11-25). AGERC has a second 設定, which AGE opens instead of the game.
+`age_win_main` (4.24J `0x487620`; 4.24N's at `0x48938c` is not a function in its image) opens it after the catalog and
+the shared profile load, in three cases:
+
+- the command-line option `SETTING`;
+- Ctrl held at launch (`GetAsyncKeyState(VK_CONTROL)`);
+- a Yes to `startup_recovery_prompt` (4.24J `0x487430`, 4.24N `0x488ca0`). AGE writes the marker `$$AGE.TMP` before it
+  makes the window and the device. When the marker is still there at a start, the prompt asks Yes/No in a warning box
+  that names the display settings (`display:ScreenMode`, and `display:FullScreenBit`'s colour depth unless
+  `set:CreateObject` has bit 2). Yes deletes the marker and opens the dialog. No starts the game.
+
+It is host command 9 with payload -1 and no owner (`agerc_startup_settings_dialog_proc`, 4.24J `0x10005f70`). AGE
+exits when it closes, OK or ｷｬﾝｾﾙ, without running the game. Its tabs are 起動時設定, ﾒｯｾｰｼﾞ, ｻｳﾝﾄﾞ, その他 and 動作環境. The
+last four are the pages above. 起動時設定 is page 103, the page the in-game 設定 never creates, and it opens first.
+
+OK runs `agerc_settings_apply`, then writes page 103's controls and calls IAGEService `+0x74`:
+
+| control | 4.24J id | key |
+|---|---|---|
+| Sound機能を使用する | check `0x400` | `sound:Sound` |
+| ｴﾗｰﾛｸﾞを出力する | check `0x3ed` | `system:OutErrorLog` |
+| MMXを使用する | check `0x3ea` | `system:UseMMX` |
+| ﾌﾙｽｸﾘｰﾝ / ｳｲﾝﾄﾞｳ | radio `0x411` / `0x412` | `display:ScreenMode` 0 / 1 |
+| 描画処理 | combo `0x413` | `display:DeviceType` |
+| 頂点処理 | combo `0x414` | `display:VertexProcessing` |
+| 描画間隔 | combo `0x421` | `display:PresentInterval` |
+
+**Verita's** (4.24N, `0x10006560` in `AGERC.DLL`; read 2026-11-25 from a dump of the running game, since the file is
+packed) is the same dialog. Its page 103 adds a ﾌﾙｽｸﾘｰﾝ表示方式 group: radios 仮想ﾌﾙｽｸﾘｰﾝ `0x415` and 解像度変更 `0x416`,
+combos `0x418`, `0x41b` and `0x419`, and a check, ﾌﾙｽｸﾘｰﾝ表示を禁止する (`0x3e9`). Its OK also writes
+`display:VirtualFullScreen`, `AspectMode`, `VirtualFullScreenType`, `FullScreenWidth` and `FullScreenHeight`, and the
+page reads `display:ForceScreen` and `set:ScreenWarning`. These are the keys of its virtual fullscreen ("Engine-owned
+surfaces", surface 38), which the registry already binds for 4.24N (`EngineBuilds.Age424N`).
+
+The in-game shell of 4.24N is 4.24J's, compared resource by resource (2026-11-25):
+- Menu 110 is 4.24J's tree, items and ids, stored as a MENUEX template.
+- Dialog 9 and pages 100, 102, 104 and 105 have the same bytes.
+- Dialog 2 differs only in its copyright year (1999-2010).
+- The in-game 設定 procedure (`0x10006b00`) inserts the same four tabs and takes host commands 100, 102, 104 and 105 as
+  start tabs 0 to 3, as 4.24J's does.
+
+So Verita's shell needs no `ShellRules` entry, and the driver's `options` step reads native Verita's 設定 as it reads
+Himegari's.
+
+**The port** opens no start-up settings dialog and shows no recovery prompt, for any build. The launcher's display
+setting stands in for the screen mode (launcher design, "Settings"). The device keys stay in the registry with no
+control, as the shell design leaves them (engine shell design §5.3).
+
 **Measured look** (native captures, 2026-11-05):
 
 - **Bar.** 20 px tall. Each item is its text width plus 14, and the text starts 7 px in.
@@ -4109,6 +4185,86 @@ continues to create one contiguous portable RGBA surface; only AGE's obsolete ph
 omitted. Focused tests cover SYSTEM4's value 128, mode-1 texture loading, signed replacement, and reset
 lifetime.
 
+### Engine-owned surfaces and texture memory (2026-11-25)
+
+#### Engine-owned surfaces
+
+Native's engine makes surfaces in the 1,000 script slots for itself, and op `0x208` sizes them and op `0x24a` counts
+them as it does a script's. They were read in all four builds and checked live in Verita (4.24N).
+
+- **The composite surfaces 36 and 37 (`0x24`, `0x25`).** Start-up (`gfx_create_composite_scratch_surfaces`, 4.24J
+  `0x47b530`, 4.24N `0x47c880`, 4.33G `0x481d70`; 4.38D `gfx_create_device_objects@0x4907f0`) sets the pixel-shader
+  level and creates both at the screen's size (device `+0x44c`, `+0x450`): kind 1 at level 2, kind 2 below it. With
+  device `+0x48c` at 1 (`display:VirtualFullScreen`'s type 1) the three later builds also create surface 38
+  (`0x26`), the frame's, at the back buffer's size, kind 2, cleared black ("Himegari against Verita, triaged").
+- **The release guards.** Start-up sets the guard `gfx+0xb61c[slot]` (4.33G `+0xb638`, 4.38D `+0xb650`) of 36 and 37,
+  and the three later builds that of 38 too, whether or not they create it. The writes use fixed offsets (4.24J
+  `+0xb6ac` and `+0xb6b0`, 4.24N adds `+0xb6b4`, 4.33G `+0xb6c8` to `+0xb6d0`, 4.38D `+0xb6e0` to `+0xb6e8`), so a
+  search for the table's displacement finds only its read. Nothing clears a guard. Verita's read 36, 37 and 38 at its
+  first field. The release worker (`retained_gfx_release_surface`) leaves a guarded slot as it is, its record
+  included, so op `0x1fa` and the AutoFreeTex releases never drop 36 and 37 ("AutoFreeTex"). A create or a load
+  destroys the slot's surface without the worker, and does replace one.
+- **The mosaic** (op `0x36`, `screen_transition_begin` mode 9) replaces 36 and 37 with kind-0 copies of its two
+  surfaces at the transition's size. Its end (`screen_transition_tick@0x43a7a0`, 4.24J) creates them again as start-up
+  did (`gfx_recreate_composite_surfaces@0x47b410`), which the worker of ops `0x2b`, `0x2f` and `0x30` (`0x43ea90`)
+  and `0x43fbf0` also call.
+- **The transition targets.** `gfx_queue_surface_alpha_transition` (op `0x223`, 4.24J `0x47f440`) and
+  `gfx_queue_patterned_surface_transition` (op `0x24f`) give the target surface 36's kind. An empty slot is created at
+  36's size, a surface of another kind is created again at its own size, and one of 36's kind stays.
+- **Scratch surface 32 (`0x20`).** The fades of modes 0 to 3 create it at begin's size (the surface's, cut to the
+  screen) and fill it, and the tick releases it when the fade ends (`0x43aa5f`). Modes 5 to 7 and 9 create it and keep
+  it, and so does `screen_transition_finalize` for a negative surface, at the screen's size filled with the colour
+  ("Legacy transitions and scratch surface `0x20`"). Op `0x32`'s mixed-axis copy creates and releases it ("Scaled
+  surface rectangle copy").
+- **The layout surfaces.** `adv_text_layout_define` (op `0x70`, under `DRAWMODE=1`) creates the layout's surface at
+  slot layout + `0x14`, blank, at the layout's size, on every define. Verita's title holds nine: 21 to 27 at 1024 x 85,
+  28 at 1024 x 60, 29 at 1024 x 150.
+- **Passing surfaces.** `wm_close_confirm_exit_or_title` creates 31 (`0x1f`) for its dialog and releases it, and
+  4.38D's screenshot makes `0x27` with a multisampled back buffer and releases it ("Positions and render targets").
+
+No retail script of the four games names 21 to 29, 31, 32 or 36 to 38 as an immediate surface operand (a scan of
+every script's surface operands, 2026-11-25).
+
+**The port** (`Graphics.EngineSurfaces.cs`) holds the same surfaces in the graphics native:
+- 36 and 37 at the canvas size from its construction (a headless native makes none), with their kind from
+  `PixelShaderLevel`;
+- the release guards, 38's from the build's `GfxRules.GuardsFrameSurface` (4.24N on);
+- the 0x223/0x24f targets (`PrepareTransitionTarget`; without surface 36, the record only);
+- scratch 32 (`UseFadeScratch`, `FinishTransitionOnColour`, `BeginMosaicScratch`);
+- op `0x70`'s layout surface (`VirtualMachine.AdvText.cs`).
+
+It never creates 38, as it draws its frame in canvas units, nor the passing 31 and `0x27`. The mosaic's two copies
+are not made, since its end leaves 36 and 37 as they were. Tests: `EngineSurfacesTests`.
+
+#### Texture memory counters
+
+Op `0x24a` (`get-texture-memory`, 4.24N `op_0x24a_handler@0x42b160`) writes three counters (Himegari `0x5c5d00` and
+on, Verita `0x5c7d00` and on):
+- `0x5c7d00`: the bytes of the render-target textures (kinds 1 and 2);
+- `0x5c7d08`: only `0x467eb2` writes it, with 0;
+- `0x5c7d04`: every other texture's bytes.
+
+`gfx_surface_texture_create` (`0x466a20`) adds h x w x `display:TextureBit` / 8 of the texture's device size
+(`+0x430`, `+0x434`) in 32-bit arithmetic (an `imul`, then a shift that divides toward zero).
+`gfx_surface_texture_release` (`0x466bb0`) subtracts it. A tiled surface (kind 3,
+`gfx_surface_mode1_create_tiles@0x433b00`) cuts its size into tiles of op `0x248`'s edge, the last ones cut to the
+remainder, so its tiles together count its size. Of the four games' scripts only Verita's `FIELD.BIN` has the op,
+once, for its debug overlay.
+
+Read with Frida on a running Verita, attached after start-up (a hook at process start trips its protection, "Error:
+45"):
+- At the logo (`LOGO@0x21`), the title (`TITLE@0xd7`) and the first field (`FIELD@0x7df`), the counters were the sum
+  of the slots' textures, but for one texture outside the slots.
+- That texture is the display background's (`gfx_load_display_background_image@0x47cb20`, `gfx+0xb5fc`). It is a
+  surface of the Direct3D device's size, 1024 x 428 on that machine, 1,753,088 bytes.
+- At the title the counters read 4,718,592 and 20,151,712 bytes, 18,398,624 without the background.
+- When the game closes, its teardown releases every slot's texture, 36 and 37 included, and the second counter is left
+  with the background's 1,753,088 bytes.
+
+**The port** (`Graphics.TextureMemory`, `VirtualMachine.Surface.cs`) sums its live surfaces the same way and leaves
+the background out: it has no such texture, and native's size is the machine's. `NaturalBootIntegrationTests` holds
+Verita's title to native's slots.
+
 ### Grey-background root cause — slot collision + tint-strength (2026-07-08, gfx-log)
 
 Diagnosed with the new `--gfx-log` compositor/op trace (docs/tools-reference.md). The grey background has
@@ -4806,7 +4962,8 @@ mask. Both bits act only under `set:CreateObject` bit 1, the object backend both
   records, so only the records flagged for reload come back.
 - **Bit 0.** Op `0x9`'s root reload (`op_0x9_reset_scene_and_reload_root_sys4433@0x423b50`) releases them as well.
 - The release worker (`retained_gfx_release_surface@0x47b6b0`) skips a slot whose guard `gfx+0xb638[slot]`
-  (`ctx+0x55ebc`) is set, but nothing writes that table, so every slot is released.
+  (`ctx+0x55ebc`) is set. Start-up sets the guards of 36, 37 and 38 and nothing clears one, so every other slot is
+  released ("Engine-owned surfaces"; this note said until 2026-11-25 that nothing writes the table).
 
 The code is not a revision difference. SYS4422 registers the same default 0, and its handler
 (`op_0x9_reset_scene_and_reload_root@0x418f50`, at `0x4191de`) tests the same `(CreateObject & 2) && (AutoFreeTex & 1)`
@@ -4829,8 +4986,9 @@ The port gates both releases on `VmOptions.CreateObject`/`.AutoFreeTex`:
   the reload flags and the movies. Op `0x216` reads the live record (`GfxState.QueryField`).
 
 Driving the port the same way, its reset keeps every surface it holds (3, 5, 12, 14, 15, 17, 21). Its title after the
-return matches its boot title exactly. The port host never holds native's other kept slots (22-29, and the boot
-scratch surfaces 36/37) as surfaces, so the reset cannot drop them.
+return matches its boot title exactly. Since 2026-11-25 the port also holds native's other kept slots, the layout
+surfaces 22 to 29 and the composite surfaces 36 and 37 ("Engine-owned surfaces"), and its AutoFreeTex releases pass
+over 36 and 37 as native's do.
 
 #### Port-authored round trips: restored frame boundary and retained-object encoding (2026-07-24)
 
@@ -7092,8 +7250,9 @@ only when that operand is negative, which is the black or white endpoint:
 | `0x25` | begin mode 4: not written | `finalize(target, 0)`: written only for a negative target |
 | `0x27`/`0x28` | strip reveal: not written | `finalize(surface, 0)`, also when the division count is ≤ 0: written only for a negative surface |
 
-The port follows these tables in `VirtualMachine.Presentation.cs` (`MarkLegacyTransitionScratchWritten`,
-`MarkScratchIfFinalizeFills`). Ops `0x23`, `0x2a` and `0x2e` appear in no corpus and have no handler, so a run
+The port follows these tables in `VirtualMachine.Presentation.cs`, and since 2026-11-25 its graphics native holds
+the surface as native does: a fade's begin creates it and its end releases it, a finish on black or white leaves it
+filled at the screen's size, and the mosaic leaves it blank (`Graphics.EngineSurfaces.cs`; "Engine-owned surfaces"). Ops `0x23`, `0x2a` and `0x2e` appear in no corpus and have no handler, so a run
 stops at one with a compatibility failure (a probe run traces it and goes on); op `0x36` is handled ("The mosaic
 transition"). Test: `SurfaceRecordTableTests.LegacyTransitionsMarkScratch0x20OnlyWhereNativeFillsIt`.
 Live check: the port loaded slot 008, entered 木漏れ日の深緑地 (SC0500 and the SC2000 tutorial) and saved. The save
@@ -8282,6 +8441,41 @@ call and cover half-width right alignment, zero padding, and the observed full-w
 DRAWENP is now 36/36 opcodes and 611/611 instructions handled; all 284 engine tests, the zero-warning Godot
 build, and threaded frontend selftest pass.
 
+### Op 0x89, a string drawn as the ADV text is (2026-11-25)
+
+Op `0x89` `(surface, x, y, string)` draws a string into a surface. It was read in 4.24N (`op_0x89_handler@0x41fd00`,
+length 9 words, and its worker `text_draw_string_adv_route@0x450840`). Himegari's `op_0x89_handler@0x41f180` and
+worker `0x44fd70` are the same code; Kamidori's 4.33G and Arterial's 4.38D were not read. The worker runs on the text
+manager (`ctx+0x14948`):
+
+1. It returns at once for an empty string, and measures the string with `GetTextExtentPoint32A` on its HDC (`+0x450`).
+2. It turns surface 0 into surface 30 (`0x1e`), and reports the string's rectangle as dirty afterwards (backend vtable
+   `+0x14`), when the draw-mode-0 backend (`+0x408`, which is `ctx+0x1c38`) has `+0x1f7c` set and `+0x1f88` at 1. Only
+   that backend's set-up (`0x433e30`), the screen-mode switch (`0x4398b0`, from
+   `display_toggle_screen_mode_and_menu_bar`) and `0x4861c0` (`+0x1f88` only) write them. A live read at Verita's first
+   field, under `DRAWMODE=1`, gave 0 and 0.
+3. It draws as the ADV glyph builders do. With AntiFont (`+0x544`) set it calls
+   `text_draw_antialiased_effect_string@0x45e0a0` when the render mode (`+0x558`) is not 0, and
+   `text_draw_antialiased_plain_string@0x45aab0` when it is. Under `DRAWMODE=1` both call
+   `text_raster_string_cached@0x45bfa0` or `text_raster_string_uncached@0x45a730` at (x, y), the rasterizers op `0x204`
+   uses. With AntiFont clear it calls `text_draw_string_primary_or_ruby@0x450590` with the primary and ruby fonts
+   (`+0x54c`, `+0x550`) and the mode, which starts a string of mode 1 to 3 at (x + effect x, y + effect y) and one of
+   mode 0 at (x, y).
+
+The worker tests no surface. Both rasterizers size the slot first (`gfx_surface_get_size@0x4764b0`): a slot past 999,
+unsigned, traces 「関数：GetTextureSize エラー：不正なtexture %d」 and reads 0 x 0, an empty slot reads 0 x 0, and a
+size of 0 draws nothing. So op `0x89` never reads past the surface table, where op `0x204`'s `draw_string_to_surface`
+does.
+
+The one retail site is Verita's alchemy list, `ALCHEMY@0x2674`. For a price past 9,999,999 it draws `#######` on
+surface `0x83` at x `0x1ab`, where op `0x205` draws a price that fits.
+
+**The port** (`VirtualMachine.OpDrawAdvString`) draws through the text manager as op `0x204` does, after native's tests:
+an empty string, an empty slot and one of size 0 draw nothing, and a slot outside 0..999 draws nothing with the trace as
+a warning. With AntiFont off and a render mode other than 0 it moves the start by the effect offsets; op `0x204`'s
+renderer keeps an aliased string where it is. It never redirects to surface 30. Tests: `DrawAdvStringTests`, and
+`IndexBoundsTests` for the slots.
+
 ### DEBUGMAP-to-battle frontier opcode cluster (2026-07-21)
 
 A static call-graph/coverage pass from `FIELD.BIN` through selection, movement, combat, damage, growth, and
@@ -8354,6 +8548,52 @@ flag 1, enlarge the source into it, shrink it into the destination, and then rel
 (`retained_gfx_release_surface`): slot 32 is left with no surface. The port does the same
 (`Graphics.ScaleCopySurfaceRect`). It decides on the requested rectangles, where native decides on the clipped ones;
 the two differ only for a rectangle that crosses a surface's edge. Retail never takes the path.
+
+### Op 0x35, the mosaic copy (2026-11-25)
+
+Op `0x35` is native `MosaicTexture` between two surfaces: `(source, destination, source x, y, width, height,
+destination x, y, width, height, dot)`. It was read in 4.24N (`op_0x35_handler@0x41ea20`, `gfx_mosaic_texture@0x47add0`).
+The worker is the same code in 4.24J (`0x479ac0`), 4.33G (`0x480400`) and 4.38D (`0x48ee10`, which Arterial's mosaic
+transition also uses, "The mosaic transition").
+
+- **The handler** (length `0x17` words) adds each width and height to its origin in 32 bits, so the worker gets each
+  rectangle's edges. Under `DRAWMODE=1` (`ctx+0x992f4`) it calls the worker. Under draw mode 0 it calls the backend at
+  `ctx+0x1c38` (vtable `+0x44`) instead.
+- **The record.** The worker sets the destination record's created flag (`+0x700` + slot x `0x14` + `0x10`) before any
+  test, with no bound on the slot.
+- **The refusals.** It then traces and copies nothing, in this order, for: no source surface
+  (「転送元テクスチャが作成されていません． TEXTURE=%d」); no destination surface (「転送先テクスチャが作成されていません． TEXTURE=%d」); the same surface twice (「転送先と転送元が同じですTEXTURE = %d」); a
+  dot of 0 (「モザイクサイズの指定が不正ですsize = %d」); a source rectangle outside its surface
+  (「転送元の座標が不正です (%d,%d)-(%d,%d)」); a destination rectangle outside its surface (「転送先の座標が不正です」, with the
+  same four numbers). Each trace starts 「関数：MosaicTexture エラー：」, and a rectangle's prints its left, top, right and
+  bottom. A rectangle is outside when its left, its top, the surface's width (`+0x410`) less its right, or its height
+  (`+0x414`) less its bottom is negative.
+- **The locks.** It locks both surfaces through `gfx_surface_lockable_level0@0x477ca0`: a plain texture's level 0 as it
+  is, a render target through a system-memory copy (`CreateOffscreenPlainSurface` in pool 2, then
+  `GetRenderTargetData`).
+- **The copy.** It walks the destination rectangle's size, reading from the source rectangle's origin at the source's
+  pitch: the source rectangle's own extent is only tested. A row whose y divides by the dot samples each pixel whose x
+  divides by it into a line buffer at x / dot, and every destination pixel takes the buffer's x / dot. So each dot x
+  dot block takes the source pixel at its top-left corner. When the source's kind (`+0x418`) is not 0, a render
+  target, the sampled alpha is forced to `0xff` (`0xf000` at 16 bits).
+- **The unlocks.** A render-target destination's whole copy goes back through `UpdateSurface` (device vtable `+0x78`),
+  so its pixels outside the rectangle stay as they were.
+
+Two cases reach memory the worker does not own. A destination rectangle larger than what the source holds from the
+source rectangle's origin reads past the source's rows. A negative dot makes x / dot negative once x reaches −dot, and
+writes before the line buffer.
+
+The one retail site is Verita's battle start, `BTL@0x8f4b`. Each 16 ms callback of its 75-tick sequence selects render
+target `0x66`, presents object range `0xc350` + 4 into it, and restores the back buffer. It then mosaics `0x66` into
+`0x67` over the whole 1024 x 576 at a dot of 1 + the tick count, and presents objects `0xc354` and `0xc355`, which
+show `0x67`. Both surfaces are created as kind 2.
+
+**The port** (`Graphics.MosaicSurfaceRect`, `VirtualMachine.Surface.cs`) writes the record first and reports native's
+refusals as warnings with the trace. It halts where native reaches memory it does not own: a slot past 999 (the
+record write), a sample past the source's width or height, and a negative dot on a rectangle wider than −dot. A
+negative dot on a narrower one copies as a dot of −dot does. It forces the alpha of a source of kind 1 or 2, the
+port's render targets. It does not model draw mode 0 or 16-bit textures. Tests: `MosaicCopyTests`, and
+`IndexBoundsTests` for the slots.
 
 ### Alternate-fill point-in-polygon -- opcode `0x147` (2026-08-19)
 
@@ -8774,7 +9014,7 @@ precision. The runtime's `__setdefaultprecision` (53 bits) runs at start-up, bef
 At single precision, `fadd`, `fsub`, `fmul`, `fdiv` and `fsqrt` round their result to 24 bits. Loads stay exact, so
 an integer or a double operand enters unrounded. `fsin` and the runtime's sine (`_CIsin@0x586ba0`) keep their result
 unrounded until it is stored. The exponent keeps the x87's wide range, which matters only for a value a float cannot
-hold. Three things follow:
+hold. Four things follow:
 
 - **The float opcodes** `0x2d0`–`0x2d3` work on an integer operand that is exact on the stack and round the exact
   result once. A double rounded to a float rounds twice, which differs only when an integer operand has more than 24
@@ -8792,6 +9032,10 @@ hold. Three things follow:
 - **A polygon's colour fade** (`gfx_polygon_calc_diffuse@0x48b9d0`) is `target · p + current · (1 - p)` per
   channel, truncated. Each operation rounds, so a channel that does not change can still drop by one: 127 at
   p = 0.003 gives 126. The port computes it in floats too (`PolygonObjectsTests`).
+- **AGERC.DLL's `_FindClash`** runs on the same thread, called by op `0x14d`. Its nearest point, `x1 - dx·r`,
+  multiplies an exact integer by a float and subtracts it from another, so a coordinate of more than 24 bits rounds:
+  `2^24 + 1 - 0·r` gives `2^24`. The port's `AgercMap` rounds each step with `SinglePrecision` (`AgercOpsTests`;
+  "Comparing engine builds", Verita).
 
 The port keeps doubles for the drawing's other interpolation: a transition's progress, an object's matrix channels
 and cycles, and the blur parameters. Those values feed the renderers' own blending and vertex positions. There

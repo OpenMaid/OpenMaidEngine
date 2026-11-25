@@ -12,4 +12,7 @@ namespace Ome.Engine.Model;
 /// <c>Begin(D3DXSPRITE_ALPHABLEND)</c>, so a texel whose alpha is 0 is not written. Only a copy (colour mode 2 into a
 /// kind-1 render target, <see cref="BlendKind.Copy"/>) shows it; the other blends leave the target as it is for such a
 /// texel (docs/engine-re.md, "Object blend modes").</param>
-public sealed record GfxRules(bool UnboundObjectReadsAbsent, bool SpriteAlphaTest = true);
+/// <param name="GuardsFrameSurface">Whether start-up guards slot 38, the frame's surface, from the release worker as well
+/// as the composite surfaces 36 and 37. 4.24J's start-up sets only those two guards; 4.24N's, 4.33G's and 4.38D's set
+/// the third too, whether or not they create the surface (docs/engine-re.md, "Engine-owned surfaces").</param>
+public sealed record GfxRules(bool UnboundObjectReadsAbsent, bool SpriteAlphaTest = true, bool GuardsFrameSurface = false);

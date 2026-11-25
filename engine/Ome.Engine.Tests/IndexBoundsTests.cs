@@ -57,7 +57,7 @@ public sealed class IndexBoundsTests
         // Surfaces, 0 to 999: no test in native.
         foreach ((int op, int argument) in new[] { (0x1f8, 1), (0x1f9, 2), (0x1fa, 1), (0x207, 1), (0x207, 2),
                                                    (0x20b, 1), (0x223, 2), (0x249, 2), (0x24d, 2), (0x24f, 2),
-                                                   (0x258, 1), (0x32, 1), (0x32, 2) })
+                                                   (0x258, 1), (0x32, 1), (0x32, 2), (0x35, 1), (0x35, 2) })
             cases.Add(op, argument, 1000, Past.Halts, "surface slot 1000 is outside 0..999");
         cases.Add(0x216, 2, 2000, Past.Halts, "surface record 2000 is outside 0..1999");
         // A polygon's texture (AGE 4.38D, op 0x321): native writes the record at any stage, and its draw reads the
@@ -123,6 +123,9 @@ public sealed class IndexBoundsTests
         cases.Add(0x6, 2, 40, Past.Halts, "frame slot 40 is outside 0..39");
         cases.Add(0x8, 1, 40, Past.Halts, "frame slot 40 is outside 0..39");
         cases.Add(0x8, 1, 5, Past.AsksYesNo, "この階層にはファイルが読み込まれていません．Depth=5");
+        // AGERC's export slots, 0 to 99: op 0x14d reads its table at the operand with no test.
+        cases.Add(0x14d, 1, 100, Past.Halts, "export slot 100 is outside 0..99");
+        cases.Add(0x14d, 1, -1, Past.Halts, "export slot -1 is outside 0..99");
         cases.Add(0x1d3, 4, -1, Past.Halts, "history record -1 is negative");
         cases.Add(0x1d4, 4, -1, Past.Halts, "history record -1 is negative");
         // The 28 read tests (engine-re.md, "The 28 ops' native tests", 2026-11-17).
@@ -140,6 +143,9 @@ public sealed class IndexBoundsTests
         // Op 0x208 reads 0 x 0 with the trace for any slot outside 0..999, -1 (HIDEWIN's op 0x215 answer) too
         // (TheTextureSizeOfASlotPastTheTableIsZero reads the outputs).
         cases.Add(0x208, 1, 1000, Past.Traces, TextureSizeTrace + "1000");
+        // Op 0x89's rasterizers size the slot first (Verita text_draw_string_adv_route@0x450840), so it draws nothing.
+        cases.Add(0x89, 1, 1000, Past.Traces, TextureSizeTrace + "1000");
+        cases.Add(0x89, 1, -1, Past.Traces, TextureSizeTrace + "-1");
         cases.Add(0x208, 1, -1, Past.Traces, TextureSizeTrace + "-1");
         // Draw-string, bound-draw, indicator and thumbnail surfaces: no test at use; the port halts.
         foreach ((int op, int argument) in new[] { (0x73, 4), (0x2bc, 4), (0x1fb, 2), (0x204, 1), (0x205, 1),

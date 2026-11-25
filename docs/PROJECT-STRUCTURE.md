@@ -702,6 +702,11 @@ used by the shared numbered-payload and semantic graphics codecs. The profile se
 `engine/Ome.Engine.Vm/VirtualMachine.MemoryCollections.cs` owns string byte length, addressed lookup/copy,
 inline arrays, rectangle search and stable index sorting, bounded integer queues/stacks, bit/range operations,
 and native-style random-modulo dispatch; shared storage/address helpers remain in the coordinator.
+`engine/Ome.Engine.Vm/VirtualMachine.Agerc.cs` runs ops `0x14b`–`0x14d`, the AGERC.DLL code scripts call: the shell
+native keeps the module and the export slots (`engine/Ome.Engine/Natives/ShellServices.Agerc.cs`), and
+`engine/Ome.Engine/Natives/AgercMap.cs` is the DLL's map functions and their statics.
+`engine/Ome.Engine/Model/SinglePrecision.cs` rounds float arithmetic as AGE's x87 does at single precision, for the
+float opcodes and the map.
 `engine/Ome.Engine.Vm/VirtualMachine.ControlFlow.cs` owns local jumps/calls/returns, value-switch construction,
 ADV coroutine handler save/yield/resume, and bounded labeled-yield dispatch; process/root exit and cross-script
 lifecycle are routed separately. `engine/Ome.Engine.Vm/VirtualMachine.InputLatch.cs` owns native's input latch: the
@@ -723,8 +728,10 @@ owns the statement block of ops `0x1f4`/`0x1f5`.
 The graphics native `engine/Ome.Engine/Natives/Graphics.cs` owns the retained objects (its `GfxState`, which the VM's
 `Gfx` returns), the presentation request, and the partners it asks and tells (`IGraphicsMovies`, `ISurfaceListener`).
 Its partials own the surface table (`Surfaces`: pixels as immutable `RgbaImage` snapshots that each change replaces,
-colour keys, loaded resources, sizes, the decoded-image cache, texture resolution and the op trace the `gfx` command
-prints), publication and the screen transition (`Transitions`: what ops `0x222` and `0x20c` publish into a render
+colour keys, loaded resources, sizes, the decoded-image cache, texture resolution, op `0x24a`'s texture memory and the
+op trace the `gfx` command prints), the surfaces native's engine makes for itself (`EngineSurfaces`: the composite
+surfaces 36 and 37 and the release guards, the 0x223/0x24f targets, the transitions' scratch 32), publication and the
+screen transition (`Transitions`: what ops `0x222` and `0x20c` publish into a render
 target or the backbuffer, the render-target snapshots, and the `0x21`/`0x22`/`0x24`/`0x25` transition and its timing),
 and the frame lowering (`Frame`: the one traversal of the objects, which lowers each frame, effects included, to a
 `FrameDescription`, and a published range to plain items). The frame description and the renderer and presenter

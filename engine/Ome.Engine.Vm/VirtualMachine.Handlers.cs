@@ -60,6 +60,7 @@ public sealed partial class VirtualMachine
             ["set-adv-text-bounds"] = static (vm, ins, pc) => vm.OpSetAdvTextBounds(ins, pc),
             ["set-adv-wait-indicator-enabled"] = static (vm, ins, pc) => vm.OpSetAdvWaitIndicatorEnabled(ins, pc),
             ["draw-string"] = static (vm, ins, pc) => vm.OpDrawString(ins, pc),
+            ["draw-adv-string"] = static (vm, ins, pc) => vm.OpDrawAdvString(ins, pc),
             ["draw-formatted-integer"] = static (vm, ins, pc) => vm.OpDrawFormattedInteger(ins, pc),
             ["publish-adv-text-layout"] = static (vm, ins, pc) => vm.OpPublishAdvTextLayout(ins, pc),
             ["set-adv-wait-indicator-handle"] = static (vm, ins, pc) => vm.OpSetAdvWaitIndicatorHandle(ins, pc),
@@ -72,6 +73,10 @@ public sealed partial class VirtualMachine
             ["get-font-family-count"] = static (vm, ins, pc) => vm.OpGetFontFamilyCount(ins, pc),
             ["get-font-family-name"] = static (vm, ins, pc) => vm.OpGetFontFamilyName(ins, pc),
             ["find-font-family-index"] = static (vm, ins, pc) => vm.OpFindFontFamilyIndex(ins, pc),
+            // VirtualMachine.Agerc.cs
+            ["load-agerc-module"] = static (vm, ins, pc) => vm.OpLoadAgercModule(ins, pc),
+            ["set-agerc-export"] = static (vm, ins, pc) => vm.OpSetAgercExport(ins, pc),
+            ["call-agerc-export"] = static (vm, ins, pc) => vm.OpCallAgercExport(ins, pc),
             // VirtualMachine.Animation.cs
             ["gfx-blit-color"] = static (vm, ins, pc) => vm.OpGfxBlitColor(ins, pc),
             ["gfx-draw-color"] = static (vm, ins, pc) => vm.OpGfxDrawColor(ins, pc),
@@ -283,12 +288,14 @@ public sealed partial class VirtualMachine
             ["stmt-end"] = static (vm, ins, pc) => vm.OpStmtEnd(ins, pc),
             // VirtualMachine.Surface.cs
             ["scale-copy-surface-rect"] = static (vm, ins, pc) => vm.OpScaleCopySurfaceRect(ins, pc),
+            ["mosaic-copy-surface-rect"] = static (vm, ins, pc) => vm.OpMosaicCopySurfaceRect(ins, pc),
             ["create-texture"] = static (vm, ins, pc) => vm.OpCreateTexture(ins, pc),
             ["set-texture"] = static (vm, ins, pc) => vm.OpSetTexture(ins, pc),
             ["gfx-elem-release"] = static (vm, ins, pc) => vm.OpGfxElemRelease(ins, pc),
             ["draw-texture"] = static (vm, ins, pc) => vm.OpDrawTexture(ins, pc),
             ["copy-surface-rect"] = static (vm, ins, pc) => vm.OpCopySurfaceRect(ins, pc),
             ["get-texture-size"] = static (vm, ins, pc) => vm.OpGetTextureSize(ins, pc),
+            ["get-texture-memory"] = static (vm, ins, pc) => vm.OpGetTextureMemory(ins, pc),
             ["fill-surface-rect"] = static (vm, ins, pc) => vm.OpFillSurfaceRect(ins, pc),
             ["select-render-target"] = static (vm, ins, pc) => vm.OpSelectRenderTarget(ins, pc),
             ["clear-render-target"] = static (vm, ins, pc) => vm.OpClearRenderTarget(ins, pc),
