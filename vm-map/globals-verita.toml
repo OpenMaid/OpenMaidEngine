@@ -1493,6 +1493,8 @@ voice_setting_id = "unit_voice_settings"
 [table.refs]
 lead_growth_row = "lead_growth"
 voice_setting_id = "voice_setting"
+# A unit's 0 is element 0, the row of a unit with no element of its own (an item's 0 gives none, and is none).
+defense_element = { table = "element", zero = true }
 battle_sprite = "picture"
 book_picture = "picture"
 weapon = "item"
@@ -2427,7 +2429,11 @@ address = "0xc0b56d"
 name = "element_affinities"
 category = "data-table"
 type = "int[20][20]"
+# A 0 is a value: an element whose cell is 0 takes no damage of that attack element or none of its column's conditions.
+zero = true
 columns_from = { global = "attack_element_names", first = 0 }
+# Column 0 has no name in the game, and no attack reaches it (the element table): it is undefined.
+columns = { "0" = "undefined", "1" = "non_elemental", "2" = "physical", "3" = "universal", "4" = "fire", "5" = "ice", "6" = "lightning", "7" = "earth", "8" = "holy", "9" = "dark", "10" = "fs", "11" = "resistance_1", "12" = "resistance_2", "13" = "resistance_3", "14" = "resistance_4", "15" = "resistance_5", "16" = "resistance_6", "17" = "resistance_7" }
 usage = "AFINIT: the damage percentage by defense element (row) and attack element (column); negative makes the damage negative. CALCDAMAGE@0x1d2, CALCILL@0x618."
 source = "investigation"
 confidence = "high"
@@ -2623,6 +2629,9 @@ growth_level = "item_growth_levels"
 
 [table.refs]
 class = "item_class"
+# Attack element n is element n up to 9, 暗黒; 10 戦意 and 11 to 17, 抵抗1 to 7, are no element (the element table).
+attack_element = { table = "element", last = 9 }
+defense_element = "element"
 owners = "character"
 exclusive_users = "character"
 required_skill = "skill"
@@ -2656,6 +2665,16 @@ flag = "item_growth_flags"
 
 [table.refs]
 result_item = "item"
+
+[[table]]
+name = "element"
+records = 20
+built_by = "boot"
+usage = "AFINIT's elements keyed by defense element id, 1 to 15 named, AFINIT writing no row past 15: a unit's and an item's defense element (unit_defense_elements, item_defense_elements). Row 0, 100 throughout, has no name in the game (the element kind titles it Undefined) and is the row of a unit with no element of its own: a battle unit takes its armour's defense element, else its unit's (SETCH@0xa82, SETEN@0xbfb), and 131 units have none, nor does the armour they start with give one. Column 0, 100 throughout, no attack reaches: CALCDAMAGE takes the action's attack element, else the attacker's weapon's (CALCDAMAGE@0x1a2), which SETCH and SETEN alone write, the weapon's or 2 物理 without one (SETCH@0x9d9, SETEN@0xb52), and every weapon has one. Each row is how the element takes each attack element (element_affinities, its columns named by attack_element_names). Attack element n is element n up to 9: the two lists name 1 to 9 alike, and the matrix pairs them, 火炎, 冷却, 電撃 and 地脈 (4 to 7) taking -100 of their own attack element. The attack elements above 9 are no element: 10 戦意 is every 戦意 attack's (item_damage_kinds 5), and 11 to 17, 抵抗1 to 7, are the columns that scale a condition's chance (condition_affinity_columns, CALCILL@0x5ec), 抵抗3 being also the attack element of seven mind checks (item_damage_kinds 3)."
+
+[table.fields]
+name = "defense_element_names"
+affinities = "element_affinities"
 
 [[table]]
 name = "item_class"

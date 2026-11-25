@@ -36,7 +36,8 @@ some values, `values_from` names the game's own table of names (`{ global, first
 value first + k), `bits_of` makes it a mask whose bit k stands for value k of another global (or for element k of a
 list of strings, the game's names of the bits: Arterial's races), and `scale`, `offset` and
 `unit` say how a number is shown (the stored value times scale, plus offset, in unit), and `none` the stored value
-that means none (a quest's deadline of 0: it has none), which a reader is not shown as a number. The JSON and the
+that means none (a quest's deadline of 0: it has none), which a reader is not shown as a number, and `zero = true`
+that a 0 is a value and not none, which a reader is shown (an element's affinity of 0: it is immune). The JSON and the
 reference doc carry them; the game data export publishes them.
 An array's column facets name its columns for a reader where `columns` gives OME's words: `columns_from` names the
 game's own table of names (`{ global, first }`: the string global's element k names column first + k, as an element's
@@ -356,10 +357,11 @@ def ref_target(value) -> str | None:
 
 def split_refs(refs: dict) -> tuple[dict, dict]:
     """A table's references as the JSON writes them: field = target table under `refs`, and a two-field reference's
-    `{ times, plus }` under `ref_keys`, an offset reference's `{ offset }`, and a reference's `zero` beside them (a plain
-    reference with `zero` has only it)."""
+    `{ times, plus }` under `ref_keys`, an offset reference's `{ offset }`, a capped one's `{ last }`, and a reference's
+    `zero` beside them (a plain reference with `zero` has only it)."""
     targets = {field: ref_target(value) for field, value in refs.items()}
-    keys = {field: ({"offset": value.get("offset")} if "offset" in value
+    keys = {field: ({"last": value.get("last")} if "last" in value
+                    else {"offset": value.get("offset")} if "offset" in value
                     else {} if "zero" in value
                     else {"times": value.get("times"), "pairs": True} if value.get("pairs")
                     else {"bases": value.get("bases"), "plus": value.get("plus")} if "bases" in value
@@ -424,9 +426,12 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
     `{ table, times, pairs = true }`, its field a row of cells of an even width, each pair of elements one record. An
     offset reference is `{ table, offset }`, `offset` a whole number other than 0 that a value above 0 adds to name
     its record (a Himegari unit's summon flag is its stone's item id plus 1901). Either may add `zero` (`zero_errors`).
+    A capped reference is `{ table, last }`, `last` a whole number above 0 and below the table's records: a value above
+    it names no record (a Verita item's attack element n is element n up to 9, 暗黒, and 10, 戦意, is no element).
     """
     errors: list[str] = []
     names = {t.get("name") for t in tables if isinstance(t.get("name"), str)}
+    records = {t.get("name"): t.get("records") for t in tables if isinstance(t.get("name"), str)}
     for t in tables:
         name, refs = t.get("name"), t.get("refs")
         if refs is None or not isinstance(name, str):
@@ -447,6 +452,25 @@ def lint_table_refs(tables: list[dict], globals_by_name: dict) -> list[str]:
                 errors.append(f"{tag}: refs names {field!r}, which is not a field of the table")
                 continue
             target = ref_target(value)
+            # `last`: the last value that names a record, a value above it naming none (a Verita item's attack element
+            # n is element n up to 9; 10, 戦意, and 11 to 17, 抵抗1 to 7, are no element). Only on a plain reference.
+            if isinstance(value, dict) and "last" in value:
+                last = value["last"]
+                if set(value) != {"table", "last"}:
+                    errors.append(f"{tag}: refs gives {field} last beside "
+                                  f"{', '.join(sorted(set(value) - {'table', 'last'}))}; last is for a plain "
+                                  f"reference, {{ table, last }}")
+                    continue
+                if not isinstance(last, int) or isinstance(last, bool) or last < 1:
+                    errors.append(f"{tag}: refs gives {field} last {last!r}, which must be a whole number above 0, the "
+                                  f"last value that names a record")
+                elif isinstance(records.get(target), int) and last >= records[target]:
+                    errors.append(f"{tag}: refs gives {field} last {last}, past the {records[target]} records of "
+                                  f"table {target}")
+                if target == REF_PICTURE:
+                    errors.append(f"{tag}: refs gives {field} a last to {REF_PICTURE}, whose value is the picture's "
+                                  f"own id")
+                value = target
             # `zero`: a 0 that names record 0, everywhere or where another field holds one of some values (a Kamidori
             # weapon's attack element 0 is 無属, element 0). Only beside a reference of one cell, plain or offset.
             if isinstance(value, dict) and "zero" in value:
@@ -574,7 +598,7 @@ def lint_table_aliases(tables: list[dict], globals_by_name: dict) -> list[str]:
 
 
 # A global's value facets (game data export plan §5), as the JSON carries them.
-VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit", "none")
+VALUE_FACETS = ("values", "values_from", "bits_of", "scale", "offset", "unit", "none", "zero")
 # An array's column facets, as the JSON carries them.
 COLUMN_FACETS = ("columns_from", "columns_ref")
 # A word for a value or a unit is a reader's: one line, short.
@@ -587,8 +611,8 @@ def lint_values(entries: dict) -> list[str]:
     global and a whole first value; `bits_of` an integer global's mask over a global whose values have words or names,
     or over a list of strings whose element k names bit k;
     `scale` a positive number other than 1, `offset` a whole number other than 0, `unit` a short word, `none` a whole
-    number that `values` gives no word to. Facets are for integer globals; a mask's bits name values, so it has no
-    words, names, scale, offset or none of its own."""
+    number that `values` gives no word to, `zero` true, beside no `none` of 0. Facets are for integer globals; a mask's
+    bits name values, so it has no words, names, scale, offset, none or zero of its own."""
     errors: list[str] = []
     by_name = {e["name"]: e for e in entries.values() if e.get("name")}
     for key, e in sorted(entries.items(), key=lambda item: str(item[0])):
@@ -635,7 +659,7 @@ def lint_values(entries: dict) -> list[str]:
             elif "values" not in target and "values_from" not in target:
                 errors.append(f"{tag}: bits_of {bits}, whose values have no words or names, and which is no list "
                               f"of strings")
-            clash = [facet for facet in ("values", "values_from", "scale", "offset", "none") if facet in e]
+            clash = [facet for facet in ("values", "values_from", "scale", "offset", "none", "zero") if facet in e]
             if clash:
                 errors.append(f"{tag}: a mask's bits name values, so it takes no {', '.join(clash)}")
         scale = e.get("scale")
@@ -654,6 +678,12 @@ def lint_values(entries: dict) -> list[str]:
                 errors.append(f"{tag}: none must be a whole number, the stored value that means none")
             elif isinstance(values, dict) and str(none) in values:
                 errors.append(f"{tag}: values gives a word to {none}, which none says means none; give one")
+        zero = e.get("zero")
+        if zero is not None:
+            if zero is not True:
+                errors.append(f"{tag}: zero must be true, that a 0 is a value and not none")
+            elif none == 0:
+                errors.append(f"{tag}: zero says a 0 is a value, and none that it means none; give one")
     return errors
 
 
@@ -718,6 +748,8 @@ def value_facets_line(e: dict) -> str:
         parts.append(f"Shown as {shown}" + (f", in {e['unit']}" if "unit" in e else "") + ".")
     if "none" in e:
         parts.append(f"{e['none']} means none.")
+    if e.get("zero"):
+        parts.append("0 is a value, not none.")
     return " ".join(parts)
 
 
@@ -909,6 +941,7 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                         value = {part: v for part, v in value.items() if part != "zero"}
                         value = value if "offset" in value else value["table"]
                     key = ("" if not isinstance(value, dict)
+                           else f" (a value above {value['last']} names none)" if "last" in value
                            else f" (value {'+' if value['offset'] > 0 else '−'} {abs(value['offset'])})"
                            if "offset" in value
                            else f" (element 2k × {value['times']} + element 2k + 1)" if value.get("pairs")

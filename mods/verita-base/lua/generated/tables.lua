@@ -155,6 +155,14 @@ return {
                 tp_changes = { global = "condition_tp_changes", kind = "integer", width = 5 },
             },
         },
+        element = {
+            records = 20,
+            built_by = "boot",
+            fields = {
+                affinities = { global = "element_affinities", kind = "integer", width = 20, columns = { undefined = 0, non_elemental = 1, physical = 2, universal = 3, fire = 4, ice = 5, lightning = 6, earth = 7, holy = 8, dark = 9, fs = 10, resistance_1 = 11, resistance_2 = 12, resistance_3 = 13, resistance_4 = 14, resistance_5 = 15, resistance_6 = 16, resistance_7 = 17 } },
+                name = { global = "defense_element_names", kind = "string" },
+            },
+        },
         encounter_entry = {
             records = 100,
             built_by = "encounter",

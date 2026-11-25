@@ -2265,6 +2265,8 @@ address = "0xab5ba"
 name = "attack_element_effectiveness_percent"
 category = "data-table"
 type = "int[16][20]"
+# A 0 is a value: an element whose cell is 0 takes no damage of that attack element or none of the group's conditions.
+zero = true
 columns_from = { global = "attack_element_names", first = 0 }
 columns = { "0" = "no_element", "1" = "physical", "2" = "universal", "3" = "fire", "4" = "ice", "5" = "lightning", "6" = "earth", "7" = "holy", "8" = "dark", "11" = "resistance_1", "12" = "resistance_2", "13" = "resistance_3", "14" = "resistance_4", "15" = "resistance_5", "16" = "resistance_6", "17" = "resistance_7" }
 value_domain = "signed percent, row a defense element id (0..12), column an attack element id (0..8, 0 no element) or a condition resistance group (11..17)"

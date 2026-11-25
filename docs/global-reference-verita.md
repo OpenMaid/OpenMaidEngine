@@ -28,7 +28,7 @@ EBINIT units keyed by unit id: every enemy, and the body a party character fight
 | boss_class | unit_boss_classes | `0x37989f` | `int[1000]` | |
 | width | unit_widths | `0x379c87` | `int[1000]` | |
 | height | unit_heights | `0x37a06f` | `int[1000]` | |
-| defense_element | unit_defense_elements | `0x37a457` | `int[1000]` | |
+| defense_element | unit_defense_elements | `0x37a457` | `int[1000]` | `element` (0 names record 0) |
 | defense_element_level | unit_defense_element_levels | `0x37a83f` | `int[1000]` | |
 | weapon | unit_initial_weapons | `0x37ac27` | `int[1000]` | `item` |
 | shield | unit_initial_shields | `0x37b00f` | `int[1000]` | `item` |
@@ -226,9 +226,9 @@ ITINIT records keyed by item id: items 1..999, weapons 1001.., armour 2001.., ma
 | damage_kind | item_damage_kinds | `0x647b79` | `int[10000]` | |
 | once_per_battle | item_once_per_battle_flags | `0x64a289` | `int[10000]` | |
 | charges | item_charge_flags | `0x64c999` | `int[10000]` | |
-| attack_element | item_attack_elements | `0x64f0a9` | `int[10000]` | |
+| attack_element | item_attack_elements | `0x64f0a9` | `int[10000]` | `element` (a value above 9 names none) |
 | attack_element_level | item_attack_element_levels | `0x6517b9` | `int[10000]` | |
-| defense_element | item_defense_elements | `0x653ec9` | `int[10000]` | |
+| defense_element | item_defense_elements | `0x653ec9` | `int[10000]` | `element` |
 | defense_element_level | item_defense_element_levels | `0x6565d9` | `int[10000]` | |
 | owners | item_owners | `0x660219` | `int[10000][100]` | `character` |
 | haishera | item_haishera_flags | `0x754459` | `int[10000]` | |
@@ -308,6 +308,17 @@ Record r is record r of `item`.
 | element_level | item_growth_element_level_bonuses | `0x5ba5e9` | `int[10000][10]` | |
 | result_item | item_growth_results | `0x5d2c89` | `int[10000]` | `item` |
 | flag | item_growth_flags | `0x5d5399` | `int[10000]` | |
+
+### element[20]
+
+Built by: `boot`.
+
+AFINIT's elements keyed by defense element id, 1 to 15 named, AFINIT writing no row past 15: a unit's and an item's defense element (unit_defense_elements, item_defense_elements). Row 0, 100 throughout, has no name in the game (the element kind titles it Undefined) and is the row of a unit with no element of its own: a battle unit takes its armour's defense element, else its unit's (SETCH@0xa82, SETEN@0xbfb), and 131 units have none, nor does the armour they start with give one. Column 0, 100 throughout, no attack reaches: CALCDAMAGE takes the action's attack element, else the attacker's weapon's (CALCDAMAGE@0x1a2), which SETCH and SETEN alone write, the weapon's or 2 物理 without one (SETCH@0x9d9, SETEN@0xb52), and every weapon has one. Each row is how the element takes each attack element (element_affinities, its columns named by attack_element_names). Attack element n is element n up to 9: the two lists name 1 to 9 alike, and the matrix pairs them, 火炎, 冷却, 電撃 and 地脈 (4 to 7) taking -100 of their own attack element. The attack elements above 9 are no element: 10 戦意 is every 戦意 attack's (item_damage_kinds 5), and 11 to 17, 抵抗1 to 7, are the columns that scale a condition's chance (condition_affinity_columns, CALCILL@0x5ec), 抵抗3 being also the attack element of seven mind checks (item_damage_kinds 3).
+
+| field | global | address | type |
+|---|---|---|---|
+| name | defense_element_names | `GS 0xf660` | `string[20]` |
+| affinities | element_affinities | `0xc0b56d` | `int[20][20]` |
 
 ### item_class[60]
 
@@ -1471,7 +1482,7 @@ A box puzzle, by field_puzzle_id. PZINIT clears these tables and fills them from
 | `0xbfb39d` | title_carry_sprites | low | investigation | TIINIT: the party leader's sprite in CARRY@0x00750. |
 | `0xbfbb6d` | title_extra_pictures | low | investigation | TIINIT: two pictures of the party leader in EXTRA1@0x002b0. |
 | `0xbfcb0d` | title_voice_clips | med | investigation | TIINIT: the title's 30 voice clips, the columns as unit_voice_clips (BTL@0x08b18, ANIME@0x01fd0, RESULT@0x01612). |
-| `0xc0b56d` | element_affinities | high | investigation | AFINIT: the damage percentage by defense element (row) and attack element (column); negative makes the damage negative. CALCDAMAGE@0x1d2, CALCILL@0x618. Column names: `attack_element_names`, element 0 naming column 0. |
+| `0xc0b56d` | element_affinities | high | investigation | AFINIT: the damage percentage by defense element (row) and attack element (column); negative makes the damage negative. CALCDAMAGE@0x1d2, CALCILL@0x618. Columns: 0=undefined, 1=non_elemental, 2=physical, 3=universal, 4=fire, 5=ice, 6=lightning, 7=earth, 8=holy, 9=dark, 10=fs, 11=resistance_1, 12=resistance_2, 13=resistance_3, 14=resistance_4, 15=resistance_5, 16=resistance_6, 17=resistance_7. Column names: `attack_element_names`, element 0 naming column 0. 0 is a value, not none. |
 | `0xc0b6fd` | class_icons | high | investigation | AFINIT: the class's icon, an ITINIT category whose icon DRAWCHP@0xf99 draws. |
 | `0xc0b739` | class_sort_keys | med | investigation | AFINIT: the class's place in CHMODE3's class list, in steps of ten (CHMODE3@0xf9c). |
 | `0xc0b775` | class_required_weapon_masks | high | investigation | AFINIT: the weapon categories an art school requires, bit k for ITINIT category k; CHECKACT@0x920 tests the unit's weapon. |

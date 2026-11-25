@@ -1170,3 +1170,44 @@ authors.
     `AKindJoinsATableThatOwnsItsRecordsOnlyByTheRegistrysOwnedBy`). The export reads 1,122 title references and
     writes 898 pictures (838 before), its snippets with no problem. `test_globals.py` also gained Verita's four scopes,
     which its check of every registry's scopes lacked.
+- **Verita's elements, and a 0 that is a value** (2026-11-25; the user: "would it be worth making elements an entity
+  here, like in Himegari/Kamidori? I know the game uses Himegari style defense vs attack elements", then "Go ahead").
+  - **The element kind.** Verita's registry gains the table `element`, AFINIT's 20 rows keyed by defense element (1
+    to 15 named), its fields the names and the affinity row, and a unit's and an item's `defense_element` refer to it:
+    15 elements, 571 references (444 units, 127 items). Items filter by attack element. (This entry first said the
+    game draws an element only as its name; the status screen draws its icon too, below.)
+  - **A capped reference.** A reference's `last` names no record above it: `{ table, last }`. Attack element n is
+    element n up to 9, 暗黒 (the two name lists agree, and 火炎 to 地脈 take -100 of their own); 10, 戦意, is every
+    戦意 attack's (damage kind 5, 36 items) and 11 to 17, 抵抗1 to 7, the columns a condition's chance is scaled by,
+    抵抗3 being also seven mind checks' (damage kind 3). So `attack_element = { table = "element", last = 9 }`: 747
+    references, and the 43 others show the game's name, unlinked. The registry's `ref_keys` carry `{ last }`;
+    `KeyedIds` names a value above it -1, none.
+  - **A 0 that is a value.** A global's value facet `zero = true` says a 0 is a value and not none; the export carries
+    it in `value_format`'s new column `zero` (1), and the site then shows the field's zeros, except in a column with
+    no name (a cell the game leaves unwritten). An element's affinity of 0 is immunity (CALCILL scales the chance by
+    it), and the site had hidden every 0 of a row: Verita's 霊体 lost 戦意 and five 抵抗 columns, and Himegari's
+    elements 9 to 12 their immune 抵抗 columns, which its `attack_element_effectiveness_percent` now marks too. The
+    format version stays 1: the column is added, and the site reads an older export without it as before.
+  - **Checked** by `tools/test_globals.py` (`last`, `zero`) and the exporter's tests
+    (`AReferenceWithALastNamesNoRecordAboveIt`, and the `zero` column in the format test). The exports of Verita and
+    Himegari differ from the site's earlier ones in `value_format` alone. `verita-base` exports the table, which a
+    data file may now edit.
+  - **Column 0 is "Undefined"** (the user: "Maybe we use the label 'Undefined' for both, as that's probably the most
+    accurate. Does anything in verita use an element of '0'?"). In Verita no attack reaches column 0: an action
+    without an element takes its weapon's, every weapon has one, and a unit without a weapon attacks with 物理. Row 0
+    is used, by 131 units with no element of their own (`verita-data-tables.md`, AFINIT). Verita's affinity columns
+    take OME's names as Himegari's do, column 0 `undefined`, so the site labels it "Undefined".
+  - **Element 0 is a page, "Undefined"** (the user: "Sure, go with making it an element page"). The game names row 0
+    none and draws nothing for it: the status screen (`DRAWCHP@0xdf8`), the battle panel (`DRAWENP@0x45a`) and the
+    bestiary (`INFO4@0x108b`) skip an element of 0, and the item tooltip writes "－－" where an item has none
+    (`DRAWTIP@0x5eb`). A kind's new `titles` gives OME's word for a record the game names none, its title where the
+    title field is empty; the export writes it to `kind.titles` (a JSON object), and the site titles the entity by it
+    before its kind and id. The element kind's `exists` is `affinities.undefined` (rows 0 to 15, the rows AFINIT
+    writes), and a unit's `defense_element` takes `zero`, so the 131 units of none link to it (an item's 0 gives
+    none and stays none): 16 elements, 3,277 unit references.
+  - **Icons.** The status screen draws an element's 12 × 14 icon beside its name, from SO011.AGF (resource 0x3335 in
+    slot 0x7b): defense element n at 12 × ((n − 1) mod 9), 84 + 14 × ((n − 1) div 9) (`DRAWCHP@0xe06`–`0xe37`), an
+    attack element n at 12 × (n − 1), 84 (`DRAWCHP@0xd77`–`0xd85`), the same icon for 1 to 9. The kind cuts them as
+    a sheet picture, 15 icons; Undefined has none. The site shows them on the element list and beside element links
+    (`linkIcons`). Checked by `tools/test_entities_build.py` (`test_titles`) and the exporter's format test (the
+    `titles` column).

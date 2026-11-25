@@ -53,7 +53,8 @@ EXPORT_KEYS = {"boot", "builders", "excluded_builders", "derived", "text_scripts
                "text_overrides"}
 # A language tag as a language package declares one (`en`, `pt-BR`).
 LANGUAGE_TAG = re.compile(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})*")
-KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "key_range", "title", "text", "fields", "filters", "pictures",
+KIND_KEYS = {"id", "aliases", "table", "exists", "skip", "key_range", "title", "titles", "text", "fields", "filters",
+             "pictures",
              "categories",
              "description", "group", "notes", "labels", "text_blocks", "qualifiers", "referenced_as", "about",
              "joins", "marks"}
@@ -598,6 +599,25 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
                               f"fields")
         elif field is not None and field.kind != "string":
             errors.append(f"{where}: title {title} must be a string field or a reference")
+    # `titles` (export plan §5): OME's word for a record the game names none, its title where its title field is empty
+    # (Verita's element 0, which the game draws no name for).
+    words = kind.get("titles")
+    if words is not None:
+        if not isinstance(words, dict) or not words:
+            errors.append(f"{where}: titles must be a table of record = OME's word for it")
+        else:
+            if not isinstance(kind.get("title"), str):
+                errors.append(f"{where}: titles name a record the title field leaves empty, so the kind's title is "
+                              f"one field")
+            key_range = kind.get("key_range")
+            for record, word in words.items():
+                if not str(record).isdigit() or (len(str(record)) > 1 and str(record).startswith("0")):
+                    errors.append(f"{where}: titles: {record!r} must be a record's id, a whole number")
+                elif is_key_range(key_range) and not key_range[0] <= int(record) <= key_range[1]:
+                    errors.append(f"{where}: titles: record {record} lies outside the kind's key_range {key_range}")
+                if not isinstance(word, str) or not word.strip() or "\n" in word or len(word) > LABEL_LIMIT:
+                    errors.append(f"{where}: titles: the word for record {record} must be a name of at most "
+                                  f"{LABEL_LIMIT} characters, on one line")
         published(title, "title", field)
     check_skip(game, table, kind.get("skip"), where, errors)
     # The records the kind publishes, when not all of them: a table whose record 0 is a name the game gives to none
@@ -1457,7 +1477,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                    "explicit_pictures": export.get("explicit_pictures", []),
                    "text_overrides": export.get("text_overrides", {})},
         "kinds": [{"id": k["id"], "aliases": k.get("aliases", []), "table": k["table"], "exists": k["exists"],
-                   "skip": k.get("skip", {}), "key_range": k.get("key_range"), "title": k.get("title"), "text": k.get("text", []),
+                   "skip": k.get("skip", {}), "key_range": k.get("key_range"), "title": k.get("title"),
+                   "titles": k.get("titles", {}), "text": k.get("text", []),
                    "fields": k.get("fields", []), "filters": k.get("filters", []), "pictures": k.get("pictures", {}),
                    "descriptions": k.get("description", []),
                    "groups": [{"name": g["name"], "fields": g["fields"], "labels": g.get("labels"),

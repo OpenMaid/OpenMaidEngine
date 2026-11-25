@@ -1000,7 +1000,25 @@ Its three † arrays are three more: `G[0x9f2a32]` (stride 32) is `G[0x9f29bf]` 
 AFINIT holds constants in four parts, each with its own capacity, so no leader fits the whole table:
 
 - **The element names.** `GS[0xf64c + e]` names the attack elements 1..17, and `GS[0xf660 + e]` names the defense
-  elements 1..15, 20 cells each.
+  elements 1..15, 20 cells each. The two lists name 1..9 alike, and the matrix pairs them (火炎, 冷却, 電撃 and 地脈
+  take -100 of their own attack element), so attack element n is element n up to 9, the registry's table `element`.
+  The attack elements above 9 are no element: 10 戦意 is the attack element of every 戦意 attack (ITINIT damage kind
+  5, 36 items), and 11..17, 抵抗1..7, are the columns a condition's chance is scaled by, 抵抗3 being also the attack
+  element of seven mind checks (damage kind 3).
+- **Row 0 and column 0** are 100 throughout, and the game names neither. Row 0 is used: a battle unit's defense
+  element is its armour's, else its unit's (`SETCH@0xa82`, `SETEN@0xbfb`), and 131 units have none of their own, nor
+  does the armour they start with give one (ハイシェラ and シュリ among the party, soldiers among the enemies); such a
+  unit takes 100 of every column, where 無属 takes 50 of 戦意 and 抵抗1..5. Column 0 is not: CALCDAMAGE takes the
+  action's attack element, else the attacker's `G[0xc1ac4e]` (`CALCDAMAGE@0x1a2`), which only SETCH and SETEN write,
+  the weapon's element or 2 物理 without a weapon (`SETCH@0x9d9`, `SETEN@0xb52`), and every weapon has one. The
+  registry names column 0 `undefined`, and the element kind titles row 0 "Undefined". The game draws nothing for an
+  element of 0: the status screen (`DRAWCHP@0xd69` for the attack element, `0xdf8` for the defense element), the
+  battle panel (`DRAWENP@0x45a`) and the bestiary (`INFO4@0x108b`) skip it, and the item tooltip, which shows an
+  item's attack element, else its defense element, writes "－－" for an empty name (`DRAWTIP@0x5a7`–`0x5eb`).
+- **The icons.** The status screen draws an element's 12 × 14 icon beside its name from SO011.AGF (resource
+  0x3335, which CHMODE, INFO and the other menus load into slot 0x7b): defense element n at 12 × ((n − 1) mod 9),
+  84 + 14 × ((n − 1) div 9) (`DRAWCHP@0xe06`–`0xe37`), attack element n at 12 × (n − 1), 84 (`DRAWCHP@0xd77`–
+  `0xd85`). The row at y 84 holds 無属 to 暗黒 and 戦意's icon; 抵抗1..7 have none.
 - **The affinity matrix.** `G[0xc0b56d + 20·def + atk]` is 20 × 20. AFINIT@0xa0 writes rows 0..15 with
   `copy-inline-int-array`, and `G[0xc0b6fd]` follows at +400.
 - **The classes**, 1..55 at capacity 60. Six arrays lie 60 apart; `G[0xc0b7b1]` takes 7 cells a class, and

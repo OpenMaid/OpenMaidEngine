@@ -879,7 +879,7 @@ public static class GameDataExporter
             if (key.Zero?.Field is { } on)
                 yield return (field.Joined == null ? tableFields : joinedFields)
                     .First(other => other.Field == on && other.Joined == field.Joined && other.Column == null);
-            if (key.Offset != null || key.Zero != null) continue;
+            if (key.Offset != null || key.Zero != null || key.Last != null) continue;
             if (key.Pairs)
             {
                 if (field.Column is { } column) yield return field with { Column = column + 1 };
@@ -1152,11 +1152,12 @@ public static class GameDataExporter
     /// none. With <c>zero</c> (<see cref="RefKey.Zero"/>), on a plain or an offset reference, a 0 so named is record 0
     /// where the zero's field holds one of its values (everywhere for <c>zero = true</c>), and none is -1: a value of 0
     /// or below before the offset or below 0 after it, and a 0 elsewhere. The zero's field withheld withholds the 0.
+    /// With <c>last</c> (<see cref="RefKey.Last"/>), a value above it names none, -1.
     /// </summary>
     private static (long?[] Ids, long?[]? Rows) KeyedIds(FieldLayout field, IReadOnlyList<FieldLayout> tableFields,
                                                        RefKey key, Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
     {
-        if (key.Offset is not null || key.Zero is not null)
+        if (key.Offset is not null || key.Zero is not null || key.Last is not null)
         {
             long offset = key.Offset ?? 0;
             // Whether a 0 names record 0 on this record: true, false, or null where the zero's field is withheld.
@@ -1174,6 +1175,7 @@ public static class GameDataExporter
                     : value.Number <= 0 ? (key.Zero is null ? value.Number : -1)
                     : Math.Max(value.Number + offset, key.Zero is null ? 0 : -1);
                 if (key.Zero is not null && id == 0) id = zeroNames switch { true => 0, false => -1, null => null };
+                if (key.Last is { } last && id > last) id = -1;
                 named[element] = id;
             }
             return (named, null);

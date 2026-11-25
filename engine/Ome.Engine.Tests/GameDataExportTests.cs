@@ -98,7 +98,11 @@ public class GameDataExportTests
             },
             Array("item_granted_skill", GlobalBank.Integer, ItemSkill, 4),
             Array("skill_names", GlobalBank.String, SkillNames, 3),
-            Array("skill_category", GlobalBank.Integer, SkillCategory, 3),
+            // A skill's category 0 is a value, not none (zero), as a Verita element's affinity of 0 is.
+            Array("skill_category", GlobalBank.Integer, SkillCategory, 3) with
+            {
+                Format = formats ? new ValueFormat { Zero = true } : null,
+            },
             new ArrayLayout("current_item_id", GlobalBank.Integer, CurrentItem, [], new Dictionary<int, string>()),
             // The script relations' arguments (export plan §4.5): ADDITEM's count, and JOIN's list and its length.
             new ArrayLayout("current_item_count_change", GlobalBank.Integer, CurrentCount, [], new Dictionary<int, string>()),
@@ -960,7 +964,7 @@ public class GameDataExportTests
         // Qualifiers, marks and reference headings (export plan §5) go to the database as the declarations give them.
         string declarations = Declarations.Replace("\"filters\": [\"category\"],",
                                                    "\"filters\": [\"category\"], \"labels\": {\"category\": \"Kind\"}, "
-                                                   + "\"about\": \"Things to carry.\", "
+                                                   + "\"about\": \"Things to carry.\", \"titles\": {\"0\": \"Nothing\"}, "
                                                    + "\"qualifiers\": [\"category\", \"short_description\"], "
                                                    + "\"marks\": [{\"field\": \"category\", \"word\": \"Gear\"}], "
                                                    + "\"referenced_as\": [{\"field\": \"granted_skill\", "
@@ -1006,8 +1010,9 @@ public class GameDataExportTests
             Assert.Equal("price:0.5:gold:0:0,price.sell:0.5:gold:0:0", Scalar(
                 "SELECT group_concat(field || ':' || scale || ':' || unit || ':' || bits || ':' || none, ',') FROM "
                 + "(SELECT * FROM value_format WHERE kind = 'item' AND scale IS NOT NULL ORDER BY field)"));
-            Assert.Equal("0::", Scalar(
-                "SELECT bits || ':' || ifnull(scale, '') || ':' || ifnull(none, '') FROM value_format WHERE field = 'category'"));
+            Assert.Equal("item:0:::,skill:0:::1", Scalar(
+                "SELECT group_concat(kind || ':' || bits || ':' || ifnull(scale, '') || ':' || ifnull(none, '') || ':' "
+                + "|| ifnull(zero, ''), ',') FROM (SELECT * FROM value_format WHERE field = 'category' ORDER BY kind)"));
             Assert.Equal("Kind", Scalar("SELECT text FROM label WHERE kind = 'item' AND name = 'category'"));
             Assert.Equal("0:category,1:short_description", Scalar(
                 "SELECT group_concat(position || ':' || field, ',') FROM (SELECT * FROM qualifier ORDER BY position)"));
@@ -1021,6 +1026,9 @@ public class GameDataExportTests
                 "SELECT group_concat(name || ':' || column_kind, ',') FROM field WHERE column_kind IS NOT NULL"));
             Assert.Equal("Things to carry.:", Scalar(
                 "SELECT group_concat(ifnull(about, ''), ':') FROM (SELECT * FROM kind ORDER BY id)"));
+            // OME's word for a record the game names none (titles), as Verita's element 0 is Undefined.
+            Assert.Equal("item:{\"0\":\"Nothing\"},skill:{}", Scalar(
+                "SELECT group_concat(id || ':' || titles, ',') FROM (SELECT * FROM kind ORDER BY id)"));
         }
         finally
         {
@@ -1624,6 +1632,28 @@ public class GameDataExportTests
         Assert.Empty(Entity(result, "item", 3).Refs);
         Assert.Equal([0L], Entity(result, "item", 1).KeyedRefs["granted_skill"]);
         Assert.Equal([-1L], Entity(result, "item", 3).KeyedRefs["granted_skill"]);
+    }
+
+    [Fact]
+    public void AReferenceWithALastNamesNoRecordAboveIt()
+    {
+        // With last 1 (export plan §5): item 1's skill 1 names skill 1, item 2's skill 2 names none, and item 3's -1
+        // stays none. A Verita item's attack element n is element n up to 9, and 10, 戦意, is no element.
+        ExportInputs game = Game();
+        ExportResult result = GameDataExporter.Run(new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop,
+            Registry = Registry(skillKey: new RefKey(1, null) { Last = 1 }),
+            Declarations = game.Declarations, Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        });
+        Assert.Equal([new ExportRef("granted_skill", 0, "skill", 1)], Entity(result, "item", 1).Refs);
+        Assert.Empty(Entity(result, "item", 2).Refs);
+        Assert.Empty(Entity(result, "item", 3).Refs);
+        Assert.Equal([-1L], Entity(result, "item", 2).KeyedRefs["granted_skill"]);
+        Assert.Empty(result.Report.MissingRefs);
+        // The field still shows the value the game holds.
+        Assert.Equal([2], Values(Entity(result, "item", 2), "granted_skill"));
     }
 
     [Fact]

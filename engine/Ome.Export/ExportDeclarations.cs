@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 
 namespace Ome.Export;
@@ -123,6 +124,10 @@ public sealed record KindDeclaration(
     /// record (export plan §5): an Arterial recipe makes an item or a card, and is named by the one it makes.</summary>
     public IReadOnlyList<string> TitleFallbacks { get; init; } = [];
 
+    /// <summary>OME's word for a record the game names none (<c>titles</c>), its title where the title field is empty
+    /// (export plan §5): Verita's element 0, Undefined, which the game draws no name for.</summary>
+    public IReadOnlyDictionary<int, string> Titles { get; init; } = new Dictionary<int, string>();
+
     /// <summary>The pictures cut from a sheet (export plan §5): a cell a field numbers.</summary>
     public IReadOnlyList<SheetPictureDeclaration> Sheets { get; init; } = [];
 
@@ -224,6 +229,10 @@ public sealed record KindDeclaration(
             TitleFallbacks = kind.TryGetProperty("title", out JsonElement titles) && titles.ValueKind == JsonValueKind.Array
                 ? titles.EnumerateArray().Skip(1).Select(t => t.GetString()!).ToList()
                 : [],
+            Titles = kind.TryGetProperty("titles", out JsonElement words) && words.ValueKind == JsonValueKind.Object
+                ? words.EnumerateObject().ToDictionary(pair => int.Parse(pair.Name, CultureInfo.InvariantCulture),
+                                                       pair => pair.Value.GetString()!)
+                : new Dictionary<int, string>(),
             About = kind.TryGetProperty("about", out JsonElement about) && about.ValueKind == JsonValueKind.String
                 ? about.GetString()
                 : null,

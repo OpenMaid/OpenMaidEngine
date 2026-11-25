@@ -107,7 +107,7 @@ A fragment can read and write the same tables (`use verita.globals`). The tables
 |---|---|
 | Characters and units | `character`, `unit`, `speaker_entry`, `lead_growth`, `profile`, `voice_setting` |
 | Items and crafting | `item`, `item_class`, `item_growth`, `recipe`, `treasure` |
-| Battle | `skill`, `condition`, `action_tree`, `school_tree`, `tactic`, `formation`, `troop`, `commander`, `battle_animation`, `arena_match`, `rank`, `title` |
+| Battle | `skill`, `condition`, `element`, `action_tree`, `school_tree`, `tactic`, `formation`, `troop`, `commander`, `battle_animation`, `arena_match`, `rank`, `title` |
 | The world | `area`, `land`, `map`, `map_routine`, `routine`, `terrain`, `object_kind`, `objective` |
 | Fishing | `fish`, `fishing_bait`, `fishing_rod`, `fishing_spot` |
 | Registries | `scene`, `cg`, `music_track`, `glossary_entry`, `replay` |

@@ -159,7 +159,7 @@
   {"name": "defense_element_names", "bank": "GS", "address": "0xf660", "dims": [20]},
   {"name": "direction_x_steps", "bank": "G", "address": "0xc4b0e3", "dims": [4]},
   {"name": "direction_y_steps", "bank": "G", "address": "0xc4b0e7", "dims": [4]},
-  {"name": "element_affinities", "bank": "G", "address": "0xc0b56d", "dims": [20, 20]},
+  {"name": "element_affinities", "bank": "G", "address": "0xc0b56d", "dims": [20, 20], "columns": {"undefined": 0, "non_elemental": 1, "physical": 2, "universal": 3, "fire": 4, "ice": 5, "lightning": 6, "earth": 7, "holy": 8, "dark": 9, "fs": 10, "resistance_1": 11, "resistance_2": 12, "resistance_3": 13, "resistance_4": 14, "resistance_5": 15, "resistance_6": 16, "resistance_7": 17}},
   {"name": "encounter_chances", "bank": "G", "address": "0x63dcfe", "dims": [5, 10]},
   {"name": "encounter_entry_formations", "bank": "G", "address": "0x63dbc9", "dims": [100, 2], "columns": {"front": 0, "back": 1}},
   {"name": "encounter_entry_gauge_highs", "bank": "G", "address": "0x63db65", "dims": [100]},

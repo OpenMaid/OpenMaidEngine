@@ -687,6 +687,7 @@ table cg
 table character
 table commander
 table condition
+table element
 table encounter_entry
 table fish
 table fishing_bait
@@ -821,6 +822,8 @@ field condition.physical_speed_modifiers
 field condition.polarity
 field condition.resistance
 field condition.tp_changes
+field element.affinities
+field element.name
 field encounter_entry.formations
 field encounter_entry.gauge_high
 field encounter_entry.gauge_low

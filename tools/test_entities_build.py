@@ -919,6 +919,23 @@ pictures = { badge = { field = "art.0", frames = 6 } }
 '''
 
 
+def test_titles():
+    """A kind's titles: OME's word for a record the game names none, its title where its title field is empty."""
+    titled = GOOD.replace('exists = "name"\ntitle = "name"\ntext = ["bio"]',
+                          'exists = "name"\ntitle = "name"\ntitles = { "0" = "Nobody" }\ntext = ["bio"]', 1)
+    check(titled != GOOD, "the fixture's hero kind takes titles")
+    code, output, written = run(titled, write=True)
+    check(code == 0, f"titles lint clean ({output.strip()[-300:]})")
+    kinds = {kind.get("id"): kind for kind in json.loads(written or "{}").get("kinds", [])}
+    check(kinds.get("hero", {}).get("titles") == {"0": "Nobody"}, "the JSON keeps a kind's titles")
+    check(kinds.get("weapon", {}).get("titles") == {}, "a kind without titles has none in the JSON")
+    for text, needle in ((titled.replace('{ "0" = "Nobody" }', '{ "x" = "Nobody" }'), "titles: 'x' must be a record's id"),
+                         (titled.replace('{ "0" = "Nobody" }', '{ "0" = "" }'), "the word for record 0 must be a name"),
+                         (titled.replace('{ "0" = "Nobody" }', '{}'), "titles must be a table of record")):
+        code, output, _ = run(text)
+        check(code != 0 and needle in output, f"titles: {needle!r} ({output.strip()[-300:]})")
+
+
 def test_owned_joins_and_borrowed_pictures():
     """A kind joins the table that owns its records (the registry's owned_by), a picture may be the first of a strip's
     frames, and a kind may show another kind's picture of the first entity whose reference names it."""
@@ -1149,6 +1166,7 @@ def main():
     test_column_references()
     test_joins_and_pairs()
     test_owned_joins_and_borrowed_pictures()
+    test_titles()
     test_loaded_where_and_joins()
     test_keyed_picture()
     test_framed_picture()

@@ -37,6 +37,10 @@ public sealed record ValueFormat
     public string? Unit { get; init; }
     public long? None { get; init; }
 
+    /// <summary>Whether a 0 is a value and not none (<c>zero</c>), which a reader is shown: an element's affinity of 0,
+    /// immune.</summary>
+    public bool Zero { get; init; }
+
     /// <summary>Whether a value may have a word or a name: its own, or its bits'.</summary>
     public bool Names => Words.Count > 0 || NamesFrom is not null || BitsOf is not null;
 
@@ -66,9 +70,10 @@ public sealed record ValueFormat
             None = entry.TryGetProperty("none", out JsonElement none) && none.ValueKind == JsonValueKind.Number
                 ? none.GetInt64()
                 : null,
+            Zero = entry.TryGetProperty("zero", out JsonElement zero) && zero.ValueKind == JsonValueKind.True,
         };
         return format.Names || format.Scale is not null || format.Offset is not null || format.Unit is not null
-               || format.None is not null
+               || format.None is not null || format.Zero
             ? format
             : null;
     }
@@ -97,10 +102,15 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
 /// <paramref name="Times"/>, plus field <paramref name="Plus"/>'s value at the same element. Arterial names a card by
 /// its row and slot, row × 30 + slot. A paired reference (<paramref name="Plus"/> null) takes both from its own field:
 /// element 2k times <paramref name="Times"/>, plus element 2k + 1 (a battle's leader card for each side). An offset
-/// reference (<see cref="Offset"/>) names the value plus the offset.</summary>
+/// reference (<see cref="Offset"/>) names the value plus the offset, and a capped one (<see cref="Last"/>) the value up
+/// to its last.</summary>
 public sealed record RefKey(int Times, string? Plus)
 {
-    public bool Pairs => Plus is null && Offset is null && Zero is null;
+    public bool Pairs => Plus is null && Offset is null && Zero is null && Last is null;
+
+    /// <summary>The last value that names a record, a value above it naming none (<c>last</c>), or null: a Verita item's
+    /// attack element n is element n up to 9, 暗黒, and 10, 戦意, is no element.</summary>
+    public long? Last { get; init; }
 
     /// <summary>Where a 0 names record 0 instead of none (<c>zero</c>), or null for nowhere: a plain or offset reference
     /// may have one. A Kamidori skill's attack element 1, less 1, is element 0, 無属, and so is a weapon's 0.</summary>
@@ -227,6 +237,7 @@ public sealed class RegistryView
                         {
                             Any = pair.Value.TryGetProperty("any", out JsonElement any) ? any.GetInt64() : null,
                             Offset = pair.Value.TryGetProperty("offset", out JsonElement offset) ? offset.GetInt64() : null,
+                            Last = pair.Value.TryGetProperty("last", out JsonElement last) ? last.GetInt64() : null,
                             Bases = pair.Value.TryGetProperty("bases", out JsonElement bases)
                                 ? bases.EnumerateObject().ToDictionary(
                                     basePair => long.Parse(basePair.Name, CultureInfo.InvariantCulture),

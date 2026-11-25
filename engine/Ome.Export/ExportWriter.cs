@@ -100,9 +100,11 @@ public static class ExportWriter
             "CREATE TABLE build_info (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
             // A kind's about is the line that says what its entities are (site plan §10.3), null for none. Its title
             // fallbacks (export plan §5) are the references, a JSON array, that name it in turn when title_field's names
-            // no record.
+            // no record; its titles, a JSON object of id = OME's word, name a record whose title field is empty
+            // (Verita's element 0, Undefined).
             "CREATE TABLE kind (id TEXT PRIMARY KEY, table_name TEXT NOT NULL, title_field TEXT, "
-            + "title_fallbacks TEXT NOT NULL, aliases TEXT NOT NULL, entities INTEGER NOT NULL, about TEXT)",
+            + "title_fallbacks TEXT NOT NULL, titles TEXT NOT NULL, aliases TEXT NOT NULL, entities INTEGER NOT NULL, "
+            + "about TEXT)",
             // A row of cells' column_kind is the kind whose entity k its column k is (columns_ref), null for none.
             "CREATE TABLE field (kind TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, published INTEGER NOT NULL, "
             + "text INTEGER NOT NULL, filter INTEGER NOT NULL, ref_table TEXT, ref_kind TEXT, picture TEXT, bank TEXT, "
@@ -161,9 +163,10 @@ public static class ExportWriter
             "CREATE TABLE label (kind TEXT NOT NULL, name TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY (kind, name))",
             // How a shown field's number reads (export plan §5): the stored value times scale, plus offset, in unit;
             // bits is 1 for a mask, whose value names are its bits'; none is the stored value that means none, if one
-            // does (a quest's deadline of 0). A loaded table's field is written table.field.
+            // does (a quest's deadline of 0); zero is 1 where a 0 is a value and not none (an element's affinity of 0,
+            // immune). A loaded table's field is written table.field.
             "CREATE TABLE value_format (kind TEXT NOT NULL, field TEXT NOT NULL, scale REAL, offset INTEGER, unit TEXT, "
-            + "bits INTEGER NOT NULL, none INTEGER, PRIMARY KEY (kind, field))",
+            + "bits INTEGER NOT NULL, none INTEGER, zero INTEGER, PRIMARY KEY (kind, field))",
             // What a shown field's value means (export plan §5): OME's word, lang '', or the game's name in a language.
             "CREATE TABLE value_name (kind TEXT NOT NULL, field TEXT NOT NULL, value INTEGER NOT NULL, lang TEXT NOT NULL, "
             + "text TEXT NOT NULL, PRIMARY KEY (kind, field, value, lang))",
@@ -281,8 +284,10 @@ public static class ExportWriter
         KindDeclaration declaration = kind.Declaration;
         string id = declaration.Id;
         using (var insert = new Inserter(connection, "kind", "id", "table_name", "title_field", "title_fallbacks",
-                                         "aliases", "entities", "about"))
+                                         "titles", "aliases", "entities", "about"))
             insert.Row(id, kind.Table.Name, declaration.Title, JsonSerializer.Serialize(declaration.TitleFallbacks),
+                       JsonSerializer.Serialize(declaration.Titles.ToDictionary(
+                           pair => pair.Key.ToString(CultureInfo.InvariantCulture), pair => pair.Value)),
                        JsonSerializer.Serialize(declaration.Aliases), kind.Entities.Count, declaration.About);
         WriteFields(connection, kind, kinds);
 
@@ -455,7 +460,8 @@ public static class ExportWriter
                 foreach ((string name, string label) in table.Declaration.Labels)
                     labels.Row(declaration.Id, $"{table.Declaration.Name}.{name}", label);
         }
-        using (var formats = new Inserter(connection, "value_format", "kind", "field", "scale", "offset", "unit", "bits", "none"))
+        using (var formats = new Inserter(connection, "value_format", "kind", "field", "scale", "offset", "unit", "bits", "none",
+                                          "zero"))
         {
             var shown = kind.Published.Select(field => (field.Name, field.Array.Format))
                 .Concat(kind.Loaded.SelectMany(table => table.Published.Select(
@@ -463,10 +469,10 @@ public static class ExportWriter
             foreach ((string name, ValueFormat? format) in shown)
                 if (format != null)
                     formats.Row(declaration.Id, name, format.Scale, format.Offset, format.Unit, format.BitsOf != null ? 1 : 0,
-                                format.None);
+                                format.None, format.Zero ? 1 : null);
             // A category is a mask whose bits its value names name.
             foreach (ExportCategory category in kind.Categories)
-                formats.Row(declaration.Id, category.Name, null, null, null, 1, null);
+                formats.Row(declaration.Id, category.Name, null, null, null, 1, null, null);
         }
         using (var names = new Inserter(connection, "value_name", "kind", "field", "value", "lang", "text"))
             foreach (ExportValueName name in kind.ValueNames)

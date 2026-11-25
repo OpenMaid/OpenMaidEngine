@@ -412,6 +412,29 @@ def test_table_refs():
     check(any("icon offset 0, which must be a whole number other than 0" in e for e in errors),
           "lint_tables flags an offset of 0")
     check(any("rank an offset reference to picture" in e for e in errors), "lint_tables flags an offset to a picture")
+    # zero: a 0 is a value, not none (an element's affinity of 0: immune).
+    zeroed = {("G", 0x80): {"_addr": 0x80, "name": "affinity", "type": "int[4]", "zero": True, "source": "investigation",
+                            "confidence": "high", "category": "data-table", "usage": "u"}}
+    check(G.lint_values(zeroed) == [], f"zero = true lints clean ({G.lint_values(zeroed)})")
+    check(any("0 is a value, not none." in line for line in [G.value_facets_line(zeroed[("G", 0x80)])]),
+          "the reference doc says a 0 is a value")
+    for facet, needle in (({"zero": 1}, "zero must be true"), ({"zero": True, "none": 0}, "zero says a 0 is a value"),
+                          ({"zero": True, "bits_of": "affinity"}, "takes no zero")):
+        bad = {("G", 0x80): {**zeroed[("G", 0x80)], **facet}}
+        check(any(needle in e for e in G.lint_values(bad)), f"lint_values flags {needle!r} ({G.lint_values(bad)})")
+    # With last, a value above it names none (a Verita item's attack element 10, 戦意, is no element).
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "last": 2}}
+    check(G.lint_tables(keyed, entries) == [], f"a capped reference lints clean ({G.lint_tables(keyed, entries)})")
+    check(G.table_json(keyed[0]).get("refs") == {"icon": "weapon"}
+          and G.table_json(keyed[0]).get("ref_keys") == {"icon": {"last": 2}}, "the JSON writes a reference's last")
+    doc = G.emit_reference_md(merged, [keyed[0]], [])
+    check("`weapon` (a value above 2 names none)" in doc, "the reference doc says the last")
+    keyed[0]["refs"] = {"icon": {"table": "weapon", "last": 0}, "rank": {"table": "weapon", "last": 3},
+                        "slot": {"table": "weapon", "last": 2, "offset": 1}, "weapon": {"table": "picture", "last": 2}}
+    errors = G.lint_tables(keyed, entries)
+    for needle in ("icon last 0, which must be a whole number above 0", "rank last 3, past the 3 records of table weapon",
+                   "slot last beside offset; last is for a plain reference", "weapon a last to picture"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
     # With zero, a 0 names record 0: everywhere, or where another field holds one of some values (a Kamidori weapon's
     # attack element 0 is element 0, 無属, and a garment's is none).
     keyed[0]["refs"] = {"rank": {"table": "weapon", "zero": {"field": "icon", "values": [0, 3, 4, 5]}},

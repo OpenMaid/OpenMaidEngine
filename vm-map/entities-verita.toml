@@ -100,6 +100,7 @@ capture_item = "The summon stone gained by capturing it with 性魔術, which ne
 starting_fs = "An enemy's FS when the battle starts."
 
 [kind.referenced_as]
+defense_element = "Units of this element"
 weapon = "Initial weapon of"
 armor = "Initial armour of"
 accessory = "Initial accessory of"
@@ -194,7 +195,7 @@ fields = [
     "item_growth.physical_speed", "item_growth.mental_speed", "item_growth.ct_rate", "item_growth.element_level",
     "item_growth.result_item", "action_tree.prerequisites",
 ]
-filters = ["category", "class", "rank", "damage_kind"]
+filters = ["category", "class", "rank", "damage_kind", "attack_element"]
 # A player's spell and an enemy's action may share a name: the class (敵魔, 敵必) and the rank tell them apart.
 qualifiers = ["class", "rank"]
 
@@ -255,6 +256,8 @@ growth = "What each growth level adds to the item's numbers, from the first; its
 
 [kind.referenced_as]
 class = "Items of this class"
+attack_element = "Items that attack with it"
+defense_element = "Items of this element"
 owners = "Items it holds"
 exclusive_users = "Exclusive items"
 required_skill = "Items that need it"
@@ -268,6 +271,36 @@ equip_condition_levels = "Given while equipped"
 name = "description"
 script = { name = "ITMES" }                     # the base ITMES; DRAWITMES walks the chain, base first
 seed = { current_item = "key" }
+
+[[kind]]
+id = "element"
+table = "element"
+about = "The elements: the units and items of each, the items that attack with each, and how each takes every attack element's damage and conditions."
+# Rows 0 to 15, which AFINIT writes (column 0 is 100 in each). Row 0 is the row of a unit with no element of its own; the
+# game names it none and draws no name for it (DRAWCHP@0xdf8, DRAWENP@0x45a, INFO4@0x108b), and the tooltip draws "－－"
+# for an item with none (DRAWTIP@0x5eb).
+exists = "affinities.undefined"
+title = "name"
+titles = { "0" = "Undefined" }
+fields = ["affinities"]
+
+# The element's icon, as the status screen draws it beside its name: 12 x 14 from SO011.AGF (resource 0x3335, which
+# CHMODE and INFO load into slot 0x7b), defense element n at 12 x ((n - 1) mod 9), 84 + 14 x ((n - 1) div 9)
+# (DRAWCHP@0xe06 to 0xe37). An attack element's icon is element n's (DRAWCHP@0xd77 to 0xd85). Undefined has none.
+[kind.pictures.icon]
+sheet = "SO011.AGF"
+first = 1
+last = 15
+columns = 9
+origin = [0, 84]
+step = [12, 14]
+size = [12, 14]
+
+[kind.labels]
+affinities = "Damage and condition chance"
+
+[kind.notes]
+affinities = "The percent of each attack element's damage it takes, a negative one making the damage negative; each attack element level above the defender's adds 20. Columns 11 to 17, 抵抗1 to 7, also scale the chance of catching their conditions. No attack is Undefined: one with no element takes its weapon's."
 
 [[kind]]
 id = "item_class"
