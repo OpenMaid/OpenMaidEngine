@@ -288,15 +288,20 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   and does not list it as future work (its §12). Lua has since taken most of its purpose: mod state is `maid.state`,
   and logic beyond the AGE ABI is a handler. Still without a route: bytecode that calls the engine or a Lua function
   (Lua spec §16, "Calling Lua from bytecode"), and how mod state that OMS can reach would meet the save (OMS spec
-  §13, "Extended mod-state model and its save interplay"). Done when a design note settles which of the three parts
-  are still wanted beside Lua, and each one kept is built with a gate while each one dropped is recorded as dropped.
+  §13, "Extended mod-state model and its save interplay"). Notes toward that design, not accepted and set aside by
+  the user on 2026-11-25, are `superpowers/specs/2026-11-25-engine-extension-notes.md`: functions a script can call,
+  an extension registry for engine services, and port cells above the game's banks. Done when a design note settles
+  which of the three parts are still wanted beside Lua, and each one kept is built with a gate while each one dropped
+  is recorded as dropped.
 
 ## Mod loader and modding
 
 - **Mod-owned globals.** `global` declarations must pin a cell (`@ address`). The linker-allocated and `saved`
   globals of the language design (OMS spec §5.2, §9.2) are not implemented, and which cells are free (and which a
-  save keeps) is open (§13). Mods pick unused cells by hand meanwhile (`docs/modding/oms-language.md`). Done when
-  the linker allocates mod globals per profile from evidenced free cells.
+  save keeps) is open (§13). Mods pick unused cells by hand meanwhile (`docs/modding/oms-language.md`). For
+  `extended` mods, the engine extension notes' port cells would allocate above the banks instead
+  (`superpowers/specs/2026-11-25-engine-extension-notes.md` §6; notes, not accepted). Done when the linker allocates
+  mod globals per profile from evidenced free cells.
 - **Kamidori new-scene example.** The save-capable scene recipe (`docs/modding/new-scenes.md`) is proven on
   Himegari only (`example.prologue`, gates 4 and 5). Done when a Kamidori scene mod, built on one of its append
   scenes' skeletons, plays and saves on native AGE.
