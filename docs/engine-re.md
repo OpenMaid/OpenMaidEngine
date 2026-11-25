@@ -321,9 +321,9 @@ game's scripts use.
 `build/games/bg0/intake.json`). Its packed `AGE.EXE` (842,240 bytes, dated 2008-05-19, SHA-256
 `251b7dd719ef6ac14d97821fe3b4ac3f36793b74f0be88a815121d27b25487ac`) reads `FileVersion` `4.15D`, and its product
 version is 4, 15, 4, 0. Its catalog is `S4IC415` and its scripts are `SYS4415`, older than any build in the table.
-It is a reference install (`paths.REFERENCE_INSTALLS`) until it has a profile. It was dumped the same day from a
-scratch copy by `dump_engine.py --reference bg0 --spawn`, and the install checked unchanged. The module is based at
-`0x400000` and spans 1,900,544 bytes (`build/engines/bg0/engine-dump/`); its version resource reads `FileVersion`
+It was a reference install until its profile, the same day (`build/engines/bg0/` moved to `build/games/bg0/`). It
+was dumped from a scratch copy by `dump_engine.py --reference bg0 --spawn`, and the install checked unchanged. The module is based at
+`0x400000` and spans 1,900,544 bytes (`build/games/bg0/engine-dump/`); its version resource reads `FileVersion`
 `4.15D` at `0x5a7eee`. The table-fill search (`lea edi,[esi+0x99758]; mov ecx,0x400; mov eax,0x414990; rep stosd`)
 found the constructor at `0x412070`, with Himegari's prologue, and the table holds 402 handlers. `operand_access.py
 --align-accessors` aligned the 12 accessors unanimously against Himegari and against Verita, at the same addresses:
@@ -333,6 +333,18 @@ Himegari's `0x54f3de`'s. The Ghidra image is `/bg0/4.15D/range_00400000.bin`, 4,
 `/v2`'s 1,235 named or commented functions. With the 12 accessors, 727 functions got a name and plate, 110 of them
 new functions. Its packer sites are not restored and its imports not typed. Its scripts use ops `0x14b` to `0x14d`,
 the AGERC calls above, which only Verita's used before.
+
+- **The upstream catalog's labels are 4.15D's addresses.** Of the 207 opcodes whose Kelebek label is an address
+  (`u00XXXXXX`), 206 name exactly 4.15D's handler for that opcode; `0xaf`'s `u00415480` is 0x10 short of 4.15D's
+  `0x415490`. The catalog `tools/age_opcodes.py` started from was read from an engine of this generation.
+- **Op `0x226`, `query-gfx-scale-current`** (read 2026-11-25), its one opcode without a port handler, used once, at
+  `DEBUGADV2.BIN@0x931`. It is the scale sibling of `0x227` (rotation) and `0x228` (translation), and the same code in
+  4.15D (`0x4217d0`) and 4.24J (`0x42a230`). `gfx_object_query_scale_current` (4.15D `0x46bc90`, 4.24J `0x47cc30`)
+  finds the handle in the retained-object map at `gfx+0x408` and decomposes the matrix at the record's `+0x6c` (the
+  translation query decomposes `+0x16c`). It returns the scale vector, or traces 「GetLocalMatrixS エラー：
+  マトリックスの分割に失敗しました」 for a matrix that does not decompose. The handler writes operand 1 = 1 when the
+  object is absent or the matrix fails. Otherwise it writes the three values, truncated and times 100, to operands 3
+  to 5, and operand 1 = 0. 4.33G and 4.38D write them as floats (`vm-map/opcodes.toml`).
 
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and

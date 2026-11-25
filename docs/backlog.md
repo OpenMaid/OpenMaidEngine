@@ -757,6 +757,16 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     Ghidra image `/bg0/4.15D` has 727 ported names. The revision diff against Himegari, the nearest build, has 54 rows
     that differ (`engine-re.md`, "Himegari against 戦女神ZERO"). 18 opcodes are only Himegari's, none only BG0's, and
     the saved script frame's layout differs.
+  - **Step 3 is done, and it stands at P1 (2026-11-25):** its profile (`Profiles/bg0.json`, saves off until a native
+    save is read) and engine build (`EngineBuilds.Age415D`, 4.24J with its own names), the registry's observation and
+    `SYS4415` snapshot with operand access for every opcode its scripts use, its workspace tests (`validate.py --level
+    workspace --game bg0`), and its extracted archives (`../extracted-bg0/`), with `parse_sys4ini.py`,
+    `extract_phase2.py` (all 1,579 scripts decode; the three files it skips are not scripts) and `compiler_census.py`
+    run. `catalog-scan`: 246 opcodes, one unsupported (`0x226`, read and named `query-gfx-scale-current`: the scale
+    sibling of `0x227` and `0x228`; `engine-re.md`, 戦女神ZERO). `operand_access.py --check-corpus` finds only what it
+    finds for the other games: op `0x1a7`'s operand 1 with no native access, and three unresolved calls.
+  - **Its catalog** has Himegari's 36 settings keys in the same order and canvas, 800 by 600, and is the only one with
+    `SAVEVERSION` 300 (`sys4-format-notes.md`); what a save's minor version 0 selects is read at step 7.
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

@@ -47,6 +47,23 @@ public static class EngineBuilds
             Saves: new SaveRules(versionStamp: "424J", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
             Shell: new ShellRules(AutoMessagePage: false)));
 
+    /// <summary>AGE 4.15D, 戦女神ZERO's (its version resource; docs/engine-re.md, "Comparing engine builds"). It is
+    /// declared as 4.24J with nothing changed but its names: the game is at P1 (docs/adding-a-game.md), where nothing
+    /// of it runs, and each difference the revision diff lists joins this definition as it is read (the game's item in
+    /// docs/backlog.md).</summary>
+    public static EngineBuild Age415D { get; } = Age424J with
+    {
+        Id = "4.15D",
+        AbiId = "SYS4415",
+        Rules = Age424J.Rules with
+        {
+            // The stamp follows the version, as 4.24J's, 4.24N's and 4.33G's do; no 4.15D save has been read. The
+            // record size is 4.24J's, unproven, and the revision diff shows a saved script frame laid out otherwise:
+            // the profile's writes stay off until a native save is read.
+            Saves = new SaveRules(versionStamp: "415D", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
+        },
+    };
+
     /// <summary>AGE 4.24N, 戦女神VERITA's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its
     /// changes are the real rows of the revision diff's triage (docs/engine-re.md, "Himegari against Verita,
     /// triaged").</summary>
@@ -159,7 +176,7 @@ public static class EngineBuilds
     };
 
     /// <summary>Every build, parents first.</summary>
-    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age424N, Age433G, Age438D];
+    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age415D, Age424N, Age433G, Age438D];
 
     public static EngineBuild? Find(string id)
         => All.FirstOrDefault(build => string.Equals(build.Id, id, StringComparison.Ordinal));

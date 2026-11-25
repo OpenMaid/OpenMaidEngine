@@ -28,6 +28,12 @@ public class Sys4CorpusScannerTests
     public void InstalledVeritaCatalogCorpusDecodesThroughRuntimeStore()
         => AssertInstalledCorpus("verita", "SYS4424");
 
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "bg0")]
+    [Fact]
+    public void InstalledZeroCatalogCorpusDecodesThroughRuntimeStore()
+        => AssertInstalledCorpus("bg0", "SYS4415");
+
     private static void AssertInstalledCorpus(
         string profileId, string abiId)
     {

@@ -13,8 +13,8 @@ Every read-only install sits in `games/`, each under a name of its own. A game's
 `run-godot.ps1`), so a new game adds no entry to any of them. The installs moved there on 2026-11-19 from
 `Himegari_Game/`, `Kamidori/`, `Kamidori_Translated/` and `Arterial/創刻のアテリアル/`; documents written before
 then name those folders. Himegari's legacy extracted archive tree is `extracted/`; Kamidori's is
-`extracted-kamidori/`, Arterial's `extracted-arterial/` and Verita's `extracted-verita/` (needed by the Python
-data-table tooling; production catalog scans read archives directly).
+`extracted-kamidori/`, Arterial's `extracted-arterial/`, Verita's `extracted-verita/` and 戦女神ZERO's
+`extracted-bg0/` (needed by the Python data-table tooling; production catalog scans read archives directly).
 Additional extracted roots may be selected explicitly.
 
 ```
@@ -45,10 +45,10 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 │   │                                         files are the updates' loose records.
 │   ├── verita_install/                       Verita's installer media (`VERITA.mdf`, the `VERITA_1xx.exe` updates),
 │   │                                         not an install: no tool reads it.
-│   └── bg0/                                  戦女神ZERO (AGE 4.15D, catalog `S4IC415`), a reference install being
-│                                             added (docs/adding-a-game.md; backlog "Onboard 戦女神ZERO"). 52 .BIN
-│                                             files and four .AGF files sit loose in its root, beside the seven
-│                                             archives and `APPEND.AAI`.
+│   └── bg0/                                  戦女神ZERO (AGE 4.15D, catalog `S4IC415`), the `bg0` profile's install,
+│                                             being added (docs/adding-a-game.md; backlog "Onboard 戦女神ZERO"). 52
+│                                             .BIN files and four .AGF files sit loose in its root, beside
+│                                             `DATA1.ALF` to `DATA6.ALF` and the append (`APPEND.AAI`, `.ALF`).
 │
 ├── extracted/                               ← DERIVED (game-side) — extracted ALF contents,
 │   │                                          ~3.9 GB, regenerable with a local archive extractor.
@@ -67,6 +67,11 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 ├── extracted-verita/                        ← DERIVED — Verita archives, regenerable the same way
 │   ├── DATA1/ … DATA7/                         DATA1 = the base .BIN scripts
 │   └── APPEND01/ … APPEND03/                   append catalogs, records flat in each folder
+│
+├── extracted-bg0/                           ← DERIVED — 戦女神ZERO archives, regenerable the same way
+│   ├── DATA1/ … DATA6/                         DATA1 = the base .BIN scripts
+│   └── APPEND01/                               `APPEND.AAI` (selector 1), records flat: the tools read
+│                                               append folders named APPENDnn
 │
 └── age-reimpl/                              ← OUR WORK (everything we made lives here)
     │

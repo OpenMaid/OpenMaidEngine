@@ -208,9 +208,9 @@ ENGINES: dict[str, EngineFacts] = {
     # 0x414180 fills the opcode table at ctx+0x9b2b8, the same code as Himegari's 0x413860. The C runtime starts at the
     # operator new thunk 0x550cce, whose bytes and neighbours match Himegari's 0x54f3de.
     "verita": EngineFacts(0x414180, 0x9B2B8, _VERITA_ACCESSORS, runtime_start=0x550CCE, version="4.24N"),
-    # 戦女神ZERO, AGE 4.15D, dumped 2026-11-25 (a reference install). The ctx constructor at 0x412070 fills the
-    # opcode table at ctx+0x99758 (default handler 0x414990), with Himegari's 0x413860's prologue. The C runtime
-    # starts at the operator new thunk 0x52b0ee, whose neighbours match Himegari's 0x54f3de.
+    # 戦女神ZERO, AGE 4.15D, dumped 2026-11-25 (a profile since the same day). The ctx constructor at 0x412070
+    # fills the opcode table at ctx+0x99758 (default handler 0x414990), with Himegari's 0x413860's prologue. The C
+    # runtime starts at the operator new thunk 0x52b0ee, whose neighbours match Himegari's 0x54f3de.
     "bg0": EngineFacts(0x412070, 0x99758, _BG0_ACCESSORS, runtime_start=0x52B0EE, version="4.15D"),
 }
 

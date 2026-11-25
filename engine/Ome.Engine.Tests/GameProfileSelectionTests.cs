@@ -129,6 +129,33 @@ public sealed class GameProfileSelectionTests
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);
     }
 
+    /// <summary>戦女神ZERO is at P1 (docs/adding-a-game.md): the engine names its install and reads all of it, and
+    /// nothing of it runs or saves. Its build is declared from 4.24J.</summary>
+    [Fact]
+    public void ZeroIsBeingAddedFromHimegarisBuild()
+    {
+        GameProfileManifest zero = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("bg0"));
+
+        Assert.Equal(("SYS4", "4.15D", "SYS4415", "SYSTEM4.BIN"),
+                     (zero.SysFrontendId, zero.EngineBuildId, zero.EngineAbiId, zero.NaturalBootScript));
+        Assert.Equal(["SYS4415"], zero.ScriptRevisions);
+        Assert.True(zero.Matches(new GameCatalogIdentity("S4IC415", "戦女神ZERO")));
+        Assert.Equal(("P1", "none"), (zero.Support.PlayId, zero.Support.ModdingId));
+        Assert.False(zero.Support.IsPlayable);
+        // No native save of 4.15D has been read, and its saved script frame differs from 4.24J's: its saves stay off.
+        Assert.False(zero.PersistenceWritesEnabled);
+        Assert.NotNull(zero.Persistence.ReadOnlyReason);
+        Assert.Equal(300, zero.Persistence.ExpectedPackedSaveVersion);
+        Assert.Equal([593923, 1, 224, 1, 1, 1], zero.Persistence.BankDimensions.ToArray());
+        Assert.Null(zero.DirectSceneDiagnostics);
+        Assert.Null(zero.DebugSceneLaunch);
+        Assert.Null(zero.Launcher);
+        Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(zero);
+        Assert.Equal(("4.15D", "SYS4415"), (build.Id, build.AbiId));
+        Assert.Same(Ome.Engine.Vm.EngineBuilds.Age415D, build);
+        Assert.Equal(Ome.Engine.Vm.EngineBuilds.Age424J.Rules.Text, build.Rules.Text);
+    }
+
     [Fact]
     public void NormalKamidoriProfileInjectsNoHimegariState()
     {
@@ -296,6 +323,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("kamidori")]
     [InlineData("arterial")]
     [InlineData("verita")]
+    [InlineData("bg0")]
     public void InstalledCatalogAutoSelectsExpectedProfile(string expectedProfile)
     {
         string path = Path.Combine(Paths.GameInstall(expectedProfile), "SYS4INI.BIN");
@@ -316,6 +344,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("kamidori")]
     [InlineData("arterial")]
     [InlineData("verita")]
+    [InlineData("bg0")]
     public void InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions(string game)
     {
         string path = Path.Combine(Paths.GameInstall(game), "SYS4INI.BIN");
@@ -342,6 +371,16 @@ public sealed class GameProfileSelectionTests
     {
         InstalledCatalogAutoSelectsExpectedProfile("verita");
         InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("verita");
+    }
+
+    /// <summary>戦女神ZERO's workspace gate, likewise.</summary>
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "bg0")]
+    public void InstalledZeroSelectsItsProfileWithItsBankDimensions()
+    {
+        InstalledCatalogAutoSelectsExpectedProfile("bg0");
+        InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("bg0");
     }
 
     private static GameProfileManifest SyntheticProfile(string id, GameCatalogIdentity identity)

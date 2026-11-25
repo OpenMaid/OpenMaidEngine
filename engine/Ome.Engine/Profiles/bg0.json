@@ -1,0 +1,33 @@
+{
+  "id": "bg0",
+  "displayTitle": "Ikusa Megami ZERO",
+  "catalogIdentities": [
+    {
+      "catalogRevision": "S4IC415",
+      "title": "戦女神ZERO"
+    }
+  ],
+  "scriptRevisions": ["SYS4415"],
+  "sysFrontendId": "SYS4",
+  "engineBuild": "4.15D",
+  "engineAbiId": "SYS4415",
+  "naturalBootScript": "SYSTEM4.BIN",
+  "support": { "play": "P1", "modding": "none" },
+  "metadataReferences": {},
+  "persistence": {
+    "storageNamespace": "bg0",
+    "writesEnabled": false,
+    "readOnlyReason": "no native save of AGE 4.15D has been read yet, and its saved script frame is laid out otherwise than 4.24J's, so its save layout is not proven (docs/adding-a-game.md, step 7)",
+    "magic": "S4SD",
+    "gameId": "戦女神ZERO",
+    "expectedPackedSaveVersion": 300,
+    "bankDimensions": {
+      "integerGlobals": 593923,
+      "floatGlobals": 1,
+      "stringGlobals": 224,
+      "pointerGlobals": 1,
+      "floatPointers": 1,
+      "stringPointers": 1
+    }
+  }
+}

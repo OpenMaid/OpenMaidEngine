@@ -107,6 +107,12 @@ Himegari's in `DEPENDMOVIESOUND` (`2`), `SCREENX`/`SCREENY` (`1024`/`576`), `SAV
 `SAVEVERSION` is `320`, as Kamidori's, and its canvas is `1024` by `576`. What the two new keys do is not read
 (`backlog.md`, "Onboard 創刻のアテリアル").
 
+戦女神ZERO's trailer (`S4IC415`, AGE 4.15D) has Himegari's 36 keys in the same order, its canvas `800` by `600`
+among them. Its values differ in `SAVEPATH` (`Eushully\戦女神ZERO\SAVE`), `REGFILEPATH` (`Eushully\戦女神ZERO`),
+`COPYRIGHT` (`Copyright (c) Eushully 2008`), `SAVEVERSION` (`300`), `RCVERSION` (`20`), `VERREGPOS`
+(`455EE66A-17E3-4E66-9D3C-D630723C3B00`) and `REGKEY` (`1163847274`). It is the only `SAVEVERSION` of 300 among the
+games: what a save's minor version 0 selects is not read (`backlog.md`, "Onboard 戦女神ZERO").
+
 #### The font list (AGE 4.38D) — CONFIRMED (2026-11-19)
 
 Since AGE 4.38D the stream goes on after the settings pairs with a list of the fonts the game ships in its catalog:

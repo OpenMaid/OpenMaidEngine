@@ -16,6 +16,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Game | Id | Engine ABI | Play | Modding | Guide |
 |---|---|---|---|---|---|
 | Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
+| Ikusa Megami ZERO | `bg0` | `SYS4415` | P1 (recognized) | none | none yet |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
 | Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | M3 (base mod) | [the guide](verita.md) |
@@ -39,6 +40,26 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Named patch points | `arterial.boot.data_layered`, `arterial.boot.data_ready`, `arterial.area.after_loaders`, `arterial.area.after_ready_handlers`, `arterial.battle.before_phases`, `arterial.battle.after_phases`, `arterial.experience.after_calculation` ([reference](../../patch-point-reference-arterial.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [Soukoku no Arterial's guide](arterial.md) |
+
+## Ikusa Megami ZERO
+
+| Fact | Value |
+|---|---|
+| Game id | `bg0` (`--game bg0`) |
+| Title | Ikusa Megami ZERO (戦女神ZERO) |
+| Support | play P1 (recognized); modding none |
+| Engine build | AGE `4.15D` |
+| Engine ABI | `SYS4415` |
+| Catalog revision | `S4IC415` |
+| Boot script | `SYSTEM4.BIN` |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/bg0/` beside the repository by default |
+| Port saves | disabled (read-only game) |
+| OMS modules | `bg0.scripts` (generated; no `bg0.globals`, the game has no registry yet) |
+| Speakers | no dialogue prelude yet |
+| Tables | none yet |
+| Named patch points | none yet (fragments use offsets) |
+| Publisher's page | none |
+| Guide | none yet |
 
 ## Himegari Dungeon Meister
 
