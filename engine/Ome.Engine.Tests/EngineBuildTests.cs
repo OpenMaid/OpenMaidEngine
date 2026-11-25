@@ -117,6 +117,8 @@ public sealed class EngineBuildTests
         Assert.True(child.Gfx.UnboundObjectReadsAbsent);
         Assert.False(parent.Audio.PlayComparesStartMode);
         Assert.True(child.Audio.PlayComparesStartMode);
+        Assert.False(parent.Audio.ZeroFadeClearsTrack);
+        Assert.True(child.Audio.ZeroFadeClearsTrack);
 
         // The settings loader binds the parent's keys in order, with two more.
         IReadOnlyList<Sys4RegIniKey> keys = child.Settings.BoundKeys;
@@ -125,6 +127,26 @@ public sealed class EngineBuildTests
             keys.Where(key => key.Key is not ("VirtualFullScreenType" or "AntiFontLevel")));
         Assert.Equal("LimitAero", keys[keys.ToList().FindIndex(key => key.Key == "VirtualFullScreenType") - 1].Key);
         Assert.Equal("UseAntiFont", keys[keys.ToList().FindIndex(key => key.Key == "AntiFontLevel") - 1].Key);
+    }
+
+    /// <summary>4.24N's changes are the real rows of its triage (docs/engine-re.md, "Himegari against Verita,
+    /// triaged"): its furigana arm the glyph timer, a fade to zero clears the retained track when it is armed, and its
+    /// settings loader binds one more key.</summary>
+    [Fact]
+    public void FourTwentyFourNIsFourTwentyFourJPlusItsChanges()
+    {
+        EngineRules parent = EngineBuilds.Age424J.Rules, child = EngineBuilds.Age424N.Rules;
+        Assert.Equal(parent.Text with { FuriganaArmsGlyphTimer = true }, child.Text);
+        Assert.Equal(parent.Gfx, child.Gfx);
+        Assert.Equal(parent.Audio with { ZeroFadeClearsTrack = true }, child.Audio);
+        Assert.Equal(parent.Shell, child.Shell);
+        Assert.Equal("424N", child.Saves.VersionStamp);
+        Assert.Equal(parent.Saves.NumberedGfxRecordSize, child.Saves.NumberedGfxRecordSize);
+
+        IReadOnlyList<Sys4RegIniKey> keys = child.Settings.BoundKeys;
+        Assert.Equal(parent.Settings.BoundKeys, keys.Where(key => key.Key != "VirtualFullScreenType"));
+        List<string> names = keys.Select(key => $"{key.Section}:{key.Key}={key.Default}").ToList();
+        Assert.Equal("display:VirtualFullScreenType=0", names[names.IndexOf("display:LimitAero=0") + 1]);
     }
 
     [Fact]

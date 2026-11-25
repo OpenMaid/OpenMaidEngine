@@ -133,6 +133,37 @@ public class SfxOpsTests
         Assert.Single(rig.Device.CommandsStartingWith("unload 11"));   // the tick released it at the fade's end
     }
 
+    /// <summary>Op 0xc0 during a fade to zero: 4.24J's still retains the track, and the builds whose arm clears it
+    /// (AudioRules.ZeroFadeClearsTrack) read none.</summary>
+    [Theory]
+    [InlineData("4.24J", "SYS4422", 5)]
+    [InlineData("4.24N", "SYS4424", 0)]
+    [InlineData("4.33G", "SYS4433", 0)]
+    public void DuringAFadeToZeroOpC0ReadsTheTrackTheBuildRetains(string buildId, string abi, long during)
+    {
+        var table = OpcodeTableJson.Load(Paths.OpcodesJson, abi);
+        const int trackDuringFade = 0x100;
+        var script = ScriptAssembler.Assemble(table, "BGM-FADE-ARMED",
+            new List<(int, Operand[])>
+            {
+                (0xbf, new[] { new Operand(0, 5) }),
+                (0xc2, new[] { new Operand(0, 0), new Operand(0, 3000) }),
+                (0xc8, new[] { new Operand(0, 1000) }),
+                (0xc0, new[] { new Operand(3, trackDuringFade) }),
+                (0x2, Array.Empty<Operand>()),
+            }, Array.Empty<string>());
+        var rig = new AudioRig();
+        var host = new RecordingWaits { Clock = rig.Clock };
+        var vm = new VirtualMachine(script, table, host, build: EngineBuilds.All.Single(build => build.Id == buildId),
+                                    skipAndAuto: rig.Skip, audio: rig.Audio, tick: rig.Tick);
+
+        vm.Run();
+
+        Assert.Equal("exit", vm.HaltReason);
+        Assert.Equal(during, vm.Globals[trackDuringFade]);
+        Assert.Empty(rig.Device.CommandsStartingWith("unload 11"));   // the music is still fading
+    }
+
     // Given no audio native the VM runs on a silent one, whose clock stands still (the CLI's run, play, sweep, trace
     // and oms-rebuild, GameSession): a timed fade settles at once, as a headless host's did before the audio native.
     [Fact]

@@ -210,7 +210,7 @@ public sealed partial class VirtualMachine
     private StepResult OpFadeBgm(Instruction ins, int pc)
     {
         var a = ins.Args;
-        _audio.FadeBgm((int)Read(a[0]), Read(a[1]));
+        _audio.FadeBgm((int)Read(a[0]), Read(a[1]), _rules.Audio.ZeroFadeClearsTrack);
         return StepResult.Next;
     }
 

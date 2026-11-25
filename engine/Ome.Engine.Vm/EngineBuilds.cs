@@ -47,16 +47,24 @@ public static class EngineBuilds
             Saves: new SaveRules(versionStamp: "424J", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
             Shell: new ShellRules(AutoMessagePage: false)));
 
-    /// <summary>AGE 4.24N, 戦女神VERITA's (its version resource; docs/engine-re.md, "Comparing engine builds"). It is
-    /// declared as 4.24J with nothing changed but its names: the game is at P1 (docs/adding-a-game.md), where nothing
-    /// of it runs, and each difference the revision diff lists joins this definition as it is read (the game's item in
-    /// docs/backlog.md).</summary>
+    /// <summary>AGE 4.24N, 戦女神VERITA's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its
+    /// changes are the real rows of the revision diff's triage (docs/engine-re.md, "Himegari against Verita,
+    /// triaged").</summary>
     public static EngineBuild Age424N { get; } = Age424J with
     {
         Id = "4.24N",
         AbiId = "SYS4424",
         Rules = Age424J.Rules with
         {
+            // Its op 0x196 handler (0x41fe20) arms the glyph timer as op 0x6e does, as 4.33G's does.
+            Text = Age424J.Rules.Text with { FuriganaArmsGlyphTimer = true },
+            // bgm_fade_arm@0x465220 clears the retained track for a target of zero, as 4.33G's does; its bgm_play_track
+            // compares the track alone, as 4.24J's does.
+            Audio = Age424J.Rules.Audio with { ZeroFadeClearsTrack = true },
+            // The SYS4REG.INI loader 0x46c1a0 binds display:VirtualFullScreenType after LimitAero, registered as 0;
+            // it binds no AntiFontLevel.
+            Settings = Age424J.Rules.Settings
+                .BindingAfter("LimitAero", new Sys4RegIniKey("display", "VirtualFullScreenType", "0")),
             // The stamp follows the version, as 4.24J's and 4.33G's do; no 4.24N save has been read. The record size
             // is 4.24J's, unproven: the profile's writes stay off until a native save is read.
             Saves = new SaveRules(versionStamp: "424N", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
@@ -91,8 +99,9 @@ public static class EngineBuilds
             },
             // Worker 0x486120 tests the record's bound bit before it returns the slot.
             Gfx = Age424J.Rules.Gfx with { UnboundObjectReadsAbsent = true },
-            // bgm_play_track@0x469e90 returns early only for the retained track with the retained start mode.
-            Audio = Age424J.Rules.Audio with { PlayComparesStartMode = true },
+            // bgm_play_track@0x469e90 returns early only for the retained track with the retained start mode, and
+            // bgm_fade_arm@0x469f80 clears the retained track for a target of zero.
+            Audio = Age424J.Rules.Audio with { PlayComparesStartMode = true, ZeroFadeClearsTrack = true },
             // The SYS4REG.INI loader 0x472530 binds two more keys, and a native exit writes both as 0.
             Settings = Age424J.Rules.Settings
                 .BindingAfter("LimitAero", new Sys4RegIniKey("display", "VirtualFullScreenType", "0"))

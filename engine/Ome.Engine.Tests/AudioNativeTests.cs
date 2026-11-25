@@ -63,6 +63,29 @@ public class AudioNativeTests
         Assert.False(rig.Audio.BgmPaused);
     }
 
+    /// <summary>4.24J keeps the retained track until a fade to zero ends; 4.24N's, 4.33G's and 4.38D's arm clears it
+    /// at once, and the music fades on (AudioRules.ZeroFadeClearsTrack).</summary>
+    [Theory]
+    [InlineData(false, 5)]
+    [InlineData(true, 0)]
+    public void AFadeToZeroClearsTheRetainedTrackWhenItEndsOrWhereTheBuildSaysWhenItIsArmed(bool atArm, long during)
+    {
+        var rig = new AudioRig();
+        rig.Audio.PlayBgm(5);
+        rig.Audio.FadeBgm(0, 1000, zeroTargetClearsTrack: atArm);
+        rig.Advance(500);
+        Assert.Equal(during, rig.Audio.CurrentBgmTrack);
+        Assert.Equal(Volume(5000), rig.Device.CommandsStartingWith("volume 11")[^1]);   // the fade goes on
+        Assert.True(rig.Device.IsLoaded(Audio.BgmChannel));
+        rig.Advance(500);
+        Assert.Equal(0, rig.Audio.CurrentBgmTrack);
+        Assert.False(rig.Device.IsLoaded(Audio.BgmChannel));
+
+        rig.Audio.PlayBgm(5);
+        rig.Audio.FadeBgm(1, 1000, zeroTargetClearsTrack: true);   // only a target of zero
+        Assert.Equal(5, rig.Audio.CurrentBgmTrack);
+    }
+
     [Fact]
     public void AFadeArmedAgainPartWayStartsFromTheCommittedLevel()
     {

@@ -123,7 +123,7 @@ public sealed class GameProfileSelectionTests
         Assert.Null(verita.Launcher);
         Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(verita);
         Assert.Equal(("4.24N", "SYS4424"), (build.Id, build.AbiId));
-        Assert.Equal(Ome.Engine.Vm.EngineBuilds.Age424J.Rules.Text, build.Rules.Text);
+        Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);
     }
 
     [Fact]

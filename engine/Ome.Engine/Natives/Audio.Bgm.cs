@@ -94,7 +94,8 @@ public sealed partial class Audio
     /// stream, so a held stream stays held until a start, and the next op 0xc1 holds it again.</summary>
     public bool BgmPaused => _scene.BgmPaused;
 
-    /// <summary>Op 0xc0: the retained track. A fade to zero that has run its course has cleared it.</summary>
+    /// <summary>Op 0xc0: the retained track. A fade to zero that has run its course has cleared it, and on the builds
+    /// whose arm clears it (<see cref="AudioRules.ZeroFadeClearsTrack"/>) one that has only begun.</summary>
     public long CurrentBgmTrack
     {
         get
@@ -109,8 +110,10 @@ public sealed partial class Audio
     /// The tick runs the fade while the script goes on; at its end the level is committed, and a zero target releases
     /// the source and clears the retained track (bgm_fade_tick@0x464960). Under ADV fast-forward native applies the
     /// endpoint at once; an advance click sets no fast-forward, so it keeps the authored length. A run on a standing
-    /// clock applies it at once too (settleFadesAtOnce).</summary>
-    public void FadeBgm(int targetBasisPoints, long durationMs)
+    /// clock applies it at once too (settleFadesAtOnce). Where <paramref name="zeroTargetClearsTrack"/> (the build's
+    /// <see cref="AudioRules.ZeroFadeClearsTrack"/>) the arm clears the retained track for a target of exactly zero, and the
+    /// music fades on: op 0xc0 and a numbered save made during the fade read no track.</summary>
+    public void FadeBgm(int targetBasisPoints, long durationMs, bool zeroTargetClearsTrack = false)
     {
         long ms = _skip.FastForwardActive || _settleFadesAtOnce ? 0 : Math.Clamp(durationMs, 0, 60_000);
         _timeline?.Event("bgm-fade", new() { ["target_basis_points"] = targetBasisPoints, ["duration_ms"] = ms });
@@ -120,6 +123,8 @@ public sealed partial class Audio
             NativeAudioVolume.FadeSteps(ms), _clock.NowMs, ms, Script: true);
         if (ms == 0) CommitFade(fade, targetBasisPoints);
         else _fade = fade;
+        // bgm_fade_arm tests the target it stores, unclamped, after its two restarts of the retained track.
+        if (zeroTargetClearsTrack && targetBasisPoints == 0) _scene.BgmTrack = 0;
         UpdateTimedWork();
     }
 

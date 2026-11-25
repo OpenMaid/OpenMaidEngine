@@ -631,11 +631,17 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     `[2525977, 1, 438, 1, 1, 1]`, full banks `[13075889, 2, 69390, 2, 2, 2]`; 38 settings pairs, no key the other
     games lack. Its dump, its Ghidra image `/verita/4.24N` with 805 ported names, its build in `operand_access.py`
     `ENGINES` with Himegari's twelve accessors, the revision diff against Himegari (`engine-re.md`, "Himegari against
-    Verita"), its profile and engine build (4.24J with its own names and nothing else changed), its observation and
+    Verita"), its profile and engine build (declared from 4.24J), its observation and
     `SYS4424` snapshot in the opcode registry with operand access for every opcode its scripts use, its workspace
     tests (`validate.py --level workspace --game verita`), and its extracted archives (`../extracted-verita/`), with
     `parse_sys4ini.py`, `extract_phase2.py` (all 2,130 scripts; the two files it skips are not scripts) and
     `compiler_census.py` run.
+  - **Step 4, the triage, is done (2026-11-24):** every differing and weak-only row of the revision diff has a
+    disposition (`engine-re.md`, "Himegari against Verita, triaged"). Three are real, and `EngineBuilds.Age424N`
+    has them: its furigana arm the glyph timer, its settings loader binds `display:VirtualFullScreenType`, and its
+    fade to zero clears the retained track when it is armed. The last is 4.33G's and 4.38D's too
+    (`AudioRules.ZeroFadeClearsTrack`), which the port lacked for Kamidori and 創刻のアテリアル. The virtual full
+    screen's display paths and the save folder's Windows check are not modelled. Next: driving native (step 5).
   - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
     and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` `load-agerc-module` and `0x24a` (`FIELD.BIN`),
     `0x35` (`BTL.BIN`) and `0x89` (`ALCHEMY.BIN`), one site each. The three AGERC ones are read (`engine-re.md`,

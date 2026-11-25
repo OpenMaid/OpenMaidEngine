@@ -338,7 +338,8 @@ to 6), the noise class the report flags. Kamidori–Arterial's largest differenc
 - op `0x2c7`'s substring, which keeps double-byte characters whole and warns when it moves an end.
 
 **Himegari against Verita (2026-11-24).** 4.24J against 4.24N: 370 `same`, 9 `minor`, 41 `differs`; helpers 100 /
-3 / 6, none unpaired, and neither build has an opcode the other lacks. Not triaged yet. The largest differences:
+3 / 6, none unpaired, and neither build has an opcode the other lacks. Triaged below ("Himegari against Verita,
+triaged"). The largest differences:
 - the Direct3D device code under `0x2cf`, `0x20c`, `0x222`, `0x20d` and `0x25b`: 4.24N reads
   `display:VirtualFullScreenType` (also in `0x109`) and has new `ResetDevice` and `RestoreBufferToTemp` messages,
   where 4.24J has `ResetTarget` and `SetTarget` ones;
@@ -526,6 +527,62 @@ The two glyph string drawers are 564 and 379 lines against 4.33G's 220 and 150, 
 and the dash join their differences were not read. With the calibration above, the port's frames of
 創刻のアテリアル's first and fourth pages (text, ruby, window and background, GDI backend) equal native's in every
 pixel (2026-11-19), so nothing on those pages depends on what is unread.
+
+### Himegari against Verita, triaged (2026-11-24)
+
+Every one of the report's 41 differing opcodes and 6 differing helpers has a disposition (`adding-a-game.md`, step
+4), with 8 helpers the report names as the places the rows differ, and so have its 9 opcodes and 3 helpers with weak
+differences only. Each pair was decompiled from both images. `/v2`'s `EngineCtx *` parameters were made plain
+integers in a rolled-back transaction, so the two images print the same shape, and the pairs were compared with
+`tools/decomp_pair_diff.py`. Addresses are written 4.24J's first, then 4.24N's.
+
+| Cause | Rows | Disposition |
+|---|---|---|
+| The furigana arm the glyph timer | op `0x196` (`0x41f2a0`=`0x41fe20`) | real, built: after the base text's glyph records it arms the sleep timer with op `0x6e`'s field (`ctx+0x14ea4`), as 4.33G's does (`TextRules.FuriganaArmsGlyphTimer`). Verita's scripts use it at 2,615 sites |
+| A fade to zero clears the track when it is armed | the weak-only rows `0xc2` (`op_0xc2_bgm_fade@0x4204c0`=`0x421050`), and `0x82`, `0xc4`, `0x1bd`, `0x1d1`, which reach the arm through the voice duck (`voice_bgm_duck_begin@0x406de0`=`0x406fc0`, whose target is never 0: a setting of 0 reads as 100) | real, built: `bgm_fade_arm@0x464830`=`0x465220` zeroes the retained track (`+0x40c`) when the stored target is exactly 0, after its two restarts of the track, as 4.33G's `@0x469f80` and 4.38D's `@0x4764d0` do; 4.24J's leaves it to the fade's end. The tick is the same in all four. The play ops complete a fade before they act, so only op `0xc0` and a numbered save made during the fade see it (`AudioRules.ZeroFadeClearsTrack`). Kamidori's comparison has `0xc2` weak-only with the same facts, and the port had no such rule for Kamidori and 創刻のアテリアル until this triage |
+| A settings key | the `SYS4REG.INI` loader (`engine_settings_load_sys4reg_ini@0x46b6e0`=`0x46c1a0`) | real, built: it binds `display:VirtualFullScreenType` after `LimitAero`, registered as 0 by `engine_settings_register_defaults` (`0x46cdb0`); no other key differs. The build's `SettingsRules` |
+| The virtual full screen type | ops `0x2cf` (the mode switch `0x412df0`=`0x413600`), `0x20e`, `0x20c`, `0x222`, `0x20d`, `0x25b`, `0x109`, `0x8e`, `0x91`, `0x92`, `0x94`, `0x95`; helpers `0x403830`=`0x403810` (the cursor's window-to-screen mapping), `0x4774c0`=`0x478790` (`gfx_object_blit_d3d9`), `0x4713b0`=`0x4725e0`, `0x471290`=`0x472470`, `0x4798a0`=`0x47aba0` (`gfx_surface_save_bmp24_to_path_backend1`); the weak-only rows `0x26`, `0x27`, `0x28`, `0x10a` and helpers `0x4399c0`=`0x43a4d0` (`screen_transition_finalize`), `0x439da0`=`0x43a8b0` (`screen_transition_begin`), `0x470d90`=`0x471ef0` (the border offset) | not modelled: the port scales its own canvas. Below |
+| The save folder | helper `0x40b880`=`0x40bfb0` (`save_root_resolve`), and through it ops `0xaa`, `0x19e`, `0x1ae` | not modelled: the port keeps saves in its profile's folder. 4.24N reads the Windows version (a `0x9c`-byte `OSVERSIONINFOEX`) before it asks for the application data folder, and below major version 5 it leaves through a packed call |
+| The context grew | ops `0xab`, `0x190`, `0x19f`, `0x1a1` (their constants `-0x72ad8` and `-0x74b54` are negated context offsets, `0x64` higher in 4.24N), `0xaa`, `0x19e`; helper `0x40fd10`=`0x410480` (`save_data_deserialize_and_begin_restore`) | the same in practice: the same code over moved fields. A native save shows whether the sections keep their sizes (step 7) |
+| The frame's PC | ops `0x2`, `0x3`, `0x5`, `0x8`, `0x7c`, `0x84`, `0x8c`, `0x8f`, `0xa0`, `0xa3`, `0xae`, `0xcd`, `0xcf`, `0x143`, `0x199`, `0x1f5`, `0x2c9`; helpers `0x409310`=`0x409840`, `0x40e610`=`0x40ed40`, `0x40e980`=`0x40f0e0`, `0x40f2d0`=`0x40fa30`, `0x40f6e0`=`0x40fe50`, `0x4178b0`=`0x4182f0` | the same in practice: 4.24N's `frame_pc` is `ctx+0x53d90`, `0x64` above 4.24J's `0x53d2c` and exactly `0xb2e × 0x78`, so the compiler folds it into the frame index (`(index + 0xb2e) × 0x78`) and the report sees 4.24J's offset only |
+| The same code, compiled differently | ops `0x71` (its 20,000-byte copy is in both), `0x100` (a return-address push 4.24J inlines is `vm_return_stack_push_pc`), `0x104`, `0x1ae`; helper `0x409370`=`0x4098b0` (`age_show_message_box`, whose script-position text takes fewer values) | the same in practice |
+| A text op no script uses | op `0x7d` | not modelled: it arms the glyph timer in its timed branch as `0x196` does, and no script of a profiled game uses it |
+
+**The virtual full screen type.** `engine_initialize_graphics_from_settings` (`0x406600`) copies the key into the
+renderer's device state, now at `ctx+0x46190`, at `+0x48c` (`ctx+0x4661c`) when `display:VirtualFullScreen` is 1,
+with the desktop's size (`GetSystemMetrics`, at least the game screen's) at `+0x47c` and `+0x480`; otherwise it
+stores 0. The device state grew by `0x64` bytes, so the graphics manager starts at `ctx+0x46678`
+(4.24J `ctx+0x46614`).
+- **Type 1 draws the frame through surface 38 (`0x26`).** Objects drawn to the back buffer take the device state's
+  matrix (`+0x4a0`), no border offset, and the render states `D3DRS_SRCBLEND` one and `D3DRS_DESTBLEND` zero. Op
+  `0x20e` also clears surface 38 when the back buffer is the target, and the mode switch saves the screen into it on
+  the way to a full screen (`0x47d6a0`, whose messages name `RestoreBufferToTemp`). The device's back buffer takes the
+  desktop's size (`0x472470`), and saving surface 38 as a BMP sets the manager's `+0xb604`. Verita's scripts save
+  surface `0x8a` as a thumbnail, never 38.
+- **Type 2 takes the borders off the cursor before it scales it** (`0x403810`), by the screen's size over the window's
+  less both borders. Types 0 and 1 scale it first, by the screen's size plus both borders over the window's, and take
+  the borders off after, as 4.24J does with `display:VirtualFullScreen` on. With it off, both builds only take the
+  borders off.
+- **Otherwise** the blitter adds the border to an object drawn to the back buffer as 4.24J does, through
+  `0x471ef0` (integers) for source surfaces 20 to 29 and `0x471f30` (floats) for the others.
+- **The border offset is stored, not computed.** 4.24J's `0x470d90` returns half the back buffer less the screen on
+  each call. 4.24N's `0x471ef0` returns `+0x490` and `+0x494`, which the letterbox function `0x4714a0` fills whenever
+  it runs: with the virtual full screen off (`+0x478` 0) it stores that same half, and on it the letterbox of each
+  type. The screen transitions and op `0x10a` take the border through it, and are otherwise the same code.
+
+**The context offsets move in steps.** 4.24N's fields are 8 bytes above 4.24J's by `0x14e9c` (`0x14ea4`) and by the
+device state (`0x46190`), `0x64` above from the graphics manager (`0x46678`) through the frame records
+(`0x53dec`, `0x55174`, `0x6dae8`, `0x72b3c`, `0x74bb8`), and `0x6c` above by `0xa0ce4` (`0xa0d50`). Reading a
+4.24N field from a 4.24J name means finding it in the code first.
+
+**Settled from step 1.**
+- `display:VirtualFullScreenType` is bound; its display behaviour is not modelled (above).
+- The catalog's `.DLL` (`AGERC.DLL`, entry 20760) is never read: op `0x14b` loads the install's copy by name
+  (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`"). The port needs neither copy, as it implements the map
+  functions itself ("Verita" above).
+- The install root's 182 loose `.BIN` files, 19 `$n$` append records among them, and its 5 `.AGF` files are the
+  updates' records. The port's store opens a loose file before the archives, as it does for Himegari's 49 patch
+  scripts and Kamidori's `$n$` records, and the catalog scan and the store's corpus decode read them.
 
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 
@@ -6437,7 +6494,10 @@ also clears the retained track. Ops `0xb7`/`0xb8`/`0xb9`/`0xbf`/`0xc3` clear `0x
 before they act. Every shipped fade site (547 in Himegari, 1497 in Kamidori) is followed by the same `0x1cf`
 duck-control choice; what comes next varies. SC0000@0x7c1 plays the next track six ops later, which cuts the
 title-music fade short at once. SC0000@0x126c goes on into the scene's presentation and text, which proceed while
-the music fades. SYS4433 is identical (`op_0xc2_bgm_fade_sys4433@0x41e580`, service at `0x4120bb`).
+the music fades. SYS4433 is identical (`op_0xc2_bgm_fade_sys4433@0x41e580`, service at `0x4120bb`), but for the arm:
+4.24N's, 4.33G's and 4.38D's `bgm_fade_arm` also zero the retained track when the target is 0, so during their fade to
+zero op `0xc0` and a numbered save read no track, where 4.24J's still have it until the fade ends ("Himegari against
+Verita, triaged", 2026-11-24; `AudioRules.ZeroFadeClearsTrack`).
 
 Measured with `tools/drive.py` from the click on 始める (New Game) on a fresh sandbox:
 
