@@ -65,8 +65,8 @@ public sealed class InstallsTests : IDisposable
         Assert.Null(found.Game);
         Assert.Empty(found.Titles);
 
-        // A game the engine is still being taught has a profile, and is not offered either. Every built-in game is
-        // past that, so the profile is a made one, below P3.
+        // A game the engine is still being taught has a profile, and is not offered either. The profile is a made one,
+        // below P3, so the case holds whatever level the built-in games are at.
         GameProfileManifest template = GameProfileRegistry.BuiltIn.Find("kamidori")!;
         var adding = new GameProfileManifest(
             "adding", "追加中のゲーム", [new GameCatalogIdentity("S4IC498", "追加中のゲーム")], template.ScriptRevisions,

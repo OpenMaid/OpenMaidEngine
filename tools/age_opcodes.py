@@ -232,7 +232,7 @@ OPCODES: dict[int, tuple[str, int]] = {
     0x0148: ('get-system-menu-show-delay', 1),
     0x0149: ('set-system-menu-show-delay', 1),
     0x014a: ('u0041FD10', 7),
-    0x014b: ('u0041FF50', 1),
+    0x014b: ('load-agerc-module', 1),
     0x014c: ('set-agerc-export', 2),
     0x014d: ('call-agerc-export', 6),
     0x0190: ('u0041C5E0', 2),

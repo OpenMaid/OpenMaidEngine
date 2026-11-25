@@ -11,7 +11,7 @@
 # converted (docs/engine-re.md, "Kamidori engine builds").
 [meta]
 instruction_model = "code = seq of <opcode:u32> then argc*(<argtype:u32><value:u32>); len_dwords = 1 + 2*argc"
-profile_ids = ["himegari", "kamidori", "arterial"]
+profile_ids = ["himegari", "kamidori", "arterial", "verita"]
 inline_array_opcode = 0x64
 
 # Compact defaults resolve the existing semantic evidence text into structured records. They state
@@ -163,6 +163,40 @@ opcodes = [
   0x32c, 0x32d, 0x32e,
 ]
 
+[[observation]]
+profile_id = "verita"
+catalog_revision = "S4IC424"
+script_revision = "SYS4424"
+engine_abi_id = "SYS4424"
+method = "catalog-corpus"
+artifact = "build/games/verita/catalog-opcode-coverage.json"
+script_count = 2130
+instruction_count = 1655135
+opcodes = [
+  0x1, 0x2, 0x3, 0x5, 0x6, 0x8, 0x9, 0x21, 0x22, 0x25, 0x32, 0x35,
+  0x36, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a,
+  0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x63, 0x64, 0x6c, 0x6e, 0x6f,
+  0x70, 0x71, 0x72, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7f,
+  0x80, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8b, 0x8c, 0x8f, 0x90, 0x93, 0x94,
+  0x97, 0xa0, 0xa1, 0xa2, 0xa3, 0xae, 0xb4, 0xb5, 0xb6, 0xb7, 0xb8, 0xb9,
+  0xba, 0xbf, 0xc0, 0xc2, 0xc4, 0xc5, 0xc6, 0xc7, 0xc8, 0xcc, 0xcd, 0xd0,
+  0xd3, 0xd4, 0xd5, 0xd9, 0xfa, 0xfb, 0xfe, 0xff, 0x100, 0x101, 0x106, 0x107,
+  0x108, 0x109, 0x10a, 0x10b, 0x10c, 0x10d, 0x12c, 0x12e, 0x12f, 0x130, 0x131, 0x132,
+  0x133, 0x134, 0x135, 0x136, 0x137, 0x13a, 0x13f, 0x140, 0x141, 0x142, 0x143, 0x147,
+  0x14b, 0x14c, 0x14d, 0x191, 0x192, 0x193, 0x194, 0x195, 0x196, 0x197, 0x198, 0x199,
+  0x19a, 0x19b, 0x19c, 0x19d, 0x19e, 0x1a0, 0x1a1, 0x1a2, 0x1a3, 0x1a4, 0x1a5, 0x1a6,
+  0x1a7, 0x1a8, 0x1a9, 0x1aa, 0x1ab, 0x1ac, 0x1ad, 0x1ae, 0x1af, 0x1b0, 0x1b1, 0x1b2,
+  0x1b3, 0x1b4, 0x1b5, 0x1b6, 0x1b7, 0x1b8, 0x1b9, 0x1ba, 0x1bb, 0x1bc, 0x1bd, 0x1be,
+  0x1bf, 0x1c1, 0x1c4, 0x1c7, 0x1c8, 0x1ca, 0x1cb, 0x1cc, 0x1cd, 0x1ce, 0x1cf, 0x1d0,
+  0x1d1, 0x1d2, 0x1d3, 0x1d4, 0x1d5, 0x1f4, 0x1f5, 0x1f6, 0x1f7, 0x1f8, 0x1f9, 0x1fa,
+  0x1fb, 0x1fd, 0x1fe, 0x1ff, 0x202, 0x203, 0x204, 0x205, 0x207, 0x208, 0x20a, 0x20b,
+  0x20c, 0x20d, 0x20e, 0x20f, 0x212, 0x213, 0x214, 0x215, 0x216, 0x217, 0x218, 0x219,
+  0x21a, 0x21b, 0x21c, 0x21d, 0x21e, 0x21f, 0x220, 0x222, 0x223, 0x224, 0x228, 0x229,
+  0x22a, 0x22c, 0x22d, 0x22e, 0x22f, 0x230, 0x231, 0x232, 0x233, 0x234, 0x235, 0x236,
+  0x238, 0x239, 0x23b, 0x23c, 0x23d, 0x23f, 0x241, 0x242, 0x243, 0x248, 0x249, 0x24a,
+  0x24e, 0x24f, 0x258, 0x259, 0x25a, 0x2bc, 0x2bd, 0x2bf, 0x2c0, 0x2c5,
+]
+
 # Exact snapshots resolve directly today. Future evidence-backed revision layers may name parents and
 # add members, replace full operand contracts/handler ids, or remove inherited entries. An empty
 # `composes` list deliberately makes no base-SYS4 or revision-ancestry claim.
@@ -198,6 +232,18 @@ observation_profile_id = "arterial"
 evidence_method = "catalog-corpus"
 evidence_artifact = "build/games/arterial/catalog-opcode-coverage.json"
 evidence_scope = "S4IC438 / SYS4438 complete decoded corpus snapshot"
+members = []
+contracts = []
+removes = []
+
+[[abi_layer]]
+id = "SYS4424"
+kind = "complete-observed-snapshot"
+composes = []
+observation_profile_id = "verita"
+evidence_method = "catalog-corpus"
+evidence_artifact = "build/games/verita/catalog-opcode-coverage.json"
+evidence_scope = "S4IC424 / SYS4424 complete decoded corpus snapshot"
 members = []
 contracts = []
 removes = []
@@ -5814,19 +5860,19 @@ access = ["read"]
 i = 2
 role = "current X scale percent"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "current Y scale percent"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "current Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x1fe
@@ -5856,25 +5902,25 @@ access = ["read"]
 i = 2
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x1ff
@@ -5904,19 +5950,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x202
@@ -6558,19 +6604,19 @@ access = ["read"]
 i = 2
 role = "a"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "b"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "c"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x218
@@ -6600,19 +6646,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode]]
 op = 0x219
@@ -6642,19 +6688,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x21a
@@ -6684,19 +6730,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode]]
 op = 0x21b
@@ -6812,19 +6858,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x21f
@@ -6866,25 +6912,25 @@ access = ["read"]
 i = 4
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 7
 role = "target angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x220
@@ -6926,19 +6972,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x222
@@ -7090,19 +7136,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode]]
 op = 0x229
@@ -7138,19 +7184,19 @@ access = ["read"]
 i = 3
 role = "range-transform anchor X"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "range-transform anchor Y"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "range-transform anchor Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x22a
@@ -7174,19 +7220,19 @@ evidence = "Ghidra /v2: op_0x22a_set_gfx_range_scale_current@0x4237b0 divides al
 i = 1
 role = "X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x22c
@@ -7210,19 +7256,19 @@ evidence = "Ghidra /v2: op_0x22c_set_gfx_range_translation_current@0x423900 pass
 i = 1
 role = "translation X"
 observed_types = ["l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "translation Y"
 observed_types = ["l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x22d
@@ -7258,19 +7304,19 @@ access = ["read"]
 i = 3
 role = "target X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x22f
@@ -7306,19 +7352,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x230
@@ -7464,19 +7510,19 @@ access = ["read"]
 i = 3
 role = "target scale X percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target scale Y percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target scale Z percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x234
@@ -7512,19 +7558,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x236
@@ -9110,6 +9156,72 @@ confidence = "low"
 depends_on = []
 evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
 
+[[opcode.semantics.args]]
+i = 1
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 6
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 7
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 8
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 9
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 10
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 11
+role = ""
+observed_types = ["l-int"]
+access = ["read"]
+
 [[opcode]]
 op = 0x36
 label = "u00419C00"
@@ -9515,6 +9627,30 @@ source = "kelebek"
 confidence = "low"
 depends_on = []
 evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+
+[[opcode.semantics.args]]
+i = 1
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = ""
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = ""
+observed_types = ["l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = ""
+observed_types = ["string"]
+access = ["read-string"]
 
 [[opcode]]
 op = 0x8a
@@ -10594,19 +10730,25 @@ evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this
 
 [[opcode]]
 op = 0x14b
-label = "u0041FF50"
+label = "load-agerc-module"
 argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0041FF50"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "load-agerc-module"
+category = "compute"
+summary = "(entry) - loads the DLL the catalog entry names (Verita: AGERC.DLL) as the module set-agerc-export looks names up in, freeing the one loaded before. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = "Native read 2026-11-24: Himegari /v2 op_0x14b_load_agerc_module@0x422080 and Verita 4.24N @0x422c00, the same code (revision diff same). Length 3 words. FreeLibrary(ctx+0x6dc18, Verita +0x6dc7c) when set, then LoadLibraryA(asset_catalog_get_entry_name(operand 1)) into it; a failed load throws. Only the entry's name is used: the DLL is the install folder's, which AGE already loaded for its menus, and the catalog's bytes are not read. The label was Kelebek's placeholder u0041FF50. Only Verita's FIELD.BIN uses it, once: FIELD@0x0 passes 0x5118, entry 20760, AGERC.DLL (docs/engine-re.md, Comparing engine builds, Verita)."
+
+[[opcode.semantics.args]]
+i = 1
+role = "catalog entry"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x14c
@@ -10621,16 +10763,18 @@ summary = "(slot, name) - binds slot (0..99) to the AGERC.DLL export the string 
 noop_headless = false
 source = "investigation"
 confidence = "high"
-depends_on = []
+depends_on = [0x14b]
 evidence = "Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita)."
 
 [[opcode.semantics.args]]
 i = 1
 role = "slot"
+access = ["read"]
 
 [[opcode.semantics.args]]
 i = 2
 role = "export name"
+access = ["read-string"]
 
 [[opcode]]
 op = 0x14d
@@ -10651,26 +10795,32 @@ evidence = "Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x42
 [[opcode.semantics.args]]
 i = 1
 role = "slot"
+access = ["read"]
 
 [[opcode.semantics.args]]
 i = 2
 role = "result"
+access = ["write"]
 
 [[opcode.semantics.args]]
 i = 3
 role = "cells (first integer cell of the array)"
+access = ["address"]
 
 [[opcode.semantics.args]]
 i = 4
 role = "count"
+access = ["read"]
 
 [[opcode.semantics.args]]
 i = 5
 role = "ref (its cell address is passed)"
+access = ["address"]
 
 [[opcode.semantics.args]]
 i = 6
 role = "value"
+access = ["read"]
 
 [[opcode]]
 op = 0x190
@@ -10896,13 +11046,13 @@ evidence = [
 i = 1
 role = "result"
 observed_types = ["l-float"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "x"
 observed_types = ["l-float"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x1d6
@@ -11226,25 +11376,25 @@ access = ["read"]
 i = 3
 role = "out: current rotation axis X"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "out: current rotation axis Y"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "out: current rotation axis Z"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "out: current rotation angle in degrees"
 observed_types = ["g-int"]
-access_by_abi = { SYS4422 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
 
 [[opcode]]
 op = 0x22b
@@ -11299,25 +11449,25 @@ access = ["read"]
 i = 3
 role = "target rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "target rotation angle in degrees"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x235
@@ -11356,19 +11506,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4422 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
 
 [[opcode]]
 op = 0x237
@@ -11518,6 +11668,24 @@ source = "kelebek"
 confidence = "low"
 depends_on = []
 evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+
+[[opcode.semantics.args]]
+i = 1
+role = ""
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = ""
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 3
+role = ""
+observed_types = ["l-int"]
+access = ["write"]
 
 [[opcode]]
 op = 0x24f

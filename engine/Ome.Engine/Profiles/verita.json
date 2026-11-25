@@ -1,0 +1,33 @@
+{
+  "id": "verita",
+  "displayTitle": "Ikusa Megami VERITA",
+  "catalogIdentities": [
+    {
+      "catalogRevision": "S4IC424",
+      "title": "戦女神VERITA"
+    }
+  ],
+  "scriptRevisions": ["SYS4424"],
+  "sysFrontendId": "SYS4",
+  "engineBuild": "4.24N",
+  "engineAbiId": "SYS4424",
+  "naturalBootScript": "SYSTEM4.BIN",
+  "support": { "play": "P1", "modding": "none" },
+  "metadataReferences": {},
+  "persistence": {
+    "storageNamespace": "verita",
+    "writesEnabled": false,
+    "readOnlyReason": "no native save of AGE 4.24N has been read yet, so its save layout is not proven (docs/adding-a-game.md, step 7)",
+    "magic": "S4SD",
+    "gameId": "戦女神VERITA",
+    "expectedPackedSaveVersion": 310,
+    "bankDimensions": {
+      "integerGlobals": 2525977,
+      "floatGlobals": 1,
+      "stringGlobals": 438,
+      "pointerGlobals": 1,
+      "floatPointers": 1,
+      "stringPointers": 1
+    }
+  }
+}

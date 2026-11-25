@@ -158,7 +158,9 @@ class RepositoryBundleTests(unittest.TestCase):
     def test_the_repository_builds_a_whole_bundle(self) -> None:
         files = rb.collect()
         games = json.loads(files["games.json"])["games"]
-        self.assertEqual(sorted(rb.profile_manifests()), [game["id"] for game in games])
+        self.assertEqual(sorted(rb.bundled_manifests()), [game["id"] for game in games])
+        # A game below M3 has no base mod yet, and is left out.
+        self.assertTrue(all(manifest["support"]["modding"] == "M3" for manifest in rb.bundled_manifests().values()))
         self.assertIn("docs/modding/README.md", files)
         self.assertIn("opcodes.json", files)
         for game in games:

@@ -18,6 +18,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
+| Ikusa Megami VERITA | `verita` | `SYS4424` | P1 (recognized) | none | none yet |
 
 ## Soukoku no Arterial
 
@@ -78,6 +79,26 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Named patch points | `kamidori.experience.after_calculation`, `kamidori.boot.data_layered`, `kamidori.boot.data_ready`, `kamidori.stage.after_loader`, `kamidori.class_change.rules_run`, `kamidori.stage.after_info_reload`, `kamidori.stage.after_list_preview`, `kamidori.stage.after_ready_handlers`, `kamidori.stage.after_round_handlers`, `kamidori.stage.after_close_handlers` ([reference](../../patch-point-reference-kamidori.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [Kamidori Alchemy Meister's guide](kamidori.md) |
+
+## Ikusa Megami VERITA
+
+| Fact | Value |
+|---|---|
+| Game id | `verita` (`--game verita`) |
+| Title | Ikusa Megami VERITA (戦女神VERITA) |
+| Support | play P1 (recognized); modding none |
+| Engine build | AGE `4.24N` |
+| Engine ABI | `SYS4424` |
+| Catalog revision | `S4IC424` |
+| Boot script | `SYSTEM4.BIN` |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/verita/` beside the repository by default |
+| Port saves | disabled (read-only game) |
+| OMS modules | `verita.scripts` (generated; no `verita.globals`, the game has no registry yet) |
+| Speakers | no dialogue prelude yet |
+| Tables | none yet |
+| Named patch points | none yet (fragments use offsets) |
+| Publisher's page | none |
+| Guide | none yet |
 
 ## Adding a game
 

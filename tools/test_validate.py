@@ -200,7 +200,9 @@ class GatePlanTests(unittest.TestCase):
             if gate.key == "engine-workspace-tests"
         )
         # Himegari's tests are those no other game's trait claims; a game added later joins the exclusions.
-        self.assertIn("Category=Workspace&Profile!=arterial&Profile!=kamidori", installed.command)
+        others = [game for game in validate.paths.available_profiles() if game != "himegari"]
+        self.assertTrue({"arterial", "kamidori"} <= set(others))
+        self.assertIn("Category=Workspace" + "".join(f"&Profile!={game}" for game in others), installed.command)
         self.assertEqual("Category=Workspace&Profile=arterial", validate.workspace_test_filter("arterial"))
         self.assertIn("--no-restore", installed.command)
         self.assertIn("-m:1", installed.command)

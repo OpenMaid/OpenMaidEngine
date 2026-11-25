@@ -45,9 +45,7 @@ _CONVENTIONAL_EXTRACTED_ROOTS = {
 # Installs kept only for native-engine RE, with no port profile: reference id -> pristine install. Their scratch
 # copies and engine dumps live in ENGINES_BUILD/<id>/ (tools/native_scratch.py and tools/frida/dump_engine.py
 # take ``--reference ID``).
-# games/arterial was one until its profile (2026-11-19). games/verita is one from its intake (2026-11-24) until its
-# profile, step 3 of docs/adding-a-game.md, moves its outputs to build/games/verita/.
-REFERENCE_INSTALLS: dict[str, Path] = {"verita": GAMES / "verita"}
+REFERENCE_INSTALLS: dict[str, Path] = {}   # none now: games/arterial got its profile on 2026-11-19, games/verita on 2026-11-24
 ENGINES_BUILD = SHARED_BUILD / "engines"
 
 

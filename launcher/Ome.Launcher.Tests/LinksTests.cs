@@ -66,13 +66,13 @@ public sealed class LinksTests : IDisposable
         GameProfileManifest kamidori = GameProfileRegistry.BuiltIn.Find("kamidori")!;
         var art = new GameLauncherArt("https://art.test/", new GameArtSource("https://art.test/banner.png", Sha(banner)),
                                       new GameArtSource("https://art.test/cover.png", Sha(cover)));
-        // And a game still being added (below P3), which no built-in game is any more.
+        // And a game still being added (below P3), as a built-in game may be too.
         var adding = new GameProfileManifest(
             "adding", "追加中のゲーム", [new GameCatalogIdentity("S4IC498", "追加中のゲーム")], kamidori.ScriptRevisions,
             kamidori.SysFrontendId, kamidori.EngineBuildId, kamidori.EngineAbiId, kamidori.NaturalBootScript,
             kamidori.MetadataReferences, kamidori.Persistence,
             support: new GameSupport(PlayLevel.Boots, ModdingLevel.None));
-        // And a playable game whose profile has no art entry, which every built-in game has.
+        // And a playable game whose profile has no art entry, which every playable built-in game has.
         var artless = new GameProfileManifest(
             "artless", "アートのないゲーム", [new GameCatalogIdentity("S4IC497", "アートのないゲーム")], kamidori.ScriptRevisions,
             kamidori.SysFrontendId, kamidori.EngineBuildId, kamidori.EngineAbiId, kamidori.NaturalBootScript,
@@ -101,7 +101,10 @@ public sealed class LinksTests : IDisposable
         // The page lists the games a player can play: one still being added (below P3) is left out.
         Assert.Equal(registry.Profiles.Where(game => game.Support.IsPlayable).Select(game => game.Id),
                      games.Games.Select(game => game.Id));
-        Assert.Equal(["adding"], registry.Profiles.Where(game => !game.Support.IsPlayable).Select(game => game.Id));
+        Assert.Equal(GameProfileRegistry.BuiltIn.Profiles.Where(game => !game.Support.IsPlayable).Select(game => game.Id)
+                         .Append("adding").Order(StringComparer.Ordinal),
+                     registry.Profiles.Where(game => !game.Support.IsPlayable).Select(game => game.Id)
+                         .Order(StringComparer.Ordinal));
         GameEntryViewModel kamidori = games.Games.Single(game => game.Id == "kamidori");
         GameEntryViewModel himegari = games.Games.Single(game => game.Id == "himegari");
 

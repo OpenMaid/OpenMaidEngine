@@ -162,7 +162,9 @@ game's has: entry 20760, `AGERC.DLL`, 761,856 bytes in `DATA1.ALF`. It is a PE i
 export table. The install's own `AGERC.DLL` (340,992 bytes) looks packed: its sections are unnamed, and most hold far
 fewer bytes in the file than in memory. Both export the same twenty names at different addresses, the names
 Himegari's and Kamidori's installed `AGERC.DLL` export too (`engine-re.md`, "Comparing engine builds", Verita).
-Which copy native AGE loads, and when, is not read yet. Its nine `.CUR` cursors (`CURSOR01.CUR` to
+Native AGE loads the install's copy. Op `0x14b` (`load-agerc-module`), at `FIELD.BIN`'s start, passes this entry's
+number, but its handler gives only the entry's name to `LoadLibraryA`, whose search finds the file beside `AGE.EXE`;
+the catalog's bytes are never read (`engine-re.md`, Verita). Its nine `.CUR` cursors (`CURSOR01.CUR` to
 `CURSOR09.CUR`) are a type another supported catalog has: the intake names only `.DLL` as new.
 
 ### SYS4INI file header: VM bank dimensions — CONFIRMED (2026-10-06)

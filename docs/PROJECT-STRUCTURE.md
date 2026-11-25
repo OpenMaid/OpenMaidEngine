@@ -13,8 +13,8 @@ Every read-only install sits in `games/`, each under a name of its own. A game's
 `run-godot.ps1`), so a new game adds no entry to any of them. The installs moved there on 2026-11-19 from
 `Himegari_Game/`, `Kamidori/`, `Kamidori_Translated/` and `Arterial/創刻のアテリアル/`; documents written before
 then name those folders. Himegari's legacy extracted archive tree is `extracted/`; Kamidori's is
-`extracted-kamidori/` and Arterial's `extracted-arterial/` (needed by the Python data-table tooling; production
-catalog scans read archives directly).
+`extracted-kamidori/`, Arterial's `extracted-arterial/` and Verita's `extracted-verita/` (needed by the Python
+data-table tooling; production catalog scans read archives directly).
 Additional extracted roots may be selected explicitly.
 
 ```
@@ -39,8 +39,10 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 │   │                                         (docs/asset-resolution-re.md).
 │   ├── arterial/                             創刻のアテリアル (AGE 4.38D), the `arterial` profile's install
 │   │                                         (a reference install until 2026-11-19; docs/adding-a-game.md).
-│   ├── verita/                               戦女神VERITA (AGE 4.24N, catalog `S4IC424`), being added
-│   │                                         (docs/adding-a-game.md; backlog "Onboard 戦女神VERITA"). No profile yet.
+│   ├── verita/                               戦女神VERITA (AGE 4.24N, catalog `S4IC424`), the `verita` profile's install,
+│   │                                         being added (docs/adding-a-game.md; backlog "Onboard 戦女神VERITA"). Root
+│   │                                         .BIN files (182, 19 `$n$` append records among them) and five .AGF
+│   │                                         files are the updates' loose records.
 │   └── verita_install/                       Verita's installer media (`VERITA.mdf`, the `VERITA_1xx.exe` updates),
 │                                             not an install: no tool reads it.
 │
@@ -57,6 +59,10 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 ├── extracted-arterial/                      ← DERIVED — Arterial archives, regenerable the same way
 │   ├── DATA1/ … DATA6/                         DATA1 = the base .BIN scripts
 │   └── APPEND01/ … APPEND04/                   append catalogs, records flat in each folder
+│
+├── extracted-verita/                        ← DERIVED — Verita archives, regenerable the same way
+│   ├── DATA1/ … DATA7/                         DATA1 = the base .BIN scripts
+│   └── APPEND01/ … APPEND03/                   append catalogs, records flat in each folder
 │
 └── age-reimpl/                              ← OUR WORK (everything we made lives here)
     │

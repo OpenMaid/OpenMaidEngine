@@ -622,22 +622,36 @@ From the user's design pass on the built site (2026-11-22). The export's design 
 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
 - **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
-  "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". On
-  `feature/verita`; the install is `games/verita/` (`PROJECT-STRUCTURE.md`). Its nearest build is Himegari's 4.24J.
-  - **Step 1, the intake** (`adding-a-game.md`), passes every check (`build/games/verita/intake.json`): 2,130 scripts
-    (1,809 base, 321 in three appends), 1,655,135 instructions, 262 distinct opcodes. Saved prefix
+  "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". It
+  stands at **P1** since 2026-11-24 (its manifest's `support`), on `feature/verita`: the engine names its install,
+  loads its catalog and decodes all of it, and nothing of it runs or saves. The install is `games/verita/`
+  (`PROJECT-STRUCTURE.md`); its nearest build is Himegari's 4.24J.
+  - **Done for P0 and P1.** The intake passes every check (`build/games/verita/intake.json`): 2,130 scripts (1,809
+    base, 321 in three appends), 1,655,135 instructions, 262 distinct opcodes; saved prefix
     `[2525977, 1, 438, 1, 1, 1]`, full banks `[13075889, 2, 69390, 2, 2, 2]`; 38 settings pairs, no key the other
-    games lack.
+    games lack. Its dump, its Ghidra image `/verita/4.24N` with 805 ported names, its build in `operand_access.py`
+    `ENGINES` with Himegari's twelve accessors, the revision diff against Himegari (`engine-re.md`, "Himegari against
+    Verita"), its profile and engine build (4.24J with its own names and nothing else changed), its observation and
+    `SYS4424` snapshot in the opcode registry with operand access for every opcode its scripts use, its workspace
+    tests (`validate.py --level workspace --game verita`), and its extracted archives (`../extracted-verita/`), with
+    `parse_sys4ini.py`, `extract_phase2.py` (all 2,130 scripts; the two files it skips are not scripts) and
+    `compiler_census.py` run.
   - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
-    and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` and `0x24a` (`FIELD.BIN`), `0x35` (`BTL.BIN`)
-    and `0x89` (`ALCHEMY.BIN`), one site each. Their registry entries are Kelebek's names and operand counts only.
-  - **`FIELD.BIN` calls 17 `AGERC.DLL` map functions** through the two agerc-export opcodes (`engine-re.md`,
-    "Comparing engine builds", Verita): wall, land and event tables, character parameters, and the collision, land
-    and event queries. The port cannot load a Windows DLL on every platform, so those functions have to be read in
-    `AGERC.DLL` and implemented in the engine.
-  - **Step 2, the engine** (2026-11-24): dumped, pinned in `operand_access.py` `ENGINES`, the Ghidra image
-    `/verita/4.24N` with 805 ported names, and the revision diff against Himegari (`engine-re.md`, "Himegari against
-    Verita"). Its packer sites are not restored and its imports not typed, as Arterial's.
+    and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` `load-agerc-module` and `0x24a` (`FIELD.BIN`),
+    `0x35` (`BTL.BIN`) and `0x89` (`ALCHEMY.BIN`), one site each. The three AGERC ones are read (`engine-re.md`,
+    "Comparing engine builds", Verita); `0x24a` writes the texture memory counters: the bytes of the textures
+    held by surfaces of kinds 1 and 2 and by the others (`gfx_surface_texture_create` adds them,
+    `gfx_surface_texture_release` subtracts them), and a third value only ever set to 0. `0x35` copies a surface
+    rectangle (its one site the whole screen, surface `0x66` to `0x67`), and `0x89` draws a string.
+  - **`FIELD.BIN` calls 17 `AGERC.DLL` map functions** through those opcodes: the wall, land and event polygons, the
+    move, and the collision, land and event queries. The port cannot load a Windows DLL on every platform, so they are
+    to be implemented in the engine from Himegari's `AGERC.DLL`, the copy whose code is readable. Verita's installed
+    copy is packed: its code is to be dumped from a running game and compared before the port relies on Himegari's.
+  - **The compiler census** finds two shapes Himegari's and Kamidori's have none of: 5 conditional jumps with no
+    target and 2 negative immediates (`build/games/verita/compiler-census.json`). Open Maid Script's round trip (M1)
+    shows whether it keeps them.
+  - **Left out of steps 2 and 3:** the Ghidra image's packer API sites are not restored and its imports not typed
+    (153 calls into the stub page), as Arterial's.
   - Done when the game is at P3 and M3 and its manifest says so, as Arterial's item records.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same

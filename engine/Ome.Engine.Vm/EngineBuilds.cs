@@ -47,6 +47,22 @@ public static class EngineBuilds
             Saves: new SaveRules(versionStamp: "424J", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
             Shell: new ShellRules(AutoMessagePage: false)));
 
+    /// <summary>AGE 4.24N, 戦女神VERITA's (its version resource; docs/engine-re.md, "Comparing engine builds"). It is
+    /// declared as 4.24J with nothing changed but its names: the game is at P1 (docs/adding-a-game.md), where nothing
+    /// of it runs, and each difference the revision diff lists joins this definition as it is read (the game's item in
+    /// docs/backlog.md).</summary>
+    public static EngineBuild Age424N { get; } = Age424J with
+    {
+        Id = "4.24N",
+        AbiId = "SYS4424",
+        Rules = Age424J.Rules with
+        {
+            // The stamp follows the version, as 4.24J's and 4.33G's do; no 4.24N save has been read. The record size
+            // is 4.24J's, unproven: the profile's writes stay off until a native save is read.
+            Saves = new SaveRules(versionStamp: "424N", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
+        },
+    };
+
     /// <summary>AGE 4.33G, Kamidori's clean install (docs/engine-re.md, "Kamidori engine builds"). The profile runs this
     /// build whichever executable the player has (spec §7.5).</summary>
     public static EngineBuild Age433G { get; } = Age424J with
@@ -132,7 +148,7 @@ public static class EngineBuilds
     };
 
     /// <summary>Every build, parents first.</summary>
-    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age433G, Age438D];
+    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age424N, Age433G, Age438D];
 
     public static EngineBuild? Find(string id)
         => All.FirstOrDefault(build => string.Equals(build.Id, id, StringComparison.Ordinal));

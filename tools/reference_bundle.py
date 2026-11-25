@@ -215,6 +215,13 @@ def profile_manifests() -> dict[str, dict]:
     return manifests
 
 
+def bundled_manifests() -> dict[str, dict]:
+    """The games the bundle carries: those at modding level M3, which have the base mod and registry its files come
+    from. A game still being added has neither yet; the generated games page in docs/modding/ lists it."""
+    return {game: manifest for game, manifest in profile_manifests().items()
+            if manifest["support"]["modding"] == "M3"}
+
+
 def _quiet(build, label: str):
     """Run a builder that prints its lint; show what it printed only when it fails."""
     printed = io.StringIO()
@@ -305,7 +312,7 @@ def collect() -> dict[str, bytes]:
     """Every file of the bundle but bundle.json, by its path in the zip."""
     files = {"opcodes.json": _opcodes_json(), **_modding_docs()}
     games = []
-    for game, manifest in profile_manifests().items():
+    for game, manifest in bundled_manifests().items():
         game_files, entry = _game_files(game, manifest)
         files.update(game_files)
         games.append(entry)

@@ -100,6 +100,32 @@ public sealed class GameProfileSelectionTests
         Assert.Equal("SYS4438", Ome.Engine.Vm.EngineBuilds.ForProfile(arterial).AbiId);
     }
 
+    /// <summary>戦女神VERITA is at P1 (docs/adding-a-game.md): the engine names its install and reads all of it, and
+    /// nothing of it runs or saves. Its build is declared from 4.24J.</summary>
+    [Fact]
+    public void VeritaIsBeingAddedFromHimegarisBuild()
+    {
+        GameProfileManifest verita = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("verita"));
+
+        Assert.Equal(("SYS4", "4.24N", "SYS4424", "SYSTEM4.BIN"),
+                     (verita.SysFrontendId, verita.EngineBuildId, verita.EngineAbiId, verita.NaturalBootScript));
+        Assert.Equal(["SYS4424"], verita.ScriptRevisions);
+        Assert.True(verita.Matches(new GameCatalogIdentity("S4IC424", "戦女神VERITA")));
+        Assert.Equal(("P1", "none"), (verita.Support.PlayId, verita.Support.ModdingId));
+        Assert.False(verita.Support.IsPlayable);
+        // No native save of 4.24N has been read: its saves stay off.
+        Assert.False(verita.PersistenceWritesEnabled);
+        Assert.NotNull(verita.Persistence.ReadOnlyReason);
+        Assert.Equal(310, verita.Persistence.ExpectedPackedSaveVersion);
+        Assert.Equal([2525977, 1, 438, 1, 1, 1], verita.Persistence.BankDimensions.ToArray());
+        Assert.Null(verita.DirectSceneDiagnostics);
+        Assert.Null(verita.DebugSceneLaunch);
+        Assert.Null(verita.Launcher);
+        Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(verita);
+        Assert.Equal(("4.24N", "SYS4424"), (build.Id, build.AbiId));
+        Assert.Equal(Ome.Engine.Vm.EngineBuilds.Age424J.Rules.Text, build.Rules.Text);
+    }
+
     [Fact]
     public void NormalKamidoriProfileInjectsNoHimegariState()
     {
@@ -266,6 +292,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("himegari")]
     [InlineData("kamidori")]
     [InlineData("arterial")]
+    [InlineData("verita")]
     public void InstalledCatalogAutoSelectsExpectedProfile(string expectedProfile)
     {
         string path = Path.Combine(Paths.GameInstall(expectedProfile), "SYS4INI.BIN");
@@ -285,6 +312,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("himegari")]
     [InlineData("kamidori")]
     [InlineData("arterial")]
+    [InlineData("verita")]
     public void InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions(string game)
     {
         string path = Path.Combine(Paths.GameInstall(game), "SYS4INI.BIN");
@@ -300,6 +328,17 @@ public sealed class GameProfileSelectionTests
 
         Assert.Equal(selected.Profile.Persistence.BankDimensions.ToArray(), savedPrefix);
         Assert.All(Enumerable.Range(0, 6), k => Assert.True(fullBanks[k] >= savedPrefix[k]));
+    }
+
+    /// <summary>Verita's workspace gate runs only the tests its trait names, so it runs the two theories' cases
+    /// itself.</summary>
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "verita")]
+    public void InstalledVeritaSelectsItsProfileWithItsBankDimensions()
+    {
+        InstalledCatalogAutoSelectsExpectedProfile("verita");
+        InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("verita");
     }
 
     private static GameProfileManifest SyntheticProfile(string id, GameCatalogIdentity identity)

@@ -1141,3 +1141,6 @@ authors.
     the databases (the user: "they rehost it, so we can do the same since hotlinking tends to be looked down upon");
     `databases` joins the paths no game id may take. The site's design is in its plan, `ome-site`
     `docs/plans/2026-11-21-site-plan.md` §15.4.
+- **The bundle carries the games at modding level M3** (2026-11-24, when 戦女神VERITA got its profile at P1): spec §8.1
+  lists each game's registry, base mod files and script index, which a game still being added does not have yet.
+  The generated games page in `docs/modding/`, which the bundle carries, lists every game with its levels.

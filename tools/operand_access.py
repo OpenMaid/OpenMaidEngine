@@ -187,7 +187,7 @@ ENGINES: dict[str, EngineFacts] = {
     # at 0x414e10 fills the opcode table at ctx+0xa4b9c. The C runtime starts at the operator new[] thunk 0x583dd8
     # (much of this build's engine code is not 16-aligned, so alignment does not mark the runtime).
     "arterial": EngineFacts(0x414E10, 0xA4B9C, _ARTERIAL_ACCESSORS, runtime_start=0x583DD8, version="4.38D"),
-    # 戦女神VERITA, AGE 4.24N, dumped 2026-11-24 (a reference install until its profile). The ctx constructor at
+    # 戦女神VERITA, AGE 4.24N, dumped 2026-11-24 (a profile since the same day). The ctx constructor at
     # 0x414180 fills the opcode table at ctx+0x9b2b8, the same code as Himegari's 0x413860. The C runtime starts at the
     # operator new thunk 0x550cce, whose bytes and neighbours match Himegari's 0x54f3de.
     "verita": EngineFacts(0x414180, 0x9B2B8, _VERITA_ACCESSORS, runtime_start=0x550CCE, version="4.24N"),

@@ -250,9 +250,14 @@ by a unique string) and ported 794 of `/v2`'s 1,223 named or commented functions
 functions got a name and plate, 124 of them new functions. Its packer sites are not restored (153 calls into the
 stub page `0x3050000`, against `/v2`'s 154 into `0x2750000`) and its imports not typed.
 
-Verita's `FIELD.BIN` is the only script of the four games that calls `AGERC.DLL` code: ops `0x14c` and `0x14d`,
-which Himegari's and Verita's handlers implement alike (both `same` in the revision diff), and no other game's
-scripts use.
+Verita's `FIELD.BIN` is the only script of the four games that calls `AGERC.DLL` code: ops `0x14b`, `0x14c` and
+`0x14d`, which Himegari's and Verita's handlers implement alike (all `same` in the revision diff), and no other
+game's scripts use.
+- **`0x14b` (`load-agerc-module`, entry)** sets its length to 3 words, frees the module at `ctx+0x6dc18` (Verita
+  `+0x6dc7c`) when one is loaded, and loads `LoadLibraryA`(the name of catalog entry operand 1) into it; a failed load
+  throws. Only the name is used, so the module is the `AGERC.DLL` beside `AGE.EXE`, which `LoadLibraryA`'s search
+  finds first; the catalog's copy is never read. `scene_context_init_reset` and `0x40f9a0` free it too. `FIELD@0x0`
+  passes `0x5118`, entry 20760, `AGERC.DLL`.
 - **`0x14c` (`set-agerc-export`, slot, name)** sets its length to 5 words, looks the name up with `GetProcAddress`
   in the module handle at `ctx+0x6dc18` (Verita `+0x6dc7c`), and stores the address in the slot table at
   `ctx+0x6dc1c` (Verita `+0x6dc80`) when the slot is below 100. A name that is not found, or a slot of 100 or more,
@@ -269,6 +274,19 @@ scripts use.
   the queries two to eight cells. Every installed `AGERC.DLL` but Arterial's exports these, besides the shell's
   `_OperateMenu`, `_ShowDialog` and `_GetInstance` (Arterial's has only those three). Verita's catalog also lists an
   `AGERC.DLL` (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`").
+- **The map functions**, read in Himegari's `AGERC.DLL` (`/support/AGERC.DLL`, whose code is not packed), where
+  Verita's installed copy has every export at the same address; Verita's own code is not read yet, as its copy is
+  packed. They keep one map in the DLL's statics: up to 100 wall, 100 land and 100 event polygons of up to 100 points
+  each. Each `_SetMap*P{X,Y}` copies 10,000 ints (point `k` of polygon `p` at `100p + k`), each `*PN`, `_SetMapWallCr`
+  and `_SetMapLandIdx` 100, whatever count the script passes; `_SetMapParams` takes the three polygon counts and
+  `_SetChParams` a move (from x, y, to x, y) and a radius, with its square. `_InitRect` computes every polygon's
+  bounding box; it resets the minimums but starts the maximums from the box's last values, so a box only grows, which
+  changes no answer, as the box only culls before the exact tests. `_FindClash` walks the wall polygons whose `Cr` is
+  1 and whose box the move's reaches, from the polygon and edge the cells name, and for the first edge the move
+  crosses, or whose distance from the move's end is at most the radius, writes the polygon, edge, contact point and
+  move end into its cells and returns 1. `_GetLand` returns the land index (`_SetMapLandIdx`) of the first land
+  polygon holding the point, and `_GetEv` the first event polygon's number; both 0 for none. This is the decompiler's
+  reading; the point-in-polygon test (`0x10004620`) and the segment test (`0x10004570`) are not read yet.
 
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
