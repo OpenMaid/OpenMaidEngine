@@ -171,6 +171,23 @@ _VERITA_ACCESSORS = {
     0x416880: Accessor("cell", 1, "vm_operand_lvalue"),
 }
 
+# 戦女神ZERO AGE 4.15D, from --align-accessors against himegari and verita (every alignment unanimous, the same
+# twelve at the same addresses, 2026-11-25): 4.15D has no float accessor either.
+_BG0_ACCESSORS = {
+    0x417B80: Accessor("read", 1, "vm_operand_fetch"),
+    0x417570: Accessor("read-string", 1, "vm_operand_read_string_buffer"),
+    0x424E30: Accessor("read-string", 2, "vm_operand_read_std_string"),
+    0x417870: Accessor("read-string", 1, "vm_operand_format_as_string"),
+    0x4145A0: Accessor("write", 1, "vm_operand_write"),
+    0x425190: Accessor("write-string", 1, "vm_operand_write_string"),
+    0x414860: Accessor("bind", 1, "vm_pointer_operand_bind_element"),
+    0x414780: Accessor("bind", 1, "vm_pointer_operand_write"),
+    0x414290: Accessor("address", 1, "vm_operand_resolve_address"),
+    0x414500: Accessor("string-cell", 1, "vm_operand_global_string_cell"),
+    0x4143F0: Accessor("ref-slot", 1, "vm_pointer_operand_slot"),
+    0x414460: Accessor("cell", 1, "vm_operand_lvalue"),
+}
+
 REFERENCE_PROFILE = "himegari"
 ENGINES: dict[str, EngineFacts] = {
     "himegari": EngineFacts(0x413860, 0x9B24C, _HIMEGARI_ACCESSORS, runtime_start=0x54F3DE, version="4.24J"),
@@ -191,6 +208,10 @@ ENGINES: dict[str, EngineFacts] = {
     # 0x414180 fills the opcode table at ctx+0x9b2b8, the same code as Himegari's 0x413860. The C runtime starts at the
     # operator new thunk 0x550cce, whose bytes and neighbours match Himegari's 0x54f3de.
     "verita": EngineFacts(0x414180, 0x9B2B8, _VERITA_ACCESSORS, runtime_start=0x550CCE, version="4.24N"),
+    # 戦女神ZERO, AGE 4.15D, dumped 2026-11-25 (a reference install). The ctx constructor at 0x412070 fills the
+    # opcode table at ctx+0x99758 (default handler 0x414990), with Himegari's 0x413860's prologue. The C runtime
+    # starts at the operator new thunk 0x52b0ee, whose neighbours match Himegari's 0x54f3de.
+    "bg0": EngineFacts(0x412070, 0x99758, _BG0_ACCESSORS, runtime_start=0x52B0EE, version="4.15D"),
 }
 
 

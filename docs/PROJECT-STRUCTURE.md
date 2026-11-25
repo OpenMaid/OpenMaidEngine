@@ -43,8 +43,12 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 │   │                                         being added (docs/adding-a-game.md; backlog "Onboard 戦女神VERITA"). Root
 │   │                                         .BIN files (182, 19 `$n$` append records among them) and five .AGF
 │   │                                         files are the updates' loose records.
-│   └── verita_install/                       Verita's installer media (`VERITA.mdf`, the `VERITA_1xx.exe` updates),
-│                                             not an install: no tool reads it.
+│   ├── verita_install/                       Verita's installer media (`VERITA.mdf`, the `VERITA_1xx.exe` updates),
+│   │                                         not an install: no tool reads it.
+│   └── bg0/                                  戦女神ZERO (AGE 4.15D, catalog `S4IC415`), a reference install being
+│                                             added (docs/adding-a-game.md; backlog "Onboard 戦女神ZERO"). 52 .BIN
+│                                             files and four .AGF files sit loose in its root, beside the seven
+│                                             archives and `APPEND.AAI`.
 │
 ├── extracted/                               ← DERIVED (game-side) — extracted ALF contents,
 │   │                                          ~3.9 GB, regenerable with a local archive extractor.

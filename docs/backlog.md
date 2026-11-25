@@ -739,6 +739,28 @@ From the user's design pass on the built site (2026-11-22). The export's design 
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-25. The item stays for the open points
   above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
+- **Onboard 戦女神ZERO (BG0, AGE 4.15D, catalog `S4IC415`, scripts `SYS4415`).** The user, 2026-11-25: "we're going
+  to start looking at BG0", toward a 1.0 that supports more of the SYS4 catalog, since more games make modding and
+  the site generalize better. The id is `bg0`, the install `games/bg0/` (`PROJECT-STRUCTURE.md`). It is the oldest
+  build taken in: every supported build is 4.24J or later. Work is on `feature/bg0`.
+  - **Step 1, the intake, is done (2026-11-25):** every check passes (`build/games/bg0/intake.json`). 1,579 scripts
+    (1,251 base, 328 in the one append, `APPEND.AAI`, selector 1, 428 entries), 1,771,109 instructions, 246 distinct
+    opcodes. Catalog: 17,634 entries in seven archives, 1,238 of them placeholders. Saved prefix
+    `[593923, 1, 224, 1, 1, 1]`, full banks `[3855235, 2, 33444, 2, 2, 2]`. 36 settings pairs, with no key and no
+    file type that the other games lack.
+    - **One opcode has no handler:** `0x226` (`u004217D0`, five operands), at one site in `DEBUGADV2.BIN`. No
+      supported game uses it.
+    - **Opcodes it uses that a supported game never does:** Himegari 15, 創刻のアテリアル 13, Kamidori 7, Verita 3
+      (`0x226`, `0x227`, `0x23a`). Its scripts use the AGERC ops `0x14b` to `0x14d`, which only Verita's did before.
+  - **Step 2, the dump, is done (2026-11-25):** the engine is dumped from a scratch copy, the install unchanged. Its
+    build is pinned in `operand_access.py` `ENGINES` with 12 accessors aligned against Himegari and Verita alike. The
+    Ghidra image `/bg0/4.15D` has 727 ported names. The revision diff against Himegari, the nearest build, has 54 rows
+    that differ (`engine-re.md`, "Himegari against 戦女神ZERO"). 18 opcodes are only Himegari's, none only BG0's, and
+    the saved script frame's layout differs.
+  - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
+    Verita and 創刻のアテリアル.
+
+  Done when it stands at P3 and M3, as the other games do.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same
   day from `feature/arterial`: the engine names its install, decodes all of it, has a handler for every opcode its scripts

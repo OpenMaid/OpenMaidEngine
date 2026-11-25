@@ -179,7 +179,7 @@ a screen-mode present during a save restore ("Comparing engine builds" below).
 `tools/revision_diff.py` compares the native code behind every opcode two engine dumps share (usage and report
 format: `docs/tools-reference.md`, "Opcode revision diff"). Its purpose is a high-level list of what a new game's
 engine changed, read before any playthrough, so a new game needs no full native-vs-port sweep to find its
-revision changes; a sweep then checks the rows that matter. Five builds have dumps and pinned facts in
+revision changes; a sweep then checks the rows that matter. Six builds have dumps and pinned facts in
 `tools/operand_access.py` `ENGINES`:
 
 | Engine id | Game | AGE.EXE | ctx constructor | Opcode table | Handlers | C runtime starts |
@@ -189,6 +189,7 @@ revision changes; a sweep then checks the rows that matter. Five builds have dum
 | `kamidori-433f` | Kamidori, the English translation | 4.33F | `0x413e50` | `ctx+0x9f700` | 437 | `0x556878` |
 | `arterial` | 創刻のアテリアル (EU13) | 4.38D | `0x414e10` | `ctx+0xa4b9c` | 473 | `0x583dd8` |
 | `verita` | 戦女神VERITA, being added | 4.24N | `0x414180` | `ctx+0x9b2b8` | 420 | `0x550cce` |
+| `bg0` | 戦女神ZERO, being added | 4.15D | `0x412070` | `ctx+0x99758` | 402 | `0x52b0ee` |
 
 **Himegari is 4.24J** (checked 2026-11-12). The dump's own version resource reads `FileVersion` `4.24J` (UTF-16 at
 `0x602f08`), and so does the installed `AGE.EXE` (1,105,920 bytes, dated 2009-11-13, SHA-256
@@ -316,6 +317,23 @@ game's scripts use.
   export changed, which leaves memory as native's write-back does. `AgercOpsTests` holds the functions to geometry
   worked out from the code and FIELD's 19 calls to the cells their exports read.
 
+**戦女神ZERO (`bg0`).** `games/bg0/` was taken in on 2026-11-25 (`Ome.Cli intake`; the report is
+`build/games/bg0/intake.json`). Its packed `AGE.EXE` (842,240 bytes, dated 2008-05-19, SHA-256
+`251b7dd719ef6ac14d97821fe3b4ac3f36793b74f0be88a815121d27b25487ac`) reads `FileVersion` `4.15D`, and its product
+version is 4, 15, 4, 0. Its catalog is `S4IC415` and its scripts are `SYS4415`, older than any build in the table.
+It is a reference install (`paths.REFERENCE_INSTALLS`) until it has a profile. It was dumped the same day from a
+scratch copy by `dump_engine.py --reference bg0 --spawn`, and the install checked unchanged. The module is based at
+`0x400000` and spans 1,900,544 bytes (`build/engines/bg0/engine-dump/`); its version resource reads `FileVersion`
+`4.15D` at `0x5a7eee`. The table-fill search (`lea edi,[esi+0x99758]; mov ecx,0x400; mov eax,0x414990; rep stosd`)
+found the constructor at `0x412070`, with Himegari's prologue, and the table holds 402 handlers. `operand_access.py
+--align-accessors` aligned the 12 accessors unanimously against Himegari and against Verita, at the same addresses:
+4.15D has no float accessor. The C runtime starts at the `operator new` thunk `0x52b0ee`, whose neighbours are
+Himegari's `0x54f3de`'s. The Ghidra image is `/bg0/4.15D/range_00400000.bin`, 4,014 functions after analysis.
+`tools/ghidra_port_names.py himegari bg0` paired 2,556 functions (290 of them by a unique string) and ported 716 of
+`/v2`'s 1,235 named or commented functions. With the 12 accessors, 727 functions got a name and plate, 110 of them
+new functions. Its packer sites are not restored and its imports not typed. Its scripts use ops `0x14b` to `0x14d`,
+the AGERC calls above, which only Verita's used before.
+
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
 an opcode's facts are those of its handler and three callee levels. Compiler and layout idioms are weak facts:
@@ -376,6 +394,23 @@ triaged"). The largest differences:
 - a compare with 2 that `0x8e`, `0x91`, `0x92`, `0x94`, `0x95` and `0x109` gain through the helper
   `0x403830=0x403810`;
 - 17 rows whose only fact is the field `+0x53d90` that 4.24J reads, a correspondence gap by the report's rule.
+
+**Himegari against 戦女神ZERO (2026-11-25).** 4.24J against 4.15D: 2 `same`, 346 `minor`, 54 `differs`; helpers 78 /
+10 / 14, one unpaired. 18 opcodes are only 4.24J's (`0x24b` to `0x24f`, `0x25a`, `0x25b`, `0x2c5` to `0x2cf`), and
+none only 4.15D's. Verita's 4.24N against 4.15D gives 2 / 328 / 72, so 4.24J is the nearest build. Not triaged yet.
+What the counts hide, and the largest differences:
+- 321 of the `minor` rows have one fact each. `script_frame_restore_saved_layout` (`0x40f2d0=0x409f70`), which the
+  depth-3 walk reaches from nearly every handler, indexes a 16-byte record in 4.24J (`shl 4`) and a 112-byte one in
+  4.15D (`imul 0x70`), at 18 sites. A saved frame's layout differs, which matters to the saves, not to a script's run.
+- The texture ops `0x32`, `0x33`, `0x35` and `0x37`, and the blend under `0x20c` and `0x222`: 4.24J's error messages
+  (`GetTextureSurface`, `EnlargeTexture`, `BlurTexture`, `BlendTexture`) and operand reads that the report finds
+  only in 4.24J.
+- `0x2b`, `0x2f` and `0x30`: tests of bit 7 and compares with 12 and 2 only 4.24J has, and a compare with 11 only
+  4.15D has.
+- The numbered save and load ops (`0xaa`, `0xab`, `0x190`, `0x19e`, `0x19f`, `0x1a1`), with `0x140` and `0x144`:
+  4.15D's `RestoreScreen Start` and `SetWindowPos Called` messages, and the `set:AutoFreeTex`, `set:CreateObject`
+  and `set:SaveVersion` reads only 4.24J has.
+- `0x109`, `0x10a`, `0x8e` and `0x91`: the `display:VirtualFullScreen` key and a test of bit 68 only 4.24J has.
 
 ### Kamidori against Arterial, triaged (2026-11-19)
 
