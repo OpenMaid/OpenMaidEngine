@@ -146,8 +146,8 @@ public sealed class ExportEntity(int id)
     public List<ExportRelation> Relations { get; } = [];
     /// <summary>The snippet's record (spec §6.6, plan §4.3): each published, text and picture field at its value.</summary>
     internal List<KeyValuePair<string, DataValue>> SnippetRecord { get; } = [];
-    /// <summary>The snippet's records of the tables its kind joins: the table and the record's fields.</summary>
-    internal List<(string Table, List<KeyValuePair<string, DataValue>> Fields)> SnippetJoined { get; } = [];
+    /// <summary>The snippet's records of the tables its kind joins: the table, the record and its fields.</summary>
+    internal List<(string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> SnippetJoined { get; } = [];
     /// <summary>The snippet's loaded rows: scope, table name, record and the row's fields.</summary>
     internal List<(string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> SnippetRows { get; } = [];
     /// <summary>A data file that sets the entity's published fields to their values, ready to edit (spec §6.6).</summary>

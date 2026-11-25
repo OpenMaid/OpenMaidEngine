@@ -767,7 +767,7 @@ def test_framed_picture():
     code, output, _ = run(framed.replace('frame = ["level", "class"]', 'blend = "art"'))
     check(code != 0 and "picture other's blend art is a row of cells" in output, "a blend is one cell")
     code, output, _ = run(GOOD.replace('other = "art.1" }', 'other = { field = "art.1" } }', 1))
-    check(code != 0 and "picture other: a table names a key, a frame or a blend" in output,
+    check(code != 0 and "picture other: a table names a key, a frame, frames or a blend" in output,
           "a picture table without a key, a frame or a blend is refused")
 
 
@@ -890,6 +890,78 @@ def test_joins_and_pairs():
               "group 'arms': row_label must be a line", "the lint refuses an empty row word")
         flags(joined.replace('title = "name"\ntext = ["bio"]', 'title = "hero_bond.rank"\ntext = ["bio"]', 1),
               "'hero_bond' is not a field of table hero", "only fields and groups name a joined table's fields")
+    finally:
+        REGISTRY = saved
+
+
+# A hero's medals (export plan §5): two to a hero, medal r being hero r ÷ 2's (owned_by), each with a badge sheet.
+MEDALS = "".join([g("0x600", "medal_art_ids", "int[8][2]"), g("0x620", "medal_ranks", "int[8]")]) + '''
+[[table]]
+name = "medal"
+records = 8
+built_by = "boot"
+owned_by = { table = "hero", per = 2 }
+[table.fields]
+art = "medal_art_ids"
+rank = "medal_ranks"
+[table.refs]
+art = "picture"
+'''
+
+MEDAL_KIND = '''
+[[kind]]
+id = "medal"
+table = "medal"
+exists = "rank"
+joins = ["hero"]
+fields = ["hero.weapon", "rank"]
+pictures = { badge = { field = "art.0", frames = 6 } }
+'''
+
+
+def test_owned_joins_and_borrowed_pictures():
+    """A kind joins the table that owns its records (the registry's owned_by), a picture may be the first of a strip's
+    frames, and a kind may show another kind's picture of the first entity whose reference names it."""
+    global REGISTRY
+    saved = REGISTRY
+    medals = GOOD.replace('key_range = [1, 2]\n',
+                          'key_range = [1, 2]\n'
+                          'pictures = { medal = { from = "medal", by = "hero.weapon", picture = "badge" } }\n', 1) \
+        + MEDAL_KIND
+    try:
+        REGISTRY = saved + MEDALS
+        code, output, written = run(medals, write=True)
+        check(code == 0, f"an owned join, a strip's frame and a borrowed picture lint clean ({output.strip()[-400:]})")
+        kinds = {kind.get("id"): kind for kind in json.loads(written or "{}").get("kinds", [])}
+        check(kinds.get("medal", {}).get("joins") == ["hero"], "the JSON keeps an owned join")
+        check(kinds.get("medal", {}).get("pictures", {}).get("badge") == {"field": "art.0", "frames": 6},
+              "the JSON keeps a strip's frames")
+        check(kinds.get("weapon", {}).get("pictures", {}).get("medal")
+              == {"from": "medal", "by": "hero.weapon", "picture": "badge"}, "the JSON keeps a borrowed picture")
+
+        def flags(text: str, needle: str, message: str, registry: str | None = None) -> None:
+            global REGISTRY
+            REGISTRY = registry or saved + MEDALS
+            code, output, _ = run(text)
+            check(code != 0 and needle in output, f"{message} ({output.strip()[-300:]})")
+
+        flags(medals, "joins hero, whose records are not medal's", "a join needs records_of or owned_by",
+              registry=saved + MEDALS.replace('owned_by = { table = "hero", per = 2 }\n', ""))
+        flags(medals.replace("frames = 6", "frames = 0"),
+              "picture badge: frames must be a whole number above 0", "a strip has a frame or more")
+        flags(medals.replace("frames = 6", 'frames = 6, frame = ["rank", "rank"]'),
+              "a picture has frame or frames, not both", "a picture has frame or frames")
+        flags(medals.replace('from = "medal"', 'from = "nope"'),
+              "picture medal: from 'nope' must name another declared kind", "a borrowed picture names a kind")
+        flags(medals.replace('by = "hero.weapon"', 'by = "hero.class"'),
+              "picture medal: by 'hero.class' must be one of kind medal's published fields",
+              "a borrowed picture's reference is published")
+        flags(medals.replace('by = "hero.weapon"', 'by = "rank"'),
+              "picture medal: by rank must be a reference to table weapon", "a borrowed picture's field refers to it")
+        flags(medals.replace('picture = "badge" }', 'picture = "nope" }'),
+              "picture medal: picture 'nope' is not one of kind medal's pictures", "a borrowed picture is the kind's")
+        flags(medals.replace('picture = "badge" }', 'picture = "badge", key = 1 }'),
+              "picture medal: unknown key 'key'", "a borrowed picture has three keys")
     finally:
         REGISTRY = saved
 
@@ -1076,6 +1148,7 @@ def main():
     test_design_pass_features()
     test_column_references()
     test_joins_and_pairs()
+    test_owned_joins_and_borrowed_pictures()
     test_loaded_where_and_joins()
     test_keyed_picture()
     test_framed_picture()

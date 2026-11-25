@@ -123,6 +123,8 @@ Built by: `boot`.
 
 TIINIT titles keyed by 20 x character + k; title 20 x character is the one a character joins with.
 
+Record r belongs to record r ÷ 20 of `character`.
+
 | field | global | address | type | refers to |
 |---|---|---|---|---|
 | name | title_names | `GS 0xdedc` | `string[2000]` | |
@@ -159,7 +161,7 @@ TIINIT titles keyed by 20 x character + k; title 20 x character is the one a cha
 | cutin_style | title_cutin_styles | `0xbdb7cd` | `int[2000]` | |
 | cutin_picture | title_cutin_pictures | `0xbdc76d` | `int[2000]` | pictures |
 | battle_portrait | title_battle_portraits | `0xbdbf9d` | `int[2000]` | pictures |
-| battle_sprites | title_battle_sprites | `0xbdcf3d` | `int[2000][10]` | |
+| battle_sprites | title_battle_sprites | `0xbdcf3d` | `int[2000][10]` | pictures |
 | status_portrait | title_status_portraits | `0xbe1d5d` | `int[2000]` | pictures |
 | map_face | title_map_faces | `0xbe252d` | `int[2000]` | pictures |
 | field_sprites | title_field_sprites | `0xbe2cfd` | `int[2000][25]` | |

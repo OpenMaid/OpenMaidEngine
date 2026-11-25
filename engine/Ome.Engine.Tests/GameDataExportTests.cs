@@ -47,7 +47,7 @@ public class GameDataExportTests
     private const int BondPartners = 5500, BondTiers = 5520;
 
     private static RegistryView Registry(bool formats = false, RefKey? skillKey = null, bool bitNames = false,
-                                         string? bondsOf = null) => new(
+                                         string? bondsOf = null, bool itemsOwned = false) => new(
         [
             new TableLayout("item_bond", 3, [("partners", "bond_partners"), ("tier", "bond_tiers")],
                             new Dictionary<string, string> { ["partners"] = "skill" })
@@ -61,6 +61,8 @@ public class GameDataExportTests
                 new Dictionary<string, string> { ["granted_skill"] = "skill", ["icon"] = "picture" })
             {
                 RefKeys = skillKey is null ? new Dictionary<string, RefKey>() : new Dictionary<string, RefKey> { ["granted_skill"] = skillKey },
+                // Items 2k and 2k + 1 are skill k's (owned_by), as a Verita title is character r ÷ 20's.
+                OwnedBy = itemsOwned ? ("skill", 2) : null,
             },
             new TableLayout("skill", 3, [("name", "skill_names"), ("category", "skill_category")],
                             new Dictionary<string, string>()),
@@ -690,6 +692,57 @@ public class GameDataExportTests
     {
         ExportFailure failure = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(Bonds(bondsOf: null)));
         Assert.Contains("joins table item_bond, whose records are not item's", failure.Message, StringComparison.Ordinal);
+    }
+
+    // Items owned two to a skill (export plan §5, owned_by): the item kind joins the skill table by r ÷ 2, shows each
+    // icon as a strip of two frames, and a skill shows the icon of the first item that grants it.
+    private static ExportInputs Owned(bool itemsOwned = true)
+    {
+        ExportInputs game = Game();
+        JsonNode declarations = JsonNode.Parse(Declarations)!;
+        JsonNode item = declarations["kinds"]![0]!;
+        item["joins"] = JsonNode.Parse("""["skill"]""");
+        item["fields"] = JsonNode.Parse("""["category", "price", "price.sell", "granted_skill", "skill.category"]""");
+        item["pictures"] = JsonNode.Parse("""{"icon": "icon", "strip": {"field": "icon", "frames": 2}}""");
+        declarations["kinds"]![1]!["pictures"] = JsonNode.Parse(
+            """{"badge": {"from": "item", "by": "granted_skill", "picture": "icon"}}""");
+        return new ExportInputs
+        {
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = game.StopOf,
+            Registry = Registry(itemsOwned: itemsOwned), Declarations = ExportDeclarations.Parse(declarations.ToJsonString()),
+            Pictures = game.Pictures, BuildInfo = game.BuildInfo,
+        };
+    }
+
+    [Fact]
+    public void AnOwnedTableJoinsByItsOwnersRecordAndAPictureMayBeAStripsFrameOrAnotherKinds()
+    {
+        ExportResult result = GameDataExporter.Run(Owned());
+        // Items 2 and 3 are skill 1's, item 1 is skill 0's, which no builder wrote.
+        Assert.Equal([0], Values(Entity(result, "item", 1), "skill.category"));
+        Assert.Equal([1], Values(Entity(result, "item", 2), "skill.category"));
+        ExportEntity spear = Entity(result, "item", 3);
+        Assert.Equal([1], Values(spear, "skill.category"));
+        Assert.Contains(new ExportModderCell("skill.category", 0, GlobalBank.Integer, SkillCategory + 1, "1", "SKINIT.BIN"),
+                        spear.Cells);
+        // The snippet sets the owner as a record of its own table, by its own number.
+        Assert.Contains("[skill.1]\ncategory = 1\n", spear.Snippet, StringComparison.Ordinal);
+        Assert.DoesNotContain("[skill.3]", spear.Snippet, StringComparison.Ordinal);
+        Assert.Empty(result.Report.SnippetProblems);
+        // A strip's first frame is its width ÷ frames and its full height: icon 77 is 32 × 16.
+        ExportPicture strip = Entity(result, "item", 1).Pictures.Single(pair => pair.Name == "strip").Picture;
+        Assert.Equal(("ICON077-frame-16x16", 16, 16), (strip.Name, strip.Width, strip.Height));
+        // Skill 1 shows the icon of item 1, the first item that grants it; item 2's skill 2 is no entity.
+        Assert.Equal([("badge", "ICON077")], Entity(result, "skill", 1).Pictures.Select(pair => (pair.Name, pair.Picture.Name)));
+    }
+
+    [Fact]
+    public void AKindJoinsATableThatOwnsItsRecordsOnlyByTheRegistrysOwnedBy()
+    {
+        ExportFailure failure = Assert.Throws<ExportFailure>(() => GameDataExporter.Run(Owned(itemsOwned: false)));
+        Assert.Contains("joins table skill, whose records are not item's (its records_of), and item is not owned_by it",
+                        failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]

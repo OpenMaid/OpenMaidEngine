@@ -72,6 +72,8 @@ SHEET_OPTIONAL_KEYS = {"field", "key", "last"}
 # prefix ($1$SO016A.AGF, Himegari's append icons).
 SHEET = re.compile(r"(\$[0-9]+\$)?[A-Z0-9_]+\.[A-Z0-9]+")
 LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables"}
+# A picture another kind's entity has (export plan §5): `from` the kind, `by` its reference field, `picture` its name.
+BORROWED_KEYS = {"from", "by", "picture"}
 LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts", "where", "joins"}
 PART_KEYS = {"name", "field", "global", "same_as", "note"}
 # One integer list: a part's global, which the row's field indexes.
@@ -188,17 +190,25 @@ def resolve_field(game: Game, table: dict, ref, where: str, errors: list[str]) -
     return Field(global_name, entry, table["records"], index, game.prefixes)
 
 
+def joinable(table: dict, other: dict) -> bool:
+    """Whether a kind of `table` may join `other` (export plan §5): `other`'s record r is the kind's entity r (its
+    `records_of`), or `other` owns the kind's records, entity r being of its record r ÷ per (`table`'s `owned_by`)."""
+    owner = table.get("owned_by")
+    return other.get("records_of") == table.get("name") \
+        or isinstance(owner, dict) and owner.get("table") == other.get("name")
+
+
 def kind_view(game: Game, kind: dict) -> dict | None:
     """A kind's table as its published fields and groups see it: the registry table, with the tables the kind joins
-    (`joins`, each a table whose `records_of` is the kind's) under `_joins`, so that `table.field` names a field of
-    one. None when the kind names no table of the registry."""
+    (`joins`, each a table whose `records_of` is the kind's, or the one that owns the kind's records) under `_joins`,
+    so that `table.field` names a field of one. None when the kind names no table of the registry."""
     table = game.tables.get(kind.get("table"))
     if table is None:
         return None
     joins = kind.get("joins") if isinstance(kind.get("joins"), list) else []
     return {**table, "_joins": {name: game.tables[name] for name in joins
                                 if isinstance(name, str) and name in game.tables
-                                and game.tables[name].get("records_of") == table.get("name")}}
+                                and joinable(table, game.tables[name])}}
 
 
 def reference_of(table: dict, ref: str) -> tuple[dict, str, object] | None:
@@ -215,7 +225,9 @@ def reference_of(table: dict, ref: str) -> tuple[dict, str, object] | None:
 
 def check_joins(game: Game, kind: dict, table: dict, where: str, errors: list[str]) -> None:
     """`joins` (export plan §5): the tables whose record r belongs to the kind's entity r, which the registry says by
-    the table's `records_of`. The kind publishes their fields as its own, written `table.field`."""
+    the table's `records_of`, or the table that owns the kind's records, entity r being of its record r ÷ per, which
+    the registry says by the kind's table's `owned_by` (a Verita title is character r ÷ 20's). The kind publishes
+    their fields as its own, written `table.field`."""
     joins = kind.get("joins", [])
     if not isinstance(joins, list) or not all(isinstance(name, str) for name in joins):
         errors.append(f"{where}: joins must list tables of the registry")
@@ -224,13 +236,53 @@ def check_joins(game: Game, kind: dict, table: dict, where: str, errors: list[st
         other = game.tables.get(name)
         if other is None:
             errors.append(f"{where}: joins {name!r}, which is not a [[table]] of the registry")
-        elif other.get("records_of") != table.get("name"):
+        elif not joinable(table, other):
             errors.append(f"{where}: joins {name}, whose records are not {table.get('name')}'s: the registry's "
-                          f"table gives no records_of = {table.get('name')!r}")
+                          f"table gives no records_of = {table.get('name')!r}, and {table.get('name')} is not "
+                          f"owned_by it")
         if name in (table.get("fields") or {}):
             errors.append(f"{where}: joins {name}, which is also a field of table {table.get('name')}")
         if joins.count(name) > 1:
             errors.append(f"{where}: joins {name} twice")
+
+
+def is_size(value) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def check_borrowed_pictures(game: Game, kinds: list, source: str, errors: list[str]) -> None:
+    """A picture `{ from, by, picture }` (export plan §5) is picture `picture` of the first entity of kind `from`, by
+    id, whose published reference `by` names the entity: a Verita party unit shows its character's joining title's
+    chibi, the title being character id ÷ 20's and the character naming its unit. `from` is another declared kind,
+    `by` one of its published fields that refers to this kind's table, and `picture` one of its own pictures, which is
+    not borrowed itself."""
+    by_id = {kind.get("id"): kind for kind in kinds if isinstance(kind, dict)}
+    for kind in by_id.values():
+        pictures = kind.get("pictures") if isinstance(kind.get("pictures"), dict) else {}
+        for name, ref in pictures.items():
+            if not (isinstance(ref, dict) and "from" in ref):
+                continue
+            where = f"{source}: kind {kind.get('id')!r}: picture {name}"
+            other = by_id.get(ref.get("from"))
+            if other is None or other is kind:
+                errors.append(f"{where}: from {ref.get('from')!r} must name another declared kind")
+                continue
+            view = kind_view(game, other)
+            by = ref.get("by")
+            if by not in (other.get("fields") or []):
+                errors.append(f"{where}: by {by!r} must be one of kind {other.get('id')}'s published fields")
+            elif view is not None:
+                reference = reference_of(view, by)
+                target = globals_build.ref_target(reference[2]) if reference else None
+                if target != kind.get("table") or isinstance(reference[2], dict):
+                    errors.append(f"{where}: by {by} must be a reference to table {kind.get('table')} named by its "
+                                  f"value alone; it refers to {target or 'nothing'}")
+            source_pictures = other.get("pictures") if isinstance(other.get("pictures"), dict) else {}
+            target_picture = source_pictures.get(ref.get("picture"))
+            if target_picture is None:
+                errors.append(f"{where}: picture {ref.get('picture')!r} is not one of kind {other.get('id')}'s pictures")
+            elif isinstance(target_picture, dict) and "from" in target_picture:
+                errors.append(f"{where}: picture {ref.get('picture')!r} of kind {other.get('id')} is borrowed itself")
 
 
 def unknown_keys(entry: dict, allowed: set[str], where: str, errors: list[str]) -> None:
@@ -415,6 +467,7 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
     for kind in kinds:
         lint_kind(game, kind, source, text_scripts, ids, errors,
                   loaded_names.get(kind.get("id"), set()) if isinstance(kind, dict) else set())
+    check_borrowed_pictures(game, kinds, source, errors)
     # A reference title takes its target's title, so a kind must show the target's table.
     declared = {kind.get("table") for kind in kinds if isinstance(kind, dict)}
     for kind in kinds:
@@ -602,16 +655,25 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             check_sheet(ref, lambda field, label=f"picture {name}": one(field, label, "integer"),
                         f"{where}: picture {name}", errors)
             continue
+        if isinstance(ref, dict) and "from" in ref:
+            # { from, by, picture }: another kind's picture (check_borrowed_pictures, once every kind is read).
+            unknown_keys(ref, BORROWED_KEYS, f"{where}: picture {name}", errors)
+            continue
         if isinstance(ref, dict):
             # { field, key, frame, blend }: the colour the game loads the picture with as its key, drawn as nothing
             # (export plan §5: Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB; the picture's first frame, its top left
-            # corner as wide and as high as two fields of the record give (a map object's sheet, DRAWOBJ); and a field
+            # corner as wide and as high as two fields of the record give (a map object's sheet, DRAWOBJ); the first
+            # of a strip's `frames` frames side by side, its width ÷ frames and its full height (a Verita title's
+            # battle strip, six frames of 120 x 120 or of 320 x 300); and a field
             # of the record holding the mode op 0x203 draws the picture with, whose 1, the additive glow, the export
             # shows as it looks over black (a healing feather). Any may be left out, not all.
-            unknown_keys(ref, {"field", "key", "frame", "blend"}, f"{where}: picture {name}", errors)
-            if not {"key", "frame", "blend"} & set(ref):
-                errors.append(f"{where}: picture {name}: a table names a key, a frame or a blend; a field alone is "
-                              f"written as its name")
+            unknown_keys(ref, {"field", "key", "frame", "frames", "blend"}, f"{where}: picture {name}", errors)
+            if not {"key", "frame", "frames", "blend"} & set(ref):
+                errors.append(f"{where}: picture {name}: a table names a key, a frame, frames or a blend; a field "
+                              f"alone is written as its name")
+            if "frames" in ref and (not is_size(ref["frames"]) or "frame" in ref):
+                errors.append(f"{where}: picture {name}: frames must be a whole number above 0, the strip's frames "
+                              f"side by side, and a picture has frame or frames, not both")
             if "blend" in ref:
                 one(ref["blend"], f"picture {name}'s blend", "integer")
             key = ref.get("key")

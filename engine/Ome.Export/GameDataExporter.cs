@@ -50,6 +50,7 @@ public static class GameDataExporter
             Load(inputs, boot, loader, kinds, rule, languages, report);
         foreach (ExportKind kind in kinds) NameValues(inputs, boot, kind, rule, languages, report);
         LinkReferences(kinds, report);
+        BorrowPictures(kinds);
         if (declarations.Relations.Count > 0) FindRelations(inputs, kinds, report);
         foreach (ExportKind kind in kinds) WriteSnippets(inputs, kind, report);
         if (inputs.ScriptIndex is { } index)
@@ -234,16 +235,20 @@ public static class GameDataExporter
         IReadOnlyList<FieldLayout> tableFields = registry.FieldsOf(table);
         FieldLayout exists = registry.Resolve(table, kind.Exists);
         var skips = kind.Skip.Select(skip => (Field: registry.Resolve(table, skip.Field), skip.Value)).ToList();
-        // The tables the kind joins (export plan §5): record r of each is entity r (the registry's records_of), and the
-        // kind publishes their fields as its own, written table.field. An entity past a joined table's records has
-        // none of its cells.
+        // The tables the kind joins (export plan §5): record r of each is entity r (the registry's records_of), or
+        // record r ÷ per of the table that owns the kind's records (its owned_by: a Verita title is character r ÷ 20's),
+        // and the kind publishes their fields as its own, written table.field. An entity past a joined table's records
+        // has none of its cells.
         var joins = new Dictionary<string, TableLayout>(StringComparer.Ordinal);
+        var perJoined = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (string name in kind.Joins)
         {
             TableLayout joined = registry.Table(name);
-            if (joined.RecordsOf != table.Name)
+            if (joined.RecordsOf == table.Name) perJoined[name] = 1;
+            else if (table.OwnedBy is { } owner && owner.Table == name) perJoined[name] = owner.Per;
+            else
                 throw new ExportFailure($"{kind.Id} joins table {name}, whose records are not {table.Name}'s (its "
-                                        + "records_of)");
+                                        + $"records_of), and {table.Name} is not owned_by it");
             joins[name] = joined;
         }
         IReadOnlyList<FieldLayout> joinedFields = [.. joins.SelectMany(pair => registry.FieldsOf(pair.Value).Select(
@@ -269,6 +274,7 @@ public static class GameDataExporter
                                                         Frame: picture.Frame is { } frame
                                                             ? (registry.Resolve(table, frame.Width), registry.Resolve(table, frame.Height))
                                                             : ((FieldLayout Width, FieldLayout Height)?)null,
+                                                        picture.Frames,
                                                         Blend: picture.Blend is { } blend ? registry.Resolve(table, blend) : null))
             .ToList();
         // A sheet without a field is numbered by the record's own id.
@@ -307,13 +313,15 @@ public static class GameDataExporter
             // script's cell is withheld, its writer shown (export plan §5).
             // Keyed by bank and address: a string array and an integer array may share addresses in their banks.
             var cells = new Dictionary<GlobalCell, (ExportCell Cell, bool Refused)>();
-            bool Joins(FieldLayout field) => field.Joined is not { } joined || record < joins[joined].Records;
+            // The record of the field's table that holds the entity's cells: a joined table's is r ÷ its per.
+            int RecordOf(FieldLayout field) => field.Joined is { } joined ? record / perJoined[joined] : record;
+            bool Joins(FieldLayout field) => field.Joined is not { } joined || RecordOf(field) < joins[joined].Records;
             foreach (FieldLayout field in tableFields.Concat(joinedFields.Where(Joins)))
             {
                 bool publishedText = field.Joined == null && textArrays.Contains(field.Field);
                 for (int element = 0; element < field.Elements; element++)
                 {
-                    ExportCell cell = Read(boot, field, record, element);
+                    ExportCell cell = Read(boot, field, RecordOf(field), element);
                     bool derived = rule.Derives(cell.Writer);
                     bool shown = (!field.IsString || publishedText) && !derived;
                     string? reason = shown ? RefusalOf(boot, cell, rule) : null;
@@ -329,7 +337,7 @@ public static class GameDataExporter
             // A joined field of a record its table does not have is withheld, as a refused cell is.
             (ExportCell Cell, bool Refused) At(FieldLayout field, int element)
                 => Joins(field)
-                    ? cells[new GlobalCell(field.Array.Bank, field.Cell(record, element))]
+                    ? cells[new GlobalCell(field.Array.Bank, field.Cell(RecordOf(field), element))]
                     : (new ExportCell(field.Name, element, field.Array.Bank, 0, 0, null, null), true);
 
             foreach (FieldLayout field in published)
@@ -366,7 +374,7 @@ public static class GameDataExporter
                             entity.Texts.Add(new ExportText(field.Name, element, translated, language.Tag));
                 }
             foreach ((string name, FieldLayout field, int? key, (FieldLayout Width, FieldLayout Height)? frame,
-                      FieldLayout? blend) in pictures)
+                      int? frames, FieldLayout? blend) in pictures)
             {
                 var (cell, refused) = At(field, 0);
                 if (refused || cell.Number == 0 || inputs.Pictures == null) continue;
@@ -387,6 +395,12 @@ public static class GameDataExporter
                         ? inputs.Pictures.Frame(cell.Number, ((int)width.Number, (int)height.Number), key, additive)
                         : null;
                 }
+                // The first of a strip's frames side by side (a Verita title's chibi): its width ÷ frames, its height.
+                else if (frames is { } count)
+                    picture = (key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number))
+                        is { } strip
+                        ? inputs.Pictures.Frame(cell.Number, (strip.Width / count, strip.Height), key, additive)
+                        : null;
                 else if (additive) picture = inputs.Pictures.Frame(cell.Number, null, key, additive);
                 else picture = key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number);
                 if (additive && picture is not null) picture = picture with { Additive = true };
@@ -415,11 +429,12 @@ public static class GameDataExporter
             // A joined table's record is a record of its own table in a data file.
             foreach ((string name, TableLayout joined) in joins)
             {
-                if (record >= joined.Records) continue;
+                int joinedRecord = record / perJoined[name];
+                if (joinedRecord >= joined.Records) continue;
                 List<KeyValuePair<string, DataValue>> fields = SnippetEntries(
                     [.. joinedFields.Where(field => field.Joined == name)],
                     [.. snippetFields.Where(field => field.Joined == name)], SnippetValue);
-                if (fields.Count > 0) entity.SnippetJoined.Add((name, fields));
+                if (fields.Count > 0) entity.SnippetJoined.Add((name, joinedRecord, fields));
             }
             entities.Add(entity);
         }
@@ -913,8 +928,9 @@ public static class GameDataExporter
             {
                 KeyValuePair.Create(kind.Table.Name, (DataValue)new DataTable([KeyValuePair.Create(id, (DataValue)new DataTable(entity.SnippetRecord))])),
             };
-            foreach ((string table, List<KeyValuePair<string, DataValue>> fields) in entity.SnippetJoined)
-                top.Add(KeyValuePair.Create(table, (DataValue)new DataTable([KeyValuePair.Create(id, (DataValue)new DataTable(fields))])));
+            foreach ((string table, int record, List<KeyValuePair<string, DataValue>> fields) in entity.SnippetJoined)
+                top.Add(KeyValuePair.Create(table, (DataValue)new DataTable(
+                    [KeyValuePair.Create(record.ToString(CultureInfo.InvariantCulture), (DataValue)new DataTable(fields))])));
             foreach (IGrouping<string, (string Scope, string Table, int Record, List<KeyValuePair<string, DataValue>> Fields)> scope
                      in entity.SnippetRows.GroupBy(row => row.Scope))
             {
@@ -1189,6 +1205,32 @@ public static class GameDataExporter
                 : value.Number * key.Times + part.Number;
         }
         return (ids, rows);
+    }
+
+    /// <summary>The pictures each kind borrows (export plan §5): an entity takes picture P of the first entity of the
+    /// other kind, by id, that has P and whose published reference names it. A Verita party unit shows its character's
+    /// joining title's chibi, title 20 × character being the first of the character's titles, all of which name the
+    /// unit.</summary>
+    private static void BorrowPictures(IReadOnlyList<ExportKind> kinds)
+    {
+        foreach (ExportKind kind in kinds)
+            foreach (BorrowedPictureDeclaration borrowed in kind.Declaration.BorrowedPictures)
+            {
+                ExportKind from = kinds.SingleOrDefault(other => other.Declaration.Id == borrowed.From)
+                                  ?? throw new ExportFailure($"{kind.Declaration.Id}'s picture {borrowed.Name} is borrowed "
+                                                             + $"from kind {borrowed.From}, which is not declared");
+                var entities = kind.Entities.ToDictionary(entity => (long)entity.Id);
+                var given = new HashSet<long>();
+                foreach (ExportEntity source in from.Entities.OrderBy(entity => entity.Id))
+                {
+                    if (source.Pictures.FirstOrDefault(pair => pair.Name == borrowed.Picture).Picture is not { } picture)
+                        continue;
+                    foreach (ExportRef reference in source.Refs)
+                        if (reference.Field == borrowed.By && reference.ToKind == kind.Declaration.Id
+                            && entities.TryGetValue(reference.ToId, out ExportEntity? entity) && given.Add(reference.ToId))
+                            entity.Pictures.Add((borrowed.Name, picture));
+                }
+            }
     }
 
     private static void LinkReferences(IReadOnlyList<ExportKind> kinds, ExportReport report)

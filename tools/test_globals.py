@@ -477,6 +477,23 @@ def test_table_refs():
         check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
     doc = G.emit_reference_md({}, [{**member, "fields": {}}], [])
     check("Record r is record r of `hero`." in doc, "the reference doc says records_of")
+    # owned_by: the table whose record r ÷ per a table's record r belongs to (Verita's titles, 20 to a character).
+    owned = {"name": "owned", "records": 4, "built_by": "boot", "fields": {"rank": "hero_ranks"},
+             "owned_by": {"table": "weapon", "per": 2}}
+    check(G.lint_tables([keyed[0], weapon, owned], entries) == [], "owned_by another table lints clean")
+    check(G.table_json(owned).get("owned_by") == {"table": "weapon", "per": 2}
+          and "owned_by" not in G.table_json(keyed[0]), "the JSON carries owned_by")
+    errors = G.lint_tables([keyed[0], weapon, {**owned, "owned_by": {"table": "owned", "per": 2}},
+                            {**owned, "name": "few", "owned_by": {"table": "weapon", "per": 1}},
+                            {**owned, "name": "zero", "owned_by": {"table": "weapon", "per": 0}},
+                            {**owned, "name": "bare", "owned_by": "weapon"}], entries)
+    for needle in ("table 'owned': owned_by 'owned' must name another table",
+                   "table 'few': has 4 records, more than 1 for each of weapon's 3",
+                   "table 'zero': owned_by's per must be a whole number above 0",
+                   "table 'bare': owned_by must be { table, per }"):
+        check(any(needle in e for e in errors), f"lint_tables flags {needle!r} ({errors})")
+    doc = G.emit_reference_md({}, [{**owned, "fields": {}}], [])
+    check("Record r belongs to record r ÷ 2 of `weapon`." in doc, "the reference doc says owned_by")
 
 def test_scopes_lint():
     base = {"category": "data-table", "source": "inference", "confidence": "med"}
@@ -501,13 +518,16 @@ def test_scopes_lint():
         check(any(needle in e for e in errors), f"lint_scopes flags {needle!r} ({errors})")
     # Each registry's scopes: the two dungeon games key stage_enemy and stage_object by stage, Himegari its goals and
     # floor sheets and Kamidori its objective rewards too;
-    # Arterial keys its area tables by area.
+    # Arterial keys its area tables by area; Verita a dungeon map's blocks, a war stage's units, a town's sites and a
+    # box puzzle's blocks, each by its own number.
     expected = {
         "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "goal": "stage_goal", "object": "stage_object",
                                             "texture": "stage_map_texture"})],
         "globals-kamidori.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "reward": "stage_reward",
                                                      "object": "stage_object"})],
         "globals-arterial.toml": [("area", 1, 299, {"point": "area_point", "route": "area_route", "unit": "area_unit"})],
+        "globals-verita.toml": [("dungeon", 1, 49, {"block": "map_block"}), ("war_stage", 1, 5, {"unit": "war_unit"}),
+                                ("town", 50, 63, {"site": "town_site"}), ("puzzle", 1, 14, {"block": "puzzle_block"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
         entries, _ = G.load_toml(toml)

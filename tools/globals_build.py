@@ -297,7 +297,7 @@ def lint_tables(tables: list[dict], entries: dict) -> list[str]:
                               + (", a scalar or a 1-D array" if records == 1 else "")
                               + f"; {global_name} is {e.get('type')!r}")
     return (errors + lint_table_aliases(tables, by_name) + lint_table_refs(tables, by_name)
-            + lint_table_records_of(tables))
+            + lint_table_records_of(tables) + lint_table_owned_by(tables))
 
 
 def lint_table_records_of(tables: list[dict]) -> list[str]:
@@ -317,6 +317,32 @@ def lint_table_records_of(tables: list[dict]) -> list[str]:
                 and t["records"] > target["records"]:
             errors.append(f"{tag}: has {t['records']} records, more than {other}'s {target['records']}, so not every "
                           f"record is one of {other}'s")
+    return errors
+
+
+def lint_table_owned_by(tables: list[dict]) -> list[str]:
+    """`owned_by = { table, per }`: the table whose record r ÷ per this table's record r belongs to, as the game keys
+    each of a character's titles 20 × character + k (Verita's `title`). Errors: a value that is not that table, one that
+    names no other table of the registry, a `per` that is not a whole number above 0, and a table with more records than
+    `per` for each of the other's."""
+    errors: list[str] = []
+    by_name = {t.get("name"): t for t in tables if isinstance(t.get("name"), str)}
+    for t in tables:
+        if "owned_by" not in t or not isinstance(t.get("name"), str):
+            continue
+        tag, owner = f"table {t['name']!r}", t["owned_by"]
+        if not isinstance(owner, dict) or set(owner) != {"table", "per"}:
+            errors.append(f"{tag}: owned_by must be {{ table, per }}, the table whose record r ÷ per a record r is of")
+            continue
+        other, per = owner["table"], owner["per"]
+        target = by_name.get(other) if isinstance(other, str) else None
+        if target is None or other == t["name"]:
+            errors.append(f"{tag}: owned_by {other!r} must name another table of the registry")
+        if not isinstance(per, int) or isinstance(per, bool) or per < 1:
+            errors.append(f"{tag}: owned_by's per must be a whole number above 0, the records each of {other}'s owns")
+        elif target is not None and isinstance(t.get("records"), int) and isinstance(target.get("records"), int)                 and t["records"] > target["records"] * per:
+            errors.append(f"{tag}: has {t['records']} records, more than {per} for each of {other}'s "
+                          f"{target['records']}, so not every record is one of {other}'s")
     return errors
 
 
@@ -832,6 +858,8 @@ def table_json(t: dict) -> dict:
         out["field_aliases"] = dict(sorted(t["field_aliases"].items()))
     if t.get("records_of"):
         out["records_of"] = t["records_of"]
+    if t.get("owned_by"):
+        out["owned_by"] = dict(t["owned_by"])
     if t.get("refs"):
         targets, keys = split_refs(t["refs"])
         out["refs"] = dict(sorted(targets.items()))
@@ -859,6 +887,9 @@ def emit_reference_md(merged: Registry, tables: list[dict] = (), scopes: list[di
                 L += [t["usage"], ""]
             if t.get("records_of"):
                 L += [f"Record r is record r of `{t['records_of']}`.", ""]
+            if t.get("owned_by"):
+                owner = t["owned_by"]
+                L += [f"Record r belongs to record r ÷ {owner['per']} of `{owner['table']}`.", ""]
             refs = t.get("refs") or {}
             L += (["| field | global | address | type | refers to |", "|---|---|---|---|---|"] if refs
                   else ["| field | global | address | type |", "|---|---|---|---|"])

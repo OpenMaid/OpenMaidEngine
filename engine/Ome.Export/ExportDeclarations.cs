@@ -84,6 +84,9 @@ public sealed record ExportDeclarations(
     internal static bool IsSheet(JsonElement picture)
         => picture.ValueKind == JsonValueKind.Object && picture.TryGetProperty("sheet", out _);
 
+    internal static bool IsBorrowed(JsonElement picture)
+        => picture.ValueKind == JsonValueKind.Object && picture.TryGetProperty("from", out _);
+
     /// <summary>A declaration's <c>notes</c>, name to line, in order.</summary>
     internal static IReadOnlyList<(string Name, string Note)> Notes(JsonElement parent) => Pairs(parent, "notes");
 
@@ -122,6 +125,10 @@ public sealed record KindDeclaration(
 
     /// <summary>The pictures cut from a sheet (export plan §5): a cell a field numbers.</summary>
     public IReadOnlyList<SheetPictureDeclaration> Sheets { get; init; } = [];
+
+    /// <summary>The pictures another kind's entities have (export plan §5): a Verita party unit's chibi, its character's
+    /// joining title's.</summary>
+    public IReadOnlyList<BorrowedPictureDeclaration> BorrowedPictures { get; init; } = [];
 
     /// <summary>A line for a reader for each field or group that needs one (export plan §5), by its name.</summary>
     public IReadOnlyList<(string Name, string Note)> Notes { get; init; } = [];
@@ -177,7 +184,8 @@ public sealed record KindDeclaration(
             // A picture is a field, or { field, key, frame }: the colour the game draws transparent, and the first frame
             // of a sheet whose frames the record's fields size (export plan §5).
             kind.TryGetProperty("pictures", out JsonElement pictures)
-                ? pictures.EnumerateObject().Where(pair => !ExportDeclarations.IsSheet(pair.Value))
+                ? pictures.EnumerateObject()
+                    .Where(pair => !ExportDeclarations.IsSheet(pair.Value) && !ExportDeclarations.IsBorrowed(pair.Value))
                     .Select(pair => FieldPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
                 : [],
             kind.TryGetProperty("descriptions", out JsonElement descriptions)
@@ -197,6 +205,13 @@ public sealed record KindDeclaration(
             Sheets = kind.TryGetProperty("pictures", out JsonElement sheets)
                 ? sheets.EnumerateObject().Where(pair => ExportDeclarations.IsSheet(pair.Value))
                     .Select(pair => SheetPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
+                : [],
+            BorrowedPictures = kind.TryGetProperty("pictures", out JsonElement borrowed)
+                ? borrowed.EnumerateObject().Where(pair => ExportDeclarations.IsBorrowed(pair.Value))
+                    .Select(pair => new BorrowedPictureDeclaration(pair.Name, pair.Value.GetProperty("from").GetString()!,
+                                                                   pair.Value.GetProperty("by").GetString()!,
+                                                                   pair.Value.GetProperty("picture").GetString()!))
+                    .ToList()
                 : [],
             Notes = ExportDeclarations.Notes(kind),
             Labels = ExportDeclarations.Pairs(kind, "labels"),
@@ -273,11 +288,15 @@ public sealed record CategoryRule(string Field, string? Word);
 /// <see cref="Key"/> is the colour the game loads it with as its key (0xRRGGBB), drawn as nothing (export plan §5:
 /// Himegari's map sprites, DRAWCH@0x9c). Where <see cref="Frame"/> names two fields of the record, the picture is a
 /// sheet of frames and only its first is shown: its top left corner, as wide and as high as the two fields give, as
-/// DRAWOBJ draws a map object (export plan §5). <see cref="Blend"/> names a field of the record holding the mode op
+/// DRAWOBJ draws a map object (export plan §5). Where <see cref="Frames"/> is given, the picture is a strip of that many
+/// frames side by side and only its first is shown, its width ÷ frames and its full height (a Verita title's battle
+/// strip, six frames of 120 × 120 or of 320 × 300). <see cref="Blend"/> names a field of the record holding the mode op
 /// 0x203 draws the picture with: at 1, the additive glow, the picture is shown as it looks over black.</summary>
 public sealed record FieldPictureDeclaration(string Name, string Field, int? Key = null,
                                              (string Width, string Height)? Frame = null, string? Blend = null)
 {
+    public int? Frames { get; init; }
+
     internal static FieldPictureDeclaration Parse(string name, JsonElement picture)
     {
         if (picture.ValueKind == JsonValueKind.String) return new FieldPictureDeclaration(name, picture.GetString()!);
@@ -290,9 +309,18 @@ public sealed record FieldPictureDeclaration(string Name, string Field, int? Key
         return new FieldPictureDeclaration(name, picture.GetProperty("field").GetString()!,
                                            picture.TryGetProperty("key", out JsonElement key) ? key.GetInt32() : null,
                                            frame,
-                                           picture.TryGetProperty("blend", out JsonElement blend) ? blend.GetString() : null);
+                                           picture.TryGetProperty("blend", out JsonElement blend) ? blend.GetString() : null)
+        {
+            Frames = picture.TryGetProperty("frames", out JsonElement frames) ? frames.GetInt32() : null,
+        };
     }
 }
+
+/// <summary>A picture another kind's entity has (export plan §5): picture <see cref="Picture"/> of the first entity of
+/// kind <see cref="From"/>, by id, that has it and whose published reference <see cref="By"/> names this entity. A
+/// Verita party unit has none of its own: it shows its character's joining title's chibi, the first title naming
+/// the unit.</summary>
+public sealed record BorrowedPictureDeclaration(string Name, string From, string By, string Picture);
 
 /// <summary>A picture cut from a sheet (export plan §5): <see cref="Field"/> numbers a cell of the catalog picture
 /// <see cref="Sheet"/>, or the record's own id where it is null (an element's icon), <see cref="First"/> being the first, <see cref="Columns"/> to a row from the origin, a step

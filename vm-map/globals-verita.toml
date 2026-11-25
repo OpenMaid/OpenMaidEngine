@@ -1540,6 +1540,9 @@ name = "title"
 records = 2000
 built_by = "boot"
 usage = "TIINIT titles keyed by 20 x character + k; title 20 x character is the one a character joins with."
+# Titles 20 x character to 20 x character + 19 are the character's (TIINIT's keys; UNITECH@0x00001 gives a joining
+# character title 20 x character).
+owned_by = { table = "character", per = 20 }
 
 [table.fields]
 name = "title_names"
@@ -1592,6 +1595,7 @@ master_id = "character"
 special_skill_ids = "item_class"
 cutin_picture = "picture"
 battle_portrait = "picture"
+battle_sprites = "picture"
 status_portrait = "picture"
 map_face = "picture"
 

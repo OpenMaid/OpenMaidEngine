@@ -1144,3 +1144,29 @@ authors.
 - **The bundle carries the games at modding level M3** (2026-11-24, when 戦女神VERITA got its profile at P1): spec §8.1
   lists each game's registry, base mod files and script index, which a game still being added does not have yet.
   The generated games page in `docs/modding/`, which the bundle carries, lists every game with its levels.
+- **Verita's party chibis and a title's unit** (2026-11-25; the user, on Verita's first look at the site: "units for the
+  player's team don't seem to show a sprite on the site, only enemies with a full-size sprite (player units should
+  have a chibi sprite)", then, choosing that titles show their chibi and a party unit its joining title's: "We also
+  want to have a reference between the two, as right now titles just link to their 'master', not the unit they're
+  associated with"). A Verita party unit has no picture of its own: 52 of the 54 characters' units had none. The
+  character's look is its title's, ten battle strips a title (`title_battle_sprites`), and a joining character takes
+  title 20 × character (`UNITECH@0x00001`). Three additions:
+  - **A table owned by another.** A registry table's `owned_by = { table, per }` says its record r belongs to record
+    r ÷ per of the other: Verita's titles are 20 to a character. A kind of the table may join the owner as it joins a
+    `records_of` table, reading the owner's record r ÷ per; the snippet writes the owner's record by its own number. A
+    title publishes `character.unit_id` as "Unit", and a unit lists its titles ("Titles").
+  - **A strip's first frame.** A picture's `frames = N` shows the first of a strip of N frames side by side, its width
+    ÷ N and its full height. Every title's first battle strip is six frames: 720 × 120, of which the status screen
+    draws the first 120 × 120 (`DRAWCHP@0x2c3`), or 1920 × 300 for the large forms of 3 × 3 cells (units 501 to 513
+    and ディアーネ's `CPB035BA`), whose first 120 × 120 holds a sliver of the figure or nothing. A title's `chibi` is that frame: 220 titles, 60
+    files, none explicit (each looked at).
+  - **A borrowed picture.** A kind's picture may be `{ from, by, picture }`: picture `picture` of the first entity of
+    kind `from`, by id, that has it and whose published reference `by` names the entity, written after the references
+    are linked. A unit's `chibi` is its first title's, title 20 × character being the character's first: 52 units.
+    The other two characters, 15 (unit 41) and 43 (unit 36), have no titles.
+  - **Checked** by `tools/test_globals.py`, `tools/test_entities_build.py`
+    (`test_owned_joins_and_borrowed_pictures`) and the exporter's tests
+    (`AnOwnedTableJoinsByItsOwnersRecordAndAPictureMayBeAStripsFrameOrAnotherKinds`,
+    `AKindJoinsATableThatOwnsItsRecordsOnlyByTheRegistrysOwnedBy`). The export reads 1,122 title references and
+    writes 898 pictures (838 before), its snippets with no problem. `test_globals.py` also gained Verita's four scopes,
+    which its check of every registry's scopes lacked.

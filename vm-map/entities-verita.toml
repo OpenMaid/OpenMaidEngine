@@ -61,8 +61,10 @@ filters = ["boss_class", "defense_element", "sex"]
 # Units of one name differ by the level their stats are given at.
 qualifiers = ["base_level"]
 marks = { boss_class = "Boss" }
-# The battle sprite (a CPB… picture), and the bestiary's own picture where it is not the sprite (an EI… picture).
-pictures = { sprite = "battle_sprite", bestiary = "book_picture" }
+# The battle sprite (a CPB… picture), and the bestiary's own picture where it is not the sprite (an EI… picture). A
+# party unit has neither: its chibi is its character's joining title's, the first title naming the unit (title
+# 20 x character, UNITECH@0x00001).
+pictures = { sprite = "battle_sprite", bestiary = "book_picture", chibi = { from = "title", by = "character.unit_id", picture = "chibi" } }
 
 [[kind.group]]
 name = "drops"
@@ -128,15 +130,21 @@ about = "A character's titles: what earns each, its class and master, the class 
 exists = "name"
 title = "name"
 text = ["description"]
+# A title is character id ÷ 20's (the registry's owned_by), so it names the character's unit.
+joins = ["character"]
 fields = [
-    "class", "master_id", "required_level", "required_title", "special_skill_ids", "special_skill_levels",
+    "character.unit_id", "class", "master_id", "required_level", "required_title", "special_skill_ids", "special_skill_levels",
     "skill_levels", "hp_bonus", "mp_bonus", "tp_bonus", "accuracy_bonus", "evasion_bonus", "attack_bonus",
     "defense_bonus", "magic_attack_bonus", "magic_defense_bonus", "magic_power_bonus", "attack_count_bonus",
     "defense_count_bonus", "physical_resistance_bonus", "mental_resistance_bonus", "physical_speed_bonus",
     "mental_speed_bonus", "luck_bonus",
 ]
 filters = ["class"]
-pictures = { portrait = "status_portrait", battle = "battle_portrait", cutin = "cutin_picture", face = "map_face" }
+# The chibi is the first frame of the title's first battle strip, the character seen from behind as the party stands
+# in battle. Each strip is six frames side by side: 720 x 120 (the status screen draws its first 120 x 120,
+# DRAWCHP@0x001a9 and @0x002c3), or 1920 x 300 for the large forms of 3 x 3 cells (units 501 to 513, and ディアーネ's
+# CPB035BA).
+pictures = { portrait = "status_portrait", battle = "battle_portrait", cutin = "cutin_picture", face = "map_face", chibi = { field = "battle_sprites.0", frames = 6 } }
 
 [[kind.group]]
 name = "class_ranks"
@@ -144,6 +152,7 @@ fields = ["special_skill_ids", "special_skill_levels"]
 
 [kind.labels]
 description = "How it fights"
+"character.unit_id" = "Unit"
 master_id = "Master"
 required_title = "Earned after"
 class_ranks = "Class ranks granted"
@@ -157,6 +166,7 @@ class_ranks = "The rank each class reaches when the title is earned; only a 使�
 skill_levels = "Skill levels it adds to the character's own."
 
 [kind.referenced_as]
+"character.unit_id" = "Titles"
 required_title = "Earned before"
 master_id = "Master of titles"
 special_skill_ids = { heading = "Granted by titles", details = ["special_skill_levels"] }

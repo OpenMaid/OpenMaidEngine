@@ -87,6 +87,10 @@ public sealed record TableLayout(string Name, int Records, IReadOnlyList<(string
     /// <summary>The table whose record r its record r belongs to (<c>records_of</c>), or null: Arterial's party_member,
     /// kept for each character by its character id.</summary>
     public string? RecordsOf { get; init; }
+
+    /// <summary>The table whose record r ÷ <c>Per</c> its record r belongs to (<c>owned_by</c>), or null: a Verita title,
+    /// keyed 20 × character + k, is character r ÷ 20's.</summary>
+    public (string Table, int Per)? OwnedBy { get; init; }
 }
 
 /// <summary>How a two-field reference names its record (export plan §5): the field's value times
@@ -240,6 +244,9 @@ public sealed class RegistryView
                 {
                     RefKeys = keys,
                     RecordsOf = entry.TryGetProperty("records_of", out JsonElement of) ? of.GetString() : null,
+                    OwnedBy = entry.TryGetProperty("owned_by", out JsonElement owner)
+                        ? (owner.GetProperty("table").GetString()!, owner.GetProperty("per").GetInt32())
+                        : null,
                 });
             }
         return new RegistryView(tables, arrays);
