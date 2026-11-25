@@ -38,15 +38,16 @@ public class ObjectBlendModeTests
 
         // Into kind 1 the first texel replaces the grey, alpha included, and the alpha test keeps the second out.
         Assert.Equal([10, 20, 30, 128, 200, 200, 200, 255], drawn.Kind1);
-        // Into kind 2 the object blends as it does on the screen: (10 x 128 + 200 x 127) / 255 is 104.
-        Assert.Equal([104, 109, 114, 255, 200, 200, 200, 255], drawn.Kind2);
+        // Into kind 2 the object blends as it does on the screen: (10 x 128 + 200 x 127) / 255 is 104.6, written as 105.
+        Assert.Equal([105, 110, 115, 255, 200, 200, 200, 255], drawn.Kind2);
     }
 
     [Theory]
-    // (100, 0, 255) at alpha 128 over (200, 200, 200) at alpha 128: Direct3D 9 blends the alpha by the colour's factors.
-    [InlineData(BlendKind.Alpha, 149, 99, 227, 128)]        // 128 x 128 / 255 + 128 x 127 / 255
-    [InlineData(BlendKind.Additive, 250, 200, 255, 192)]    // 128 + 128 x 128 / 255
-    [InlineData(BlendKind.Subtractive, 150, 200, 72, 64)]   // 128 - 128 x 128 / 255
+    // (100, 0, 255) at alpha 128 over (200, 200, 200) at alpha 128: Direct3D 9 blends the alpha by the colour's factors,
+    // and each write takes the nearest value: red (100 x 128 + 200 x 127) / 255 is 149.8, written as 150.
+    [InlineData(BlendKind.Alpha, 150, 100, 228, 128)]       // 128 x 128 / 255 + 128 x 127 / 255
+    [InlineData(BlendKind.Additive, 250, 200, 255, 192)]    // 128 + 128 x 128 / 255 is 192.3
+    [InlineData(BlendKind.Subtractive, 150, 200, 72, 64)]   // 128 - 128 x 128 / 255 is 63.7
     public void TheAlphaBlendsByTheColoursFactors(BlendKind blend, byte red, byte green, byte blue, byte alpha)
     {
         byte[] target = [200, 200, 200, 128];

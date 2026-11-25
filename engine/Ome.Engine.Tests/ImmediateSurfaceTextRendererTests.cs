@@ -123,11 +123,12 @@ public class ImmediateSurfaceTextRendererTests
 
         // The doubled one-pixel region covers 2x2 pixels. Objects sample bilinearly as native's D3D9 sprite does, and
         // the texture clamp reads past the region, so each pixel takes 192/256 x 192/256 of the white texel and the
-        // rest from its transparent neighbours: alpha 143, then 71 at opacity 128, green 143 * 71 / 255 = 39. The alpha
-        // blends by its own factor, as Direct3D 9's does into a render target: 71 * 71 / 255 = 19 over the clear one.
+        // rest from its transparent neighbours: alpha 143, then 71.8 at opacity 128, which the fragment writes as 72;
+        // green 143 * 72 / 255 = 40.4, written as 40. The alpha blends by its own factor, as Direct3D 9's does into a
+        // render target: 72 * 72 / 255 = 20.3 over the clear one, written as 20.
         Assert.Equal(1, rendered);
-        Assert.Equal((0, 39, 0, 19), Pixel(destination, 3, 2));
-        Assert.Equal((0, 39, 0, 19), Pixel(destination, 4, 2));
+        Assert.Equal((0, 40, 0, 20), Pixel(destination, 3, 2));
+        Assert.Equal((0, 40, 0, 20), Pixel(destination, 4, 2));
         Assert.Equal((0, 0, 0, 0), Pixel(destination, 5, 2));
 
         graphics.DrawObjectRange(destination, visible, 20, 1);

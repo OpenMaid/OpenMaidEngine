@@ -3569,6 +3569,30 @@ within 1 of 255, apart from the wait indicator's phase. Before the fix, three pa
 The opening, save and AntiFont scenarios of all three games still equal native after the change (their wait
 indicators aside).
 
+**The blend's arithmetic (2026-11-25).** What a translucent layer's pixel comes to was measured on this machine's GPU,
+an NVIDIA RTX 4080 SUPER. Native's Direct3D 9 render targets and the port's GPU renderer (Godot) write the same values
+there. It takes two steps:
+
+- **The fragment.** The texel's colour times the colour (or moved toward the tint), and its alpha times the opacity,
+  are worked out in floats. Each channel reaches the blend as an 8-bit value: its fraction cut to 12 bits, then the
+  nearest value. Verita's SC0000 page 4 shows it. Its message window, `SO001.AGF`, has white texels with an alpha
+  ramp, drawn tinted `0x1c1e25` at opacity 128/255 over the CG. Every ramp row of the GPU frame fits one whole alpha,
+  and texel alphas 13 and 15 are written as 6 and 7, though their products are 6.53 and 7.53. Alpha 23 (11.55) is
+  written as 12. Rounding the product misses the first two; the 12-bit cut fits all 76 of the window's alphas. A
+  constant taken off the product fits them too, but leaves Himegari's title one level apart, where the cut leaves
+  none.
+- **The blend.** Each blend of "Object blend modes" is worked out from those 8-bit values and written as the nearest
+  value: `SRCALPHA/INVSRCALPHA` gives `(s·a + d·(255 − a)) / 255` rounded, not truncated.
+
+The reference renderer does the same (`SoftwareAffineRasterizer.FragmentUnorm` and `Blend`, for sprites, polygons and
+fills). With it, `reference-diff` at tolerance 0 finds no pixel apart on Verita's page 4. It found 125,789 with the
+earlier integer blends, which truncated, and 1,839 with the product only rounded. Every other frame of the four
+games' `reference-diff` scenarios without a scaled draw is exact too, but for Arterial's polygon screens, at most one
+level apart. The frames with scaled draws differ by at most 2: the backlog's "The two renderers filter scaled layers
+differently". The port's thumbnail of Verita's page is drawn by the reference renderer into render target 2 and
+shrunk by op `0x32` ("Scaled surface rectangle copy"). It equals native's `SAVE00.STH` but for the wait icon. Only this
+GPU has been measured; another may convert a fragment otherwise.
+
 **TITLE SO022 additive proof (2026-07-20).** TITLE loads type-1 8-bpp `SO022.AGF` with no alpha plane and
 no color key, binds two 140×140 spritesheet objects, and calls `0x203(handle,1,255,0xffffff)` for both.
 Ordinary alpha composition therefore produces opaque black squares around the blue flames. Native mode-1
@@ -8548,6 +8572,26 @@ flag 1, enlarge the source into it, shrink it into the destination, and then rel
 (`retained_gfx_release_surface`): slot 32 is left with no surface. The port does the same
 (`Graphics.ScaleCopySurfaceRect`). It decides on the requested rectangles, where native decides on the clipped ones;
 the two differ only for a rectangle that crosses a surface's edge. Retail never takes the path.
+
+**The shrink's arithmetic (2026-11-25).** The area-weighted sampler is `gfx_downsample_surface_rect_area`: 4.24J
+`@0x4786b0`, 4.24N `@0x479a50`, 4.33G `@0x47efb0` and 4.38D `@0x48dc30`, the same code in all four. For a destination
+pixel at column x and row y of the destination rectangle, with a source extent of `sw` by `sh` and a destination one
+of `dw` by `dh`:
+
+- **The edges.** The pixel covers source columns `x·sw/dw` to `(x+1)·sw/dw` and rows `y·sh/dh` to `(y+1)·sh/dh`: each
+  product is an integer, and each edge one float divide.
+- **The texels.** It visits rows from the top edge truncated to the bottom edge's ceiling less one, and the columns
+  alike. A texel's weight is the part of its column inside the pixel's edges, `min(right, c + 1) − max(left, c)`,
+  times the same of its row.
+- **The sums.** For each texel, in this order, it adds the weight to the total and each channel times the weight to
+  that channel's sum: alpha, red, green, blue.
+- **The result.** Each channel is `trunc(sum / total + 0.5)`, clamped to 0 to 255. The 0.5 is a double (4.24J
+  `0x56f618`, 4.24N `0x571618`). A source whose kind (`+0x418`) is not 0, a render target, gives alpha `0xff`.
+
+Every step rounds to a float ("The x87 runs at single precision"). The port's `RgbaSurfaceOps.ScaleCopyRect` does the
+same arithmetic in floats, in native's order. Native's thumbnail of Verita's page 4 (`SAVE@0xd43` shrinks render
+target 2 into 204 by 115) was read back from its `SAVE00.STH`. The same arithmetic on the port's GPU frame of that page
+gives it pixel for pixel, but for the wait icon, which animates.
 
 ### Op 0x35, the mosaic copy (2026-11-25)
 

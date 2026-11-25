@@ -155,7 +155,42 @@ public class SoftwareAffineRasterizerTests
         byte[] blueGlow = { 16, 32, 200, 128 };
         SoftwareAffineRasterizer.BlitRgba(background, 1, 1, blueGlow, 1, 1, 0, 0, 1, 1,
             identity, 0xffffff, 0, 0.5f, multiplyTint: true, blend: BlendKind.Additive);
-        Assert.Equal(new byte[] { 43, 57, 109, 255 }, background);
+        // Alpha 128 at half opacity is 64: red 40 + 16 x 64 / 255 is 44.0, blue 60 + 200 x 64 / 255 is 110.2.
+        Assert.Equal(new byte[] { 44, 58, 110, 255 }, background);
+    }
+
+    [Theory]
+    // The products a translucent layer meets: texel alpha times 128 / 255. Plain rounding writes 6.53 as 7 and 7.53 as
+    // 8; the hardware, cutting to 12 bits of fraction first, writes 6 and 7, and 11.55 still as 12.
+    [InlineData(13 * 128 / 255f, 6)]
+    [InlineData(15 * 128 / 255f, 7)]
+    [InlineData(23 * 128 / 255f, 12)]
+    [InlineData(29 * 128 / 255f, 15)]
+    [InlineData(127.5f, 128)]
+    [InlineData(0f, 0)]
+    [InlineData(-3f, 0)]
+    [InlineData(255f, 255)]
+    [InlineData(300f, 255)]
+    public void AFragmentIsCutToTwelveBitsBeforeItsNearestEightBitValue(float value, int written)
+        => Assert.Equal(written, SoftwareAffineRasterizer.FragmentUnorm(value));
+
+    [Fact]
+    public void AFragmentKeepsEveryWholeValue()
+    {
+        for (int value = 0; value <= 255; value++)
+            Assert.Equal(value, SoftwareAffineRasterizer.FragmentUnorm(value));
+    }
+
+    [Fact]
+    public void ATranslucentWindowsEdgeBlendsAsTheHardwareDid()
+    {
+        // Verita's message window on SC0000's page 4: a white texel of alpha 13, tinted 0x1c1e25 and drawn at opacity
+        // 128 / 255 over the CG's (104, 184, 255). The GPU renderer's frame, and native's thumbnail of the page, have
+        // (102, 180, 250): alpha 6, so red (28 x 6 + 104 x 249) / 255 = 102.2.
+        byte[] target = { 104, 184, 255, 255 };
+        SoftwareAffineRasterizer.BlitRgba(target, 1, 1, new byte[] { 255, 255, 255, 13 }, 1, 1, 0, 0, 1, 1,
+            new Affine2D(1, 0, 0, 1, 0, 0), 0x1c1e25, 0, 128 / 255f, multiplyTint: true);
+        Assert.Equal(new byte[] { 102, 180, 250 }, target[..3]);
     }
 
     [Fact]
@@ -259,7 +294,8 @@ public class SoftwareAffineRasterizerTests
 
     // Per-pixel affine algorithm, kept free of the fast paths as an independent differential oracle: each
     // covered pixel centre is mapped back and sampled bilinearly as native's D3D9 sprite does (8-bit weights
-    // rounded to the nearest 1/256, coordinates clamped to the source image's edge).
+    // rounded to the nearest 1/256, coordinates clamped to the source image's edge). The fragment is worked out in
+    // floats and written to 8 bits as the hardware does (Fragment); the blend rounds to the nearest value.
     private static void ReferenceBlit(byte[] dst, int dstW, int dstH, byte[] src, int srcW, int srcH,
                                       int srcX, int srcY, int width, int height, Affine2D transform,
                                       long tint, float tintStrength, float opacity, bool multiplyTint,
@@ -267,8 +303,8 @@ public class SoftwareAffineRasterizerTests
     {
         if (!transform.TryInverse(out var inv)) return;
         ReferenceBounds(transform, width, height, dstW, dstH, out int x0, out int y0, out int x1, out int y1);
-        int istr = (int)(System.Math.Clamp(tintStrength, 0f, 1f) * 255);
-        int ia = (int)(System.Math.Clamp(opacity, 0f, 1f) * 255);
+        float strength = System.Math.Clamp(tintStrength, 0f, 1f), keep = 1 - strength;
+        float alphaScale = System.Math.Clamp(opacity, 0f, 1f);
         int tr = (int)(tint >> 16 & 255), tg = (int)(tint >> 8 & 255), tb = (int)(tint & 255);
         for (int y = y0; y < y1; y++) for (int x = x0; x < x1; x++)
         {
@@ -291,11 +327,11 @@ public class SoftwareAffineRasterizerTests
                 sample[channel] = (sum + 32768) >> 16;
             }
             int di = (y * dstW + x) * 4;
-            int sa = sample[3] * ia / 255;
+            int sa = Fragment(sample[3] * alphaScale);
             if (sa == 0) continue;
-            int sr = multiplyTint ? sample[0] * tr / 255 : (sample[0] * (255 - istr) + tr * istr) / 255;
-            int sg = multiplyTint ? sample[1] * tg / 255 : (sample[1] * (255 - istr) + tg * istr) / 255;
-            int sb = multiplyTint ? sample[2] * tb / 255 : (sample[2] * (255 - istr) + tb * istr) / 255;
+            int sr = Fragment(multiplyTint ? sample[0] * tr / 255f : sample[0] * keep + tr * strength);
+            int sg = Fragment(multiplyTint ? sample[1] * tg / 255f : sample[1] * keep + tg * strength);
+            int sb = Fragment(multiplyTint ? sample[2] * tb / 255f : sample[2] * keep + tb * strength);
             ReferenceBlend(dst, di, sr, sg, sb, sa, blend);
         }
     }
@@ -305,7 +341,8 @@ public class SoftwareAffineRasterizerTests
     {
         if (!transform.TryInverse(out var inv)) return;
         ReferenceBounds(transform, width, height, dstW, dstH, out int x0, out int y0, out int x1, out int y1);
-        int a = (int)(System.Math.Clamp(opacity, 0f, 1f) * 255);
+        int a = Fragment(System.Math.Clamp(opacity, 0f, 1f) * 255);
+        if (a == 0) return;
         int r = (int)(color >> 16 & 255), g = (int)(color >> 8 & 255), b = (int)(color & 255);
         for (int y = y0; y < y1; y++) for (int x = x0; x < x1; x++)
         {
@@ -330,15 +367,29 @@ public class SoftwareAffineRasterizerTests
     {
         if (blend == BlendKind.Additive)
         {
-            dst[i] = (byte)System.Math.Min(255, dst[i] + r * a / 255);
-            dst[i + 1] = (byte)System.Math.Min(255, dst[i + 1] + g * a / 255);
-            dst[i + 2] = (byte)System.Math.Min(255, dst[i + 2] + b * a / 255);
-            dst[i + 3] = (byte)System.Math.Min(255, dst[i + 3] + a * a / 255);
+            dst[i] = Nearest(dst[i] * 255 + r * a);
+            dst[i + 1] = Nearest(dst[i + 1] * 255 + g * a);
+            dst[i + 2] = Nearest(dst[i + 2] * 255 + b * a);
+            dst[i + 3] = Nearest(dst[i + 3] * 255 + a * a);
             return;
         }
-        dst[i] = (byte)((r * a + dst[i] * (255 - a)) / 255);
-        dst[i + 1] = (byte)((g * a + dst[i + 1] * (255 - a)) / 255);
-        dst[i + 2] = (byte)((b * a + dst[i + 2] * (255 - a)) / 255);
-        dst[i + 3] = (byte)((a * a + dst[i + 3] * (255 - a)) / 255);   // Direct3D 9: the alpha by the colour's factors
+        dst[i] = Nearest(r * a + dst[i] * (255 - a));
+        dst[i + 1] = Nearest(g * a + dst[i + 1] * (255 - a));
+        dst[i + 2] = Nearest(b * a + dst[i + 2] * (255 - a));
+        dst[i + 3] = Nearest(a * a + dst[i + 3] * (255 - a));   // Direct3D 9: the alpha by the colour's factors
+    }
+
+    // A blend's value times 255, an integer, written as the nearest 8-bit value. With 8-bit inputs it never lies
+    // half-way, so the rasterizer's float blend must give the same.
+    private static byte Nearest(int timesTwoFiftyFive)
+        => (byte)System.Math.Min(255, (2 * timesTwoFiftyFive + 255) / 510);
+
+    // A fragment's channel on 0..255 as the hardware hands it to the blend: 12 bits of fraction, then the nearest
+    // 8-bit value (docs/engine-re.md, "The blend's arithmetic").
+    private static int Fragment(float value)
+    {
+        float steps = System.MathF.Floor(value * (4096f / 255f));
+        double exact = steps * 255.0 / 4096;
+        return (int)System.Math.Clamp(System.Math.Floor(exact + 0.5), 0, 255);
     }
 }

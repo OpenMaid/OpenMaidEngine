@@ -96,7 +96,8 @@ public partial class Main : IFramePresenter
     /// reference renderer draws every frame too. Otherwise compare the screen (the last frame drawn, as <c>shot</c>
     /// captures it) with the reference's drawing of the same frame, its colour as the screen view shows it: write
     /// PATH-gpu.png, PATH-reference.png and PATH-diff.png (each channel's difference times eight; red where one is over
-    /// <paramref name="tolerance"/>) and report how many pixels differ by more than it, the largest and mean channel
+    /// <paramref name="tolerance"/>) and PATH-items.json (the frame's draws, back to front), and report how many pixels
+    /// differ by more than it, the largest and mean channel
     /// difference, and the box around the pixels over it. Run it settled: the screen and the reference then show the
     /// same frame. It also counts the frame's draws, and the texture draws that are not a whole-pixel move (scaled,
     /// rotated or at a fractional position), where filtering may differ.
@@ -152,6 +153,8 @@ public partial class Main : IFramePresenter
         SavePng(screen, full + "-gpu.png");
         SavePng(Image.CreateFromData(width, height, false, Image.Format.Rgba8, reference), full + "-reference.png");
         SavePng(Image.CreateFromData(width, height, false, Image.Format.Rgba8, difference), full + "-diff.png");
+        File.WriteAllText(full + "-items.json", DescribeItems(_lastFrame).ToJsonString(
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         FrameCounts counts = CountItems(_lastFrame);
         return new JsonObject
         {
@@ -172,6 +175,44 @@ public partial class Main : IFramePresenter
             ["mean"] = Math.Round(sum / (3.0 * width * height), 4),
             ["bbox"] = right < 0 ? null : new JsonArray(left, top, right + 1, bottom + 1),
         };
+    }
+
+    // The frame's draws, back to front, as both renderers take them: what a comparison needs to work out a pixel by
+    // hand. A screen transition's source and target follow the frame's items, marked by their list.
+    private static JsonArray DescribeItems(FrameDescription? frame)
+    {
+        var described = new JsonArray();
+        if (frame == null) return described;
+        var lists = new System.Collections.Generic.List<(string Name, System.Collections.Generic.IReadOnlyList<FrameItem> Items)>
+        {
+            ("frame", frame.Items),
+        };
+        if (frame.ScreenTransition is { } screen)
+        {
+            lists.Add(("transition-source", screen.Source));
+            lists.Add(("transition-target", screen.Target));
+        }
+        foreach ((string name, var items) in lists)
+            foreach (FrameItem item in items)
+                described.Add((JsonNode)new JsonObject
+                {
+                    ["list"] = name,
+                    ["kind"] = item.Kind.ToString(),
+                    ["asset"] = item.AssetId,
+                    ["dynamic"] = item.Dynamic,
+                    ["key"] = item.DynamicKey,
+                    ["image"] = item.Pixels is { } image ? new JsonArray(image.Width, image.Height) : null,
+                    ["source"] = new JsonArray(item.SourceX, item.SourceY, item.Width, item.Height),
+                    ["matrix"] = new JsonArray(item.Matrix.XX, item.Matrix.XY, item.Matrix.YX, item.Matrix.YY,
+                                               item.Matrix.TX, item.Matrix.TY),
+                    ["opacity"] = item.Opacity,
+                    ["tint"] = $"0x{item.Tint:x6}",
+                    ["tint_strength"] = item.TintStrength,
+                    ["multiply_tint"] = item.MultiplyTint,
+                    ["blend"] = item.Blend.ToString(),
+                    ["color_key"] = item.ColorKey,
+                });
+        return described;
     }
 
     private sealed record FrameCounts(int Items, int Transformed, int Polygons, int Textured, int TwoTextures,

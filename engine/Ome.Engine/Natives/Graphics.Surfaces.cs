@@ -243,7 +243,8 @@ public sealed partial class Graphics
                                       copy.Width, copy.Height, copy.DestinationX, copy.DestinationY)
             : RgbaSurfaceOps.ScaleCopyRect(source, updated, copy.SourceX, copy.SourceY,
                                            copy.Width, copy.Height, copy.DestinationX, copy.DestinationY,
-                                           copy.DestinationWidth, copy.DestinationHeight);
+                                           copy.DestinationWidth, copy.DestinationHeight,
+                                           opaqueSource: SurfaceKind(copy.SourceSurface) != 0);
         if (copied)
         {
             _surfaceImages[copy.DestinationSurface] = KeepOpaque(copy.DestinationSurface, updated);

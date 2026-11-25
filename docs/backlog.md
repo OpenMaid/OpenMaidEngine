@@ -241,18 +241,16 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   the tolerance of the engine layering spec §6.3, "As built".
 
 - **The two renderers filter scaled layers differently.** Where a texture item is scaled or rotated, the GPU renderer
-  (Godot's linear filter, blending in floats) and the reference renderer
-  (`engine/Ome.Engine/Model/SoftwareAffineRasterizer.cs`: D3D9's bilinear with 8-bit weights, blending in integers)
-  differ by a few levels, in fine stripes across the layer.
-  The driver's `reference-diff` found it in Himegari's SC0000 effect band
-  (`tools/drive/scenarios/port/himegari-reference-diff.steps`): on page 14 and mid-effect on page 15 a full-screen CG
-  is drawn scaled under additive light, and 0.3 % and 10 % of the frame's pixels differ by more than 3 levels, at
-  most 6. The tolerance set before measuring allowed 1 % of a frame (engine layering spec §6.3, "As built"). The
-  difference predates milestone 7: the GPU path's pixels there are the same as before (`himegari-effect-waits.steps`'
-  page 14 shot), and the two paths filtered this way before. Kamidori's field, 214 scaled map cells, differs by at
-  most 3. Neither renderer has been compared with native's output on a scaled layer. Done when a native capture of
-  such a frame shows which filter matches AGE, the other renderer is brought to it, and `reference-diff` keeps those
-  pages within 1 %.
+  (Godot's linear filter) and the reference renderer (`engine/Ome.Engine/Model/SoftwareAffineRasterizer.cs`: D3D9's
+  bilinear with 8-bit weights) differ by a level or two, in fine stripes across the layer. Both blend alike since
+  2026-11-25 (`engine-re.md`, "The blend's arithmetic"). Before that, the reference renderer's integer blends, which
+  truncated, made it more: on Himegari's page 14 and mid-effect on page 15
+  (`tools/drive/scenarios/port/himegari-reference-diff.steps`), a full-screen CG drawn scaled under additive light,
+  0.3 % and 10 % of the frame's pixels were more than 3 levels apart, at most 6. On 2026-11-25 every frame of the
+  four games' `reference-diff` scenarios that holds a scaled draw is at most 2 apart and none is over the tolerance
+  of 3: those two pages, Himegari's game start, Kamidori's field and its 214 scaled map cells, and Arterial's battle
+  field and map. Neither renderer has been compared with native's output on a scaled layer. Done when a native
+  capture of such a frame shows which filter matches AGE, and the other renderer is brought to it.
 
 ## Open Maid Script
 
@@ -683,22 +681,9 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     version 3.10, Himegari's `0x2d4` records; `sys4-format-notes.md`, "Observed profile identities") and the codec
     writes it back byte for byte. `writesEnabled` is on. `tools/drive/scenarios/verita-save-load.steps` passes on
     both targets, each loads the other's save, and `save-diff` shows only the time stamp between the two targets'
-    saves, before and after the cross-load.
-  - **The save thumbnails differ from native's by one level (found 2026-11-25), to settle before the merge.** In
-    4,888 of the 23,460 pixels of the `.STH`, all in its lower half. The thumbnail is the page composed into render
-    target 2 (`SAVE@0xd43`) and shrunk to 204 x 115 into surface `0x8a` by op `0x32`. Two causes, both older than
-    the branch:
-    - **The reference renderer blends unlike the hardware.** The port draws a render target with it, and the screen
-      with the GPU renderer, whose page equals native's to the pixel. On SC0000's page 4, `reference-diff` with
-      tolerance 0 finds 125,789 pixels apart by 1 or 2, all under the translucent message window (rows 360 to 575),
-      with no scaled draw. Most are one level darker in the reference: its integer blend truncates
-      (`SoftwareAffineRasterizer`). The port's shrink of the reference frame reproduces the port's thumbnail.
-    - **The port's op `0x32` shrink rounds exact halves away from zero.** Shrinking native's own screen as the port
-      does gives native's thumbnail but for three pixels, each an exact .5 average (192.5 gives native 192), and the
-      turning wait icon. The port's area-weighted sampler (`RgbaSurfaceOps.ScaleCopyRect`) was written from the
-      observed path, not from native's downsampler (`engine-re.md`, "Scaled surface rectangle copy").
-    Done when native's downsampler's arithmetic is the port's, the reference renderer blends a translucent layer as
-    the GPU renderer and native do, and a thumbnail made on the same page equals native's but for the wait icon.
+    saves, before and after the cross-load. A save's thumbnail equals native's but for the wait icon, since op
+    `0x32`'s shrink and the reference renderer's blend were brought to native's (`engine-re.md`, "Scaled surface
+    rectangle copy" and "The blend's arithmetic").
   - **The compiler census** finds two shapes Himegari's and Kamidori's have none of: 5 conditional jumps with no
     target and 2 negative immediates (`build/games/verita/compiler-census.json`). Open Maid Script's round trip (M1)
     shows whether it keeps them.

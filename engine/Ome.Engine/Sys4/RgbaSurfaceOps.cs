@@ -83,14 +83,20 @@ public static class RgbaSurfaceOps
     }
 
     /// <summary>
-    /// Scale one RGBA rectangle into another with area-weighted sampling. This matches AGE's shrink path,
-    /// including the 1024x576 to 384x216 map/save thumbnail operation. Source pixels are sampled from a
-    /// stable image while writes are clipped to the destination surface.
+    /// Scale one RGBA rectangle into another with area-weighted sampling, as AGE's shrink does
+    /// (gfx_downsample_surface_rect_area, 4.24J <c>0x4786b0</c>; docs/engine-re.md, "Scaled surface rectangle copy --
+    /// opcode 0x32"). Each destination pixel's edges are its index times the source extent over the destination extent;
+    /// every source pixel it covers adds its covered area, and its channels times that area, to five sums, and each
+    /// channel is <c>trunc(sum / total + 0.5)</c>. AGE's x87 runs at single precision, so each step rounds to a float,
+    /// in native's order: an average that is an exact half in doubles can land just under it. A source whose kind is
+    /// not 0 (<paramref name="opaqueSource"/>) gives alpha 255. Source pixels are read from a stable image, and writes
+    /// are clipped to the destination surface. Native's enlargement sampler is not modelled: growing takes this path
+    /// too.
     /// </summary>
     public static bool ScaleCopyRect(RgbaImage source, RgbaImage destination,
                                      int sourceX, int sourceY, int sourceWidth, int sourceHeight,
                                      int destinationX, int destinationY,
-                                     int destinationWidth, int destinationHeight)
+                                     int destinationWidth, int destinationHeight, bool opaqueSource = false)
     {
         if (sourceWidth <= 0 || sourceHeight <= 0
             || destinationWidth <= 0 || destinationHeight <= 0) return false;
@@ -104,55 +110,63 @@ public static class RgbaSurfaceOps
         bool wrote = false;
         for (int y = (int)top; y < (int)bottom; y++)
         {
-            double sy0 = sourceY + (double)(y - destinationY) * sourceHeight / destinationHeight;
-            double sy1 = sourceY + (double)(y + 1 - destinationY) * sourceHeight / destinationHeight;
+            long row = y - (long)destinationY;
+            float sy0 = (float)(row * sourceHeight) / destinationHeight;
+            float sy1 = (float)((row + 1) * sourceHeight) / destinationHeight;
+            int firstRow = (int)sy0, lastRow = CeilingOf(sy1);
             for (int x = (int)left; x < (int)right; x++)
             {
-                double sx0 = sourceX + (double)(x - destinationX) * sourceWidth / destinationWidth;
-                double sx1 = sourceX + (double)(x + 1 - destinationX) * sourceWidth / destinationWidth;
-                double clippedSx0 = System.Math.Max(0.0, sx0);
-                double clippedSy0 = System.Math.Max(0.0, sy0);
-                double clippedSx1 = System.Math.Min(source.Width, sx1);
-                double clippedSy1 = System.Math.Min(source.Height, sy1);
-                if (clippedSx1 <= clippedSx0 || clippedSy1 <= clippedSy0) continue;
+                long column = x - (long)destinationX;
+                float sx0 = (float)(column * sourceWidth) / destinationWidth;
+                float sx1 = (float)((column + 1) * sourceWidth) / destinationWidth;
+                int firstColumn = (int)sx0, lastColumn = CeilingOf(sx1);
 
-                double red = 0, green = 0, blue = 0, alpha = 0, total = 0;
-                int firstSourceY = (int)System.Math.Floor(clippedSy0);
-                int lastSourceY = (int)System.Math.Ceiling(clippedSy1);
-                int firstSourceX = (int)System.Math.Floor(clippedSx0);
-                int lastSourceX = (int)System.Math.Ceiling(clippedSx1);
-                for (int sourceRow = firstSourceY; sourceRow < lastSourceY; sourceRow++)
+                float total = 0, alpha = 0, red = 0, green = 0, blue = 0;
+                for (int sourceRow = firstRow; sourceRow < lastRow; sourceRow++)
                 {
-                    double yWeight = System.Math.Min(clippedSy1, sourceRow + 1.0)
-                                     - System.Math.Max(clippedSy0, sourceRow);
-                    if (yWeight <= 0) continue;
-                    for (int sourceColumn = firstSourceX; sourceColumn < lastSourceX; sourceColumn++)
+                    long imageRow = (long)sourceY + sourceRow;
+                    if (imageRow < 0 || imageRow >= source.Height) continue;
+                    float yWeight = (sy1 < sourceRow + 1 ? sy1 : sourceRow + 1) - (sy0 > sourceRow ? sy0 : sourceRow);
+                    for (int sourceColumn = firstColumn; sourceColumn < lastColumn; sourceColumn++)
                     {
-                        double xWeight = System.Math.Min(clippedSx1, sourceColumn + 1.0)
-                                         - System.Math.Max(clippedSx0, sourceColumn);
-                        double weight = xWeight * yWeight;
-                        if (weight <= 0) continue;
-                        int sourceOffset = checked((sourceRow * source.Width + sourceColumn) * 4);
+                        long imageColumn = (long)sourceX + sourceColumn;
+                        if (imageColumn < 0 || imageColumn >= source.Width) continue;
+                        float xWeight = (sx1 < sourceColumn + 1 ? sx1 : sourceColumn + 1)
+                                        - (sx0 > sourceColumn ? sx0 : sourceColumn);
+                        float weight = xWeight * yWeight;
+                        int sourceOffset = checked((int)(imageRow * source.Width + imageColumn) * 4);
+                        total += weight;
+                        alpha += source.Pixels[sourceOffset + 3] * weight;
                         red += source.Pixels[sourceOffset] * weight;
                         green += source.Pixels[sourceOffset + 1] * weight;
                         blue += source.Pixels[sourceOffset + 2] * weight;
-                        alpha += source.Pixels[sourceOffset + 3] * weight;
-                        total += weight;
                     }
                 }
                 if (total <= 0) continue;
 
                 int destinationOffset = checked((y * destination.Width + x) * 4);
-                destination.Pixels[destinationOffset] = ClampByte(red / total);
-                destination.Pixels[destinationOffset + 1] = ClampByte(green / total);
-                destination.Pixels[destinationOffset + 2] = ClampByte(blue / total);
-                destination.Pixels[destinationOffset + 3] = ClampByte(alpha / total);
+                destination.Pixels[destinationOffset] = AverageByte(red, total);
+                destination.Pixels[destinationOffset + 1] = AverageByte(green, total);
+                destination.Pixels[destinationOffset + 2] = AverageByte(blue, total);
+                destination.Pixels[destinationOffset + 3] = opaqueSource ? (byte)255 : AverageByte(alpha, total);
                 wrote = true;
             }
         }
         return wrote;
     }
 
-    private static byte ClampByte(double value)
-        => (byte)System.Math.Clamp((int)System.Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
+    // An edge's last pixel: native truncates the edge and adds one unless it was whole.
+    private static int CeilingOf(float edge)
+    {
+        int truncated = (int)edge;
+        return truncated == edge ? truncated : truncated + 1;
+    }
+
+    // Native's channel: the float quotient, plus 0.5 rounded to a float, truncated and clamped.
+    private static byte AverageByte(float sum, float total)
+    {
+        float quotient = sum / total;
+        float half = quotient + 0.5f;
+        return (byte)System.Math.Clamp((int)half, 0, 255);
+    }
 }

@@ -6,7 +6,9 @@ namespace Ome.Engine.Model;
 // item means. Native AGE 4.38D draws a polygon as pre-transformed Direct3D 9 vertices (gfx_draw_polygon_primitive
 // @0x4895b0; docs/superpowers/specs/2026-11-19-polygon-objects-design.md §2), whose rules these are: a pixel is
 // covered when its centre is inside the triangle, with the top-left rule on an edge; colours and texture coordinates
-// are interpolated linearly; a texture is sampled with clamped coordinates and bilinear filtering.
+// are interpolated linearly; a texture is sampled with clamped coordinates and bilinear filtering. The fragment, the
+// colour times the texture times the opacity, is worked out in floats and rounded once, as the sprites' is
+// (docs/engine-re.md, "The blend's arithmetic").
 public static partial class SoftwareAffineRasterizer
 {
     // Vertex positions are snapped to 1/256 of a pixel, so that the edge tests are exact integers.
@@ -23,8 +25,8 @@ public static partial class SoftwareAffineRasterizer
                                        byte[]? first, int firstW, int firstH,
                                        byte[]? second, int secondW, int secondH)
     {
-        int ia = (int)(System.Math.Clamp(opacity, 0f, 1f) * 255);
-        if (ia == 0 && blend != FramePolygonBlend.Replace) return;
+        float alphaScale = System.Math.Clamp(opacity, 0f, 1f);
+        if (alphaScale == 0 && blend != FramePolygonBlend.Replace) return;
         if (first == null || firstW <= 0 || firstH <= 0)
         {
             // Native binds the textures it finds to stages in order: a second texture without a first is the first.
@@ -34,13 +36,13 @@ public static partial class SoftwareAffineRasterizer
         if (second != null && (secondW <= 0 || secondH <= 0)) second = null;
         if (first != null && (firstW <= 0 || firstH <= 0)) first = null;
         for (int index = 0; index + 2 < vertices.Length; index += 3)
-            DrawTriangle(dst, dstW, dstH, vertices[index], vertices[index + 1], vertices[index + 2], blend, ia,
+            DrawTriangle(dst, dstW, dstH, vertices[index], vertices[index + 1], vertices[index + 2], blend, alphaScale,
                          first, firstW, firstH, second, secondW, secondH);
     }
 
     private static void DrawTriangle(byte[] dst, int dstW, int dstH,
                                      FramePolygonVertex a, FramePolygonVertex b, FramePolygonVertex c,
-                                     FramePolygonBlend blend, int ia,
+                                     FramePolygonBlend blend, float alphaScale,
                                      byte[]? first, int firstW, int firstH,
                                      byte[]? second, int secondW, int secondH)
     {
@@ -83,31 +85,34 @@ public static partial class SoftwareAffineRasterizer
 
                 // Each vertex's weight is the edge function of the edge opposite it.
                 double wa = bc * inverseArea, wb = ca2 * inverseArea, wc = ab * inverseArea;
-                int alpha = Channel(ca, cb, cc, 24, wa, wb, wc);
-                int red = Channel(ca, cb, cc, 16, wa, wb, wc);
-                int green = Channel(ca, cb, cc, 8, wa, wb, wc);
-                int blue = Channel(ca, cb, cc, 0, wa, wb, wc);
+                float alpha = Channel(ca, cb, cc, 24, wa, wb, wc);
+                float red = Channel(ca, cb, cc, 16, wa, wb, wc);
+                float green = Channel(ca, cb, cc, 8, wa, wb, wc);
+                float blue = Channel(ca, cb, cc, 0, wa, wb, wc);
 
                 if (first != null)
                 {
                     double u = a.U * wa + b.U * wb + c.U * wc, v = a.V * wa + b.V * wb + c.V * wc;
-                    SampleClamped(first, firstW, firstH, u, v, out int tr, out int tg, out int tb, out int ta);
+                    SampleClamped(first, firstW, firstH, u, v, out int r0, out int g0, out int b0, out int a0);
+                    float tr = r0, tg = g0, tb = b0, ta = a0;
                     if (second != null)
                     {
                         // Stage 1 blends over stage 0 by its own alpha, colour and alpha alike.
                         SampleClamped(second, secondW, secondH, u, v, out int sr, out int sg, out int sb, out int sa);
-                        tr = (sr * sa + tr * (255 - sa)) / 255;
-                        tg = (sg * sa + tg * (255 - sa)) / 255;
-                        tb = (sb * sa + tb * (255 - sa)) / 255;
-                        ta = (sa * sa + ta * (255 - sa)) / 255;
+                        float over = sa / 255f, under = 1 - over;
+                        tr = sr * over + tr * under;
+                        tg = sg * over + tg * under;
+                        tb = sb * over + tb * under;
+                        ta = sa * over + ta * under;
                     }
-                    red = tr * red / 255;
-                    green = tg * green / 255;
-                    blue = tb * blue / 255;
-                    alpha = ta * alpha / 255;
+                    red = tr * red / 255f;
+                    green = tg * green / 255f;
+                    blue = tb * blue / 255f;
+                    alpha = ta * alpha / 255f;
                 }
 
-                BlendPolygon(dst, (y * dstW + x) * 4, red, green, blue, alpha * ia / 255, blend);
+                BlendPolygon(dst, (y * dstW + x) * 4, FragmentUnorm(red), FragmentUnorm(green), FragmentUnorm(blue),
+                             FragmentUnorm(alpha * alphaScale), blend);
             }
         }
     }
@@ -123,10 +128,11 @@ public static partial class SoftwareAffineRasterizer
     // runs right along a row, and a left edge runs up.
     private static bool TopLeft(long dx, long dy) => dy < 0 || (dy == 0 && dx > 0);
 
-    private static int Channel(uint a, uint b, uint c, int shift, double wa, double wb, double wc)
+    // A vertex colour's channel at a pixel, on 0..255 and unrounded, as the hardware interpolates it.
+    private static float Channel(uint a, uint b, uint c, int shift, double wa, double wb, double wc)
     {
         double value = ((a >> shift) & 0xff) * wa + ((b >> shift) & 0xff) * wb + ((c >> shift) & 0xff) * wc;
-        return value <= 0 ? 0 : value >= 255 ? 255 : (int)(value + 0.5);
+        return value <= 0 ? 0 : value >= 255 ? 255 : (float)value;
     }
 
     // A texture at (u, v), where 0 and 1 are its edges: the four texels around the point, taps clamped to the image.

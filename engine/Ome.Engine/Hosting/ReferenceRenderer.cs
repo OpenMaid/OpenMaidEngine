@@ -246,8 +246,10 @@ public sealed class ReferenceRenderer
     // Alpha-blend a solid tint (0xRRGGBB) rectangle over the buffer: the background and the transition overlay.
     private void FillQuad(int dstX, int dstY, int w, int h, long tint, float alpha)
     {
-        int ia = (int)(System.Math.Clamp(alpha, 0f, 1f) * 255);
+        // The fill's alpha reaches the blend as an 8-bit value, as a sprite's fragment does.
+        int ia = SoftwareAffineRasterizer.FragmentUnorm(System.Math.Clamp(alpha, 0f, 1f) * 255);
         if (ia == 0) return;
+        float opacity = ia / 255f, keep = 1 - opacity;
         long rasterStarted = Perf != null ? PerformanceFrameLog.Timestamp() : 0;
         int tr = (int)((tint >> 16) & 0xff), tg = (int)((tint >> 8) & 0xff), tb = (int)(tint & 0xff);
         byte[] dst = _pixels;
@@ -260,9 +262,9 @@ public sealed class ReferenceRenderer
             {
                 int dxp = dstX + x, dyp = dstY + y;
                 int di = (dyp * dw + dxp) * 4;
-                dst[di]     = (byte)((tr * ia + dst[di]     * (255 - ia)) / 255);
-                dst[di + 1] = (byte)((tg * ia + dst[di + 1] * (255 - ia)) / 255);
-                dst[di + 2] = (byte)((tb * ia + dst[di + 2] * (255 - ia)) / 255);
+                dst[di]     = SoftwareAffineRasterizer.Unorm(tr * opacity + dst[di] * keep);
+                dst[di + 1] = SoftwareAffineRasterizer.Unorm(tg * opacity + dst[di + 1] * keep);
+                dst[di + 2] = SoftwareAffineRasterizer.Unorm(tb * opacity + dst[di + 2] * keep);
                 dst[di + 3] = (byte)System.Math.Min(255, dst[di + 3] + ia);
             }
         Perf?.RecordFillLayer();

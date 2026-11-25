@@ -6,7 +6,11 @@ namespace Ome.Engine.Model;
 /// engine-re.md, "Object sampling"): a destination pixel is covered when its centre maps inside the source
 /// rectangle, and takes the bilinear blend of the four texels around that point, with 8-bit weights and
 /// coordinates clamped to the source image's edge (D3DTADDRESS_CLAMP), not to the rectangle. An integer
-/// translation puts every pixel centre on a texel centre, so it copies texels exactly.
+/// translation puts every pixel centre on a texel centre, so it copies texels exactly. It blends as the hardware and
+/// the GPU renderer do (docs/engine-re.md, "The blend's arithmetic"): the fragment, the texel's colour tinted and its
+/// alpha times the item's opacity, is worked out in floats and written to 8 bits (FragmentUnorm), and the blend is
+/// worked out in floats and rounded to the nearest value. AGE's screen and the GPU renderer's agree to the pixel;
+/// integer blends that truncated left a translucent layer up to two levels away.
 /// </summary>
 public static partial class SoftwareAffineRasterizer
 {
@@ -19,17 +23,17 @@ public static partial class SoftwareAffineRasterizer
                                 BlendKind blend = BlendKind.Alpha)
     {
         if (width <= 0 || height <= 0) return;
-        int istr = (int)(System.Math.Clamp(tintStrength, 0f, 1f) * 255);
-        int ia = (int)(System.Math.Clamp(opacity, 0f, 1f) * 255);
+        float strength = System.Math.Clamp(tintStrength, 0f, 1f);
+        float alphaScale = System.Math.Clamp(opacity, 0f, 1f);
         // A copy that writes every texel (BlendKind.CopyAll) writes even at opacity 0.
-        if (ia == 0 && blend != BlendKind.CopyAll) return;
+        if (alphaScale == 0 && blend != BlendKind.CopyAll) return;
         int tr=(int)(tint>>16&255), tg=(int)(tint>>8&255), tb=(int)(tint&255);
-        bool unmodulatedSourceOver = ia == 255 && istr == 0 && !multiplyTint
+        bool unmodulatedSourceOver = alphaScale == 1 && strength == 0 && !multiplyTint
                                      && blend is BlendKind.Alpha or BlendKind.Opaque;
         if (TryIntegerTranslation(localToDest, out int tx, out int ty))
         {
             BlitTranslated(dst, dstW, dstH, src, srcW, srcX, srcY, width, height,
-                           tx, ty, tr, tg, tb, istr, ia, multiplyTint, blend, unmodulatedSourceOver);
+                           tx, ty, tr, tg, tb, strength, alphaScale, multiplyTint, blend, unmodulatedSourceOver);
             return;
         }
         if (!localToDest.TryInverse(out var inv)) return;
@@ -38,7 +42,7 @@ public static partial class SoftwareAffineRasterizer
         if (localToDest.XY == 0 && localToDest.YX == 0 && x1 - x0 <= 4096)
         {
             BlitAxisAligned(dst, dstW, src, srcW, srcH, srcX, srcY, width, height, inv,
-                            x0, y0, x1, y1, tr, tg, tb, istr, ia, multiplyTint, blend,
+                            x0, y0, x1, y1, tr, tg, tb, strength, alphaScale, multiplyTint, blend,
                             unmodulatedSourceOver);
             return;
         }
@@ -49,7 +53,7 @@ public static partial class SoftwareAffineRasterizer
             Tap(srcX + p.X, srcW, out int xa, out int xb, out int wx);
             Tap(srcY + p.Y, srcH, out int ya, out int yb, out int wy);
             Sample(src, srcW, xa, xb, wx, ya, yb, wy, out int r, out int g, out int b, out int a);
-            BlendSample(dst, (y*dstW+x)*4, r, g, b, a, tr, tg, tb, istr, ia, multiplyTint, blend,
+            BlendSample(dst, (y*dstW+x)*4, r, g, b, a, tr, tg, tb, strength, alphaScale, multiplyTint, blend,
                         unmodulatedSourceOver);
         }
     }
@@ -58,7 +62,7 @@ public static partial class SoftwareAffineRasterizer
                                 Affine2D localToDest, long color, float opacity)
     {
         if (width <= 0 || height <= 0) return;
-        int a=(int)(System.Math.Clamp(opacity,0f,1f)*255); if(a==0)return;
+        float a = FragmentUnorm(System.Math.Clamp(opacity, 0f, 1f) * 255); if (a == 0) return;
         int r=(int)(color>>16&255),g=(int)(color>>8&255),b=(int)(color&255);
         if (TryIntegerTranslation(localToDest, out int tx, out int ty))
         {
@@ -128,7 +132,7 @@ public static partial class SoftwareAffineRasterizer
     }
 
     private static void BlendSample(byte[] dst, int di, int r, int g, int b, int a,
-                                    int tr, int tg, int tb, int istr, int ia, bool multiplyTint,
+                                    int tr, int tg, int tb, float strength, float alphaScale, bool multiplyTint,
                                     BlendKind blend, bool unmodulatedSourceOver)
     {
         if (unmodulatedSourceOver)
@@ -136,17 +140,20 @@ public static partial class SoftwareAffineRasterizer
             BlendUnmodulatedSourceOver(dst, di, r, g, b, a);
             return;
         }
-        int sa = a * ia / 255;
+        // The GPU renderer's fragment: the texel moved toward the tint by the strength (or multiplied by it), and its
+        // alpha times the opacity, in floats, each channel then written to 8 bits as the hardware does.
+        int sa = FragmentUnorm(a * alphaScale);
         if (sa == 0 && blend != BlendKind.CopyAll) return;
-        int sr = multiplyTint ? r * tr / 255 : (r * (255 - istr) + tr * istr) / 255;
-        int sg = multiplyTint ? g * tg / 255 : (g * (255 - istr) + tg * istr) / 255;
-        int sb = multiplyTint ? b * tb / 255 : (b * (255 - istr) + tb * istr) / 255;
+        float keep = 1 - strength;
+        int sr = FragmentUnorm(multiplyTint ? r * tr / 255f : r * keep + tr * strength);
+        int sg = FragmentUnorm(multiplyTint ? g * tg / 255f : g * keep + tg * strength);
+        int sb = FragmentUnorm(multiplyTint ? b * tb / 255f : b * keep + tb * strength);
         Blend(dst, di, sr, sg, sb, sa, blend);
     }
 
     private static void BlitTranslated(byte[] dst, int dstW, int dstH, byte[] src, int srcW,
                                        int srcX, int srcY, int width, int height, int tx, int ty,
-                                       int tr, int tg, int tb, int istr, int ia, bool multiplyTint,
+                                       int tr, int tg, int tb, float strength, float alphaScale, bool multiplyTint,
                                        BlendKind blend, bool unmodulatedSourceOver)
     {
         int x0 = System.Math.Max(0, tx), y0 = System.Math.Max(0, ty);
@@ -164,12 +171,8 @@ public static partial class SoftwareAffineRasterizer
             {
                 int u = x - tx;
                 int si = ((srcY + v) * srcW + (srcX + u)) * 4, di = (y * dstW + x) * 4;
-                int sa = src[si + 3] * ia / 255;
-                if (sa == 0 && blend != BlendKind.CopyAll) continue;
-                int sr = multiplyTint ? src[si] * tr / 255 : (src[si] * (255 - istr) + tr * istr) / 255;
-                int sg = multiplyTint ? src[si + 1] * tg / 255 : (src[si + 1] * (255 - istr) + tg * istr) / 255;
-                int sb = multiplyTint ? src[si + 2] * tb / 255 : (src[si + 2] * (255 - istr) + tb * istr) / 255;
-                Blend(dst, di, sr, sg, sb, sa, blend);
+                BlendSample(dst, di, src[si], src[si + 1], src[si + 2], src[si + 3], tr, tg, tb, strength, alphaScale,
+                            multiplyTint, blend, unmodulatedSourceOver: false);
             }
         }
     }
@@ -192,7 +195,7 @@ public static partial class SoftwareAffineRasterizer
     }
 
     private static void FillTranslated(byte[] dst, int dstW, int dstH, int width, int height,
-                                       int tx, int ty, int r, int g, int b, int a)
+                                       int tx, int ty, int r, int g, int b, float a)
     {
         int x0 = System.Math.Max(0, tx), y0 = System.Math.Max(0, ty);
         int x1 = (int)System.Math.Min(dstW, (long)tx + width);
@@ -210,7 +213,7 @@ public static partial class SoftwareAffineRasterizer
     private static void BlitAxisAligned(byte[] dst, int dstW, byte[] src, int srcW, int srcH,
                                         int srcX, int srcY, int width, int height, Affine2D inv,
                                         int x0, int y0, int x1, int y1,
-                                        int tr, int tg, int tb, int istr, int ia,
+                                        int tr, int tg, int tb, float strength, float alphaScale,
                                         bool multiplyTint, BlendKind blend, bool unmodulatedSourceOver)
     {
         int count = x1 - x0;
@@ -241,7 +244,7 @@ public static partial class SoftwareAffineRasterizer
                     if (xa < 0) continue;
                     Sample(src, srcW, xa, columns[slot + 1], columns[slot + 2], ya, yb, wy,
                            out int r, out int g, out int b, out int a);
-                    BlendSample(dst, (destinationRow + x) * 4, r, g, b, a, tr, tg, tb, istr, ia,
+                    BlendSample(dst, (destinationRow + x) * 4, r, g, b, a, tr, tg, tb, strength, alphaScale,
                                 multiplyTint, blend, unmodulatedSourceOver);
                 }
             }
@@ -263,16 +266,12 @@ public static partial class SoftwareAffineRasterizer
             dst[di + 3] = 255;
             return;
         }
-        int inverse = 255 - a;
-        dst[di] = (byte)((r * a + dst[di] * inverse) / 255);
-        dst[di + 1] = (byte)((g * a + dst[di + 1] * inverse) / 255);
-        dst[di + 2] = (byte)((b * a + dst[di + 2] * inverse) / 255);
-        dst[di + 3] = (byte)((a * a + dst[di + 3] * inverse) / 255);
+        Blend(dst, di, (float)r, g, b, a);
     }
 
     private static void FillAxisAligned(byte[] dst, int dstW, int width, int height, Affine2D inv,
                                         int x0, int y0, int x1, int y1,
-                                        int r, int g, int b, int a)
+                                        int r, int g, int b, float a)
     {
         int count = x1 - x0;
         bool[] includedColumns = System.Buffers.ArrayPool<bool>.Shared.Rent(count);
@@ -307,22 +306,45 @@ public static partial class SoftwareAffineRasterizer
     // test keeps out. The others blend the alpha by the colour's factors, as Direct3D 9 does with no separate alpha
     // blend, which shows in a render target with an alpha channel: SRCALPHA/INVSRCALPHA leaves a * a + d * (1 - a),
     // SRCALPHA/ONE adds a * a, and REVSUBTRACT takes a * a away.
-    private static void Blend(byte[] d,int i,int r,int g,int b,int a,BlendKind blend=BlendKind.Alpha){
-        if(blend is BlendKind.Copy or BlendKind.CopyAll){
-            d[i]=(byte)r;d[i+1]=(byte)g;d[i+2]=(byte)b;d[i+3]=(byte)a;
+    private static void Blend(byte[] d, int i, int r, int g, int b, int a, BlendKind blend = BlendKind.Alpha)
+        => Blend(d, i, (float)r, g, b, a, blend);
+
+    // The colour and alpha on 0..255, unrounded: the blend runs in floats, and each write rounds (Unorm).
+    private static void Blend(byte[] d, int i, float r, float g, float b, float a, BlendKind blend = BlendKind.Alpha)
+    {
+        if (blend is BlendKind.Copy or BlendKind.CopyAll)
+        {
+            d[i] = Unorm(r); d[i + 1] = Unorm(g); d[i + 2] = Unorm(b); d[i + 3] = Unorm(a);
             return;
         }
-        if(blend==BlendKind.Subtractive){
-            d[i]=(byte)System.Math.Max(0,d[i]-r*a/255);d[i+1]=(byte)System.Math.Max(0,d[i+1]-g*a/255);
-            d[i+2]=(byte)System.Math.Max(0,d[i+2]-b*a/255);d[i+3]=(byte)System.Math.Max(0,d[i+3]-a*a/255);
+        float alpha = a / 255f;
+        if (blend == BlendKind.Subtractive)
+        {
+            d[i] = Unorm(d[i] - r * alpha); d[i + 1] = Unorm(d[i + 1] - g * alpha);
+            d[i + 2] = Unorm(d[i + 2] - b * alpha); d[i + 3] = Unorm(d[i + 3] - a * alpha);
             return;
         }
-        if(blend==BlendKind.Additive){
-            d[i]=(byte)System.Math.Min(255,d[i]+r*a/255);d[i+1]=(byte)System.Math.Min(255,d[i+1]+g*a/255);
-            d[i+2]=(byte)System.Math.Min(255,d[i+2]+b*a/255);d[i+3]=(byte)System.Math.Min(255,d[i+3]+a*a/255);
+        if (blend == BlendKind.Additive)
+        {
+            d[i] = Unorm(d[i] + r * alpha); d[i + 1] = Unorm(d[i + 1] + g * alpha);
+            d[i + 2] = Unorm(d[i + 2] + b * alpha); d[i + 3] = Unorm(d[i + 3] + a * alpha);
             return;
         }
-        d[i]=(byte)((r*a+d[i]*(255-a))/255);d[i+1]=(byte)((g*a+d[i+1]*(255-a))/255);
-        d[i+2]=(byte)((b*a+d[i+2]*(255-a))/255);d[i+3]=(byte)((a*a+d[i+3]*(255-a))/255);
+        float inverse = 1 - alpha;
+        d[i] = Unorm(r * alpha + d[i] * inverse); d[i + 1] = Unorm(g * alpha + d[i + 1] * inverse);
+        d[i + 2] = Unorm(b * alpha + d[i + 2] * inverse); d[i + 3] = Unorm(a * alpha + d[i + 3] * inverse);
     }
+
+    /// <summary>A fragment's channel, a float on 0..255, as the hardware hands it to the blend: cut to 12 bits of
+    /// fraction, then the nearest 8-bit value. Measured on the GPU renderer's frames and native's render targets
+    /// (docs/engine-re.md, "The blend's arithmetic"): plain rounding writes 13 x 128 / 255 = 6.53 as 7, where the
+    /// hardware writes 6.</summary>
+    internal static byte FragmentUnorm(float value)
+        => Unorm(System.MathF.Floor(value * (FragmentSteps / 255f)) * (255f / FragmentSteps));
+
+    private const float FragmentSteps = 4096;
+
+    /// <summary>A float on 0..255 written to an 8-bit target as the hardware writes it: the nearest value,
+    /// clamped.</summary>
+    internal static byte Unorm(float value) => value <= 0 ? (byte)0 : value >= 255 ? (byte)255 : (byte)(value + 0.5f);
 }
