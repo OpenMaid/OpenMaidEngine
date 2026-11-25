@@ -129,8 +129,8 @@ public sealed class GameProfileSelectionTests
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);
     }
 
-    /// <summary>戦女神ZERO is at P1 (docs/adding-a-game.md): the engine names its install and reads all of it, and
-    /// nothing of it runs or saves. Its build is declared from 4.24J.</summary>
+    /// <summary>戦女神ZERO is at P2 (docs/adding-a-game.md): the engine names its install, reads all of it and boots it
+    /// by its own route to SC0000's first page, and nothing of it saves. Its build is declared from 4.24J.</summary>
     [Fact]
     public void ZeroIsBeingAddedFromHimegarisBuild()
     {
@@ -140,7 +140,7 @@ public sealed class GameProfileSelectionTests
                      (zero.SysFrontendId, zero.EngineBuildId, zero.EngineAbiId, zero.NaturalBootScript));
         Assert.Equal(["SYS4415"], zero.ScriptRevisions);
         Assert.True(zero.Matches(new GameCatalogIdentity("S4IC415", "戦女神ZERO")));
-        Assert.Equal(("P1", "none"), (zero.Support.PlayId, zero.Support.ModdingId));
+        Assert.Equal(("P2", "none"), (zero.Support.PlayId, zero.Support.ModdingId));
         Assert.False(zero.Support.IsPlayable);
         // No native save of 4.15D has been read, and its saved script frame differs from 4.24J's: its saves stay off.
         Assert.False(zero.PersistenceWritesEnabled);

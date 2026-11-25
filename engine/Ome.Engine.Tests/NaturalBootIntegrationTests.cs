@@ -332,6 +332,24 @@ public class NaturalBootIntegrationTests
         Assert.True(reachedAdv.VisibleObjectCount > 0);
     }
 
+    /// <summary>戦女神ZERO's P2 gate (docs/adding-a-game.md, step 6): its own boot goes through the logo and opening
+    /// movies and the title, then GAMESTART's game-mode box (BUNKI), whose 通常 goes to SC0000's first page, with no
+    /// opcode skipped (tools/drive/scenarios/bg0-opening.steps).</summary>
+    [Fact]
+    [Trait("Profile", "bg0")]
+    public void Bg0System4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("bg0");
+        // The title's Game Start entry (tools/drive/bg0.toml, title.start).
+        var (reachedAdv, entered) = RunNewGameToFirstAdvPage("bg0", gameRoot, [gameRoot], 700, 95);
+        Assert.Contains("TITLE.BIN", entered);
+        Assert.Contains("GAMESTART.BIN", entered);
+        Assert.Contains("BUNKI.BIN", entered);
+        Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+        Assert.EndsWith("「よし、これでこっちの動きは封じた！」", reachedAdv.Text);
+        Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
     /// 戦女神VERITA's opening scene through the game's ADV module, and its line is the first ADV page of a natural new
     /// game.</summary>

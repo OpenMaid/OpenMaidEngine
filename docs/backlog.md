@@ -787,6 +787,14 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     Splitter, a codec pack on the machine, so the profile refuses LAV's classes inside AGE (the driver's new
     `[[native.refuse_class]]`). `scenarios/bg0-opening.steps` runs the logo, the opening, the title, the game mode
     and SC0000's first six pages.
+  - **Step 6 is done, and it stands at P2 (2026-11-25):** the port's natural boot reaches SC0000's first page through
+    the logo, the opening, the title and the game-mode box with no opcode skipped, and with no change to the engine
+    (`Bg0System4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage`, the terminal gate of `validate.py --level full
+    --game bg0`). The opening scenario passes on the port as on native, at the same positions; the title, game-mode and
+    page 4 shots equal native's to the pixel, page 1's differ only in the wait icon's frame. So the scenario's ends of
+    op `0x25`'s crossfades and its draws match native; what neither shot shows is a crossfade's middle and an object
+    moving by fractions of a pixel, which 4.15D's blit draws at whole pixels (the step 4 list above): the sweep (P4)
+    compares those where a scene shows one.
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

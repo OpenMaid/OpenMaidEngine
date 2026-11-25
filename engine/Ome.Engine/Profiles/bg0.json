@@ -12,7 +12,7 @@
   "engineBuild": "4.15D",
   "engineAbiId": "SYS4415",
   "naturalBootScript": "SYSTEM4.BIN",
-  "support": { "play": "P1", "modding": "none" },
+  "support": { "play": "P2", "modding": "none" },
   "metadataReferences": {},
   "persistence": {
     "storageNamespace": "bg0",
