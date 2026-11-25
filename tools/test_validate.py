@@ -311,6 +311,25 @@ class GatePlanTests(unittest.TestCase):
             acceptance.command,
         )
 
+    def test_verita_full_uses_its_natural_boot_acceptance(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context = validate.paths.ToolContext.resolve(
+                "verita", root / "game", root / "extract", environ={}
+            )
+            plan = validate.build_gate_plan(
+                "full", Path("godot"), context.game_root, root / "state", context
+            )
+
+        keys = {gate.key for gate in plan}
+        self.assertNotIn("ome-cli-sweep", keys)
+        acceptance = next(gate for gate in plan if gate.key == "natural-boot-acceptance")
+        self.assertIn(
+            "FullyQualifiedName=NaturalBootIntegrationTests."
+            "VeritaSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage",
+            acceptance.command,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

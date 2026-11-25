@@ -311,6 +311,22 @@ public class NaturalBootIntegrationTests
         Assert.True(reachedAdv.VisibleObjectCount > 0);
     }
 
+    /// <summary>戦女神VERITA's P2 gate (docs/adding-a-game.md, step 6): its own boot goes through the title to SC0000's
+    /// first page, with no opcode skipped. Game Start goes straight to SC0000, as on native AGE
+    /// (tools/drive/scenarios/verita-opening.steps).</summary>
+    [Fact]
+    [Trait("Profile", "verita")]
+    public void VeritaSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("verita");
+        // The title's Game Start entry (tools/drive/verita.toml, title.start).
+        var (reachedAdv, entered) = RunNewGameToFirstAdvPage("verita", gameRoot, [gameRoot], 183, 338);
+        Assert.Contains("TITLE.BIN", entered);
+        Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+        Assert.EndsWith("フレスラント王国の国土の大半を占める広大なマータ砂漠。", reachedAdv.Text);
+        Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
     /// 創刻のアテリアル's opening scene through the game's ADV module, and its line is the first ADV page of a natural
     /// new game.</summary>

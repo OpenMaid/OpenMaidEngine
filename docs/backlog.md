@@ -623,8 +623,9 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
 - **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
   "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". It
-  stands at **P1** since 2026-11-24 (its manifest's `support`), on `feature/verita`: the engine names its install,
-  loads its catalog and decodes all of it, and nothing of it runs or saves. The install is `games/verita/`
+  stands at **P2** since 2026-11-24 (its manifest's `support`), on `feature/verita`: the engine names its install,
+  decodes all of it, and boots it by its own route through the title to SC0000's first page; nothing of it saves.
+  The install is `games/verita/`
   (`PROJECT-STRUCTURE.md`); its nearest build is Himegari's 4.24J.
   - **Done for P0 and P1.** The intake passes every check (`build/games/verita/intake.json`): 2,130 scripts (1,809
     base, 321 in three appends), 1,655,135 instructions, 262 distinct opcodes; saved prefix
@@ -648,7 +649,12 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     stays unchanged, and `rand-seed` counts the first battle's draws; the game draws none before it (`engine-re.md`,
     "Driving native AGE", Verita). A native save from the first field (slot 000), which loads back on native, is kept
     outside the repository in the native sandbox `field-ruins` (`--sandbox field-ruins`, or
-    `--seed native:field-ruins`). Next: the boot (step 6), the port passing the same scenario.
+    `--seed native:field-ruins`).
+  - **Step 6, the boot, is done (2026-11-24):** the port's own boot reached SC0000's first page with no opcode
+    skipped before any work, as the six opcodes without a handler are not on its route. The natural boot test
+    (`VeritaSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage`) is the terminal gate of
+    `validate.py --level full --game verita`, and the opening scenario passes on the port as on native, at the same
+    VM positions and with the same shots. Next: the six opcodes, the settings and the saves (step 7).
   - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
     and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` `load-agerc-module` and `0x24a` (`FIELD.BIN`),
     `0x35` (`BTL.BIN`) and `0x89` (`ALCHEMY.BIN`), one site each. The three AGERC ones are read (`engine-re.md`,
