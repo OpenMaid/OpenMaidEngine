@@ -1,0 +1,80 @@
+# Driving facts for 戦女神VERITA, read by tools/drive.py for both targets (native AGE and the port).
+# Points are native client pixels of the 1024x576 canvas (SYS4INI SCREENX, SCREENY). Its engine is AGE 4.24N
+# (SYS4424), whose EngineCtx is laid out differently from Himegari's 4.24J (vm-map/engine-ctx.toml describes
+# Himegari's), so the native field offsets are given here. Evidence: docs/engine-re.md, "Driving native AGE" and
+# "Himegari against Verita, triaged".
+
+[advance]
+point = "adv.next"        # where `advance` clicks: the middle of the canvas
+
+# The title's entries, read from native on 2026-11-24 (a column on the left; the middle of the canvas is none of them).
+# Game Start goes straight to SC0000.
+[points]
+"adv.next" = [512, 288]
+"title.extra" = [183, 293]       # Extra Story
+"title.start" = [183, 338]       # Game Start
+"title.load" = [183, 383]        # Load Data
+"title.room" = [183, 428]        # Eushully-chan Room
+"title.option" = [183, 473]      # Option
+"title.quit" = [183, 517]        # Quit
+# The character menu a right click opens on a page or the field (MENU), read from native on 2026-11-24: eight icons
+# round the middle of the canvas, each named as the cursor rests on it. Its Data Save opens the DATA SAVE page
+# (SAVE), ten slots a page, and a slot asks セーブしますか？ with はい above いいえ. Its Data Load and the title's
+# Load Data open the same page, which asks ロードしますか？.
+"menu.save" = [475, 355]         # データセーブ Data save
+"menu.load" = [545, 355]         # データロード Data load
+"menu.close" = [600, 305]        # 閉じる Close
+"slot.0" = [585, 57]             # 000, the first of the page's ten, 52 or 53 px apart
+"confirm.yes" = [466, 299]       # はい
+
+# Settings written into a sandbox profile's SYS4REG.INI before every sandboxed launch (as for the other games).
+[sandbox]
+settings_file = "SYS4REG.INI"
+
+[sandbox.settings]
+"display.ScreenMode" = 1
+"display.VirtualFullScreen" = 1
+
+[sandbox.quiet]
+"sound.Volume0" = 0
+
+# Native AGE only. The [native.*] tables are for the install's AGE.EXE, AGE 4.24N; its unpacked image is
+# build/engines/verita/engine-dump (Ghidra /verita/4.24N). Each value was found on 2026-11-24 from Himegari's by its
+# code:
+# - g_pEngineCtx is 0x5c8020: the main routine calls engine_ctx_construct@0x414180 on its allocation and stores the
+#   result there at 0x488ffd (mov [0x5c8020], eax), and the window procedure reads the ctx through it.
+# - The frame record keeps its layout from cur_ctx_index, 0x64 above 4.24J's: vm_operand_fetch@0x41c4a0 reads
+#   ctx+0x53d78 and indexes (curCtx + 0xb2e) * 0x78, which is ctx+0x53d90 + curCtx*0x78 (the pc);
+#   frame_pc_word_offset@0x4052a0 subtracts ctx+0x53d8c (the codebase), and hotspot_check_owner_script compares
+#   ctx+0x53dc8 (the resource id).
+[native.engine]
+ctx_global = 0x5c8020
+frame_stride = 0x78
+frame_count = 20
+cur_ctx_index = 0x53d78
+frame_codebase = 0x53d8c
+frame_pc = 0x53d90
+frame_script_resource_id = 0x53dc8
+
+# input_set_polling_enabled is 0x460b50, byte for byte Himegari's 0x460180 (input manager +0x1820). The window
+# procedure's WM_ACTIVATE case (age_main_window_proc@0x487b90) calls it with (windowed && wParam == WA_INACTIVE) on
+# the input manager at ctx+0x408, windowed being ctx+0x9a2fc; the call at 0x487e5e returns to 0x487e63. It is the one
+# place in the image with that case's code.
+[native.keep_polling]
+setter = 0x460b50
+activate_return = 0x487e63
+gate = 0x1c28
+
+# The drive step rand-seed replaces op 0x60's rand() draw at the instruction its call returns to: op 0x60's handler
+# at 0x4274f0 calls _rand@0x5528fb (the MSVC generator, by its 0x343fd multiplier) at 0x42752a, before it fetches an
+# operand, as Himegari's does.
+[native.rand]
+op60_rand_return = 0x42752f
+
+[native.build."4.24N"]
+sha256 = "3d529fd9479981f461076faaebaccfa63899aa812a0d09e7588059f2841d8287"   # packed, as installed
+
+[[native.dialog]]
+match = "データが壊れています．"
+answer = "yes"
+reason = "registration check (set:IsReggist == 0) on copied installs; Yes continues, No exits"

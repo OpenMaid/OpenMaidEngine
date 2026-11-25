@@ -186,7 +186,7 @@ The driver is needed before the port boots: it shows what native does, and it ma
 - Write `tools/drive/<id>.toml`: the canvas points (advance, title, new game), the sandbox's settings, and the
   native facts: the context global, the frame-record offsets, the input-polling setter and its call's return, op
   `0x60`'s `rand` return, the build's hash, and the dialogs to answer. Each is found from the nearest game's by
-  its code, not by its address (`engine-re.md`, "Driving native AGE", has the three games'):
+  its code, not by its address (`engine-re.md`, "Driving native AGE", has each game's):
   - the context global is where the main routine stores the context constructor's result;
   - `cur_ctx_index` is the field every operand accessor multiplies by `0x78`, and the frame record's layout has
     not changed between builds;
@@ -196,7 +196,8 @@ The driver is needed before the port boots: it shows what native does, and it ma
   scenario both targets will run (`tools/drive/scenarios/<id>-opening.steps`).
 - **Done when** `drive.py --game <id> native start` reaches the title in a sandbox, `state` reads VM positions,
   `shot` captures, `rand-seed` reports draws, `stop` closes the game its own way, and the install checks
-  unchanged.
+  unchanged. A game may draw nothing for a long time: Verita draws first at its first battle, several hundred pages
+  in, so find the draw sites in the disassembly (`random-modulo`) and play to one.
 
 ### Step 6: boot (P2)
 

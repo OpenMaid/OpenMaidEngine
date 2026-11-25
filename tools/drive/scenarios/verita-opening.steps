@@ -1,0 +1,25 @@
+# 戦女神VERITA's opening: the logos, the title, Game Start and the first pages of SC0000. It is the scenario of the
+# game's P2 gate (docs/adding-a-game.md, step 6); native AGE passes it since 2026-11-24. Game Start goes straight to
+# SC0000, whose first page waits at SC0000@0xa2d. Between its second and third pages a transition runs for three
+# seconds, and native AGE ignores a click during it, so the scenario waits for page 3 by its position.
+#   py -3.11 -X utf8 tools/drive.py --game verita native|port start
+#   py -3.11 -X utf8 tools/drive.py --game verita native|port run tools/drive/scenarios/verita-opening.steps
+#   py -3.11 -X utf8 tools/drive.py --game verita native|port stop
+# After its twentieth page SC0000 calls OP.BIN, the opening movie (about two minutes); the scenario stops long before.
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+wait 6
+shot verita-opening-title
+click title.start
+wait-state top=SC0000@0xa2d timeout=90  # page 1
+settle timeout=20
+shot verita-opening-page1
+advance 1
+expect top=SC0000@0xa49                 # page 2
+advance 1                               # a timed transition of three seconds follows (set-anim-clock 0xbb8)
+wait-state top=SC0000@0xaf7 timeout=30  # page 3
+settle timeout=20
+advance 1
+expect top=SC0000@0xb46                 # page 4
+shot verita-opening-page4

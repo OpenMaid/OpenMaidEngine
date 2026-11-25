@@ -641,7 +641,14 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     has them: its furigana arm the glyph timer, its settings loader binds `display:VirtualFullScreenType`, and its
     fade to zero clears the retained track when it is armed. The last is 4.33G's and 4.38D's too
     (`AudioRules.ZeroFadeClearsTrack`), which the port lacked for Kamidori and 創刻のアテリアル. The virtual full
-    screen's display paths and the save folder's Windows check are not modelled. Next: driving native (step 5).
+    screen's display paths and the save folder's Windows check are not modelled.
+  - **Step 5, native AGE is driven (2026-11-24):** `tools/drive/verita.toml` (the build's engine facts, the title's
+    entries, the character menu and the save page) and `tools/drive/scenarios/verita-opening.steps`: the title, Game
+    Start and SC0000's first four pages, which native passes. `state`, `shot`, `stop` and the sandbox work, the install
+    stays unchanged, and `rand-seed` counts the first battle's draws; the game draws none before it (`engine-re.md`,
+    "Driving native AGE", Verita). A native save from the first field (slot 000), which loads back on native, is kept
+    outside the repository in the native sandbox `field-ruins` (`--sandbox field-ruins`, or
+    `--seed native:field-ruins`). Next: the boot (step 6), the port passing the same scenario.
   - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
     and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` `load-agerc-module` and `0x24a` (`FIELD.BIN`),
     `0x35` (`BTL.BIN`) and `0x89` (`ALCHEMY.BIN`), one site each. The three AGERC ones are read (`engine-re.md`,

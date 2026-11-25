@@ -8032,6 +8032,36 @@ new-game page. The middle of the canvas lies on Game Start, so clicking it at th
   `0x42772f`); the drive step `rand-seed` replaces the draw there.
 - A copied install raises the same データが壊れています． registration box, answered Yes.
 
+**戦女神VERITA (SYS4424, AGE 4.24N, 2026-11-24).** `tools/drive/verita.toml` names its own values. Each was found
+from Himegari's by its code:
+
+- `g_pEngineCtx` is `0x5c8020`: the main routine calls `engine_ctx_construct@0x414180` on its allocation and stores
+  the result there at `0x488ffd`.
+- `cur_ctx_index` is `ctx+0x53d78`, `0x64` above 4.24J's ("The context offsets move in steps"). `vm_operand_fetch`
+  (`0x41c4a0`) indexes `(curCtx + 0xb2e) * 0x78`, which is the pc at `ctx+0x53d90 + curCtx * 0x78`;
+  `frame_pc_word_offset@0x4052a0` subtracts the codebase `ctx+0x53d8c`, and `hotspot_check_owner_script` compares the
+  resource id `ctx+0x53dc8`. So the frame record keeps its layout.
+- `input_set_polling_enabled` is `0x460b50`, byte for byte Himegari's `0x460180`. `age_main_window_proc@0x487b90`
+  calls it at `0x487e5e` with `windowed && wParam == WA_INACTIVE` (windowed is `ctx+0x9a2fc`) on the input manager
+  at `ctx+0x408`, and the call returns to `0x487e63`. The gate is `ctx+0x1c28`, as in the other builds.
+- Op `0x60`'s handler (`0x4274f0`) calls `_rand@0x5528fb` at `0x42752a`, which returns to `0x42752f`. The handler the
+  `/v2` image had named `op_0x60_handler` (`0x427610`; 4.24N `0x428190`) is op `0xac`'s by the dispatch table, and
+  both images name it so now.
+
+A driven native run confirmed them the same day (`tools/drive/scenarios/verita-opening.steps`): the frame stack reads
+`SYSTEM4 > TITLE`, and after Game Start `SYSTEM4 > SC0000`, whose first page waits at `SC0000@0xa2d`. The title lists
+its entries in a column on the left, so the middle of the canvas is none of them.
+- After its twentieth page SC0000 calls `OP.BIN`, the opening movie (resource `0x51d6`): it plays modally for about
+  two minutes, and `shot` captures black throughout.
+- Between SC0000's second and third pages a transition runs for three seconds (`set-anim-clock 0xbb8`, then a yield
+  at `0xad7`); native settles during it and ignores a click.
+- The game draws no random number before its first battle: through SC0000, SC2000 to SC2020 and the first field,
+  several hundred pages, `rand-seed` counts none. The first battle's start draws 19 (`BTL@0x422`, `BTL@0x876a`,
+  `SETEN@0x138`, and 16 at `SETENP@0x6c0`).
+- The character menu opens on a right click on a page or the field (`MENU`), and its Data Save writes `SAVE00.DAT`
+  (2,437,564 bytes), `SAVE00.STH`, `SAVE.DAT` and `RT.DAT` in the save folder's `SAVE`.
+- A copied install raises the same データが壊れています． registration box, answered Yes.
+
 The driver uses those values in place of `engine-ctx.toml` ([tools-reference.md](tools-reference.md), "Game driver").
 
 ### ADV right-click/X system-menu path (2026-07-21)
