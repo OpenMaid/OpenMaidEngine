@@ -235,6 +235,17 @@ runtime begins at the `operator new[]` thunk `0x583dd8` (150 callers; `__securit
 Unlike 4.24J and 4.33, most of 4.38D's engine code from about `0x4a0000` on is not 16-aligned, so alignment does
 not mark where the runtime starts.
 
+**Verita** (戦女神VERITA, EU011), from its intake on 2026-11-24 (`Ome.Cli intake`; the report is
+`build/games/verita/intake.json`). `games/verita/` has a packed `AGE.EXE` of 1,183,744 bytes whose version resource
+reads 4.24N, SHA-256 `3d529fd9479981f461076faaebaccfa63899aa812a0d09e7588059f2841d8287`; its catalog is `S4IC424`
+and every script `SYS4424`. The nearest supported build is Himegari's 4.24J. It is not dumped yet, so it has no row
+in the table above. Its catalog holds an `AGERC.DLL` of its own (`sys4-format-notes.md`, "The catalog's
+`AGERC.DLL`"), and both copies export the same twenty functions, most of them a map's collision and lookups:
+`_FindClash`, `_GetEv`, `_GetLand`, `_InitRect`, `_SetChParams`, `_SetMapParams`, the `_SetMapEvP{N,X,Y}`,
+`_SetMapLandP{N,X,Y}`, `_SetMapLandIdx`, `_SetMapWallP{N,X,Y}` and `_SetMapWallCr` setters, and the shell's
+`_OperateMenu`, `_ShowDialog` and `_GetInstance`. Its scripts' only callers of AGERC exports are `FIELD.BIN`'s 17
+`set-agerc-export` and 19 `call-agerc-export` sites, opcodes no supported game uses.
+
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
 an opcode's facts are those of its handler and three callee levels. Compiler and layout idioms are weak facts:

@@ -1,7 +1,7 @@
 """Shared game-aware path context for repository tools.
 
 Every path is derived from this file. Tools may be invoked with the common options
-``--game`` (``--profile`` is its old spelling, the same option), ``--game-root``, and
+``--game`` (``--profile``, its old spelling, is refused: it names a player profile now), ``--game-root``, and
 ``--extracted-root``; this module consumes those options once, by their exact names, and
 exposes one immutable :class:`ToolContext`. With no options or environment variables, the
 historical Himegari workspace remains the default.

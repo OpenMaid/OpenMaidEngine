@@ -621,6 +621,20 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     pairs (the window procedure, the main tick, import call sites) would reach them.
 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
+- **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
+  "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". On
+  `feature/verita`; the install is `games/verita/` (`PROJECT-STRUCTURE.md`). Its nearest build is Himegari's 4.24J.
+  - **Step 1, the intake** (`adding-a-game.md`), passes every check (`build/games/verita/intake.json`): 2,130 scripts
+    (1,809 base, 321 in three appends), 1,655,135 instructions, 262 distinct opcodes. Saved prefix
+    `[2525977, 1, 438, 1, 1, 1]`, full banks `[13075889, 2, 69390, 2, 2, 2]`; 38 settings pairs, no key the other
+    games lack.
+  - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
+    and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` and `0x24a` (`FIELD.BIN`), `0x35` (`BTL.BIN`)
+    and `0x89` (`ALCHEMY.BIN`), one site each. Their registry entries are Kelebek's names and operand counts only.
+  - **The catalog's `AGERC.DLL` exports a map engine** (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`"): the two
+    agerc-export opcodes call it. The port cannot load a Windows DLL on every platform, so what `FIELD.BIN` gets from
+    it has to be read and implemented in the engine.
+  - Done when the game is at P3 and M3 and its manifest says so, as Arterial's item records.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same
   day from `feature/arterial`: the engine names its install, decodes all of it, has a handler for every opcode its scripts

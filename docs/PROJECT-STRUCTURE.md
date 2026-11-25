@@ -37,8 +37,12 @@ S:\Game Hacking\Eushully\Himegari\           ← workspace root
 │   │                                         English `$n$*.bin`). No profile of its own: used only by the
 │   │                                         port's translation tests and translated runs
 │   │                                         (docs/asset-resolution-re.md).
-│   └── arterial/                             創刻のアテリアル (AGE 4.38D), the `arterial` profile's install
-│                                             (a reference install until 2026-11-19; docs/adding-a-game.md).
+│   ├── arterial/                             創刻のアテリアル (AGE 4.38D), the `arterial` profile's install
+│   │                                         (a reference install until 2026-11-19; docs/adding-a-game.md).
+│   ├── verita/                               戦女神VERITA (AGE 4.24N, catalog `S4IC424`), being added
+│   │                                         (docs/adding-a-game.md; backlog "Onboard 戦女神VERITA"). No profile yet.
+│   └── verita_install/                       Verita's installer media (`VERITA.mdf`, the `VERITA_1xx.exe` updates),
+│                                             not an install: no tool reads it.
 │
 ├── extracted/                               ← DERIVED (game-side) — extracted ALF contents,
 │   │                                          ~3.9 GB, regenerable with a local archive extractor.

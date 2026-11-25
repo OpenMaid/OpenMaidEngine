@@ -155,6 +155,16 @@ permissive than AGE's fixed registry so unimplemented keys in another profile re
 AGE's registered `640x480` defaults when absent or nonpositive/nonnumeric, while unsafe RGBA allocations
 are rejected before presentation construction. Append `S4AC` catalogs do not own startup settings.
 
+#### The catalog's `AGERC.DLL` (AGE 4.24N) — OBSERVED (2026-11-24)
+
+戦女神VERITA's catalog (`S4IC424`, 21,002 entries in `DATA1.ALF` to `DATA7.ALF`) lists a file type no supported
+game's has: entry 20760, `AGERC.DLL`, 761,856 bytes in `DATA1.ALF`. It is a PE image with named sections and an
+export table. The install's own `AGERC.DLL` (340,992 bytes) looks packed: its sections are unnamed, and most hold far
+fewer bytes in the file than in memory. Both export the same twenty names,
+at different addresses (`engine-re.md`, "Comparing engine builds", Verita). Which copy native AGE loads, and when, is
+not read yet. Its nine `.CUR` cursors (`CURSOR01.CUR` to `CURSOR09.CUR`) are a type another supported catalog has:
+the intake names only `.DLL` as new.
+
 ### SYS4INI file header: VM bank dimensions — CONFIRMED (2026-10-06)
 
 The global-bank dimensions live in the **uncompressed file header**, not in the LZSS stream.
