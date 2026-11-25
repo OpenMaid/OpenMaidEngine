@@ -1,0 +1,28 @@
+# One experience award (Lua scripting spec §9.2). Hand-written: the event names its point and gives each field's cell,
+# by the names layout/globals.json exports.
+
+[[event]]
+name = "verita.experience.award"
+point = "verita.experience.before_add"
+description = """
+One character's experience award, before ADDEXP adds it: from a won battle (RESULT, for each character of the \
+battle), and from the map events, scenes and stage clears that call ADDEXP. A handler that changes amount changes \
+what is added; the levels it brings are worked out from it after the handler."""
+
+[[event.field]]
+name = "amount"
+at = "shared_number"             # ADDEXP's input: the experience its caller set just before calling it
+type = "int"
+access = "rw"
+
+[[event.field]]
+name = "character"
+at = "character_arg_id"          # the character the award goes to
+type = "int"
+access = "r"
+
+[[event.field]]
+name = "level"
+at = "character_levels[character_arg_id]"
+type = "int"
+access = "r"

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Ome.Script.Compile;
 
 namespace Ome.Script.Layout;
 
@@ -52,6 +53,19 @@ public sealed class OmsLayout
     [JsonPropertyName("temp_base")] public uint? TempBase { get; set; }
     /// <summary>The script's integer-reference registers start in the order LP1, LP0 rather than LP0, LP1.</summary>
     [JsonPropertyName("ref_swap")] public bool? RefSwap { get; set; }
+    /// <summary>The script numbers its first three integer-reference registers LP1, LP2, LP0 (Verita's scenes).</summary>
+    [JsonPropertyName("ref_rotate")] public bool? RefRotate { get; set; }
+
+    /// <summary>The script's order of integer-reference temporaries, from <see cref="RefSwap"/> and
+    /// <see cref="RefRotate"/>, of which a sidecar sets one at most.</summary>
+    [JsonIgnore]
+    public RefOrder RefOrder => (RefSwap, RefRotate) switch
+    {
+        (true, true) => throw new InvalidDataException("a sidecar sets both ref_swap and ref_rotate"),
+        (true, _) => RefOrder.Swap,
+        (_, true) => RefOrder.Rotate,
+        _ => RefOrder.Plain,
+    };
     /// <summary>Temporary slots of statements whose original allocation differs from the canonical plan, keyed by the
     /// index of the statement's first instruction.</summary>
     [JsonPropertyName("temps")] public SortedDictionary<int, OmsTempOverride>? Temps { get; set; }
@@ -71,6 +85,7 @@ public sealed class OmsLayout
     [JsonIgnore]
     public bool IsEmpty => Magic == null && Field6 == null && LocalCounts == null && Data == null
                            && ItemDwords == null && Tables == null && TempBase == null && RefSwap == null
+                           && RefRotate == null
                            && Temps == null && Library == null;
 
     private static readonly ScriptJsonContext Json = new(new JsonSerializerOptions

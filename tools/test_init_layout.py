@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Pure tests for the table layout inference of tools/init_arterial.py (synthetic records, no game content)."""
+"""Pure tests for the table layout inference of tools/init_layout.py (synthetic records, no game content)."""
 from __future__ import annotations
 
 import unittest
 from unittest import mock
 
-import init_arterial
-from init_arterial import Leader
+import init_layout
+from init_layout import AreaRule, Leader
+
+RULE = AreaRule(("T",), 0x9883, 0xc8)
 
 
 def table(leader: Leader, fields: list[tuple[str, int, int, list[int]]], ids: list[int]):
@@ -28,7 +30,7 @@ class InferArraysTests(unittest.TestCase):
         leader = Leader("GS", 0x1000, 100)
         fields = [("G", 0x5000, 1, [0]), ("G", 0x5064, 1, [0]), ("G", 0x6000, 3, [0, 1, 2]), ("GS", 0x1064, 2, [0, 1])]
         records, cells = table(leader, fields, [1, 2, 5, 9, 40])
-        arrays, loose = init_arterial.infer_arrays(leader, records, cells, {})
+        arrays, loose = init_layout.infer_arrays(leader, records, cells, {})
         self.assertEqual([], loose)
         self.assertEqual([("G", 0x5000, 1), ("G", 0x5064, 1), ("G", 0x6000, 3), ("GS", 0x1000, 1), ("GS", 0x1064, 2)],
                          [(a.bank, a.base, a.stride) for a in arrays])
@@ -42,7 +44,7 @@ class InferArraysTests(unittest.TestCase):
         records, cells = table(leader, [("G", 0x5000, 1, [0]), ("G", 0x6000, 2, [0, 1])], [1, 2, 3])
         cells[("G", 0x5000 + 2)] = (4, 777)        # layer 4 rewrites record 2's field
         cells[("G", 0x6000 + 2 * 7 + 1)] = (4, 5)  # and gives record 7 a cell no record wrote
-        arrays, loose = init_arterial.infer_arrays(leader, records, cells, {})
+        arrays, loose = init_layout.infer_arrays(leader, records, cells, {})
         self.assertEqual([], loose)
         scalar = next(a for a in arrays if a.base == 0x5000)
         self.assertEqual({0: 2, 4: 1}, dict(scalar.columns[0]["layers"]))
@@ -51,9 +53,9 @@ class InferArraysTests(unittest.TestCase):
     def test_a_column_zero_nobody_writes_takes_the_base_the_scripts_index(self) -> None:
         leader = Leader("GS", 0x1000, 100)
         records, cells = table(leader, [("G", 0x6000, 4, [1, 2])], [1, 2, 3])
-        arrays, _ = init_arterial.infer_arrays(leader, records, cells, {})
+        arrays, _ = init_layout.infer_arrays(leader, records, cells, {})
         self.assertEqual(0x6001, next(a for a in arrays if a.bank == "G").base)   # the lowest column written
-        arrays, _ = init_arterial.infer_arrays(leader, records, cells, {("G", 0x6000): {}})
+        arrays, _ = init_layout.infer_arrays(leader, records, cells, {("G", 0x6000): {}})
         found = next(a for a in arrays if a.bank == "G")
         self.assertEqual((0x6000, {1, 2}), (found.base, set(found.columns)))
 
@@ -61,16 +63,16 @@ class InferArraysTests(unittest.TestCase):
         leader = Leader("GS", 0x1000, 10)
         records, cells = table(leader, [("G", 0x5000, 1, [0])], [1, 2])
         cells[("G", 0x9000)] = (0, 1)
-        _, loose = init_arterial.infer_arrays(leader, records, cells, {})
+        _, loose = init_layout.infer_arrays(leader, records, cells, {})
         self.assertEqual([("G", 0x9000)], loose)
 
     def test_a_leader_with_a_stride_keeps_one_record_through_its_cells(self) -> None:
         leader = Leader("G", 0x100, 10, stride=5)
         order = [("G", 0x100 + 5 * 1 + 1), ("G", 0x100 + 5 * 1 + 2), ("G", 0x900 + 1), ("G", 0x100 + 5 * 2 + 2),
                  ("G", 0x900 + 2)]
-        with mock.patch.object(init_arterial, "write_order",
+        with mock.patch.object(init_layout, "write_order",
                                side_effect=lambda table, layer: order if layer == 0 else []):
-            records, before = init_arterial.records_of("T", leader)
+            records, before = init_layout.records_of("T", leader)
         self.assertEqual([(0, 1, [("G", 0x901)]), (0, 2, [("G", 0x902)])], records)
         self.assertEqual({}, before)
 
@@ -84,7 +86,7 @@ class InferArraysTests(unittest.TestCase):
             cells[("GS", 0x1000 + rid)] = (1, "name")
             cells[stamp(rid)] = (1, 1)
             cells[field_(rid)] = (1, rid)
-        arrays, loose = init_arterial.infer_arrays(leader, records, cells, {}, {1: [stamp(ids[0])]})
+        arrays, loose = init_layout.infer_arrays(leader, records, cells, {}, {1: [stamp(ids[0])]})
         self.assertEqual([], loose)
         self.assertEqual([("G", 0x5000), ("G", 0x7000), ("GS", 0x1000)], [(a.bank, a.base) for a in arrays])
         self.assertEqual(ids, next(a for a in arrays if a.base == 0x7000).columns[0]["ids"])
@@ -92,12 +94,12 @@ class InferArraysTests(unittest.TestCase):
     def test_records_of_several_kinds_each_start_at_their_own_leading_array(self) -> None:
         leader = Leader("G", 0x100, 10, also=(0x10a,))
         order = [("G", 0x101), ("G", 0x900 + 1), ("G", 0x10a + 4), ("G", 0x114 + 4), ("G", 0x900 + 4)]
-        with mock.patch.object(init_arterial, "write_order",
+        with mock.patch.object(init_layout, "write_order",
                                side_effect=lambda table, layer: order if layer == 0 else []):
-            records, _ = init_arterial.records_of("T", leader)
+            records, _ = init_layout.records_of("T", leader)
         self.assertEqual([(0, 1, [("G", 0x901)]), (0, 4, [("G", 0x118), ("G", 0x904)])], records)
         cells = {address: (0, 1) for address in order}
-        arrays, loose = init_arterial.infer_arrays(leader, records + [(0, 5, [("G", 0x119), ("G", 0x905)])],
+        arrays, loose = init_layout.infer_arrays(leader, records + [(0, 5, [("G", 0x119), ("G", 0x905)])],
                                                    cells | {("G", 0x10f): (0, 1), ("G", 0x119): (0, 1),
                                                             ("G", 0x905): (0, 1)}, {})
         self.assertEqual([], loose)
@@ -107,7 +109,7 @@ class InferArraysTests(unittest.TestCase):
         leader = Leader("GS", 0x1000, 100)
         fields = [("G", 0x5000, 1, [0]), ("G", 0x5064, 1, [0]), ("G", 0x50c8, 2, [0, 1]), ("G", 0x5199, 1, [0])]
         records, cells = table(leader, fields, [1, 2, 5, 9, 40])
-        arrays, _ = init_arterial.infer_arrays(leader, records, cells, {})
+        arrays, _ = init_layout.infer_arrays(leader, records, cells, {})
         self.assertEqual({0x5000: True, 0x5064: True, 0x50c8: True, 0x5199: False, 0x1000: True},
                          {a.base: a.on_grid for a in arrays})
 
@@ -122,9 +124,9 @@ class InferArraysTests(unittest.TestCase):
             "  0x00016:  eq (local-int 0x0) (global-int 0x9883) 0x1",
             "  0x0001d:  copy-to-global (global-int 0x9999) 0xc8",
         ]
-        self.assertEqual([(0x1000, 1), (0x10c8, 3), (0x1320, 2)], init_arterial.cleared_arrays(listing))
+        self.assertEqual([(0x1000, 1), (0x10c8, 3), (0x1320, 2)], init_layout.cleared_arrays(listing, RULE))
         with self.assertRaises(ValueError):
-            init_arterial.cleared_arrays(["  0x00000:  copy-to-global (global-int 0x1000) 0x7"])
+            init_layout.cleared_arrays(["  0x00000:  copy-to-global (global-int 0x1000) 0x7"], RULE)
 
     def test_an_area_tables_writes_belong_to_the_area_tested_before_them(self) -> None:
         listing = [
@@ -137,13 +139,14 @@ class InferArraysTests(unittest.TestCase):
             "  0x00024:  mov (global-int 0x1002) (local-int 0x4)",
         ]
         self.assertEqual([(2, "GS", 0x2001, '"a place"'), (2, "G", 0x1001, "0x3"), (7, "G", 0x1002, "(local-int 0x4)")],
-                         init_arterial.area_writes(listing))
+                         init_layout.area_writes(listing, RULE))
 
     def test_every_leader_names_a_boot_table_a_bank_and_a_capacity(self) -> None:
-        for name, leader in init_arterial.LEADERS.items():
-            self.assertRegex(name, r"^[A-Z0-9]+INIT$")
-            self.assertIn(leader.bank, ("G", "GS"))
-            self.assertGreater(leader.capacity, 0)
+        for game in (init_layout.ARTERIAL, init_layout.VERITA):
+            for name, leader in game.items():
+                self.assertRegex(name, r"^[A-Z0-9]+INIT2?$")
+                self.assertIn(leader.bank, ("G", "GS"))
+                self.assertGreater(leader.capacity, 0)
 
 
 if __name__ == "__main__":

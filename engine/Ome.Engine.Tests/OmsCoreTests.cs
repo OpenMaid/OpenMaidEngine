@@ -204,6 +204,48 @@ public class OmsCoreTests
     }
 
     [Fact]
+    public void AConditionalJumpToNextNamesNoTargetAndRoundTrips()
+    {
+        IrScript script = Compile("""
+            if L[2] goto next
+            if !L[3] goto next else goto done
+            done:
+            exit
+            """);
+        Assert.Equal("a0(9:2,-1,-1) a0(9:3,@2,-1) 2()", Shape(script));
+        var (first, second, decompiled) = SourceRoundTrip("""
+            L[1] = G[1] == 1
+            if L[1] goto next
+            G[0] = 2
+            exit
+            """);
+        Assert.Equal(first, second);
+        Assert.Contains("if G[0x1] == 0x1 goto next", decompiled);
+        Assert.DoesNotContain("@op", decompiled);
+    }
+
+    [Fact]
+    public void AReferenceTemporaryNeverTakesASlotTheStatementNames()
+    {
+        // Verita's SORTSALLY: the value is read through two temporaries and written through LP1, so the canonical
+        // slots 0 and 1 would point LP1 at the index before the write.
+        IrScript script = Compile("""
+            LP[1] = G[0x10][G[0x20][L[0]]]
+            LP[0] = G[0x10][G[0x20][L[0]]]
+            exit
+            """);
+        Assert.Equal("61(c:2,3:20,9:0) 61(c:0,3:10,c:2) 55(c:1,c:0) 61(c:2,3:20,9:0) 61(c:1,3:10,c:2) 55(c:0,c:1) 2()",
+            Shape(script));
+    }
+
+    [Fact]
+    public void GotoNextIsOnlyAConditionalJumpsTarget()
+    {
+        var error = Assert.Throws<OmsSyntaxException>(() => Compile("goto next\nexit"));
+        Assert.Contains("only a conditional jump's target", error.Message);
+    }
+
+    [Fact]
     public void StatementsCoverCallsNotesAtomicAndRawForms()
     {
         IrScript script = Compile("""
@@ -428,9 +470,9 @@ public class OmsCoreTests
             L[1] = L[2] + L[3] * L[4]
             exit
             """);
-        // The original compiler bound the first statement's element to LP[2] and gave the second statement's
-        // temporary L[7]; the pool still starts at L[5], the slot above the highest named local.
-        IrScript original = Retarget(Retarget(compiled, IrOperand.Literal(0xC, 1), IrOperand.Literal(0xC, 2)),
+        // The original compiler bound the first statement's element to LP[3], which no reference order gives, and gave
+        // the second statement's temporary L[7]; the pool still starts at L[5], the slot above the highest named local.
+        IrScript original = Retarget(Retarget(compiled, IrOperand.Literal(0xC, 1), IrOperand.Literal(0xC, 3)),
             IrOperand.Literal(0x9, 5), IrOperand.Literal(0x9, 7), first: 4);
         var (first, second, decompiled) = RoundTrip(IrEncoder.Encode(original));
         Assert.Equal(first, second);
@@ -439,7 +481,7 @@ public class OmsCoreTests
         OmsLayout layout = decompiled.Layout;
         Assert.Null(layout.TempBase);
         Assert.NotNull(layout.Temps);
-        Assert.Equal([2u], layout.Temps![0].Refs);
+        Assert.Equal([3u], layout.Temps![0].Refs);
         Assert.Null(layout.Temps[0].Ints);
         Assert.Equal([7u], layout.Temps[4].Ints);
     }
@@ -458,6 +500,27 @@ public class OmsCoreTests
         var (first, second, decompiled) = RoundTrip(IrEncoder.Encode(swapped));
         Assert.Equal(first, second);
         Assert.True(decompiled.Layout.RefSwap);
+        Assert.Null(decompiled.Layout.Temps);
+    }
+
+    [Fact]
+    public void ScriptsWhoseFirstThreeReferenceRegistersAreRotatedRecordOneFlag()
+    {
+        // Verita's scenes number a statement's integer references LP1, LP2, LP0: a page's voice check emits its three
+        // lookups into LP0, LP2 and LP1, which neither the plain order ([2, 1, 0]) nor the swap ([2, 0, 1]) gives.
+        IrScript compiled = Compile("""
+            store_shared_profile_int(G[1][G[2][G[3][G[4]]]])
+            G[5] = G[6][G[7][G[8]]]
+            exit
+            """);
+        IrScript rotated = compiled;
+        foreach (var (from, to) in new (uint From, uint To)[] { (0, 9), (2, 0), (1, 2), (9, 1) })
+            rotated = Retarget(rotated, IrOperand.Literal(0xC, from), IrOperand.Literal(0xC, to));
+        Assert.Equal([0u, 2u, 1u], rotated.Code.Take(3).Select(i => i.Operands[0].Value));
+        var (first, second, decompiled) = RoundTrip(IrEncoder.Encode(rotated));
+        Assert.Equal(first, second);
+        Assert.True(decompiled.Layout.RefRotate);
+        Assert.Null(decompiled.Layout.RefSwap);
         Assert.Null(decompiled.Layout.Temps);
     }
 
@@ -1213,6 +1276,19 @@ public class OmsCoreTests
     }
 
     [Fact]
+    public void AnUnguardedLibrarySubLinkedAfterTheScriptEndsItFirst()
+    {
+        // Verita's SC5000 ends in a call, and without its sidecar its first unit is a header coroutine: falling off a
+        // script's end ends it, so the linker puts an exit before a sub control could reach.
+        IrScript script = Compile("use test.adv\nprologue()\n");
+        Assert.Equal("8f(@2) 2() 55(3:2e47,0:0) 5()", Shape(script));
+        byte[] first = IrEncoder.Encode(script);
+        var (second, decompiled) = IdiomaticRoundTrip(first);
+        Assert.Equal(first, second);
+        Assert.Contains("    prologue()\n    exit\n", decompiled.Source);
+    }
+
+    [Fact]
     public void LibraryCopiesAreRecognizedInScriptsCompiledWithoutTheModule()
     {
         // The first sub is a byte-identical copy of test.adv's prologue; the second differs in one operand.
@@ -1249,7 +1325,6 @@ public class OmsCoreTests
     [InlineData("use test.adv\nconst HERO = 1\n", "'HERO' is already declared by module test.adv")]
     [InlineData("use test.adv\nG[1] = twice(1, G[2])\n", "template 'twice' has no result")]
     [InlineData("use test.adv\nexit\nsub prologue {\n return\n}\n", "'prologue' is defined by the script and by module test.adv")]
-    [InlineData("use test.adv\nprologue()\n", "control falls into sub 'prologue'")]
     [InlineData("static if 1 {\n exit\n}\n", "static if belongs in a template body")]
     [InlineData("inline again() {\n again()\n}\nagain()\n", "template 'again' expands itself")]
     [InlineData("inline bad(v: const = none) {\n G[1] = v\n}\nbad()\n", "'none' has no value here")]
@@ -1390,6 +1465,30 @@ public class OmsCoreTests
     public void InstalledKamidoriCorpusRoundTripsThroughCoreSource()
         => AssertCorpus("kamidori", "SYS4433");
 
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "verita")]
+    [Fact]
+    public void InstalledVeritaCorpusRoundTripsThroughCoreSource()
+        => AssertCorpus("verita", "SYS4424");
+
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "verita")]
+    [Fact]
+    public void InstalledVeritaCanonicalRebuildIsAFixedPoint()
+        => AssertCorpus("verita", "SYS4424", fixedPoint: true);
+
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "verita")]
+    [Fact]
+    public void InstalledVeritaCorpusRoundTripsThroughIdiomaticSource()
+        => AssertCorpus("verita", "SYS4424", level: OmsSourceRoundTrip.IdiomaticLevel);
+
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "verita")]
+    [Fact]
+    public void InstalledVeritaIdiomaticRebuildIsAFixedPoint()
+        => AssertCorpus("verita", "SYS4424", fixedPoint: true, level: OmsSourceRoundTrip.IdiomaticLevel);
+
     private static void AssertCorpus(string game, string abiId, bool fixedPoint = false,
                                      string level = OmsSourceRoundTrip.CoreLevel)
     {
@@ -1398,11 +1497,10 @@ public class OmsCoreTests
         Assert.True(File.Exists(sys4Ini), $"install not found at {gameRoot}");
         Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
         var store = new Sys4AssetStore(catalog, gameRoot, gameRoot);
-        string profile = abiId == "SYS4422" ? "himegari" : "kamidori";
         // The modules the linker compiles with (modding from a release spec §5.1); the source modules only at the
         // idiomatic level.
-        List<GameModule> modules = Ome.Mods.Linking.GameToolchain.Modules(Ome.Mods.Linking.GameToolchain.Shipped(profile),
-                                                                          profile, catalog);
+        List<GameModule> modules = Ome.Mods.Linking.GameToolchain.Modules(Ome.Mods.Linking.GameToolchain.Shipped(game),
+                                                                          game, catalog);
         if (level != OmsSourceRoundTrip.IdiomaticLevel) modules.RemoveAll(module => module.Source != null);
         OmsSourceRoundTripReport report = OmsSourceRoundTrip.Run(
             catalog.EnumerateScripts().Select(packed =>
@@ -1416,7 +1514,11 @@ public class OmsCoreTests
         {
             // Gate 5: the scene library and the dialogue template lift everywhere they occur, and no lift is abandoned.
             Assert.Empty(report.LiftFailures ?? []);
-            Assert.True(report.LibrarySubs > report.Scripts * 10, $"library subs {report.LibrarySubs}");
+            // Each script that links the library lifts more than ten of its subs on average. Verita's 2,130 scripts include
+            // about 1,900 that are no scene and link none, so the floor counts the linking scripts, not every script.
+            Assert.True(report.LibraryScripts > 0, "no script links the library");
+            Assert.True(report.LibrarySubs > report.LibraryScripts * 10,
+                $"library subs {report.LibrarySubs} in {report.LibraryScripts} scripts");
             Assert.True(report.TemplateLifts > 20000, $"template lifts {report.TemplateLifts}");
         }
         if (fixedPoint)

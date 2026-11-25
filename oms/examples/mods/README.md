@@ -54,6 +54,23 @@ ran the same scenarios on native AGE.
   The game itself draws modes 2 and 3 only in motion. It targets `native`; `tools/drive/scenarios/arterial-object-blends.steps`
   takes the frame on both targets.
 
+- `example.verita-prologue-line` is Verita's first mod (`docs/modding/games/verita.md`): a line before the first
+  page of its opening scene (site 0xa14, the instruction that resets the text layout), through `verita.adv`.
+  `NaturalBootIntegrationTests.VeritaPrologueFragmentIsTheFirstAdvPage` boots a new game into it, and the exported
+  `SC0000.BIN` shows the line on native AGE.
+- `example.verita-speaker-name` is Verita's base mod example (M3): a data file of `verita.tables` that renames the
+  name plate セリカ (speaker 1) shows, at `verita.data.layered`. `tools/drive/scenarios/port/verita-speaker-name.steps`
+  checks the cell at the title and plays a new game to her first line. It targets `extended`, so it runs in the port
+  only.
+- `example.verita-debug-menu` opens the developers' debug menu, which Verita's title builds but never shows, from the
+  title's Quit (`docs/modding/games/verita.md`, "The debug menu"). It targets `native`; the exported `TITLE.BIN`
+  opens the same menu on native AGE.
+- `example.verita-event-log` logs every event `verita-base` raises, with its fields, gives one item at
+  `verita.data.ready` through the base mod's `give_item`, and keeps the list for the driver's `lua` step;
+  `example.verita-map-block` is a data file whose dungeon part gives map 11's block 31 its second music as its first.
+  `tools/drive/scenarios/port/verita-debug-events.steps` runs the three: 迷宮マップ１ (the map event, and the changed
+  block), then ＡＤＶデバッグ（ＰＧ用） (the experience award).
+
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs
   `ADDEXP.BIN` with it and with the guide's OMS patch, and both leave the same state. It targets `extended`, so it

@@ -144,6 +144,10 @@ exit                // end the script
 note "text"         // a comment compiled into the bytecode (the engine ignores it)
 ```
 
+A conditional jump can also name `else goto other`, and `if c goto next` names no target at all: it tests `c` and goes
+on to the next statement either way, so `next` cannot name a label. Decompiled scripts show it where the original
+names no target for either branch.
+
 **Subroutines** are `sub name { … }`. A sub sits where you write it, and control may not fall into it, so put subs
 after the code's `exit`. A sub can bind parameters to cells, and the call then assigns them before jumping:
 

@@ -74,15 +74,17 @@ public sealed record CallArgument(Expr Value, bool Out, string? Name = null);
 /// <summary><c>name(args)</c>: an intrinsic, or a local subroutine/label called with no arguments.</summary>
 public sealed record CallStatement(SourceSpan Span, string Name, IReadOnlyList<CallArgument> Arguments) : Statement(Span);
 
-public enum JumpKind { Label, Break, Continue }
+public enum JumpKind { Label, Break, Continue, Next }
 
-/// <summary>A jump destination: a named label or the innermost loop's exit/continue point.</summary>
+/// <summary>A jump destination: a named label, the innermost loop's exit/continue point, or (<c>goto next</c>, only
+/// in a conditional jump) no jump at all: the jcc operand that names no target, so control goes on either way.</summary>
 public sealed record JumpTarget(JumpKind Kind, string? Label = null)
 {
     public override string ToString() => Kind switch
     {
         JumpKind.Break => "break",
         JumpKind.Continue => "continue",
+        JumpKind.Next => "goto next",
         _ => $"goto {Label}",
     };
 }
@@ -90,7 +92,8 @@ public sealed record JumpTarget(JumpKind Kind, string? Label = null)
 /// <summary><c>goto L</c>, <c>break</c> or <c>continue</c>.</summary>
 public sealed record JumpStatement(SourceSpan Span, JumpTarget Target) : Statement(Span);
 
-/// <summary><c>if [!]c goto/break/continue [else goto …]</c>: one jcc (spec §7.1).</summary>
+/// <summary><c>if [!]c goto/break/continue [else goto …]</c>: one jcc (spec §7.1). <c>if c goto next</c> is a jcc that
+/// names neither target: it tests the condition and goes on whatever its value.</summary>
 public sealed record ConditionalJumpStatement(
     SourceSpan Span, Expr Condition, bool Negated, JumpTarget Target, JumpTarget? Else) : Statement(Span);
 

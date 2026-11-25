@@ -100,11 +100,11 @@ public sealed class GameProfileSelectionTests
         Assert.Equal("SYS4438", Ome.Engine.Vm.EngineBuilds.ForProfile(arterial).AbiId);
     }
 
-    /// <summary>戦女神VERITA is at P3 (docs/adding-a-game.md): every opcode has a handler, its build is declared from
-    /// 4.24J, and its saves load on native AGE and the port alike (tools/drive/scenarios/verita-save-load.steps).
-    /// </summary>
+    /// <summary>戦女神VERITA is at P3 and M3 (docs/adding-a-game.md): every opcode has a handler, its build is declared
+    /// from 4.24J, its saves load on native AGE and the port alike (tools/drive/scenarios/verita-save-load.steps), and
+    /// its base mod, verita-base, names its cells, raises its events and applies its data files.</summary>
     [Fact]
-    public void VeritaIsBeingAddedFromHimegarisBuild()
+    public void VeritaIsAddedFromHimegarisBuild()
     {
         GameProfileManifest verita = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("verita"));
 
@@ -112,7 +112,7 @@ public sealed class GameProfileSelectionTests
                      (verita.SysFrontendId, verita.EngineBuildId, verita.EngineAbiId, verita.NaturalBootScript));
         Assert.Equal(["SYS4424"], verita.ScriptRevisions);
         Assert.True(verita.Matches(new GameCatalogIdentity("S4IC424", "戦女神VERITA")));
-        Assert.Equal(("P3", "none"), (verita.Support.PlayId, verita.Support.ModdingId));
+        Assert.Equal(("P3", "M3"), (verita.Support.PlayId, verita.Support.ModdingId));
         Assert.True(verita.Support.IsPlayable);
         Assert.True(verita.PersistenceWritesEnabled);
         Assert.Null(verita.Persistence.ReadOnlyReason);
@@ -120,7 +120,10 @@ public sealed class GameProfileSelectionTests
         Assert.Equal([2525977, 1, 438, 1, 1, 1], verita.Persistence.BankDimensions.ToArray());
         Assert.Null(verita.DirectSceneDiagnostics);
         Assert.Null(verita.DebugSceneLaunch);
-        Assert.Null(verita.Launcher);
+        // The publisher's banner and box art for the game (eu11), as for the other games.
+        GameLauncherArt art = Assert.IsType<GameLauncherArt>(verita.Launcher);
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu11/banner_eu11a.jpg", art.Banner!.Url.AbsoluteUri);
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu11/eu11_package.jpg", art.Cover!.Url.AbsoluteUri);
         Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(verita);
         Assert.Equal(("4.24N", "SYS4424"), (build.Id, build.AbiId));
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);

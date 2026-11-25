@@ -276,6 +276,13 @@ still handled on their own. Each change should be behaviour-neutral and pass the
 - **Prelude coverage.** About 2.4k dialogue pages stay core statements: pages that interpolate `GS[…]`, carry
   furigana or span several rows. A scene-skeleton template would also replace the copied skeleton in
   `example.prologue`.
+- **Arterial's unbalanced `atomic`.** `TALENTEFFECT.BIN` opens an atomic section (op `0x1f4`) inside one
+  `if (G[0x36e6] & 1) != 1` block and closes it (op `0x1f5`) inside a later one, so the core decompiler cannot nest it
+  and leaves the two as `@op` statements: `raw-statements=2` at the core and idiomatic levels and their fixed points
+  (the round trip stays byte-identical). Arterial has no corpus tests in `OmsCoreTests`, which hold the other three
+  games to zero raw statements, and its core temporary overrides (50,283, 8.3% of the folded instructions) are above the
+  tests' 5% bound. Done when such a pair prints as source (a structured form, or a language form for an unbalanced
+  section), and Arterial has the four corpus tests.
 - **Allocator residue (optional).** The remaining temporary-slot overrides (OMS spec §13) and Kamidori's explicit
   `L[0x0]` in `place_scene_background` (394 sidecars) only matter for sidecar-free byte identity.
 - **The `extended` compile mode.** The language design gives each target a mode (OMS spec §3.3). Under `extended` a
@@ -627,7 +634,9 @@ From the user's design pass on the built site (2026-11-22). The export's design 
 - **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
   "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". It
   stands at **P3** since 2026-11-25 (its manifest's `support`), on `feature/verita`: every opcode has a handler, its
-  build is declared, and its saves load on native AGE and the port alike.
+  build is declared, and its saves load on native AGE and the port alike. Its modding level is **M3** since
+  2026-11-25: script mods, text packages, Lua mods and data files work through its base mod `verita-base`
+  (`modding/games/verita.md`).
   The install is `games/verita/`
   (`PROJECT-STRUCTURE.md`); its nearest build is Himegari's 4.24J.
   - **Done for P0 and P1.** The intake passes every check (`build/games/verita/intake.json`): 2,130 scripts (1,809
@@ -685,11 +694,45 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     `0x32`'s shrink and the reference renderer's blend were brought to native's (`engine-re.md`, "Scaled surface
     rectangle copy" and "The blend's arithmetic").
   - **The compiler census** finds two shapes Himegari's and Kamidori's have none of: 5 conditional jumps with no
-    target and 2 negative immediates (`build/games/verita/compiler-census.json`). Open Maid Script's round trip (M1)
-    shows whether it keeps them.
+    target and 2 negative immediates (`build/games/verita/compiler-census.json`). The round trip keeps both (M1,
+    below).
+  - **The script level, M1, is reached (2026-11-25).** All 2,130 scripts round-trip byte for byte at the core and the
+    idiomatic level, and the canonical rebuild, the idiomatic rebuild and the patch probe each run the 232 scenes
+    equivalent to the originals. The scenes keep their integer-reference temporaries in a third order, rotated
+    (`ref_rotate`, the OMS design spec §7.2), which the decompiler picks per script, as it picks the swap.
+    `mods/verita-base/oms/adv.oms` lifts 8,531 library subs and 34,546 pages, 46.3% of the instructions, and its
+    speaker enum names the 157 speakers the scenes set. `example.verita-prologue-line` links, shows its line as the
+    first page on native AGE and the port, pixel for pixel alike, and has a workspace test. A language package with
+    three lines and a name ran in the port. Pages with furigana, an interpolated name or several `show_text` calls
+    stay core statements, as in the other games ("Prelude coverage" above).
+  - **The data level, M2, is reached (2026-11-25).** In: the extraction, the layout tool `tools/init_layout.py`
+    (`init_arterial.py` until then, now with each game's leaders), the layout and a reading of every boot table and
+    the on-demand ones (`verita-data-tables.md`), and the registry `vm-map/globals-verita.toml` with 7,575 names, 50
+    record tables and four scopes (`dungeon`, `war_stage`, `town`, `puzzle`); the script index, 159 script notes
+    (`vm-map/scripts-verita.toml`) and the entity declarations (24 kinds; four of the export's 838 pictures are
+    explicit). What M2 leaves open is the data document's last section, "What is not decoded": arrays with no reader
+    or no writer, fields read but not understood, the war game's routine rules, the scene dispatch's tags, the six
+    tables without a leader and three oddities in the data. Each is done when that document and the registry say it.
+  - **The base mod level, M3, is reached (2026-11-25).** `mods/verita-base/` declares four events at four named
+    points (`vm-map/patch-points-verita.toml`): the boot's data layered and ready, a dungeon map loaded, and one
+    character's experience award, whose amount is `shared_number`. It accepts `verita.tables` (boot tables at
+    `verita.data.layered`, a dungeon map's part at `verita.map.loaded`) and gives `give_item`. `ModLuaLinkTests`
+    binds every event on the install, runs INIT2 with the boot events and runs the helper;
+    `example.verita-speaker-name` renames セリカ's name plate (`tools/drive/scenarios/port/verita-speaker-name.steps`),
+    and the map and experience events and a map part ran through the title's debug menu
+    (`tools/drive/scenarios/port/verita-debug-events.steps`). What M3 leaves open:
+    - **Chains and loaders without an event:** `SCJUMP`'s chain, the loaders of a town, a war stage and a box puzzle
+      (the registry's scopes `town`, `war_stage` and `puzzle`, which no data file can give a part yet), the shop and
+      the battle's tables. Done when a mod needs one and it is added, or never.
+    - **A battle's own award** was not reached in a run: the debug menu's 戦闘 opens a battle against an enemy with
+      11,440 HP, which a driven run did not win. Done when a run raises `verita.experience.award` from `RESULT`
+      (`RESULT@0x9ae`).
+  - **Next, by the plan:** the sweep (P4).
   - **Left out of steps 2 and 3:** the Ghidra image's packer API sites are not restored and its imports not typed
     (153 calls into the stub page), as Arterial's.
-  - Done when the game is at P3 and M3 and its manifest says so, as Arterial's item records.
+
+  The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-25. The item stays for the open points
+  above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same
   day from `feature/arterial`: the engine names its install, decodes all of it, has a handler for every opcode its scripts
@@ -842,7 +885,7 @@ From the user's design pass on the built site (2026-11-22). The export's design 
       scene command each stands for was not traced. Rename where a better reading turns up; a module sub's name
       is not an export.
   - **The data level, M2, is reached (2026-11-20).** In: the extraction, the executed boot image (145
-    scripts), the layout tool `tools/init_arterial.py` with its tests, the layout of all 280 arrays of the 29 boot
+    scripts), the layout tool `tools/init_layout.py` (then `init_arterial.py`) with its tests, the layout of all 280 arrays of the 29 boot
     tables with a reading for each, the four on-demand tables, the append dispatch and the scene dispatch's
     protocol (`arterial-data-tables.md`), and the registry `vm-map/globals-arterial.toml` with 361 names and 27
     record tables under one scope. No table lies in the saved prefix; the copies the game makes into saved cells

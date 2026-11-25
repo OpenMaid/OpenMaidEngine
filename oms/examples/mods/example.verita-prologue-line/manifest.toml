@@ -1,0 +1,9 @@
+omp = 1
+id = "example.verita-prologue-line"
+name = "Verita prologue line"
+version = "1.0.0"
+description = "Inserts a line before the first page of Verita's opening scene."
+
+[game]
+profile = "verita"
+target = "native"

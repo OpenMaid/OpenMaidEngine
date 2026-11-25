@@ -290,8 +290,13 @@ public sealed class Parser
                 }
             }
             case "goto":
+            {
                 Next();
-                return Finish(new JumpStatement(token.Span, new JumpTarget(JumpKind.Label, Expect(TokenKind.Identifier).Text)));
+                Token label = Expect(TokenKind.Identifier);
+                if (label.Text == "next")
+                    throw new OmsSyntaxException(label.Span, "goto next goes on to the next statement: it is only a conditional jump's target (if c goto next)");
+                return Finish(new JumpStatement(token.Span, new JumpTarget(JumpKind.Label, label.Text)));
+            }
             case "break":
                 Next();
                 return Finish(new JumpStatement(token.Span, new JumpTarget(JumpKind.Break)));
@@ -638,12 +643,16 @@ public sealed class Parser
         return Finish(statement);
     }
 
+    /// <summary>A conditional jump's <c>goto</c> target: a label, or <c>next</c>, the jcc operand that names no target.</summary>
+    private static JumpTarget GotoTarget(Token label)
+        => label.Text == "next" ? new JumpTarget(JumpKind.Next) : new JumpTarget(JumpKind.Label, label.Text);
+
     private JumpTarget ParseJumpTarget()
     {
         Token token = Expect(TokenKind.Identifier);
         return token.Text switch
         {
-            "goto" => new JumpTarget(JumpKind.Label, Expect(TokenKind.Identifier).Text),
+            "goto" => GotoTarget(Expect(TokenKind.Identifier)),
             "break" => new JumpTarget(JumpKind.Break),
             "continue" => new JumpTarget(JumpKind.Continue),
             _ => throw new OmsSyntaxException(token.Span, $"expected goto, break or continue, found {token}"),

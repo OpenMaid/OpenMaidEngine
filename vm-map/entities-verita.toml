@@ -1,0 +1,686 @@
+# 戦女神VERITA's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals-verita.toml (its tables, their [table.refs],
+# its globals), vm-map/patch-points-verita.toml and the profile's saved prefix, and writes
+# build/games/verita/entities.json for the exporter. The tables are described in docs/verita-data-tables.md.
+#
+# The conventions are Kamidori's (vm-map/entities-kamidori.toml): scripts named without the `$n$` prefix and `.BIN`;
+# the story flags and scenes that gate a record left to the modder data; a field published when it means something to
+# a player, so sort keys, append stamps, routines, sound and sprite machinery stay modder data; what a value means left
+# to the registry's value facets (words, the game's names, scale); and a note only where the label and value leave a
+# reader guessing. A field whose meaning the data document does not state is not published.
+#
+# ITINIT is one table for items, equipment, spells, arts and the enemies' actions, and it is one kind here: the
+# exporter links every reference to a table to that table's first kind, so a kind for each id range would leave the
+# drops, recipes and treasures that name a weapon or a spell linking to the wrong kind. Its category and class are
+# its filters instead.
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after every layer (docs/verita-data-tables.md, "How the data
+# gets into memory").
+boot = { script = "INIT2", read_at = "verita.boot.data_ready" }
+# The scripts whose stored values may be published: INIT2 itself (it writes the hook chains and its constants), the
+# *INIT and *INIT2 table scripts (AMINIT2, OBINIT2, BTANINIT2) and their `$n$` layers, and AUTORUN, which the appends
+# run.
+builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery (CGINIT) and the H-scene replays (SPINIT).
+excluded_builders = ["CGINIT", "SPINIT"]
+# No derived scripts: INIT2's CALCREVISE runs only for a character who has joined (G[0x118fd8 + i] & 0x101 == 1, a
+# saved cell, 0 at a cold boot), and its three re-entries (RMINIT, the map's picture, QUINIT) only on a load.
+# The information screens whose shown text is data: the item descriptions (ITMES), the skill descriptions (SSMES), the
+# glossary (VIMES) and the character profiles (CIMES). TIMES, the titles' text, is not one: the cell it branches on,
+# G[0xaa108c], is in neither the data document nor the registry. Each is a hook chain whose base comes first, and a
+# description runs the base script alone, so a record an append adds has its text in that append's `$n$` layer only.
+text_scripts = ["ITMES", "SSMES", "VIMES", "CIMES"]
+# The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
+# declarations publish (2026-11-25, 838 pictures): one battle figure, the bottomless girl CPB088A, and the nude plant
+# girl, whose character art CD056A shares its art with the status pictures CS026AA and CS026ZA (her battle figures,
+# CPB026A and CPB645A, show none of it). Revealing but covered art (CS108AA, CS105AA, CS058AA, CS012AA, the angels
+# CD055A, CS025AA and CS037AA, the event picture EI055) and the featureless bodies of the water and ice elementals
+# (CD061A, CPB141A to CPB146A) are not on the list.
+explicit_pictures = ["CPB088A", "CD056A", "CS026AA", "CS026ZA"]
+
+[[kind]]
+id = "unit"
+table = "unit"
+about = "Every enemy, and the body each party character fights with: its stats at its base level and their growth, equipment, skills, drops and capture."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "sex", "boss_class", "width", "height", "defense_element", "defense_element_level",
+    "base_level", "max_level", "max_hp", "max_mp", "max_tp", "attack", "defense", "magic_attack", "magic_defense",
+    "attack_count", "defense_count", "physical_resistance", "mental_resistance", "physical_speed", "mental_speed",
+    "luck", "max_hp_growth", "max_mp_growth", "max_tp_growth", "attack_growth", "defense_growth",
+    "magic_attack_growth", "magic_defense_growth", "attack_count_growth", "defense_count_growth",
+    "physical_resistance_growth", "mental_resistance_growth", "physical_speed_growth", "mental_speed_growth",
+    "luck_growth", "accuracy", "evasion", "starting_fs", "max_fs",
+    "weapon", "armor", "accessory", "action_ids", "skill_levels", "money", "drop_items", "drop_chances",
+    "capture_item", "capture_level",
+]
+filters = ["boss_class", "defense_element", "sex"]
+# Units of one name differ by the level their stats are given at.
+qualifiers = ["base_level"]
+marks = { boss_class = "Boss" }
+# The battle sprite (a CPB… picture), and the bestiary's own picture where it is not the sprite (an EI… picture).
+pictures = { sprite = "battle_sprite", bestiary = "book_picture" }
+
+[[kind.group]]
+name = "drops"
+fields = ["drop_items", "drop_chances"]
+
+[kind.labels]
+description = "How it fights"
+width = "Width in cells"
+height = "Height in cells"
+defense_element_level = "Defense element level"
+weapon = "Weapon"
+armor = "Armour"
+accessory = "Accessory"
+action_ids = "Actions"
+skill_levels = "Skills"
+drop_items = "Item"
+drop_chances = "Chance (%)"
+capture_item = "Captured, gives"
+capture_level = "捕縛 level needed"
+starting_fs = "Starting FS"
+max_fs = "Max FS"
+
+[kind.notes]
+boss_class = "The highest boss class among a battle's enemies picks the battle's music."
+defense_element = "It takes this one where its armour gives none."
+base_level = "The level its stats are given at: each grows by its growth for every level above it."
+max_level = "An enemy's level lies between its base and max levels, and rises toward the party's average level."
+action_ids = "The actions its AI may use; an empty slot is its weapon."
+skill_levels = "Its level of each skill; a character's title adds its own, to at most 5."
+money = "Paid for each defeat; a character's unit gives it to the party on joining."
+drops = "Each item a defeat may drop and its chance; a character's unit gives them to the party on joining."
+capture_item = "The summon stone gained by capturing it with 性魔術, which needs the 捕縛 level beside it."
+starting_fs = "An enemy's FS when the battle starts."
+
+[kind.referenced_as]
+weapon = "Initial weapon of"
+armor = "Initial armour of"
+accessory = "Initial accessory of"
+action_ids = "Used by units"
+skill_levels = "Units that have it"
+drop_items = { heading = "Dropped by", details = ["drop_chances"] }
+capture_item = { heading = "Gained by capturing", details = ["capture_level"] }
+
+[[kind]]
+id = "character"
+table = "character"
+about = "The party's characters, each with the unit it fights with; a title's master, an item's holder and its exclusive users are characters."
+exists = "unit_id"
+# A character has no name of its own: the game shows its unit's.
+title = "unit_id"
+fields = ["unit_id"]
+
+[kind.labels]
+unit_id = "Unit"
+
+[kind.referenced_as]
+unit_id = "Party character"
+
+[[kind]]
+id = "title"
+table = "title"
+about = "A character's titles: what earns each, its class and master, the class ranks it grants, its skills and its bonuses."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "class", "master_id", "required_level", "required_title", "special_skill_ids", "special_skill_levels",
+    "skill_levels", "hp_bonus", "mp_bonus", "tp_bonus", "accuracy_bonus", "evasion_bonus", "attack_bonus",
+    "defense_bonus", "magic_attack_bonus", "magic_defense_bonus", "magic_power_bonus", "attack_count_bonus",
+    "defense_count_bonus", "physical_resistance_bonus", "mental_resistance_bonus", "physical_speed_bonus",
+    "mental_speed_bonus", "luck_bonus",
+]
+filters = ["class"]
+pictures = { portrait = "status_portrait", battle = "battle_portrait", cutin = "cutin_picture", face = "map_face" }
+
+[[kind.group]]
+name = "class_ranks"
+fields = ["special_skill_ids", "special_skill_levels"]
+
+[kind.labels]
+description = "How it fights"
+master_id = "Master"
+required_title = "Earned after"
+class_ranks = "Class ranks granted"
+special_skill_ids = "Class"
+special_skill_levels = "Rank"
+skill_levels = "Skills"
+
+[kind.notes]
+required_level = "-1: never earned by level; 0: no level needed. For a Master or 支援 title the master's level counts."
+class_ranks = "The rank each class reaches when the title is earned; only a 使徒 or 召喚 title grants them."
+skill_levels = "Skill levels it adds to the character's own."
+
+[kind.referenced_as]
+required_title = "Earned before"
+master_id = "Master of titles"
+special_skill_ids = { heading = "Granted by titles", details = ["special_skill_levels"] }
+skill_levels = "Given by titles"
+
+[[kind]]
+id = "item"
+table = "item"
+about = "Every item, weapon, armour, spell and art, and the enemies' actions: rank and class, elements, area, bonuses, costs, conditions, prices and growth."
+exists = "name"
+title = "name"
+# A school's tree (SKINIT) names an action's prerequisites, and IMINIT an equipment's growth, by the item's id.
+joins = ["item_growth", "action_tree"]
+fields = [
+    "category", "class", "rank", "damage_kind", "attack_element", "attack_element_level", "defense_element",
+    "defense_element_level", "reach", "target_kind", "area_width", "area_height",
+    "owners", "exclusive_users", "required_skill", "female_only", "cursed", "once_per_battle", "charges",
+    "accuracy", "evasion", "physical_attack", "physical_defense", "attack_count", "defense_count", "magic_attack",
+    "magic_defense", "magic_power", "physical_resistance", "mental_resistance", "physical_speed", "mental_speed",
+    "luck", "ct_rate", "max_hp", "max_mp", "max_tp", "hp", "mp", "tp", "fs", "control_rate_change",
+    "condition_levels", "equip_condition_levels", "granted_skill", "granted_skill_level", "buy_price", "sell_price",
+    "item_growth.kind", "item_growth.costs", "item_growth.accuracy", "item_growth.evasion",
+    "item_growth.physical_attack", "item_growth.physical_defense", "item_growth.attack_count",
+    "item_growth.defense_count", "item_growth.magic_attack", "item_growth.magic_defense", "item_growth.magic_power",
+    "item_growth.physical_speed", "item_growth.mental_speed", "item_growth.ct_rate", "item_growth.element_level",
+    "item_growth.result_item", "action_tree.prerequisites",
+]
+filters = ["category", "class", "rank", "damage_kind"]
+# A player's spell and an enemy's action may share a name: the class (敵魔, 敵必) and the rank tell them apart.
+qualifiers = ["class", "rank"]
+
+# A row for each growth level the item reaches, from the first: what that level adds.
+[[kind.group]]
+name = "growth"
+fields = [
+    "item_growth.accuracy", "item_growth.evasion", "item_growth.physical_attack", "item_growth.physical_defense",
+    "item_growth.attack_count", "item_growth.defense_count", "item_growth.magic_attack",
+    "item_growth.magic_defense", "item_growth.magic_power", "item_growth.physical_speed",
+    "item_growth.mental_speed", "item_growth.ct_rate", "item_growth.element_level",
+]
+
+[kind.labels]
+attack_element_level = "Attack element level"
+defense_element_level = "Defense element level"
+target_kind = "Targets"
+area_width = "Area width"
+area_height = "Area height"
+owners = "Held by"
+exclusive_users = "Exclusive to"
+required_skill = "Needs skill"
+female_only = "Women only"
+once_per_battle = "Once a battle"
+ct_rate = "CT rate"
+max_hp = "Max HP bonus"
+max_mp = "Max MP bonus"
+max_tp = "Max TP bonus"
+fs = "FS restored"
+control_rate_change = "支配率 change"
+condition_levels = "Conditions"
+equip_condition_levels = "Conditions while equipped"
+granted_skill = "Grants skill"
+granted_skill_level = "At level"
+"item_growth.kind" = "Grows by"
+"item_growth.costs" = "Growth costs"
+"item_growth.result_item" = "Fully grown, yields"
+"action_tree.prerequisites" = "Master first"
+
+[kind.notes]
+rank = "A character can use or equip it only with at least this rank in its class."
+owners = "One of these characters must be in the party for it to be used."
+exclusive_users = "Only these characters may use or equip it."
+charges = "A charging spell: its caster's charge level lengthens its charge time and raises its damage."
+attack_element_level = "Each level above the defender's defense element level adds 20 to the affinity."
+reach = "Against a defender that flies (飛行能力, 飛竜使い): ground does nothing, melee ×0.8 and ranged ×1.5."
+hp = "Restored where positive, spent where negative."
+mp = "Restored where positive, spent where negative."
+tp = "Restored where positive, spent where negative."
+control_rate_change = "What using it changes the dungeon's 支配率 by."
+condition_levels = "The level of each condition it inflicts; a negative level cures it."
+equip_condition_levels = "The conditions it keeps on its wearer, at these levels."
+sell_price = "0: it cannot be sold."
+"item_growth.kind" = "Refined in alchemy, or grown by the battles it is equipped in."
+"item_growth.costs" = "What each next level costs, from level 0 (for an item grown by battles, the battles it must be equipped in); 0 marks the last level."
+growth = "What each growth level adds to the item's numbers, from the first; its element level raises a weapon's attack element level or an armour's defense element level."
+"action_tree.prerequisites" = "Actions that must be mastered before it can be learned."
+
+[kind.referenced_as]
+class = "Items of this class"
+owners = "Items it holds"
+exclusive_users = "Exclusive items"
+required_skill = "Items that need it"
+granted_skill = { heading = "Granted by items", details = ["granted_skill_level"] }
+condition_levels = "Inflicted or cured by items"
+equip_condition_levels = "Given while equipped"
+"item_growth.result_item" = "Yielded by growing"
+"action_tree.prerequisites" = "Must be mastered for"
+
+[[kind.description]]
+name = "description"
+script = { name = "ITMES" }                     # the base ITMES; DRAWITMES walks the chain, base first
+seed = { current_item = "key" }
+
+[[kind]]
+id = "item_class"
+table = "item_class"
+about = "The classes of items, magic schools and art schools: the class exp each rank needs, and a school's tree of actions."
+exists = "name"
+title = "name"
+# A school's tree (SKINIT) is keyed by the school, an item class.
+joins = ["school_tree"]
+fields = ["rank_exps", "school_tree.actions"]
+
+[kind.labels]
+rank_exps = "Class exp a rank needs"
+"school_tree.actions" = "Tree"
+
+[kind.notes]
+rank_exps = "The class exp a character needs to pass each rank, E to D through S to M."
+"school_tree.actions" = "The actions of the school's tree: three lines of five tiers, tier by tier."
+
+[kind.referenced_as]
+"school_tree.actions" = "In the tree of"
+
+[[kind]]
+id = "skill"
+table = "skill"
+about = "The skills, each with up to five levels: when it acts, its costs and chance at each level, and its text."
+exists = "kind"
+# A skill is named by its levels (貫通Ⅰ to 貫通Ⅴ); the first names it.
+title = "names.0"
+text = ["names"]
+fields = [
+    "kind", "attack_only", "mp_costs", "tp_costs", "trigger_chances", "amounts", "always_on", "support_modes",
+    "support_actions", "support_periods",
+]
+filters = ["kind"]
+
+# A row for each level, from the first.
+[[kind.group]]
+name = "levels"
+fields = ["mp_costs", "tp_costs", "trigger_chances", "amounts", "always_on", "support_modes", "support_actions",
+          "support_periods"]
+
+[kind.labels]
+names = "Levels"
+attack_only = "Attacks only"
+mp_costs = "MP cost"
+tp_costs = "TP cost"
+trigger_chances = "Chance (%)"
+amounts = "Amount"
+always_on = "Always on"
+support_modes = "Support"
+support_actions = "Support action"
+support_periods = "Period"
+
+[kind.notes]
+attack_only = "It acts only on a physical or magic attack, and is refunded when the attack does not land."
+levels = "Each level's costs and trigger chance, its own number (祈り: the percent of max HP it heals), whether it can be switched off, and a support skill's action and the battle-clock period it acts on."
+
+[kind.referenced_as]
+support_actions = "Performed by support skills"
+
+[[kind.description]]
+name = "level_1"
+script = { name = "SSMES" }                     # the base SSMES; DRAWSSMES walks the chain, base first
+seed = { skill_message_skill = "key", skill_message_level = 0 }
+
+[[kind.description]]
+name = "level_2"
+script = { name = "SSMES" }
+seed = { skill_message_skill = "key", skill_message_level = 1 }
+
+[[kind.description]]
+name = "level_3"
+script = { name = "SSMES" }
+seed = { skill_message_skill = "key", skill_message_level = 2 }
+
+[[kind.description]]
+name = "level_4"
+script = { name = "SSMES" }
+seed = { skill_message_skill = "key", skill_message_level = 3 }
+
+[[kind.description]]
+name = "level_5"
+script = { name = "SSMES" }
+seed = { skill_message_skill = "key", skill_message_level = 4 }
+
+[[kind]]
+id = "condition"
+table = "condition"
+about = "The conditions a unit can have, each with up to five levels: what each level changes, how long it lasts, and what resists it."
+exists = "names.0"
+# A condition is named by its levels (呪い1 to 呪い5); the first names it.
+title = "names.0"
+text = ["names"]
+fields = [
+    "polarity", "resistance", "durations", "hit_modifiers", "evasion_modifiers", "physical_attack_modifiers",
+    "physical_defense_modifiers", "attack_count_modifiers", "defense_count_modifiers", "magic_attack_modifiers",
+    "magic_defense_modifiers", "magic_power_modifiers", "physical_resistance_modifiers",
+    "mental_resistance_modifiers", "physical_speed_modifiers", "mental_speed_modifiers", "critical_modifiers",
+    "hp_changes", "mp_changes", "tp_changes", "gauge_drains",
+]
+filters = ["polarity"]
+
+# A row for each level, from the first.
+[[kind.group]]
+name = "levels"
+fields = [
+    "resistance", "durations", "hit_modifiers", "evasion_modifiers", "physical_attack_modifiers",
+    "physical_defense_modifiers", "attack_count_modifiers", "defense_count_modifiers", "magic_attack_modifiers",
+    "magic_defense_modifiers", "magic_power_modifiers", "physical_resistance_modifiers",
+    "mental_resistance_modifiers", "physical_speed_modifiers", "mental_speed_modifiers", "critical_modifiers",
+    "hp_changes", "mp_changes", "tp_changes", "gauge_drains",
+]
+
+[kind.labels]
+names = "Levels"
+resistance = "Resisted by"
+durations = "Duration"
+hit_modifiers = "Hit"
+evasion_modifiers = "Evasion"
+physical_attack_modifiers = "Physical attack (%)"
+physical_defense_modifiers = "Physical defence (%)"
+attack_count_modifiers = "Attack count"
+defense_count_modifiers = "Defence count"
+magic_attack_modifiers = "Magic attack (%)"
+magic_defense_modifiers = "Magic defence (%)"
+magic_power_modifiers = "Magic power"
+physical_resistance_modifiers = "Physical resistance"
+mental_resistance_modifiers = "Mental resistance"
+physical_speed_modifiers = "Physical speed"
+mental_speed_modifiers = "Mental speed"
+critical_modifiers = "Critical"
+hp_changes = "HP each turn"
+mp_changes = "MP each turn"
+tp_changes = "TP each turn"
+gauge_drains = "Gauge drain"
+
+[kind.notes]
+polarity = "破術 takes a beneficial condition away; an ailment marks the character on the map."
+levels = "Each level's resistance roll, its duration (-1 lasts until cured; counted down on the map), and what it changes: the rows marked % scale the stat, the others add to it."
+
+[[kind]]
+id = "recipe"
+table = "recipe"
+about = "The alchemy recipes: the item each makes, its ingredients and the price of a craft."
+exists = "output"
+# A recipe has no name of its own: the alchemy screen lists it by the item it makes.
+title = "output"
+fields = ["output", "price", "ingredients", "ingredient_counts"]
+
+[[kind.group]]
+name = "ingredient_list"
+fields = ["ingredients", "ingredient_counts"]
+
+[kind.labels]
+output = "Makes"
+ingredient_list = "Ingredients"
+ingredients = "Item"
+ingredient_counts = "Count"
+
+[kind.notes]
+price = "The price of one craft."
+
+[kind.referenced_as]
+output = "Made by recipe"
+ingredients = { heading = "Ingredient in", details = ["ingredient_counts"] }
+
+[[kind]]
+id = "treasure"
+table = "treasure"
+about = "What each treasure on the maps gives: up to five items, each with its count, or money."
+# Every treasure fills its first slot. A treasure has no name: the map object that holds it names it by its id.
+exists = "counts.0"
+fields = ["items", "counts"]
+
+[[kind.group]]
+name = "contents"
+fields = ["items", "counts"]
+
+[kind.labels]
+items = "Item"
+counts = "Count"
+
+[kind.notes]
+contents = "Each slot gives an item and its count, or, with no item, that much money."
+
+[kind.referenced_as]
+items = { heading = "Found in treasures", details = ["counts"] }
+
+[[kind]]
+id = "area"
+table = "area"
+about = "The places on the world maps: the dungeons and towns the party enters."
+exists = "name"
+title = "name"
+fields = ["kind", "world"]
+filters = ["kind", "world"]
+pictures = { icon = "icon.icon" }
+
+[kind.labels]
+kind = "Enters"
+
+[kind.notes]
+world = "The world map that holds it: 1, or 2 for the other world."
+
+[[kind]]
+id = "map"
+table = "map"
+about = "The dungeon maps, each named here by its first floor: the name of each of its floors."
+exists = "floor_names.1"
+# A map has no name of its own: its id is its dungeon's area id, and the game shows the floor's name.
+title = "floor_names.1"
+text = ["floor_names"]
+pictures = { plate = "floor_name_plates.1" }
+
+[kind.labels]
+floor_names = "Floors"
+
+[[kind]]
+id = "arena_match"
+table = "arena_match"
+about = "The arena's matches: the match to win first, the fee, the enemies' level, and the prize and rewards of a first win."
+exists = "name"
+title = "name"
+text = ["descriptions"]
+fields = ["kind", "previous", "fee", "enemy_level", "prize", "reward_items", "reward_counts"]
+filters = ["kind"]
+
+[[kind.group]]
+name = "rewards"
+fields = ["reward_items", "reward_counts"]
+
+[kind.labels]
+previous = "Win first"
+reward_items = "Item"
+reward_counts = "Count"
+
+[kind.notes]
+prize = "Money paid on the first win only, as are the rewards."
+
+[kind.referenced_as]
+previous = "Opens"
+reward_items = { heading = "Arena reward", details = ["reward_counts"] }
+
+[[kind]]
+id = "fish"
+table = "fish"
+about = "The fishing game's fish: the points a catch gives and an escape takes, and the catch zone on the reel's gauge."
+exists = "texts.name"
+title = "texts.name"
+text = ["texts"]
+fields = ["stats.catch_points", "stats.escape_points", "stats.zone_width"]
+
+[kind.labels]
+"stats.catch_points" = "Catch points"
+"stats.escape_points" = "Escape points"
+"stats.zone_width" = "Catch zone width"
+
+[kind.notes]
+"stats.zone_width" = "The fish is caught when the reel's marker stops inside its zone."
+
+[kind.text_blocks.texts]
+description = [1, 3]
+
+[[kind]]
+id = "fishing_rod"
+table = "fishing_rod"
+about = "The fishing game's rods: the cast points each reaches, and the cast marker's speed."
+exists = "texts.name"
+title = "texts.name"
+text = ["texts"]
+fields = ["stats.nearest_point", "stats.farthest_point", "stats.marker_speed"]
+
+[kind.labels]
+"stats.nearest_point" = "Nearest cast point"
+"stats.farthest_point" = "Farthest cast point"
+"stats.marker_speed" = "Marker speed"
+
+[kind.notes]
+"stats.nearest_point" = "The cast points run 1 to 5; a cast outside the rod's reach fails."
+
+[kind.text_blocks.texts]
+description = [1, 3]
+
+[[kind]]
+id = "fishing_bait"
+table = "fishing_bait"
+about = "The fishing game's baits."
+exists = "texts.name"
+title = "texts.name"
+text = ["texts"]
+
+[kind.text_blocks.texts]
+description = [1, 3]
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary_entry"
+about = "The glossary (【用語】, 【神名】): the world's terms and gods, and what each means."
+exists = "title"
+title = "title"
+pictures = { picture = "picture" }
+
+[[kind.description]]
+name = "description"
+script = { name = "VIMES" }                     # the base VIMES; INFO2 walks the chain, base first
+seed = { glossary_selected_id = "key" }
+
+[[kind]]
+id = "character_profile"
+table = "profile"
+about = "The profiles of the 人物 book: each one's portrait and biography."
+exists = "name"
+title = "name"
+fields = ["unit_id"]
+pictures = { portrait = "picture" }
+
+[kind.labels]
+unit_id = "Unit"
+
+[kind.notes]
+unit_id = "The book hides the profile until this unit has spoken."
+
+[kind.referenced_as]
+unit_id = "Character profile"
+
+[[kind.description]]
+name = "biography"
+script = { name = "CIMES" }                     # the base CIMES; INFO3 walks the chain, base first
+seed = { profile_shown = "key" }
+
+[[kind]]
+id = "objective"
+table = "objective"
+about = "The objectives the game lists by chapter."
+exists = "text"
+title = "text"
+text = ["chapter"]
+qualifiers = ["chapter"]
+
+[[kind]]
+id = "formation"
+table = "formation"
+about = "The party's formations and the effects each lists."
+exists = "name"
+title = "name"
+text = ["effect_lines"]
+
+[kind.labels]
+effect_lines = "Effects"
+
+# The war game (SLG): its terrain, troops, commanders, tactics and ranks.
+
+[[kind]]
+id = "terrain"
+table = "terrain"
+about = "The war game's terrain, and what moving through it costs each move type."
+exists = "name"
+title = "name"
+fields = ["move_costs"]
+
+[kind.labels]
+move_costs = "Move cost"
+
+[kind.notes]
+move_costs = "0: the move type cannot enter it."
+
+[[kind]]
+id = "troop"
+table = "troop"
+about = "The war game's troops: move type, move, attack, defence and magic, soldiers, morale and own tactic."
+exists = "name"
+title = "name"
+fields = ["move_type", "stats", "tactic", "soldiers", "morale"]
+filters = ["move_type"]
+pictures = { sprite = "sheets.side_1" }
+
+[kind.labels]
+morale = "Starting morale"
+
+[kind.notes]
+stats = "Its move range is its move plus 1."
+morale = "Its attack is multiplied by (100 + morale) / 100."
+
+[kind.referenced_as]
+tactic = "Troops with it"
+
+[[kind]]
+id = "commander"
+table = "commander"
+about = "The war game's commanders: leadership, the attack of their tactics, and their own tactic."
+exists = "name"
+title = "name"
+fields = ["leadership", "attack", "tactic"]
+pictures = { sprite = "sheets.map", large = "sheets.large" }
+
+[kind.notes]
+leadership = "It divides the morale its unit loses."
+attack = "The attack of the commander's tactics."
+
+[kind.referenced_as]
+tactic = "Commanders with it"
+
+[[kind]]
+id = "tactic"
+table = "tactic"
+about = "The war game's tactics: kind, range, power and cooldown."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = ["kind", "min_range", "max_range", "power", "cooldown"]
+filters = ["kind"]
+
+[kind.notes]
+cooldown = "1: always usable; n: unusable for n - 1 turns after use."
+
+[[kind]]
+id = "rank"
+table = "rank"
+about = "The war game's ranks: the war points each needs, and its bonuses to the player's units."
+exists = "name"
+title = "name"
+fields = ["points", "bonuses"]
+
+[kind.labels]
+points = "War points needed"

@@ -1,0 +1,17 @@
+omp = 4
+id = "example.verita-map-block"
+name = "Map block (Verita)"
+version = "1.0.0"
+description = "A data file with a dungeon map's part: map 11's block 31, where the debug menu's 迷宮マップ１ starts, takes its second music as its first."
+
+[game]
+profile = "verita"
+target = "extended"
+
+[[requires]]
+id = "verita-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "verita.tables"
+file = "blocks.toml"

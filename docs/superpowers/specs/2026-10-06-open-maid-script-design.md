@@ -416,6 +416,9 @@ original scene library (`docs/sys4-format-notes.md`, "Where subroutine bodies si
 
 - `@guard sub name { … }` places the sub behind an `exit` guard, as the original compiler placed its library
   functions. Control may then fall onto the guard.
+- A sub without `@guard` (a scene header's handler, which a sidecar would place inside the script) gets an `exit`
+  before it when the code before it can fall through or a label reaches its start, since falling off a script's
+  end ends it. Verita's SC5000 ends in `run GAMEOVER` and links a coroutine first.
 - A decompiled script whose library subs sit elsewhere records each such sub's instruction index in the sidecar
   (`library`). The compiler links the sub there instead.
 
@@ -472,6 +475,8 @@ statements are lowered") records the facts. OMS lowers the same way, through one
   instructions. Where the original slots differ from the canonical plan, the sidecar records them:
   - `temp_base`: the pool's first slot, when it differs from the highest named local integer plus one;
   - `ref_swap`: the script starts its integer-reference registers as `LP1`, `LP0`;
+  - `ref_rotate`: the script numbers its first three integer-reference registers `LP1`, `LP2`, `LP0` (Verita's
+    scenes; a sidecar sets this or `ref_swap`, not both);
   - `temps`: the exact slots of individual statements, keyed by the index of the statement's first instruction.
 
   The residue is published in §16.

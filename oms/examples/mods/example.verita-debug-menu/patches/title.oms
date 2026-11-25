@@ -1,0 +1,12 @@
+oms 1
+// 戦女神VERITA's title builds a debug menu (デバッグメニュー) right after its Quit ends the game (throw-exit-request at
+// 0x34d), so no run reaches it. Deleting that instruction makes Quit open the menu instead. Its entries: ＡＤＶパート and
+// Ｈシーン pick a scene (SC????.BIN, SP????.BIN) by file; ＡＤＶデバッグ１, ２ and （ＰＧ用） play DEBUGADV1, DEBUGADV2 and
+// DEBUGADV; 迷宮マップ１ to ３ and （ＰＧ用） run DEBUGMAP1 to 3 and DEBUGMAP, then a dungeon map; 全体マップ runs DEBUGAM,
+// then the whole map; 戦闘 runs DEBUGBTL, then a battle; 戦闘アニメ（味方）and（敵） run DEBUGANIME; ＳＬＧパート runs
+// DEBUGSLG; ミニゲーム runs DEBUGEXTRA. Each sets the game mode (G[0x0]: 1 a scene, 2 the whole map, 3 a dungeon map, 4 a
+// battle, 8 the SLG part) and leaves the title through its common exit, so SYSTEM4 starts that mode.
+patch "TITLE.BIN" fingerprint "sha256:07685fdc992dfbfe6d5a1583b1d640f74b3101d208a19638af45700d32e80f1f"
+
+replace site 0x34d {
+}

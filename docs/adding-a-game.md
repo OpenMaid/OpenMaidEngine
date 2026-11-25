@@ -282,7 +282,7 @@ This step is static and can start once P1 is reached.
   toolchain to fix, not of the game. Start the base mod here, since the game's toolchain lives in it (modding from
   a release spec §5): `mods/<id>-base/manifest.toml` (`omp = 5`, `[game]` with `target = "extended"`, and
   `[lua] capabilities = ["vm"]`), and run `base_mod_build.py --build`, which writes its `oms/globals.json` and
-  `layout/`. Write its ADV module `mods/<id>-base/oms/adv.oms` so the idiomatic round trip and rebuild pass too: decompile every scene at core level, collect the units the scenes share (the header's
+  `layout/` (the record map and the shape wait for the manifest's `[[accepts]]` of the data kind, at M3). Write its ADV module `mods/<id>-base/oms/adv.oms` so the idiomatic round trip and rebuild pass too: decompile every scene at core level, collect the units the scenes share (the header's
   handlers, the library linked behind `exit` guards, as many copies of a body as one scene links), name them, and
   write the page template from the commonest page shapes. A speaker enum needs the name table, which may wait
   for step 9. Name patch points in `vm-map/patch-points-<id>.toml` where a point is understood; they may also

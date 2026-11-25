@@ -1,0 +1,18 @@
+# Port only (scenarios/port/): Verita's base mod and its data files (docs/adding-a-game.md, M3).
+# example.verita-speaker-name renames セリカ's (speaker 1) name plate, speaker_names[1], to [MOD] セリカ at
+# verita.data.layered. A new game's opening first shows her name plate on SC0000's seventh page (wait SC0000@0xbf9),
+# her 「……」. Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game verita port start --mod oms/examples/mods/example.verita-speaker-name
+#   py -3.11 -X utf8 tools/drive.py --game verita port run tools/drive/scenarios/port/verita-speaker-name.steps
+#   py -3.11 -X utf8 tools/drive.py --game verita port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+lua local name = maid.vm.gs[0x1b6 + 1] assert(name == "[MOD] セリカ", name) return name
+wait 6
+click title.start
+wait-state top=SC0000@0xa2d timeout=90                              # page 1
+settle timeout=20
+wait-state top=SC0000@0xbf9 click=adv.next every=2.5 timeout=120   # page 7: セリカ's first line
+settle timeout=20
+shot verita-speaker-name

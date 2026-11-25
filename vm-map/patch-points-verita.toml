@@ -1,0 +1,86 @@
+# Named patch points for 戦女神VERITA (mod loader spec §5: docs/superpowers/specs/2026-11-03-mod-loader-design.md).
+#
+# A point gives fragments a stable site name: `before site verita.experience.before_add { ... }`.
+# Each [[point.at]] entry is one revision of the script: the SHA-256 of its bytes as the catalog serves them
+# (`Ome.Cli oms-patch --fingerprint NAME.BIN --game verita`) and the original dword offset of the instruction the
+# point names. The point's description says what holds when control reaches that instruction.
+#
+# Source data. Run `py -3.11 -X utf8 tools/patch_points_build.py --game verita --build` after editing; it
+# validates every entry against the installed base and generates build/games/verita/patch-points.json and
+# docs/patch-point-reference-verita.md.
+#
+# Where the appends hook (36 slot arrays INIT2 sets for the base scripts, slot 0, and each $n$AUTORUN for its own,
+# slot n; docs/verita-data-tables.md, "Hook chains"): the on-demand tables (RMINIT, ENINIT, ESINIT, AMINIT, SIINIT,
+# SHINIT, QUINIT, CSINIT, PZINIT, STINIT, BTANINIT), the message tables (SSMES, ITMES, TIMES, VIMES, CIMES), SCJUMP's
+# chain (the scene dispatch), the icon and thumbnail sheets, the war game's ROUND, BEFOREFIGHT and AFTERFIGHT, the
+# CLOSE and START handlers, and the skill checks (CHECKSS1 to CHECKSS4, SETSSBONUS, SETSSDAMAGE). The points below
+# sit after the chains a mod's data follows, and at the experience award.
+
+[[point]]
+name = "verita.boot.data_layered"
+script = "INIT2.BIN"
+description = """
+The instruction after op 0x143 (INIT2@0x17c). Every layer has written its data: the 37 base *INIT scripts, INIT2's \
+slot 0 of each append chain (the base scripts' ids) and its constants, then each mounted append's $n$AUTORUN, which \
+runs its $n$*INIT layers and sets its slot n of each chain. The boot has not used the tables yet. INIT2 goes on to \
+run CALCREVISE for each joined character (character_arg_id from 1 to 99), which rebuilds the character's lasting \
+conditions from the skills and items, and, when a save is being loaded, to set up again what the save was in: the \
+map in play (RMINIT's chain, where on_dungeon_map is set), the map's picture (where scene_over_map is set) and the \
+inn's quests (QUINIT's chain, where in_inn is set). That work reads an edit made here. The boot tables lie above \
+the saved prefix (0x268b19): SYSTEM4 runs INIT2 on every boot and again while a load restores, so control reaches \
+here again then."""
+
+[[point.at]]                    # the install the guide lists (games/verita, three appends)
+fingerprint = "sha256:a2403c9536db2a9204525708a0399a70f00de4637a925847236549ff5136a165"
+site = 0x17d
+
+[[point]]
+name = "verita.boot.data_ready"
+script = "INIT2.BIN"
+description = """
+INIT2's exit. Every data table is built: the 37 base *INIT scripts, each mounted append's $n$AUTORUN and its \
+$n$*INIT layers (op 0x143), and INIT2's own work after them, which reads the tables (verita.boot.data_layered); \
+for a save being loaded that work has set up again the map in play (RMINIT's chain, where on_dungeon_map is set), \
+its picture and the inn's quests, and boot_driver_done is 1. An edit made here comes after that work. The boot \
+tables lie above the saved prefix (0x268b19): SYSTEM4 runs INIT2 on every boot and again while a load restores, so \
+control reaches here again then."""
+
+[[point.at]]                    # the install the guide lists
+fingerprint = "sha256:a2403c9536db2a9204525708a0399a70f00de4637a925847236549ff5136a165"
+site = 0x26e
+
+[[point]]
+name = "verita.map.after_block_loaders"
+script = "FIELD.BIN"
+description = """
+FIELD's test of on_dungeon_map after it has walked RMINIT's chain (FIELD@0x84 to 0xaa): every layer's RMINIT, the \
+base's and each append's $n$RMINIT in slot order, has cleared the map blocks and filled them from the branch for \
+the map in play (current_place_id), so map_block holds that map's blocks, keyed by 30 * map_block_row + \
+map_block_column. FIELD reaches here each time it starts, which SYSTEM4 does for system_mode 3. on_dungeon_map is \
+0 when the party enters the map: FIELD then sets it, takes the party's start from the map (MPINIT, where \
+G[0xc0ba06] is 0 and G[0x5dda60] is not 2) and runs the START chain. It is 1 when FIELD starts again without the party having left the map (ALLMAP and TOWN clear it), and \
+FIELD skips that. In both cases it goes on to set the party's block up from the blocks (its music, its encounter \
+set, its scripts). A load of a save made on a map does not come here: INIT2 walks the same chain during the boot, \
+after verita.boot.data_layered and before verita.boot.data_ready, and the save restores FIELD where it was."""
+
+[[point.at]]                    # the install the guide lists
+fingerprint = "sha256:16e56e6f4903d71ef9dfdc6f4f4d56dfe878a20a957564e7776030e31ff8f556"
+site = 0xad
+
+[[point]]
+name = "verita.experience.before_add"
+script = "ADDEXP.BIN"
+description = """
+ADDEXP's read of the award: `mov L[0] shared_number`, inside the atomic block ADDEXP runs in. A caller has set \
+character_arg_id to the character and shared_number to the experience to add, and the character's state bits \
+0x10002 (G[0x118fd8 + character]) are both set (ADDEXP@0x1c; ADDEXP does nothing otherwise); nothing is added yet. \
+A `before site` may rewrite shared_number. ADDEXP then adds it to character_exp. A lead (its unit has a lead_growth \
+row) keeps it, capped at 999999, and where G[0x16af92 + character] is set runs AUTOGROW, CALCREVISE and, when the \
+level rose outside a battle (system_mode 4), CHECKTITLE. For any other character the experience is spent on \
+levels: while it reaches the next level's need (G[0xc25708], from CALCNEXTEXP) below level 499, the need is taken \
+off and the level rises; then, if the level rose, CALCLVUP, CALCREVISE and, outside a battle, CHECKTITLE run. RESULT calls \
+ADDEXP for each character of a won battle (RESULT@0x9ae); FIELD, STAGECLEAR, map events and scenes call it too."""
+
+[[point.at]]                    # the install the guide lists
+fingerprint = "sha256:993515dd02f7149221605d31a8c3907233cd52690f148ecc9263bf4342c09437"
+site = 0x38

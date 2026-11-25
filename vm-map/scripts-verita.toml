@@ -1,0 +1,1117 @@
+# What Verita's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-verita.json, into the
+# reference bundle's games/verita/scripts.json. The format is vm-map/scripts-kamidori.toml's. Every note here
+# comes from docs/verita-data-tables.md, or from the patch points of vm-map/patch-points-verita.toml its source names.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "SYSTEM4"
+summary = """Boots and runs the game. Where the shared profile has config_initialized unset it runs INITCONFIG and \
+sets it; otherwise LOADCONFIG reads the options back. It runs INIT2, then restores a save being loaded, or runs LOGO \
+(on the first run of the root), INIT and TITLE. After the title it runs one mode a pass, from system_mode: 1 a scene, \
+2 ALLMAP, 3 FIELD, 4 BTL, 5 TOWN, 6 ARENA, 7 INN, 8 SLG, and 9 the script extra_game_id picks (EXTRA1 for 1). A \
+scene pass copies the scene's SCINIT script into current_scene_script_id, marks the scene seen in the shared profile \
+and runs it. It plays the quest scenes SCJUMP's context 8 queues in turn, and runs QUESTCLEAR after each."""
+source = "docs/verita-data-tables.md (Boot; The boot order; Scene dispatch)"
+
+[[script]]
+name = "INITCONFIG"
+summary = """The first run's options: SYSTEM4 runs it once for each shared profile, and it stores every cell it writes \
+in the profile. It sets the map's frame rate to 60, clears the voice groups' mutes, and sets eight more options that \
+CONFIG toggles, whose labels are pictures."""
+source = "docs/verita-data-tables.md (Boot; INITCONFIG)"
+
+[[script]]
+name = "LOADCONFIG"
+summary = """Reads the options back on a boot whose shared profile has config_initialized set. SYSTEM4 runs it instead \
+of INITCONFIG."""
+source = "docs/verita-data-tables.md (Boot; The boot order)"
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it calls the 37 base table scripts (OBINIT2 first, SCINIT last), fills slot 0 of \
+the hook chains and writes its constants, then op 0x143 runs each mounted append's $n$AUTORUN. It then runs \
+CALCREVISE for each joined character. On a load it sets up again what the save was in: it walks RMINIT's chain where \
+on_dungeon_map is set, rebuilds the map's picture where scene_over_map is set, and walks QUINIT's chain where in_inn \
+is set. It sets boot_driver_done last. SYSTEM4 runs it on every boot and on every load."""
+source = "docs/verita-data-tables.md (How the data gets into memory; INIT2); the patch points verita.boot.data_layered and verita.boot.data_ready"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The first append's record zero, which INIT2 runs through op 0x143: it calls the append's $1$ fragment of \
+each of the 33 tables that have one (18 of them write anything), fills the append's slot of the hook chains, sets \
+bit 1 of mounted_append_flags and sets story flag 8115."""
+source = "docs/verita-data-tables.md (How the data gets into memory; Hook chains)"
+
+[[script]]
+name = "$2$AUTORUN"
+summary = """The second append's record zero, which INIT2 runs through op 0x143: it calls the append's $2$ fragment \
+of each of the 33 tables that have one (14 of them write anything), fills the append's slot of the hook chains, sets \
+bit 2 of mounted_append_flags and sets story flag 8116. It also sets G[0x28e5] when catalog resource 0x53 is \
+unlocked, which $2$CLOSE reads."""
+source = "docs/verita-data-tables.md (How the data gets into memory; Hook chains)"
+
+[[script]]
+name = "$3$AUTORUN"
+summary = """The third append's record zero, which INIT2 runs through op 0x143: it calls the append's $3$ fragment of \
+each of the 33 tables that have one (22 of them write anything), fills the append's slot of the hook chains, sets \
+bit 3 of mounted_append_flags and sets story flag 8117. It also loads G[0x2619] and G[0x261a] from the shared \
+profile."""
+source = "docs/verita-data-tables.md (How the data gets into memory; Hook chains)"
+
+[[script]]
+name = "INIT"
+summary = """A new game's parties, run on every boot before the title. Where party_mode is 0 it puts party 0 in area \
+1 and party 1 in area 2, both in world 1; then it sets selected_member_index to 1. Every cell it writes is saved, so \
+these are a new game's values and a load overwrites them."""
+source = "docs/verita-data-tables.md (Boot; INIT)"
+
+# ---------------------------------------------------------------------------------------------- the boot tables
+# Each writes its table's records as constants into the global bank, and each append's fragment of it adds records
+# and writes over earlier ones (docs/verita-data-tables.md, "Table inventory"). EEINIT, EX1INIT, ILINIT and MUINIT
+# have no fragment.
+
+[[script]]
+name = "OBINIT2"
+summary = """Map object kinds, the second half of OBINIT's table: each kind's depth among the sprites and its wall \
+polygon's points. Built at boot, the first of INIT2's tables."""
+source = "docs/verita-data-tables.md (Table inventory; OBINIT and OBINIT2)"
+
+[[script]]
+name = "MUINIT"
+summary = "The music room's tracks: the BGM each plays and the catalog resource that unlocks it. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; MUINIT)"
+
+[[script]]
+name = "CBINIT"
+summary = """The two leads' growth parameters, row 1 for セリカ and row 31 for リウイ: the seven starting parameters, \
+their caps and the experience cost of a point. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; CBINIT)"
+
+[[script]]
+name = "EBINIT"
+summary = """The units: every enemy, and the body each party character fights with. Their stats at the base level and \
+growth a level, equipment, defense element, skill levels, AI routine and actions, experience, money, drops and \
+names. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; EBINIT)"
+
+[[script]]
+name = "CNINIT"
+summary = "The speakers: the name the name plate shows, and the unit whose voice setting each uses. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; CNINIT and CVINIT)"
+
+[[script]]
+name = "CHINIT"
+summary = """The party characters: the party each belongs to and the party it joins, its EBINIT unit, its place in \
+party lists and the append it comes from. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; CHINIT)"
+
+[[script]]
+name = "ITINIT"
+summary = """Items, equipment, magic, arts and the enemies' actions, which share one set of ids: their names, ranks, \
+categories, classes, damage kinds, elements, areas, stat bonuses, conditions, animations and prices. Built at \
+boot."""
+source = "docs/verita-data-tables.md (Table inventory; ITINIT)"
+
+[[script]]
+name = "ILINIT"
+summary = """The conditions, 45 of them with five levels each: each level's name and duration, the stats it changes \
+and the resistance it is rolled against, and the condition's polarity and icon. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; ILINIT)"
+
+[[script]]
+name = "SSINIT"
+summary = """The skills, up to five levels each with its own name (貫通Ⅰ to 貫通Ⅴ): the kind, which says when a skill \
+acts, each level's costs, trigger chance and amount, and the conditions a passive skill gives. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; SSINIT)"
+
+[[script]]
+name = "RTINIT"
+summary = """The battle routines: up to 50 steps each, a step naming its rule script, the chance it runs and up to \
+four arguments. RTN follows them. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; RTINIT)"
+
+[[script]]
+name = "AFINIT"
+summary = """The element names, the affinity matrix of defense element by attack element, the classes (names, icons, \
+rank thresholds, the weapons an art school requires) and the formations' names and effect lines. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; AFINIT)"
+
+[[script]]
+name = "TIINIT"
+summary = """The titles, 20 a character (id 20 × character + k): what earns each, its class and master, the 特技 it \
+grants, its stat bonuses, skill levels, pictures and voices. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; TIINIT)"
+
+[[script]]
+name = "SKINIT"
+summary = """The schools' skill trees: 15 slots a school, 5 tiers by 3 lines, each an ITINIT action, with each \
+action's prerequisites and the story flag it needs. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; SKINIT)"
+
+[[script]]
+name = "AMINIT2"
+summary = """The world-map areas: each one's world, whether entering it opens FIELD or TOWN, its icon, position, \
+neighbours and name. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; AMINIT2)"
+
+[[script]]
+name = "ALINIT"
+summary = """The alchemy recipes: the item each makes, the parties that may craft it, the story flags that show and \
+hide it, its price and its four ingredients. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; ALINIT)"
+
+[[script]]
+name = "ARINIT"
+summary = """The arena matches: each one's kind, the match to win first, its fee and story flags, its battle, scenes \
+and enemies' level, and its prize and rewards. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; ARINIT)"
+
+[[script]]
+name = "IMINIT"
+summary = """Equipment growth for 128 items: how each grows (refined in ALCHEMY, or by battles), what each level costs \
+and adds, and what a fully grown item yields and sets. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; IMINIT)"
+
+[[script]]
+name = "MPINIT"
+summary = """The field maps: each map's object sheet, the party's start floor, section, position and facing, the \
+stray-demon (はぐれ魔神) encounter rate, and each floor's name, name plate and number. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; MPINIT)"
+
+[[script]]
+name = "EEINIT"
+summary = """The encounter chances: one grid of 5 distance bands by 10 encounter levels, the percent chance of a \
+battle at a roll. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; EEINIT)"
+
+[[script]]
+name = "TRINIT"
+summary = "The treasures' contents: up to five slots a treasure, each an item and a count, or money. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; TRINIT)"
+
+[[script]]
+name = "LAINIT"
+summary = """The land types under the party on a field map: the leader's walking sheet, the footstep sound, the \
+walking speed, a drift and an encounter class. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; LAINIT)"
+
+[[script]]
+name = "OBINIT"
+summary = """Map object kinds: each kind's rectangle of the map's object sheet and its blend mode, the kind it becomes \
+when its switch is on, and that change's sound. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; OBINIT and OBINIT2)"
+
+[[script]]
+name = "SOINIT"
+summary = "The war game's terrain: each terrain's name and its move cost for each move type. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; SOINIT)"
+
+[[script]]
+name = "TPINIT"
+summary = """The war game's troops: map sheets, move type, move, attack, defence and magic, tactic, soldiers, morale \
+and name. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; TPINIT)"
+
+[[script]]
+name = "CAINIT"
+summary = """The war game's commanders: leadership, the attack of their tactics, their own tactic, a 一騎討ち battle, \
+sprites and name. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; CAINIT)"
+
+[[script]]
+name = "RUINIT"
+summary = "The war game's tactics: kind, range, power, cooldown, effect animation and description. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; RUINIT)"
+
+[[script]]
+name = "SRINIT"
+summary = """The war game's map-unit routines: up to 20 steps each, which MVRTN follows as RTN follows RTINIT's. Built \
+at boot."""
+source = "docs/verita-data-tables.md (Table inventory; SRINIT)"
+
+[[script]]
+name = "GRINIT"
+summary = "The war game's five ranks (勇士 to 戦神): the war points each needs and its bonuses. Built at boot."
+source = "docs/verita-data-tables.md (Table inventory; GRINIT)"
+
+[[script]]
+name = "CGINIT"
+summary = """The CG gallery: each CG's picture and save thumbnail, its tab, slot and variant, and the append that adds \
+it. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; CGINIT)"
+
+[[script]]
+name = "SPINIT"
+summary = """Scene replay: one array of 10 rows of 15, each cell the script of a scene HMODE replays. The base fills \
+rows 0 to 4 and the appends row 5. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; SPINIT)"
+
+[[script]]
+name = "CIINIT"
+summary = """The 人物 book's profiles: the speaker and the scenes that list each, its picture and its name. Built at \
+boot."""
+source = "docs/verita-data-tables.md (Table inventory; CIINIT)"
+
+[[script]]
+name = "VIINIT"
+summary = """The glossary: each entry's title, picture and the scenes that unlock it; VIMES holds the text. Built at \
+boot."""
+source = "docs/verita-data-tables.md (Table inventory; VIINIT)"
+
+[[script]]
+name = "CVINIT"
+summary = """The voice settings the 設定 voice page lists: each one's unit, sample voice, name and voice actress, and \
+each unit's setting. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; CNINIT and CVINIT)"
+
+[[script]]
+name = "FAINIT"
+summary = """The objectives INFO1 lists: each one's sort key, the story flags that show it and mark it done, its \
+chapter heading and its text. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; FAINIT)"
+
+[[script]]
+name = "BTANINIT2"
+summary = """The battle animations: six effect slots each, with the BTANINIT effect each plays and when it starts, and \
+the animation's length. Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; BTANINIT2 and BTANINIT)"
+
+[[script]]
+name = "EX1INIT"
+summary = """The fishing game's data, which EXTRA1 reads: rods, baits, bite weights, fish, ranks and fishing spots. \
+Built at boot."""
+source = "docs/verita-data-tables.md (Table inventory; EX1INIT)"
+
+[[script]]
+name = "SCINIT"
+summary = """The scenes: the script each scene id plays, and the SCJUMP context that offers it. Built at boot, the \
+last of INIT2's tables."""
+source = "docs/verita-data-tables.md (Table inventory; SCINIT; Scene dispatch)"
+
+# ---------------------------------------------------------------------------------------------- tables on demand
+# Each runs through its hook chain, the base's script and then each append's (docs/verita-data-tables.md, "Hook
+# chains"), and is not in the boot image.
+
+[[script]]
+name = "AMINIT"
+summary = """The world map's open areas. ALLMAP walks its chain each time the world map opens: it clears the 100 area \
+states and, for the world in world_map_id, sets the world map's music and six pictures and the bits that show an \
+area and let the party enter it, by story flags and the party in play. $1$AMINIT adds to world 1; $2$ and $3$ add \
+nothing."""
+source = "docs/verita-data-tables.md (Hook chains; AMINIT)"
+[script.arguments]
+world_map_id = "the world in play, 1 or 2, that it branches on"
+
+[[script]]
+name = "SIINIT"
+summary = """The town's sites. TOWN walks its chain on each visit, after the START chain and SCJUMP's context 2: for \
+the town in current_place_id (50 to 63) it clears the town's arrays and writes its background, music and sites, each \
+with its picture, position, hot area and neighbours, and opens sites. The appends only open sites."""
+source = "docs/verita-data-tables.md (Hook chains; SIINIT)"
+[script.arguments]
+current_place_id = "the place in play, a town area of AMINIT2"
+
+[[script]]
+name = "SHINIT"
+summary = """The goods of the shop in shop_id. SHOP walks its chain when it opens and after each settlement: it clears \
+the pictures and both 40-cell arrays, then writes the shop's sign, shopkeeper, background and two pages of 20 slots, \
+each an item and a stock limit. A story-flag test removes an item, and a chapter test makes it unbuyable while \
+chapter is below a value. The appends' scripts only exit."""
+source = "docs/verita-data-tables.md (Hook chains; SHINIT)"
+[script.arguments]
+shop_id = "the shop, 1 to 23, that it branches on"
+
+[[script]]
+name = "QUINIT"
+summary = """The quests. INN walks its chain on entry, and INIT2 on a load in an inn: it clears its arrays, writes 20 \
+quests every inn shares (ids 1 to 72), then the inn's own (ids 101 to 126) and the inn's two pictures. A quest has a \
+prerequisite, a party, story flags, a difficulty, rewards, a name, a description and three hints. $1$QUINIT adds \
+quest 127 to inn 2; $2$ and $3$ are empty."""
+source = "docs/verita-data-tables.md (Hook chains; QUINIT)"
+[script.arguments]
+current_inn_id = "the inn, 1 to 9, whose own quests it writes"
+
+[[script]]
+name = "RMINIT"
+summary = """The blocks of the map in play. FIELD walks its chain each time it starts on a map, and INIT2 on a load on \
+a map: it clears 17 arrays of 750 cells and fills them from the branch for current_place_id, 30 blocks a row. A block \
+has its map and event scripts, pictures, minimap, battle backdrop, music, encounter sets, enemies' level and \
+encounter level. $1$RMINIT adds maps 26 and 42, $3$RMINIT maps 44 and 45."""
+source = "docs/verita-data-tables.md (Hook chains; RMINIT); the patch point verita.map.after_block_loaders"
+[script.arguments]
+current_place_id = "the map in play, an MPINIT id"
+
+[[script]]
+name = "ENINIT"
+summary = """The encounter set in encounter_set_in_play: it clears four arrays of 100 entries and writes the set's \
+entries, each a weight, a window of the field gauge and two ESINIT formations. FIELD walks its chain after it takes \
+the block's set, and four map scripts walk it too. $1$ENINIT adds sets 76 and 78, $3$ENINIT sets 97 to 101."""
+source = "docs/verita-data-tables.md (Hook chains; ENINIT)"
+[script.arguments]
+encounter_set_in_play = "the set to write, from the block's encounter sets or a map script"
+
+[[script]]
+name = "ESINIT"
+summary = """The formation in formation_in_play: it clears nine arrays of 8 slots and writes the formation's enemies \
+on a 5 × 5 field, each with its preferred columns and rows, its chance, the story flags it needs and the slot it is \
+linked to. SETENP walks its chain once for each of the drawn entry's two formations. $1$ESINIT adds 13 formations \
+and $3$ESINIT 76."""
+source = "docs/verita-data-tables.md (Hook chains; ESINIT)"
+[script.arguments]
+formation_in_play = "the formation to write; SETENP sets it"
+
+[[script]]
+name = "CSINIT"
+summary = """The party of a scripted battle. BTL walks its chain when scripted_battle_case is not 0: it clears five \
+arrays of 7 slots and writes, for the case, the character, column and row of 1 to 4 slots. The base has cases 1 to \
+24; $3$CSINIT adds case 25, and $1$ and $2$ only exit."""
+source = "docs/verita-data-tables.md (Hook chains; CSINIT)"
+[script.arguments]
+scripted_battle_case = "the case, 1 to 25, that it branches on; map events, scenes and ARENA set it"
+
+[[script]]
+name = "PZINIT"
+summary = """The box puzzles. SETMAPDATA walks its chain when the section in play names a puzzle in field_puzzle_id, \
+until a layer sets chain_handled. A puzzle has its grid's size and cells and its blocks, each with its start, kind and \
+a flag; CARRY plays it. The base has twelve puzzles, and $3$PZINIT adds 13 and 14."""
+source = "docs/verita-data-tables.md (Hook chains; PZINIT)"
+
+[[script]]
+name = "STINIT"
+summary = """The war stage in war_stage_id. SLG walks its chain: it writes the battlefield's picture and terrain, the \
+war gauge's start, the two armies' names and the stage's units, each with its side, troop, commanders, start, facing \
+and routine. Its cells lie in the saved prefix, so a save keeps the stage as it was set up. The appends are empty."""
+source = "docs/verita-data-tables.md (Hook chains; STINIT)"
+[script.arguments]
+war_stage_id = "the stage, 1 to 5, that it branches on; the scene that starts SLG sets it"
+
+[[script]]
+name = "BTANINIT"
+summary = """The effects of the battle animations: for the effect in battle_effect_in_play it writes the effect's \
+picture, blend mode, size, placement and timing into slot battle_effect_slot_in_play of 15 work arrays. SETEFFECT \
+walks its chain for each effect it builds, and stops at the first layer that defines the effect. $2$BTANINIT adds \
+effects 661 to 666 and 1134, $3$BTANINIT 667 to 676."""
+source = "docs/verita-data-tables.md (Hook chains; BTANINIT2 and BTANINIT)"
+[script.arguments]
+battle_effect_in_play = "the effect, a BTANINIT id, that it branches on"
+battle_effect_slot_in_play = "the slot, 0 to 35, it writes the effect into"
+
+[[script]]
+name = "SSMES"
+summary = """The skills' descriptions: it prints the description of skill_message_skill at skill_message_level. \
+DRAWSSMES walks its chain until a layer sets chain_handled; $1$SSMES is a stub that adds nothing."""
+source = "docs/verita-data-tables.md (Hook chains; SSINIT)"
+[script.arguments]
+skill_message_skill = "the skill, an SSINIT id"
+skill_message_level = "the level, 0 to 4"
+
+[[script]]
+name = "ITMES"
+summary = """The items' descriptions: it holds every ITINIT item's description, chosen by the item's category. \
+DRAWITMES walks its chain until a layer sets chain_handled."""
+source = "docs/verita-data-tables.md (Hook chains; ITINIT)"
+
+[[script]]
+name = "VIMES"
+summary = """The glossary's text: for the entry in glossary_selected_id it writes the entry's text and sets \
+chain_handled. INFO2 walks its chain; $1$VIMES is a stub that adds nothing."""
+source = "docs/verita-data-tables.md (Hook chains; VIINIT)"
+[script.arguments]
+glossary_selected_id = "the entry, a VIINIT id, that INFO2 shows"
+
+[[script]]
+name = "CIMES"
+summary = "The 人物 book's text: it writes the text of the profile in profile_shown. INFO3 walks its chain."
+source = "docs/verita-data-tables.md (Hook chains; CIINIT)"
+[script.arguments]
+profile_shown = "the profile, a CIINIT id, that INFO3 shows"
+
+# ---------------------------------------------------------------------------------------------- the game
+
+[[script]]
+name = "SCJUMP"
+summary = """Picks the next scene. A caller sets scjump_context_id and scjump_chain_pending to 1, and walks SCJUMP's \
+chain, base, then each append's, while scjump_chain_pending stays 1. SCJUMP branches on the context to its rules. \
+Most rules take the turn: the first that holds sets current_scene_id and system_mode 1 and ends the walk. Context 3 \
+gives a town location a scene instead, context 8 queues the scenes of the quests the party holds, and context 9 \
+plays the scene over the dungeon map. The base has 686 rules, $1$SCJUMP 14 and $2$SCJUMP 3; $3$SCJUMP is an empty \
+stub."""
+source = "docs/verita-data-tables.md (Scenes; Scene dispatch)"
+[script.arguments]
+scjump_context_id = "the context, 1 to 9, whose rules run; 4 has none"
+town_site_id = "for context 3, the town location the rules give a scene"
+current_inn_id = "for contexts 7 and 8, the inn the rules test"
+
+[[script]]
+name = "FIELD"
+summary = """The dungeon map, system_mode 3. Each time it starts it walks RMINIT's chain, which fills the blocks of \
+the map in play. When the party enters the map (on_dungeon_map 0) it sets on_dungeon_map, takes the party's start \
+from MPINIT, runs the START chain and then SCJUMP's context 2. Each time, it then sets the party's block up: its \
+music, encounter set and scripts. On each step it rolls EEINIT's chance of a battle and applies the party's \
+conditions' HP, MP and TP changes, and back from a random battle it runs context 9."""
+source = "docs/verita-data-tables.md (Scene dispatch; EEINIT; ILINIT); the patch point verita.map.after_block_loaders"
+
+[[script]]
+name = "ALLMAP"
+summary = """The world map, system_mode 2. On each pass it runs SCJUMP's context 1 and walks AMINIT's chain. It sets \
+world_map_id from the party's world, draws the shown areas and moves the cursor between them by AMINIT2's neighbours. \
+Entering an area opens FIELD or TOWN by the area's kind; an area the party may not enter plays a buzzer."""
+source = "docs/verita-data-tables.md (Scene dispatch; AMINIT2; AMINIT)"
+
+[[script]]
+name = "TOWN"
+summary = """A town, system_mode 5. On each visit it walks the START chain, runs SCJUMP's context 2 and walks SIINIT's \
+chain. It then runs context 3 for each open location, which may give the location a scene, plays a location's scene \
+when the party enters it, and follows a site's neighbours to the next open site."""
+source = "docs/verita-data-tables.md (Scene dispatch; SIINIT)"
+
+[[script]]
+name = "INN"
+summary = """An inn, system_mode 7. On entry it sets in_inn, walks QUINIT's chain and runs SCJUMP's context 8, which \
+queues the scenes of the quests the party holds. Its board lists the quests that are cleared, taken by this party or \
+open; taking one marks it and runs context 7."""
+source = "docs/verita-data-tables.md (Quests; QUINIT; Scene dispatch)"
+
+[[script]]
+name = "SHOP"
+summary = """A shop: a scene script sets shop_id and calls it. It walks SHINIT's chain when it opens and after each \
+settlement, and lists on each page the slots with an item and stock left. A purchase adds the item with ADDITEM, \
+counts it against the slot's limit in a saved cell and takes the bill from the money in play. It refuses to sell an \
+item SHINIT negated, and clears shop_id on leaving."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SHINIT)"
+[script.arguments]
+shop_id = "the shop, 1 to 23"
+
+[[script]]
+name = "ALCHEMY"
+summary = """The alchemy screen. It lists each recipe whose output is not 0 on the tab of the output's class, where \
+the party in play may craft it, its four required flags are set and neither blocking flag is. A craft reserves the \
+ingredients and adds the price to the bill; the commit takes the bill from the money in play and the ingredients \
+from the inventory, and adds the outputs with ADDITEM. A seventh tab lists the held growth items instead; an item of \
+IMINIT's kind 1 is refined here."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ALINIT; IMINIT)"
+
+[[script]]
+name = "ARENA"
+summary = """The arena, system_mode 6. It lists ARINIT's matches and lets the party enter one when the match before it \
+is won, its story flags allow it, a single fighter's match has one party member and the party has the fee; otherwise \
+a buzzer plays. It keeps the match in arena_match_id, takes the fee, sets scripted_battle_case to the match's battle \
+mode and sets the battle, and enters BTL."""
+source = "docs/verita-data-tables.md (The world: places, the field, objects and the war game; ARINIT)"
+
+[[script]]
+name = "BTL"
+summary = """A battle, system_mode 4. Where scripted_battle_case is set it walks CSINIT's chain and takes the party \
+from it, otherwise from the party in play. It runs SETENP to place the enemies, RTN for each battler under routine \
+control and ANIME for each action. After an action is used it raises the action's proficiency and runs CHECKSKILL. \
+It runs SCJUMP's context 5 when the battle is over and names no scene of its own."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; CSINIT; SKINIT; Scene dispatch)"
+[script.arguments]
+scripted_battle_case = "the scripted party's case, 0 for the party in play; map events, scenes and ARENA set it"
+
+[[script]]
+name = "SLG"
+summary = """The war game, system_mode 8, for the stage in war_stage_id: it walks STINIT's chain, gives the player the \
+highest GRINIT rank the saved war points reach, and at a battle's start copies the troop and commander tables into \
+the saved unit state. It runs MVRTN for each map unit. A commander's 一騎討ち battle enters BTL."""
+source = "docs/verita-data-tables.md (The world: places, the field, objects and the war game; GRINIT; CAINIT; STINIT; SRINIT)"
+
+[[script]]
+name = "EXTRA1"
+summary = """The fishing game, which SYSTEM4 runs in mode 9 when one of eight map event scripts starts it. It picks \
+the spot whose map is current_place_id. A cast stops a marker on a gauge of five cast points the rod limits, and \
+the bait and the point weight the fish that bites. A catch adds the fish's points, which give the rank, and an \
+escape takes its penalty away."""
+source = "docs/verita-data-tables.md (Items, skills and constants; EX1INIT)"
+
+# ---------------------------------------------------------------------------------------------- characters and items
+
+[[script]]
+name = "UNITECH"
+summary = """Joins a character to the party. It reads the character's EBINIT unit and fills the saved state from it: \
+the equipment, the money (added to the party's), the drop items (given with ADDITEM) and the base level. A lead's \
+CBINIT row goes into its saved parameters and CALCCHP runs; any other character gets CALCLVUP. It sets the title to \
+20 × character and runs ADDTITLE, and puts the character in the party its CHINIT record names, or the current one."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT; CBINIT; CHINIT)"
+
+[[script]]
+name = "ADDEXP"
+summary = """Awards experience to one character. Its caller sets character_arg_id and the amount in shared_number; \
+ADDEXP does nothing unless the character's state bits 0x10002 are both set, and adds the amount to character_exp. A \
+lead keeps it, capped at 999999, and may run AUTOGROW, CALCREVISE and CHECKTITLE. Any other character spends it on \
+levels, below level 499; if the level rose, CALCLVUP, CALCREVISE and, outside a battle, CHECKTITLE run. RESULT calls \
+it for each character of a won battle; FIELD, STAGECLEAR, map events and scenes call it too."""
+source = "the patch point verita.experience.before_add"
+[script.arguments]
+character_arg_id = "the character who gains the experience"
+shared_number = "the experience to add"
+
+[[script]]
+name = "CALCNEXTEXP"
+summary = """The experience a character's next level needs, from its unit's EBINIT curve (1 to 5) and percentage. \
+ADDEXP reads it to spend experience on levels."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT); the patch point verita.experience.before_add"
+
+[[script]]
+name = "CALCLVUP"
+summary = """Writes a character's 14 stats from its EBINIT unit, base + growth × (level − base level), into the saved \
+stats. UNITECH runs it on joining and ADDEXP at each level up, so a changed base or growth reaches an old save at the \
+character's next level. The two leads take their stats from CBINIT instead."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT)"
+
+[[script]]
+name = "CALCCHP"
+summary = """Derives a lead's 14 stats from its level and its seven saved parameters, ×1000. UNITECH runs it when a \
+lead joins."""
+source = "docs/verita-data-tables.md (Units, characters and titles; CBINIT)"
+
+[[script]]
+name = "CALCABIMAX"
+summary = """Sets a lead's level to (sum of the seven parameters − 1) / 14 + 1, and caps each parameter by CBINIT's \
+divisors and addend, at most 999."""
+source = "docs/verita-data-tables.md (Units, characters and titles; CBINIT)"
+
+[[script]]
+name = "AUTOGROW"
+summary = """Raises a lead's seven parameters by spending its saved experience: a point costs CBINIT's percent of the \
+parameter. ADDEXP can run it for a lead."""
+source = "docs/verita-data-tables.md (Units, characters and titles; CBINIT); the patch point verita.experience.before_add"
+
+[[script]]
+name = "CALCREVISE"
+summary = """Rebuilds a character's lasting conditions and effective skill levels. It zeroes the saved \
+lasting-condition row and fills it from the passive (kind 4) skills' condition rows and the equipped items' \
+conditions. A skill's effective level is the base level plus the current title's and the equipped items', clamped \
+to 0 to 5, lowered to the highest level that has a name, and 0 where the player switched off a skill that can be \
+switched off. INIT2 runs it for each joined character on every boot and load, and ADDEXP after a level up."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SSINIT); the patch points verita.boot.data_layered and verita.experience.before_add"
+[script.arguments]
+character_arg_id = "the character it rebuilds"
+
+[[script]]
+name = "CHECKTITLE"
+summary = """Goes through a character's 20 titles in TIINIT's order and runs ADDTITLE for each one not yet earned \
+whose conditions hold: the level, the title before it and the story flags. ADDEXP runs it after a level up outside a \
+battle."""
+source = "docs/verita-data-tables.md (Units, characters and titles; TIINIT); the patch point verita.experience.before_add"
+
+[[script]]
+name = "ADDTITLE"
+summary = """Gives a character a title: it sets the title's cell of title_earned_flags. For a character who has \
+joined, and a title class other than 3, it announces the title and switches the character to it (CHANGETITLE). Below \
+class 3 it grants the title's 特技 at their levels (ADDSKILL). UNITECH and CHECKTITLE run it."""
+source = "docs/verita-data-tables.md (Units, characters and titles; TIINIT)"
+
+[[script]]
+name = "CHANGETITLE"
+summary = """Switches a character to a title, its cell of character_titles, and unequips the saved slots that the item \
+kinds of the character's unit and the new title no longer allow. ADDTITLE runs it."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT; TIINIT)"
+
+[[script]]
+name = "ADDSKILL"
+summary = """Raises a character's level in a school, the school in shared_number and the level in the cell after it. \
+It gives the learned bit to each slot of the school's SKINIT tree whose action passes the checks, and the mastered \
+bit too where the action's rank is below the new level. ADDTITLE runs it for a title's 特技."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SKINIT; TIINIT)"
+[script.arguments]
+shared_number = "the school, an ITINIT class, whose level it raises"
+
+[[script]]
+name = "CHECKSKILL"
+summary = """Learns and masters a character's actions through the SKINIT trees. For each school in which the character \
+has a level, it sets a slot's learned bit when the slot has an action whose rank is at most the school level, the \
+character may use it, its flag is set and its prerequisites are mastered. It sets the mastered bit once the slot's \
+proficiency reaches 100, and says so. BTL runs it after an action is used."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SKINIT)"
+
+[[script]]
+name = "SETSS"
+summary = "Sets a character's base level of an SSINIT skill, a saved cell, from shared_number and the cell after it."
+source = "docs/verita-data-tables.md (Items, skills and constants; SSINIT)"
+
+[[script]]
+name = "ADDITEM"
+summary = """Gives or takes an item: it adds item_count_change to the count of current_item, keeps the count from 0 to \
+999, marks the item as once obtained and stores that mark in the shared profile. For a key item (class 1) it sets \
+story flag 9001 + item, story_flags[0x2328 + item], while the count is not 0, and clears it at 0. GETITEM, SHOP, \
+ALCHEMY, QUESTCLEAR, RESULT and UNITECH call it."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ITINIT)"
+[script.arguments]
+current_item = "the item, an ITINIT id"
+item_count_change = "the count to add, negative to take"
+
+[[script]]
+name = "GETTREASURE"
+summary = """Opens the treasure of the map object in play: it sets current_treasure_id from the object, says \
+何も見つからなかった for treasure 0 or one already opened, and otherwise marks it opened and runs GETITEM. 381 map \
+event scripts call it."""
+source = "docs/verita-data-tables.md (Items, skills and constants; TRINIT)"
+
+[[script]]
+name = "GETITEM"
+summary = """Gives the treasure in current_treasure_id: it collects its five TRINIT slots, shows the items and the \
+money, adds each item with ADDITEM, adds the money to the party's, up to 9,999,999, and clears current_treasure_id."""
+source = "docs/verita-data-tables.md (Items, skills and constants; TRINIT)"
+[script.arguments]
+current_treasure_id = "the treasure, a TRINIT id; GETTREASURE sets it"
+
+[[script]]
+name = "CHECKCONTRACT"
+summary = """Asks whether the party in play holds the quest in current_quest_id, and answers in quest_contract_held. \
+SCJUMP's context 8 rules ask it."""
+source = "docs/verita-data-tables.md (Quests; QUINIT; Scene dispatch)"
+[script.arguments]
+current_quest_id = "the quest, a QUINIT id"
+
+[[script]]
+name = "QUESTCLEAR"
+summary = """Clears the quest in current_quest_id: it pays the money and item rewards and sets the quest's cleared \
+bit. SYSTEM4 runs it after each queued scene that has a quest."""
+source = "docs/verita-data-tables.md (Quests; QUINIT; Scene dispatch)"
+[script.arguments]
+current_quest_id = "the quest, a QUINIT id; SYSTEM4 sets it"
+
+[[script]]
+name = "ADDILL"
+summary = """Adds levels of a condition to a character: condition_argument_levels levels of condition_argument_id, \
+negative to take them away. It refuses a positive amount when the character has a skill that blocks the condition, \
+keeps the level between the lasting floor and 5, and sets the duration from ILINIT. Taking 呪い away also unequips \
+the cursed items. A map event sets the two cells and calls it."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ILINIT)"
+[script.arguments]
+condition_argument_id = "the condition, an ILINIT id"
+condition_argument_levels = "the levels to add, negative to take away"
+
+[[script]]
+name = "CALCILL"
+summary = """In battle, applies an action's conditions to a defender: the levels in the action's ITINIT row, after the \
+defender's blocking skills and a roll against its resistance and affinity. Some act at once: 即死 sets HP to 0, 石化 \
+stops a party unit and kills an enemy, 魅了 stops the unit, and 蘇生 revives. 破術 takes one level of every beneficial \
+condition away."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ILINIT)"
+
+[[script]]
+name = "SETILLREVISE"
+summary = """Sums each ILINIT modifier array over a battle unit's conditions at their levels, and applies the sums to \
+its battle stats: the percent arrays scale them, the others add."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ILINIT)"
+
+[[script]]
+name = "GAMECLEAR"
+summary = """Stores in the shared profile the earned titles, the count of every item of class over 1, and the growth \
+items' levels and exp. GAMESTART loads them back at a new game."""
+source = "docs/verita-data-tables.md (TIINIT; ITINIT; IMINIT)"
+
+[[script]]
+name = "GAMESTART"
+summary = """Loads back at a new game what GAMECLEAR stored in the shared profile: the earned titles, the item counts, \
+and the growth items' levels and exp, setting again the flag of a carried-over item at its last level. It joins a \
+carried-over character with UNITECH in its CHINIT party, or, where its CHINIT record names a story flag, sets that \
+flag instead. It sets chapter to 0."""
+source = "docs/verita-data-tables.md (TIINIT; ITINIT; IMINIT; CHINIT; Scene dispatch)"
+
+# ---------------------------------------------------------------------------------------------- the battle
+
+[[script]]
+name = "SETEN"
+summary = """Builds an enemy's battle slot from the unit in enemy_setup_unit. It marks the unit seen in the bestiary, \
+sets the level within the unit's base and max levels, and fills the 14 stats, the equipment, the defense element, \
+命中, 回避, FS and the skill levels. In the arena it takes the level from the match."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT; ARINIT)"
+[script.arguments]
+enemy_setup_unit = "the unit, an EBINIT id; BTL and SETENP set it"
+
+[[script]]
+name = "SETCH"
+summary = """Builds a party character's battle slot from the saved state and the current title. It reads 命中, 回避, \
+max FS and the defense element from the character's EBINIT unit, then adds the title's bonuses and skill levels and \
+each equipped item's numbers and growth bonuses."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT; TIINIT; ITINIT; IMINIT)"
+
+[[script]]
+name = "SETENP"
+summary = """Places a battle's enemies. It draws one entry of the encounter set, weighted, among those whose window \
+holds the field gauge, walks ESINIT's chain for each of the entry's two formations and places each slot, then runs \
+SETEN for the slot's unit. It also places a scripted party's characters. BTL runs it."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; ENINIT; ESINIT; CSINIT)"
+
+[[script]]
+name = "CHECKACT"
+summary = """Decides whether a battler may use an action: a character needs the action's skill-tree slot learned, and \
+an art school's required weapon categories are tested against the unit's weapon. RTN001 draws among the actions it \
+allows."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SKINIT; AFINIT; RTINIT)"
+
+[[script]]
+name = "CHECKSS"
+summary = """Finds the skills an action triggers. It walks the CHECKSS1 to CHECKSS4 chains and keeps each skill for \
+its own side: kind 1 for the attacker, kind 2 for the defender. A skill whose trigger roll fails, or whose HP, MP or \
+TP cost the unit cannot pay, is dropped. It takes a defender's costs at once and sums an attacker's for COMMITSS."""
+source = "docs/verita-data-tables.md (Boot; Hook chains; SSINIT)"
+
+[[script]]
+name = "CHECKSS4"
+summary = """Row 3 of the skill checks, which CHECKSS walks: it clears the attacker's skills (kind 1) when the \
+defender triggered 101 反射, 102 見切り, 103 カウンター or 106 神秘の防護."""
+source = "docs/verita-data-tables.md (Boot; Hook chains; SSINIT)"
+
+[[script]]
+name = "COMMITSS"
+summary = """Settles the triggered skills after an action. It takes the attacker's summed costs, walks the SETSSDAMAGE \
+chain, and takes back and refunds an attack-only skill when the action did not land or is 4033 or 4126. It puts the \
+effect of a skill that shows on the defender in the defender's effect cell. CALCDAMAGE runs it."""
+source = "docs/verita-data-tables.md (Boot; Hook chains; SSINIT)"
+
+[[script]]
+name = "SETSSDAMAGE"
+summary = """Slot 0 of the SETSSDAMAGE chain, which COMMITSS walks. Against a defender with 373 飛行能力 or 379 \
+飛竜使い, a ground action does nothing, a melee one ×0.8 and a ranged one ×1.5. 魔術結界's amount is the percent of \
+magic damage a party unit takes."""
+source = "docs/verita-data-tables.md (Items, skills and constants; ITINIT; SSINIT)"
+
+[[script]]
+name = "RTN"
+summary = """Runs a battler's routine, the RTINIT row in routine_in_play. It copies the unit's six actions, and for a \
+party battler whose tactic is 防御 it runs RTN202 at once. Otherwise it walks steps 0 to 49: a step whose rule is 0, \
+or has no script, ends the routine; it tests each step's story flag, use count, tactics mask and chance, and runs the \
+step's rule script. The first script that sets routine_step_result ends the walk, and RTN000 acts if none does. BTL \
+runs it for each battler under routine control."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+[script.arguments]
+routine_in_play = "the routine, an RTINIT row; BTL sets it from the unit's EBINIT routine"
+
+[[script]]
+name = "RTN000"
+summary = "RTN's fallback when no step's script acts: the unit's action 0 on a target the battle picks."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN001"
+summary = """Rule 1 of a battle routine (RTINIT): one of the unit's six actions, drawn among those CHECKACT \
+allows."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN002"
+summary = "Rule 2 of a battle routine (RTINIT): the step's action on the nearest target."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN003"
+summary = "Rule 3 of a battle routine (RTINIT): the step's action on a target the battle picks."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN004"
+summary = """Rule 4 of a battle routine (RTINIT): the step's action on the target whose gauge the step's first \
+argument names (HP, MP, TP or a fourth gauge) is lowest."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN005"
+summary = """Rule 5 of a battle routine (RTINIT): the step's action on a target drawn among those whose gauge the \
+step's first argument names is at or above the step's percent."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN006"
+summary = "Rule 6 of a battle routine (RTINIT): as rule 5, with the gauge at or below the percent."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN007"
+summary = "Rule 7 of a battle routine (RTINIT): the step's action on a battler whose unit is the step's first argument."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN008"
+summary = """Rule 8 of a battle routine (RTINIT): the step's action on the target it suits most by AFINIT's affinity, \
+the largest first."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN009"
+summary = """Rule 9 of a battle routine (RTINIT): an action with an area; it reads ITINIT's area width and height, and \
+the step's first argument."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN010"
+summary = """Rule 10 of a battle routine (RTINIT): the step's action when the actor's own gauge the step's first \
+argument names is at or above the step's percent."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN011"
+summary = "Rule 11 of a battle routine (RTINIT): as rule 10, with the gauge at or below the percent."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN012"
+summary = """Rule 12 of a battle routine (RTINIT): the step's action once the battle clock has reached the step's \
+first argument."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN013"
+summary = "Rule 13 of a battle routine (RTINIT): the step's action on a target drawn at random, not itself."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN051"
+summary = """Rule 51 of a battle routine (RTINIT), for a party member: one of the character's learned actions of the \
+kind the step names that attacks. Under チャージ全力攻撃 or 全力攻撃 it takes the strongest by ITINIT rank, \
+otherwise one at random."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN052"
+summary = "Rule 52 of a battle routine (RTINIT): as rule 51, over every learned attacking action."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN053"
+summary = """Rule 53 of a battle routine (RTINIT): a learned action of the kind the step names whose ITINIT target \
+(G[0x860d39]) is 2 or 3."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN101"
+summary = """Rule 101 of a battle routine (RTINIT): the step's action on itself when its own gauge the step's first \
+argument names is at or below the step's percent."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN102"
+summary = """Rule 102 of a battle routine (RTINIT): the step's action when some target's gauge the step's first \
+argument names is at or below the step's percent."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN103"
+summary = """Rule 103 of a battle routine (RTINIT): as rule 102, when at least the step's count of targets are at or \
+below the percent."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN201"
+summary = "Rule 201 of a battle routine (RTINIT): action 9998 (逃亡) on itself."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN202"
+summary = """Rule 202 of a battle routine (RTINIT): the unit stands, result 2, which BTL turns into the 防御 stance. RTN \
+runs it at once for a party battler whose tactic is 防御."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN203"
+summary = "Rule 203 of a battle routine (RTINIT): action 9979 (盗む)."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN301"
+summary = """Rule 301 of a battle routine (RTINIT): rule 3 with an item. The step's action is an item id, which \
+CHECKACT takes directly."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN302"
+summary = "Rule 302 of a battle routine (RTINIT): rule 9 with an item; the step's action is an item id."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN303"
+summary = "Rule 303 of a battle routine (RTINIT): rule 12 with an item; the step's action is an item id."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN304"
+summary = "Rule 304 of a battle routine (RTINIT): rule 101 with an item; the step's action is an item id."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN305"
+summary = "Rule 305 of a battle routine (RTINIT): rule 102 with an item; the step's action is an item id."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "RTN306"
+summary = "Rule 306 of a battle routine (RTINIT): rule 103 with an item; the step's action is an item id."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "MVRTN"
+summary = """Runs a war-game map unit's routine: it puts the unit's saved routine, an SRINIT row, in routine_in_play \
+and walks steps 0 to 19. Rule 0 ends the routine and a rule with no script is skipped; it tests each step's story \
+flag, use count and chance, and runs the step's rule script. The first script that sets routine_step_result ends the \
+walk, and MVRTN sets it to 1 if none does. SLG runs it for each map unit."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M001"
+summary = """Rule 1 of a war-game routine (SRINIT): nothing; the unit's turn ends. It adds one to the step's saved use \
+count."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M002"
+summary = """Rule 2 of a war-game routine (SRINIT): as rule 1, only while bit 0 of the switch the step's first \
+argument names is set."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M003"
+summary = """Rule 3 of a war-game routine (SRINIT): as rule 1, only while bit 0 of the switch the step's first \
+argument names is clear."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M011"
+summary = """Rule 11 of a war-game routine (SRINIT): moves toward the cell of the 18 × 10 map the step's two arguments \
+give. MVSEEK finds where the unit can go and SETROUTE walks the route; a unit already on the cell ends its turn with \
+result 2."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M012"
+summary = "Rule 12 of a war-game routine (SRINIT): as rule 11, with MVSEEK's mode 2 instead of 1."
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M013"
+summary = """Rule 13 of a war-game routine (SRINIT): moves toward the cell of the map unit the step's first argument \
+names."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; SRINIT)"
+
+[[script]]
+name = "RTN_M014"
+summary = "Rule 14 of a war-game routine (SRINIT): moves toward the unit's own start cell, which STINIT sets."
+source = "docs/verita-data-tables.md (SRINIT; STINIT)"
+
+[[script]]
+name = "ANIME"
+summary = """Plays the battle animation in battle_animation_in_play, a BTANINIT2 record. It runs SETEFFECT, then \
+starts each slot's effect at its start time less the earliest, as a movie or a picture sheet. When the option \
+at G[0x3637] is set, it first sets the animation to 0."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; BTANINIT2 and BTANINIT)"
+[script.arguments]
+battle_animation_in_play = "the animation, a BTANINIT2 id; BTL sets it from the action's ITINIT animation"
+
+[[script]]
+name = "SETEFFECT"
+summary = """Builds the effects of the battle animation in play. It clears the effect work arrays, then builds slots 0 \
+to 5 from the animation's BTANINIT2 effects and slots 6 to 35 from the effects BTL and COMMITSS left for the \
+battlers, each by walking BTANINIT's chain until a layer defines it. ANIME runs it."""
+source = "docs/verita-data-tables.md (Battle, enemies and routines; BTANINIT2 and BTANINIT; SSINIT)"
+
+[[script]]
+name = "RESULT"
+summary = """A battle's results. It adds the money of each enemy defeated and rolls its drops, pays an arena match's \
+prize and rewards the first time it is won, levels up the battle-grown IMINIT items whose exp reaches the next cost, \
+and runs ADDEXP for each character of a won battle."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT; IMINIT; ARINIT); the patch point verita.experience.before_add"
+
+# ---------------------------------------------------------------------------------------------- the field
+
+[[script]]
+name = "SETMAPDATA"
+summary = """Sets up the block in play from RMINIT's arrays: it copies three of the block's numbers and calls the \
+block's map script. Where the section names a puzzle in field_puzzle_id it walks PZINIT's chain, and the first time \
+copies each puzzle block's start into the saved puzzle state. FIELD and INIT2 call it."""
+source = "docs/verita-data-tables.md (RMINIT; PZINIT; Hook chains)"
+
+[[script]]
+name = "SETMAPTEX"
+summary = """Loads the pictures of the block in play from RMINIT's arrays, the map's object sheet from MPINIT and the \
+floor's name plate."""
+source = "docs/verita-data-tables.md (RMINIT; MPINIT)"
+
+[[script]]
+name = "EVOLVEOBJ"
+summary = """Turns a map object whose switch is on into its kind's next kind from OBINIT, written into the saved \
+object, and plays the change's sound; a next kind of −1 removes the object."""
+source = "docs/verita-data-tables.md (The world: places, the field, objects and the war game; OBINIT and OBINIT2)"
+
+[[script]]
+name = "CARRY"
+summary = """Plays a box puzzle of PZINIT: the player pushes blocks onto goal cells, from the saved block positions. \
+FIELD calls it."""
+source = "docs/verita-data-tables.md (The world: places, the field, objects and the war game; PZINIT)"
+
+# ---------------------------------------------------------------------------------------------- screens and galleries
+
+[[script]]
+name = "INFO1"
+summary = """The objectives screen, which INFO calls: it sorts FAINIT's ids by their key and lists each that has text \
+and whose flags allow it."""
+source = "docs/verita-data-tables.md (Information screens; FAINIT)"
+
+[[script]]
+name = "INFO2"
+summary = """The glossary screen. It lists a VIINIT entry that has a title when its first unlock scene is 0 or the \
+shared profile has seen one of its scenes, shows the share of entries seen, and draws an entry's text by putting its \
+id in glossary_selected_id and walking the VIMES chain."""
+source = "docs/verita-data-tables.md (Information screens; VIINIT)"
+
+[[script]]
+name = "INFO3"
+summary = """The 人物 book: it lists a CIINIT profile that has a name, once its unit has spoken and one of its scenes \
+has been seen (unless it names none), and draws the profile's text through the CIMES chain."""
+source = "docs/verita-data-tables.md (Units, characters and titles; CIINIT)"
+
+[[script]]
+name = "INFO4"
+summary = """The bestiary: it lists the units whose order value is above 0, sorted by it, and draws a unit's picture, \
+its two lines and its numbers."""
+source = "docs/verita-data-tables.md (Units, characters and titles; EBINIT)"
+
+[[script]]
+name = "INFO6"
+summary = """The skills list: it lists SSINIT's skills in sort order, and shows one only when its first scene is 0 or \
+the shared profile has seen one of its scenes."""
+source = "docs/verita-data-tables.md (Items, skills and constants; SSINIT)"
+
+[[script]]
+name = "CONFIG"
+summary = """The options screen (設定): it toggles each of INITCONFIG's options between two values. Its voice page lists \
+CVINIT's settings that have a sample voice, plays a setting's sample, and shows a setting's name once its unit has \
+spoken."""
+source = "docs/verita-data-tables.md (Boot; INITCONFIG; CNINIT and CVINIT)"
+
+[[script]]
+name = "READICON"
+summary = """Composes the icon sheets of one row of the icon chains into a texture, the row in chain_slot_index: the \
+base's sheet, then each append's. It copies the icon of each character 1 to 99 that CHINIT gives an append from that \
+append's sheet."""
+source = "docs/verita-data-tables.md (Boot; Hook chains; CHINIT)"
+[script.arguments]
+chain_slot_index = "the row, 0 to 2: 0 for ALCHEMY, CHMODE, SHOP and TOWN, 1 for DIVIDECH and SELCH, 2 for RESULT"
+
+[[script]]
+name = "SETMEMOIR"
+summary = """Builds the three galleries' pages each time ROOM runs it: CGINIT's CGs by tab, slot and variant, SPINIT's \
+replay cells and MUINIT's tracks, each marked by whether the engine's catalog has unlocked it, and each gallery's \
+share unlocked. It closes up the empty slots of CG tab 7 and of replay row 5."""
+source = "docs/verita-data-tables.md (Galleries; CGINIT; SPINIT; MUINIT)"
+
+[[script]]
+name = "CGMODE"
+summary = """The CG gallery: it draws a tab's page as six columns and five rows of thumbnails. An append's thumbnails \
+come from that append's sheet, which it loads through the chain G[0xc78130]."""
+source = "docs/verita-data-tables.md (Galleries; CGINIT; Hook chains)"
+
+[[script]]
+name = "HMODE"
+summary = """Scene replay: it shows six pages where an append is mounted and five otherwise, and runs the chosen \
+cell's SPINIT script. An append's thumbnails come from that append's sheet."""
+source = "docs/verita-data-tables.md (Galleries; SPINIT; Hook chains)"
+
+[[script]]
+name = "MMODE"
+summary = """The music room: it plays a MUINIT track that SETMEMOIR marked unlocked, and shows the counts and the \
+share unlocked."""
+source = "docs/verita-data-tables.md (Galleries; MUINIT)"

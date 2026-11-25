@@ -27,7 +27,8 @@ public sealed record OmsSourceRoundTripReport(
     long LibrarySubs = 0,
     long TemplateLifts = 0,
     IReadOnlyList<IrRoundTripFailure>? LiftFailures = null,
-    IReadOnlyDictionary<string, long>? LiftedInstructions = null)
+    IReadOnlyDictionary<string, long>? LiftedInstructions = null,
+    int LibraryScripts = 0)
 {
     public bool Passed => Failures.Count == 0 && Identical == Scripts;
 }
@@ -64,7 +65,7 @@ public static class OmsSourceRoundTrip
             throw new ArgumentException($"unknown level {level}", nameof(level));
         var intrinsics = new IntrinsicCatalog(table, contracts);
         OmsIdioms? idioms = level == IdiomaticLevel ? OmsIdioms.Build(modules ?? [], table.AbiId, intrinsics) : null;
-        int count = 0, identical = 0, empty = 0;
+        int count = 0, identical = 0, empty = 0, libraryScripts = 0;
         long sourceBytes = 0, instructions = 0, rawStatements = 0, folded = 0, rejected = 0, overrides = 0;
         long librarySubs = 0, templateLifts = 0;
         var lifted = new SortedDictionary<string, long>(StringComparer.Ordinal);
@@ -82,6 +83,7 @@ public static class OmsSourceRoundTrip
                 byte[] rebuilt = RoundTrip(original, name, table, contracts, intrinsics, level, out OmsDecompilation decompiled,
                                            out int instructionCount, modules, idioms);
                 librarySubs += decompiled.LibrarySubs;
+                if (decompiled.LibrarySubs > 0) libraryScripts++;
                 templateLifts += decompiled.TemplateLifts;
                 foreach (var (module, liftedCount) in decompiled.LiftedInstructions ?? new Dictionary<string, int>())
                     lifted[module] = lifted.GetValueOrDefault(module) + liftedCount;
@@ -103,6 +105,7 @@ public static class OmsSourceRoundTrip
                 Note("tables", layout.Tables != null);
                 Note("temp_base", layout.TempBase != null);
                 Note("ref_swap", layout.RefSwap != null);
+                Note("ref_rotate", layout.RefRotate != null);
                 Note("temps", layout.Temps != null);
                 Note("library", layout.Library != null);
                 if (rebuilt.AsSpan().SequenceEqual(original)) identical++;
@@ -115,7 +118,7 @@ public static class OmsSourceRoundTrip
             }
         }
         return new OmsSourceRoundTripReport(level, count, identical, empty, fieldUse, sourceBytes, instructions,
-            rawStatements, failures, folded, rejected, overrides, librarySubs, templateLifts, liftFailures, lifted);
+            rawStatements, failures, folded, rejected, overrides, librarySubs, templateLifts, liftFailures, lifted, libraryScripts);
     }
 
     /// <summary>The raw-level round trip for one script.</summary>

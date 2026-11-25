@@ -1,0 +1,21 @@
+# A dungeon map (Lua scripting spec §9.2). Hand-written: each event names its point and gives each field's cell, by the
+# names layout/globals.json exports.
+
+[[event]]
+name = "verita.map.loaded"
+point = "verita.map.after_block_loaders"
+description = """
+The block loaders of the dungeon map in play have run (RMINIT, the base's and each append's): map_block holds the \
+map's blocks, keyed by 30 * row + block, and FIELD has not set the party's block up from them yet. A handler that \
+rewrites them changes the blocks FIELD sets up: their scripts, pictures, music, encounter set and enemy level. FIELD \
+runs the loaders, and raises this, each time it starts: when the party enters the map, and when FIELD starts again \
+on it, after a battle or a scene. The loaders write the blocks afresh each time, so a handler makes the same change \
+each time. A load of a save made on a map does not raise this: the boot runs the loaders again for it, after \
+verita.data.layered and before verita.data.ready, so a handler that should hold on a loaded map subscribes to \
+verita.data.ready as well and checks on_dungeon_map. The data files of verita.tables write their parts for the map \
+here, and at verita.data.ready after such a load."""
+
+[[event.field]]
+name = "map"
+at = "current_place_id"
+type = "int"

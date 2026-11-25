@@ -110,7 +110,8 @@ public static class OmsCoreDecompiler
         if (folding.UsesIntTemps && derivedBase != folding.PoolBase) layout.TempBase = folding.PoolBase;
         layout.LocalCounts = script.LocalCounts.SequenceEqual(OmsCanonical.LocalCounts(script.Code, declared))
             ? null : script.LocalCounts.ToArray();
-        if (folding.RefSwap) layout.RefSwap = true;
+        if (folding.RefOrder == RefOrder.Swap) layout.RefSwap = true;
+        if (folding.RefOrder == RefOrder.Rotate) layout.RefRotate = true;
         if (folding.Overrides.Count > 0) layout.Temps = folding.Overrides;
         if (context.LibrarySubs > 0)
             layout.Library = context.LibraryPlacement();
@@ -547,14 +548,14 @@ public static class OmsCoreDecompiler
 
         private readonly List<(int Start, int Root, LStatement Statement, List<(int Type, uint Slot)> Slots)> _accepted = new();
 
-        /// <summary>Whether the script starts its integer-reference registers in the order LP1, LP0.</summary>
-        public bool RefSwap { get; private set; }
+        /// <summary>The script's order of integer-reference temporaries.</summary>
+        public RefOrder RefOrder { get; private set; }
 
-        private bool Canonical(int start, int root, LStatement statement, bool swap)
-            => Canonical(start, root, statement, PoolBase, swap);
+        private bool Canonical(int start, int root, LStatement statement, RefOrder order)
+            => Canonical(start, root, statement, PoolBase, order);
 
-        private bool Canonical(int start, int root, LStatement statement, uint poolBase, bool swap)
-            => Reproduces(ExpressionLowering.Instructions(statement, new CanonicalTemps(statement, poolBase, swap).Allocate),
+        private bool Canonical(int start, int root, LStatement statement, uint poolBase, RefOrder order)
+            => Reproduces(ExpressionLowering.Instructions(statement, new CanonicalTemps(statement, poolBase, order).Allocate),
                 start, root);
 
         /// <summary>Chooses the script's reference order by which fits more statements, then records the original
@@ -572,25 +573,26 @@ public static class OmsCoreDecompiler
                 .SelectMany(root => Leaves(Statements[root]!))
                 .Where(leaf => leaf is { Kind: IrOperandKind.Literal, Type: 0x9 })
                 .Select(leaf => (long)leaf.Value).DefaultIfEmpty(-1).Max() + 1);
-            var best = (Base: derived, Swap: false, Fits: -1);
+            // The orders are tried plain, swap, rotate, and an order is kept only when it fits more than those before it.
+            var best = (Base: derived, Order: RefOrder.Plain, Fits: -1);
             foreach (uint poolBase in new[] { derived, printed, PoolBase }.Distinct())
-                foreach (bool swap in new[] { false, true })
+                foreach (RefOrder order in Enum.GetValues<RefOrder>())
                 {
-                    int fits = _accepted.Count(a => Canonical(a.Start, a.Root, a.Statement, poolBase, swap));
-                    if (fits > best.Fits) best = (poolBase, swap, fits);
+                    int fits = _accepted.Count(a => Canonical(a.Start, a.Root, a.Statement, poolBase, order));
+                    if (fits > best.Fits) best = (poolBase, order, fits);
                 }
             PoolBase = best.Base;
-            RefSwap = best.Swap;
+            RefOrder = best.Order;
             foreach (var (start, root, statement, slots) in _accepted)
             {
-                bool canonical = Canonical(start, root, statement, RefSwap);
+                bool canonical = Canonical(start, root, statement, RefOrder);
                 if (!canonical)
                 {
                     uint[] ints = slots.Where(a => a.Type == ExpressionLowering.IntTemp).Select(a => a.Slot).ToArray();
                     uint[] refs = slots.Where(a => a.Type != ExpressionLowering.IntTemp).Select(a => a.Slot).ToArray();
                     var expectedInts = new List<uint>();
                     var expectedRefs = new List<uint>();
-                    var plan = new CanonicalTemps(statement, PoolBase, RefSwap);
+                    var plan = new CanonicalTemps(statement, PoolBase, RefOrder);
                     ExpressionLowering.Instructions(statement, (node, type) =>
                     {
                         uint slot = plan.Allocate(node, type);
@@ -602,7 +604,7 @@ public static class OmsCoreDecompiler
                         Ints = ints.SequenceEqual(expectedInts) ? null : ints,
                         Refs = refs.SequenceEqual(expectedRefs) ? null : refs,
                     };
-                    var replay = new CanonicalTemps(statement, PoolBase, RefSwap, entry.Ints, entry.Refs);
+                    var replay = new CanonicalTemps(statement, PoolBase, RefOrder, entry.Ints, entry.Refs);
                     if (!Reproduces(ExpressionLowering.Instructions(statement, replay.Allocate), start, root))
                         throw new InvalidOperationException($"temporary override does not reproduce statement at {start}");
                     Overrides[start] = entry;
@@ -1413,6 +1415,14 @@ public static class OmsCoreDecompiler
                && instruction.Operands[0].Kind != IrOperandKind.CodeLabel
                && instruction.Operands.Skip(1).All(o => o is { Kind: IrOperandKind.CodeLabel, Type: 0 });
 
+        /// <summary>jcc c, -1, -1: a conditional jump that names neither target, so it goes on either way (Verita has
+        /// five, in SC0330 and SC1150). It prints as <c>if c goto next</c>.</summary>
+        private static bool IsNoTargetBranch(IrInstruction instruction)
+            => instruction.Opcode == OmsCompiler.Jcc && instruction.Operands.Count == 3
+               && instruction.Operands[0].Kind != IrOperandKind.CodeLabel
+               && instruction.Operands[1] == IrOperand.Literal(0, NoTarget)
+               && instruction.Operands[2] == IrOperand.Literal(0, NoTarget);
+
         private static string? JumpWord(int target, Loop? loop)
             => loop == null ? null : target == loop.Break ? "break" : target == loop.Continue ? "continue" : null;
 
@@ -1723,6 +1733,8 @@ public static class OmsCoreDecompiler
                 case OmsCompiler.Jcc when IsTwoTargetBranch(instruction):
                     return $"if {Condition(root)} {Target((int)operands[1].Value, loop)} else "
                            + Target((int)operands[2].Value, loop);
+                case OmsCompiler.Jcc when IsNoTargetBranch(instruction):
+                    return $"if {Condition(root)} goto next";
                 case OmsCompiler.Call when operands.Count == 1 && operands[0] is { Kind: IrOperandKind.CodeLabel, Type: 0 }:
                     return $"{LabelName((int)operands[0].Value)}()";
                 case OmsCompiler.Ret when operands.Count == 0:

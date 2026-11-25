@@ -63,11 +63,16 @@ PROFILE = {"persistence": {"bankDimensions": {"integerGlobals": 0x50, "floatGlob
                                               "pointerGlobals": 1, "floatPointers": 1, "stringPointers": 1}}}
 
 
+# The manifest's [[accepts]] of the data kind: without it the base mod has no record map and no shape.
+ACCEPTS = '\n[[accepts]]\nkind = "test.tables"\nshape = "tables.schema.json"\n'
+
+
 def workspace(directory: Path, registry: str = REGISTRY, version: str = "1.0.0",
-              profile: dict | None = None) -> tuple[Path, Path]:
+              profile: dict | None = None, accepts: bool = True) -> tuple[Path, Path]:
     mods = directory / "mods"
     (mods / "test-base").mkdir(parents=True, exist_ok=True)
-    (mods / "test-base" / "manifest.toml").write_text(f'version = "{version}"\n', encoding="utf-8")
+    (mods / "test-base" / "manifest.toml").write_text(f'version = "{version}"\n' + (ACCEPTS if accepts else ""),
+                                                      encoding="utf-8")
     source = directory / "globals-test.toml"
     source.write_text(registry, encoding="utf-8")
     (directory / "test.json").write_text(json.dumps(PROFILE if profile is None else profile), encoding="utf-8")
@@ -193,13 +198,13 @@ def test_rename_rule():
         check("unit_current_levels = unit_levels" in exports.splitlines(), "exports.txt lists an alias and its global")
         check(layout_of(files)["unit_levels"]["aliases"] == ["unit_current_levels"], "the layout carries the alias")
         source.write_text(renamed, encoding="utf-8")
-        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n', encoding="utf-8")
+        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n' + ACCEPTS, encoding="utf-8")
         files, errors = generate(mods, source)
         check(not errors and build.parse_exports(next(text for path, text in files.items()
                                                       if path.name == "exports.txt"))[0] == 2,
               "a rename with a raised major version passes and starts the new list")
         write(files)
-        (mods / "test-base" / "manifest.toml").write_text('version = "1.4.0"\n', encoding="utf-8")
+        (mods / "test-base" / "manifest.toml").write_text('version = "1.4.0"\n' + ACCEPTS, encoding="utf-8")
         _, errors = generate(mods, source)
         check(any("lower than the released 2" in error for error in errors), "the major version cannot go down")
 
@@ -260,7 +265,7 @@ def test_module_names():
         check(errors == ["test-base 1 exports 'open_window' of the module test.adv, which oms/ no longer declares: a "
                          "module's names have no old-name form, so keep the name (a sub can stay as one that calls "
                          "its new name) or raise the base mod's major version"], f"a renamed sub is refused ({errors})")
-        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n', encoding="utf-8")
+        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n' + ACCEPTS, encoding="utf-8")
         _, errors = generate(mods, source)
         check(not errors, f"a raised major version lets it go ({errors})")
         (mods / "test-base" / "oms" / "adv.oms").write_text(MODULE + "sub handler {\n}\n", encoding="utf-8")
@@ -367,6 +372,22 @@ def test_record_map_without_tables():
         files, errors = generate(mods, source)
         check(not errors, f"a registry without tables needs no saved prefix ({errors})")
         check("    tables = {\n    },\n}\n" in record_map(files), "its record map has no table")
+
+
+def test_no_data_kind():
+    """A base mod whose manifest accepts no data kind yet has no record map and no shape, which the package loader
+    would refuse; one left from before is an error."""
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory), HEROES, accepts=False)
+        files, errors = generate(mods, source)
+        check(not errors, f"a base mod without the data kind generates ({errors})")
+        check(not any(path.name in ("tables.lua", build.SHAPE_FILE) for path in files),
+              f"it has no record map and no shape ({sorted(path.name for path in files)})")
+        check(any(path.name == "exports.txt" for path in files), "it still has its layout and exports")
+        write({mods / "test-base" / "shapes" / build.SHAPE_FILE: "{}\n"})
+        _, errors = generate(mods, source)
+        check(any("shapes/tables.schema.json belongs to the data kind" in error for error in errors),
+              f"a shape left from before is an error ({errors})")
 
 
 def test_record_map_errors():
@@ -588,7 +609,7 @@ def test_old_names_rename_rule():
         check(not errors, f"a field renamed with its old name passes ({errors})")
         # A raised major version allows it without the old name.
         source.write_text(dropped, encoding="utf-8")
-        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n', encoding="utf-8")
+        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n' + ACCEPTS, encoding="utf-8")
         _, errors = generate(mods, source)
         check(not errors, f"a field dropped with a raised major version passes ({errors})")
 
@@ -643,7 +664,7 @@ def test_scopes():
         _, errors = generate(mods, source)
         check(len(errors) == 1 and "exports the scope 'stage'" in errors[0],
               f"a scope that leaves is refused, and its error stands for its short names ({errors})")
-        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n', encoding="utf-8")
+        (mods / "test-base" / "manifest.toml").write_text('version = "2.0.0"\n' + ACCEPTS, encoding="utf-8")
         _, errors = generate(mods, source)
         check(not errors, f"a raised major version lets a scope go ({errors})")
         # The registry's scope errors block the build.
@@ -777,6 +798,7 @@ def main():
     test_record_map()
     test_one_record_table()
     test_record_map_without_tables()
+    test_no_data_kind()
     test_record_map_errors()
     test_alias_lint()
     test_old_names()

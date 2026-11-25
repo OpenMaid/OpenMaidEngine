@@ -1,0 +1,37 @@
+# Port only (scenarios/port/): Verita's base mod in play (docs/adding-a-game.md, M3). Three example mods:
+# example.verita-debug-menu opens the title's debug menu from Quit, example.verita-map-block edits map 11's block 31 at
+# verita.map.loaded, and example.verita-event-log lists every event of verita-base, and gives one 治癒の水・小 at
+# verita.data.ready through the base mod's helper. The debug menu's 迷宮マップ１ (DEBUGMAP1) starts FIELD on map 11
+# at row 1, column 1; its ＡＤＶデバッグ（ＰＧ用） plays DEBUGADV, which gives character 6 999,999 experience through ADDEXP
+# (DEBUGADV@0xc43) and then opens a shop. The return to the title between them starts a new session, which empties the
+# log. Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game verita port start --mod oms/examples/mods/example.verita-debug-menu --mod oms/examples/mods/example.verita-map-block --mod oms/examples/mods/example.verita-event-log
+#   py -3.11 -X utf8 tools/drive.py --game verita port run tools/drive/scenarios/port/verita-debug-events.steps
+#   py -3.11 -X utf8 tools/drive.py --game verita port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+wait 6
+click title.quit                        # the debug menu
+wait 2
+settle timeout=20
+shot verita-debug-menu
+click 445 210                           # 迷宮マップ１
+wait-state script=FIELD timeout=90
+wait 3
+settle timeout=30
+lua local t = maid.names.table("map_block_music") assert(t[31][0] == 15 and t[32][0] == 19, t[31][0] .. " " .. t[32][0]) return t[31][0]
+lua mod=example.verita-event-log local log = table.concat(seen, "; ") assert(log == "verita.data.layered; verita.data.ready item101=1; verita.map.loaded map=11", log) return log
+shot verita-debug-map
+
+close-request                           # back to the title by the 終了 dialog
+answer タイトルに戻る(&T)
+answer OK
+wait-state script=TITLE timeout=120
+wait 6
+click title.quit
+wait 2
+settle timeout=20
+click 505 180                           # ＡＤＶデバッグ（ＰＧ用）
+wait-state script=SHOP click=adv.next every=1.5 timeout=240
+lua mod=example.verita-event-log local log = table.concat(seen, "; ") assert(log:find("verita.experience.award character=6 amount=999999 level=22", 1, true), log) return log

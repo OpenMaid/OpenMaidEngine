@@ -1,0 +1,27 @@
+# The boot's data (Lua scripting spec §9.2). Hand-written: each event names its point and gives each field's cell, by the
+# names layout/globals.json exports.
+
+[[event]]
+name = "verita.data.layered"
+point = "verita.boot.data_layered"
+description = """
+At boot, once every layer has written its data tables (the base layer's, then each append's) and before the boot uses \
+them. An edit made here lands where an append's edit lands, and the boot's own work then runs over it as it runs over \
+the appends': CALCREVISE rebuilds each joined character's lasting conditions from the skills and items, and a save \
+being loaded has its map, picture and inn set up again. A handler that edits a table (a unit, an item, a skill, a \
+title) changes it until the tables are built again. The tables are not saved: a load builds them again and raises \
+this again while it restores (maid.session.restoring is true), so the handler makes its edit again. The data files \
+of verita.tables are applied here, among this event's handlers in the mods' load order, so a handler here takes its \
+place among them."""
+
+[[event]]
+name = "verita.data.ready"
+point = "verita.boot.data_ready"
+description = """
+At boot, once every data table is built and the boot's own work on them is done: INIT2 has rebuilt the joined \
+characters' lasting conditions and, for a save being loaded, set up again the map the save was on (its blocks, from \
+RMINIT's chain), its picture and the inn's quests. An edit made here comes after that work, which does not see it: \
+verita.data.layered comes before it. A handler here runs after every data file of verita.tables, whatever the load \
+order, because this event comes later in the boot; one that should take its place among them by load order \
+subscribes to verita.data.layered instead. The tables are not saved: a load builds them again and raises this again \
+while it restores (maid.session.restoring is true), so the handler makes its edit again."""

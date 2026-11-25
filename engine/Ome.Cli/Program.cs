@@ -276,6 +276,7 @@ if (command == "oms-roundtrip" && OptionValue("--level") is { } sourceLevel)
             fold_rejections = source.FoldRejections,
             temp_overrides = source.TempOverrides,
             library_subs = source.LibrarySubs,
+            library_scripts = source.LibraryScripts,
             template_lifts = source.TemplateLifts,
             lifted_instructions = source.LiftedInstructions,
             lift_failures = source.LiftFailures,
@@ -290,7 +291,8 @@ if (command == "oms-roundtrip" && OptionValue("--level") is { } sourceLevel)
         + $"source-bytes={source.SourceBytes} instructions={source.Instructions} raw-statements={source.RawStatements} "
         + $"folded={source.FoldedInstructions} fold-rejections={source.FoldRejections} temp-overrides={source.TempOverrides} "
         + (source.Level == Ome.Script.OmsSourceRoundTrip.IdiomaticLevel
-            ? $"library-subs={source.LibrarySubs} template-lifts={source.TemplateLifts} "
+            ? $"library-subs={source.LibrarySubs} library-scripts={source.LibraryScripts} "
+              + $"template-lifts={source.TemplateLifts} "
               + $"lift-coverage={string.Join(",", (source.LiftedInstructions ?? new Dictionary<string, long>()).Select(pair => $"{pair.Key}:{pair.Value}({100.0 * pair.Value / Math.Max(1, source.Instructions):0.0}%)"))} "
               + $"lift-failures={source.LiftFailures?.Count ?? 0} " : "")
         + $"failures={source.Failures.Count}");

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Layouts of 創刻のアテリアル's `*INIT` data tables, inferred from how the scripts write them.
+"""Layouts of a game's `*INIT` data tables, inferred from how the scripts write them.
 
-Arterial's tables are flat scripts of constant writes, record after record (docs/arterial-data-tables.md). Each
-field of a record lives in an array of its own: a cell is `base + stride * id + column`. This tool finds those
-arrays without a hand-written schema per table:
+The tables of 創刻のアテリアル and 戦女神VERITA are flat scripts of constant writes, record after record
+(docs/arterial-data-tables.md, docs/verita-data-tables.md). Each field of a record lives in an array of its own: a
+cell is `base + stride * id + column`. This tool finds those arrays without a hand-written schema per table:
 
-1. A record starts at each write into the table's *leader* array (LEADERS below: the array every record writes
-   first, and its capacity). The record's id is the cell's address less the leader's base.
+1. A record starts at each write into the table's *leader* array (LEADERS below, per game: the array every record
+   writes first, and its capacity). The record's id is the cell's address less the leader's base.
 2. Every other write is tried at each stride, for the record before it and for the record after it (a record may
    write a field before its leader: the appends stamp their number so): its key is the address less stride times
    the id. The record and stride whose key the most records share are the field's, and the key is the field's
@@ -19,21 +19,21 @@ arrays without a hand-written schema per table:
    table's cells lie between, or the array is not indexed by the record's id (one cell a card row, say) and its
    base and ids here are not to be trusted.
 
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial              # every table: summary lines
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial CHINIT       # one table's arrays, column by column
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial --write      # build/games/arterial/data/<T>.layout.json
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial CHINIT --markdown   # the arrays as a Markdown table
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial ARINIT --leader GS:0x1265c:13   # try a leader
+  py -3.11 -X utf8 tools/init_layout.py --game arterial              # every table: summary lines
+  py -3.11 -X utf8 tools/init_layout.py --game arterial CHINIT       # one table's arrays, column by column
+  py -3.11 -X utf8 tools/init_layout.py --game arterial --write      # build/games/arterial/data/<T>.layout.json
+  py -3.11 -X utf8 tools/init_layout.py --game arterial CHINIT --markdown   # the arrays as a Markdown table
+  py -3.11 -X utf8 tools/init_layout.py --game arterial ARINIT --leader GS:0x1265c:13   # try a leader
 
 It reads build/games/<game>/init-image.json and build/games/<game>/disasm/*.asm (tools/extract_phase2.py), and
 counts each array's consumers from the corpus's lookup-array instructions. A table with no leader (bulk arrays, or
 a shape the method does not fit) is listed with the cells it wrote and nothing more.
 
-The three tables the game runs for an area (MPINIT, ROINIT, UNINIT) are not in the boot image. Each opens by
-clearing its arrays, which gives their bases and sizes exactly, and then fills them in one branch per area; they
-are listed from the listings alone, with the areas, slots and values each array gets:
+A game may also run tables for one area at a time (AREAS below; Arterial's MPINIT, ROINIT and UNINIT). They are not
+in the boot image. Each opens by clearing its arrays, which gives their bases and sizes exactly, and then fills them
+in one branch per area; they are listed from the listings alone, with the areas, slots and values each array gets:
 
-  py -3.11 -X utf8 tools/init_arterial.py --game arterial MPINIT [--markdown]
+  py -3.11 -X utf8 tools/init_layout.py --game arterial MPINIT [--markdown]
 """
 from __future__ import annotations
 
@@ -62,15 +62,29 @@ LOOKUP = re.compile(r"lookup-array \([^)]*\) \((global-int|global-string) 0x([0-
 LOOKUP_2D = re.compile(r"lookup-array-2d \([^)]*\) \((global-int|global-string) 0x([0-9a-f]+)\) (?:\([^)]*\)|\S+) "
                        r"(0x[0-9a-f]+)")
 
-# The tables the game runs for an area: 200 slots an array, cleared at the script's start and filled in the branch
-# for the area in play (global 0x9883).
-AREA_TABLES = ("MPINIT", "ROINIT", "UNINIT")
-SLOTS = 0xc8
 INSTRUCTION = re.compile(r"^\s+0x[0-9a-f]+:\s+(.*)$")
 CLEAR = re.compile(r"copy-to-global \(global-int 0x([0-9a-f]+)\) (0x[0-9a-f]+|\(local-int 0x0\))$")
 TIMES = re.compile(r"mul \(local-int 0x0\) 0x([0-9a-f]+) 0x([0-9a-f]+)$")
-AREA = re.compile(r"eq \(local-int 0x0\) \(global-int 0x9883\) 0x([0-9a-f]+)$")
 CONSTANT = re.compile(r"(mov|set-string) \((global-int|global-string) 0x([0-9a-f]+)\) (.+)$")
+
+
+@dataclass(frozen=True)
+class AreaRule:
+    """The tables a game runs for one area at a time: each array holds `slots` slots, cleared at the script's start
+    and filled in the branch whose test compares the area global `selector` with the area's id."""
+    tables: tuple[str, ...]
+    selector: int
+    slots: int
+
+    @property
+    def test(self) -> re.Pattern:
+        return re.compile(rf"eq \(local-int 0x0\) \(global-int {self.selector:#x}\) 0x([0-9a-f]+)$")
+
+
+AREAS: dict[str, AreaRule] = {
+    # Arterial's area in play is global 0x9883 (current_area_id); its area arrays hold 200 slots.
+    "arterial": AreaRule(("MPINIT", "ROINIT", "UNINIT"), 0x9883, 0xc8),
+}
 
 
 @dataclass(frozen=True)
@@ -90,8 +104,8 @@ class Leader:
         return (self.base, *self.also)
 
 
-# One entry per boot table, in INIT2's order. A table without one is reported by its cells only.
-LEADERS: dict[str, Leader] = {
+# Per game, one entry per boot table, in INIT2's order. A table without one is reported by its cells only.
+ARTERIAL: dict[str, Leader] = {
     "SCINIT": Leader("G", 0x214b71, 10000),   # scene ids start at 0 (SC0000); the scripts index this base
     "CHINIT": Leader("G", 0x297db9, 1000),
     "CFINIT": Leader("G", 0x266c91, 100000, group=100),
@@ -117,6 +131,43 @@ LEADERS: dict[str, Leader] = {
     "SPINIT": Leader("G", 0x25fec6, 1000),
     "MUINIT": Leader("G", 0x260667, 50),
 }
+
+VERITA: dict[str, Leader] = {
+    "OBINIT2": Leader("G", 0x5f371b, 1000),
+    "MUINIT": Leader("G", 0x275334, 50),
+    "CBINIT": Leader("G", 0x36fa06, 100, stride=7),
+    "EBINIT": Leader("GS", 0x12a4, 1000),
+    "CNINIT": Leader("GS", 0x1b6, 1000),
+    "CHINIT": Leader("G", 0xc1a671, 100),
+    "ITINIT": Leader("GS", 0x2f78, 10000),
+    "ILINIT": Leader("G", 0x9f3103, 60),
+    "SSINIT": Leader("G", 0x9f3d71, 600),
+    "RTINIT": Leader("G", 0xa26f6c, 50000, group=50),
+    "TIINIT": Leader("GS", 0xdedc, 2000),
+    "AMINIT2": Leader("G", 0x42a588, 100),
+    "ALINIT": Leader("G", 0x42ab61, 1000),
+    "ARINIT": Leader("GS", 0x22c6, 100),
+    "MPINIT": Leader("G", 0x5d901f, 50),
+    "LAINIT": Leader("G", 0x5f2073, 100, also=(0x5f200f, 0x5f20d7, 0x5f213b, 0x5f219f, 0x5f232f)),
+    "OBINIT": Leader("G", 0x5f2b63, 1000),
+    "SOINIT": Leader("GS", 0x10cb0, 50),
+    "TPINIT": Leader("GS", 0x10ce2, 30),
+    "CAINIT": Leader("GS", 0x10d00, 200),
+    "RUINIT": Leader("GS", 0x10dc8, 100),
+    "SRINIT": Leader("G", 0xc4bbdb, 20000, group=20),   # war routines: 20 steps a routine
+    "GRINIT": Leader("GS", 0x10e90, 10),
+    "CGINIT": Leader("G", 0x269b32, 2000, stride=2),
+    "SPINIT": Leader("G", 0x27513d, 150, group=15),
+    "CIINIT": Leader("G", 0xc48eff, 200),
+    "CVINIT": Leader("G", 0x269744, 1000),
+    "VIINIT": Leader("GS", 0x108c8, 1000),
+    "FAINIT": Leader("GS", 0xf860, 2000),
+    "BTANINIT2": Leader("G", 0xc25a1a, 10000, stride=6),
+    "SCINIT": Leader("G", 0x4256a0, 10000),
+}
+
+LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA}.get(paths.CONTEXT.profile_id, {})
+AREA: AreaRule | None = AREAS.get(paths.CONTEXT.profile_id)
 
 
 @dataclass
@@ -353,9 +404,9 @@ def by_consumers(table: str) -> list[Array]:
     return sorted(arrays.values(), key=lambda a: (a.bank, a.base))
 
 
-def cleared_arrays(lines: list[str]) -> list[tuple[int, int]]:
-    """[(base, cells per slot)] from the range clears an area table opens with: `copy-to-global BASE 0xc8` clears
-    one cell a slot, and `mul (local-int 0x0) 0xc8 N` before a clear of that many cells N a slot. The clears are
+def cleared_arrays(lines: list[str], rule: AreaRule) -> list[tuple[int, int]]:
+    """[(base, cells per slot)] from the range clears an area table opens with: `copy-to-global BASE SLOTS` clears
+    one cell a slot, and `mul (local-int 0x0) SLOTS N` before a clear of that many cells N a slot. The clears are
     the script's first instructions."""
     arrays, count = [], None
     for line in lines:
@@ -369,50 +420,50 @@ def cleared_arrays(lines: list[str]) -> list[tuple[int, int]]:
         if not clear:
             break
         cells = count if clear.group(2).startswith("(") else int(clear.group(2), 16)
-        if cells is None or cells % SLOTS:
-            raise ValueError(f"a clear of {cells} cells is not a whole number of {SLOTS} slots: {line.strip()}")
-        arrays.append((int(clear.group(1), 16), cells // SLOTS))
+        if cells is None or cells % rule.slots:
+            raise ValueError(f"a clear of {cells} cells is not a whole number of {rule.slots} slots: {line.strip()}")
+        arrays.append((int(clear.group(1), 16), cells // rule.slots))
         count = None
     return arrays
 
 
-def area_writes(lines: list[str]) -> list[tuple[int, str, int, str]]:
-    """[(area, bank, address, operand)]: each constant write after an area's test (`eq … (global-int 0x9883) N`),
+def area_writes(lines: list[str], rule: AreaRule) -> list[tuple[int, str, int, str]]:
+    """[(area, bank, address, operand)]: each constant write after an area's test (`eq … (global-int SELECTOR) N`),
     up to the next area's."""
-    writes, area = [], None
+    writes, area, test_of = [], None, rule.test
     for line in lines:
         instruction = INSTRUCTION.match(line)
         if not instruction:
             continue
-        if test := AREA.match(instruction.group(1)):
+        if test := test_of.match(instruction.group(1)):
             area = int(test.group(1), 16)
         elif area is not None and (write := CONSTANT.match(instruction.group(1))):
             writes.append((area, BANKS[write.group(2)], int(write.group(3), 16), write.group(4)))
     return writes
 
 
-def area_table(table: str) -> list[dict]:
+def area_table(table: str, rule: AreaRule) -> list[dict]:
     """An area table's arrays with what the base script and its appends write into them: for each, its cells per
     slot and the areas, slots and values it gets. The integer arrays are the ones the script clears; a string
     array is the one the scripts index at or below the strings' cells."""
     listing = (DISASM / f"{table}.asm").read_text(encoding="utf-8").split("\n")
     arrays = [{"bank": "G", "base": base, "cells": cells, "areas": set(), "slots": set(), "values": []}
-              for base, cells in cleared_arrays(listing)]
+              for base, cells in cleared_arrays(listing, rule)]
     indexed = sorted(base for (bank, base) in consumers() if bank == "GS")
     strings: dict[int, dict] = {}
     for layer in range(5):
         path = DISASM / (f"{table}.asm" if layer == 0 else f"${layer}${table}.asm")
         if not path.is_file():
             continue
-        for area, bank, address, operand in area_writes(path.read_text(encoding="utf-8").split("\n")):
+        for area, bank, address, operand in area_writes(path.read_text(encoding="utf-8").split("\n"), rule):
             if bank == "GS":
                 at = bisect_right(indexed, address) - 1
-                base = indexed[at] if at >= 0 and address - indexed[at] < SLOTS else address
+                base = indexed[at] if at >= 0 and address - indexed[at] < rule.slots else address
                 array = strings.setdefault(base, {"bank": "GS", "base": base, "cells": 1, "areas": set(),
                                                   "slots": set(), "values": []})
                 value = operand.strip('"')
             else:
-                array = next((a for a in arrays if a["base"] <= address < a["base"] + SLOTS * a["cells"]), None)
+                array = next((a for a in arrays if a["base"] <= address < a["base"] + rule.slots * a["cells"]), None)
                 if array is None:
                     continue
                 value = int(operand, 0) if re.fullmatch(r"-?0x[0-9a-f]+|-?\d+", operand) else None
@@ -424,12 +475,12 @@ def area_table(table: str) -> list[dict]:
 
 
 def area_report(table: str, as_markdown: bool) -> None:
-    arrays = area_table(table)
+    arrays = area_table(table, AREA)
     if as_markdown:
         print("| array | cells per slot | areas | slots | values | holds |")
         print("|---|---|---|---|---|---|")
     else:
-        print(f"{table}: run for an area; {len(arrays)} arrays of {SLOTS} slots")
+        print(f"{table}: run for an area; {len(arrays)} arrays of {AREA.slots} slots")
     for array in arrays:
         name = f"{array['bank']}[{array['base']:#x}]"
         slots = f"{min(array['slots'])}..{max(array['slots'])}" if array["slots"] else "none"
@@ -441,7 +492,7 @@ def area_report(table: str, as_markdown: bool) -> None:
 
 
 def report(table: str) -> None:
-    if table in AREA_TABLES:
+    if AREA and table in AREA.tables:
         area_report(table, as_markdown=False)
         return
     leader = LEADERS.get(table)
@@ -475,9 +526,9 @@ def report(table: str) -> None:
 
 
 def markdown(table: str) -> None:
-    """The table's arrays as a Markdown table, for docs/arterial-data-tables.md: one row per array, with an empty
-    cell for what it holds. `†` marks an array off the table's grid."""
-    if table in AREA_TABLES:
+    """The table's arrays as a Markdown table, for the game's data-tables document: one row per array, with an
+    empty cell for what it holds. `†` marks an array off the table's grid."""
+    if AREA and table in AREA.tables:
         area_report(table, as_markdown=True)
         return
     leader = LEADERS.get(table)

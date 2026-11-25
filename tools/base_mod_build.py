@@ -37,6 +37,10 @@ For each profile with a base mod (a hand-written mods/<game>-base/manifest.toml)
                         an editor reads it as JSON Schema; a state field, a scoped table's own name and a named
                         column's number are marked as not offered, with why
 
+The last two belong to the data kind: they are written only when the manifest's [[accepts]] names the shape, since
+the package loader refuses a shape no [[accepts]] names. A base mod that does not accept the kind yet (a new game
+before its tables' handlers) has neither.
+
 The rename rule (spec §9.1): a name the checked-in exports.txt lists stays exported, as a global's name or as one of
 its `aliases`, until the base mod's major version is raised. The layout and oms/globals.json name the same globals
 and tables from the same registry, with the same old names, so the rule covers both. A rename that does neither is refused. A record table's
@@ -719,6 +723,15 @@ def parse_exports(text: str) -> tuple[int | None, set[str]]:
     return major, names
 
 
+def accepts_tables(manifest: Path) -> bool:
+    """Whether the base mod's manifest accepts its data kind: an [[accepts]] names the shape SHAPE_FILE."""
+    try:
+        data = tomllib.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return False
+    return any(isinstance(entry, dict) and entry.get("shape") == SHAPE_FILE for entry in data.get("accepts", []))
+
+
 def manifest_major(manifest: Path) -> tuple[int | None, str | None]:
     """The base mod's major version, or an error."""
     try:
@@ -830,12 +843,17 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
     files = {root / "layout" / "globals.json": render_globals(profile_id, values, source),
              root / "layout" / "points.json": points,
              root / "oms" / "globals.json": render_oms_globals(profile_id, oms_cells, oms_tables, source),
-             exports: render_exports(profile_id, major, names, source),
-             root / "lua" / "generated" / "tables.lua": render_record_map(profile_id, record_map, source,
-                                                                          _shown(manifest),
-                                                                          scopes if not table_errors else []),
-             root / "shapes" / SHAPE_FILE: render_shape(profile_id, record_map, source, _shown(manifest),
-                                                        scopes if not table_errors else [], labels)}
+             exports: render_exports(profile_id, major, names, source)}
+    if accepts_tables(root / "manifest.toml"):
+        files[root / "lua" / "generated" / "tables.lua"] = render_record_map(
+            profile_id, record_map, source, _shown(manifest), scopes if not table_errors else [])
+        files[root / "shapes" / SHAPE_FILE] = render_shape(profile_id, record_map, source, _shown(manifest),
+                                                           scopes if not table_errors else [], labels)
+    else:
+        for stale in (root / "lua" / "generated" / "tables.lua", root / "shapes" / SHAPE_FILE):
+            if stale.is_file():
+                errors.append(f"{base_mod_id(profile_id)}: {stale.relative_to(root).as_posix()} belongs to the data kind, which the "
+                              f"manifest does not accept (no [[accepts]] names {SHAPE_FILE}); remove it")
     return files, errors
 
 

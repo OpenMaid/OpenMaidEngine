@@ -71,12 +71,12 @@ All commands run from `age-reimpl/` with `py -3.11 -X utf8` and `--game arterial
 3. `extract_phase2.py` → `build/games/arterial/disasm/*.asm` and the text corpora.
 4. `init_image.py` → `build/games/arterial/init-image.json`, the **executed** boot image: the port's VM runs
    the boot order above and records what each of the 145 scripts wrote.
-5. `init_arterial.py` → each table's layout, inferred from the write order and the image. `init_arterial.py
-   <TABLE>` prints a table's arrays column by column, and `--write` saves them as
+5. `init_layout.py` → each table's layout, inferred from the write order and the image, with Arterial's
+   leaders. `init_layout.py <TABLE>` prints a table's arrays column by column, and `--write` saves them as
    `build/games/arterial/data/<TABLE>.layout.json`.
 
 `extract_init.py`'s shape modes were written for the other two games' tables and do not fit these (its name
-mode takes each string for a record). `init_arterial.py` needs no schema per table: it is given the array each
+mode takes each string for a record). `init_layout.py` needs no schema per table: it is given the array each
 record writes first (the *leader*) and the table's capacity, takes a record's id from the leader cell, and
 finds every other field as the `(stride, base)` on which the most records agree. A table whose records are of
 two kinds has two leaders (`ALINIT` and `SHINIT`: an entry is an item or a card). Twenty-four boot tables

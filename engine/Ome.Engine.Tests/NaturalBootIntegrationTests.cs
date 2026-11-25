@@ -332,6 +332,43 @@ public class NaturalBootIntegrationTests
         Assert.True(reachedAdv.VisibleObjectCount > 0);
     }
 
+    /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
+    /// 戦女神VERITA's opening scene through the game's ADV module, and its line is the first ADV page of a natural new
+    /// game.</summary>
+    [Fact]
+    [Trait("Profile", "verita")]
+    public void VeritaPrologueFragmentIsTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("verita");
+        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        Assert.True(File.Exists(sys4Ini), $"verita install not found at {gameRoot}");
+        GameProfileManifest profile = GameProfileRegistry.BuiltIn.Find("verita")!;
+        OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, profile.EngineAbiId);
+        Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
+        var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
+        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("verita", sys4Ini, catalog,
+            store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
+            Ome.Mods.Linking.GameToolchain.Shipped("verita"));
+        string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.verita-prologue-line");
+        using var mod = Ome.Mods.Packages.ModPackage.Open(source);
+        var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
+        Assert.True(link.Succeeded, link.Report.Render());
+
+        string layer = Path.Combine(Path.GetTempPath(), "ome-verita-line-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(layer);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(layer, "SC0000.BIN"), link.Scripts["SC0000.BIN"].Bytes);
+            var (reachedAdv, _) = RunNewGameToFirstAdvPage("verita", gameRoot, [layer, gameRoot], 183, 338);
+            Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+            Assert.Equal("[OMS] A mod inserted this line before the opening scene's first page.", reachedAdv.Text);
+        }
+        finally
+        {
+            Directory.Delete(layer, recursive: true);
+        }
+    }
+
     /// <summary>Op 0x24a's counters (Graphics.TextureMemory) at 戦女神VERITA's title, where its menu loop first polls
     /// (TITLE@0xd7), are native's surfaces' there. Native AGE's surface slots held two 1024 x 576 render targets and
     /// 18,398,624 bytes of other textures at TITLE@0xd7 (read with Frida, 2026-11-25); its counters held 1,753,088 bytes

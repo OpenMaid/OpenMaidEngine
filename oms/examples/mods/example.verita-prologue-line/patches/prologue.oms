@@ -1,0 +1,9 @@
+oms 1
+// A line before the first page of 戦女神VERITA's opening scene. A page of this game starts at the instruction that
+// resets the text layout, before it sets G[0x348a] (the page has text): 0xa14 is that instruction of the first page.
+patch "SC0000.BIN" fingerprint "sha256:18acc4028e92fb49b1f3dfe63d35378fa5ef583caa405fcea840cd90e9798633"
+use verita.adv
+
+before site 0xa14 {
+    "[OMS] A mod inserted this line before the opening scene's first page."
+}

@@ -1,0 +1,17 @@
+omp = 4
+id = "example.verita-speaker-name"
+name = "Speaker name (Verita)"
+version = "1.0.0"
+description = "A data file that renames the name plate the opening scene first shows: セリカ's (speaker 1), on her first line."
+
+[game]
+profile = "verita"
+target = "extended"
+
+[[requires]]
+id = "verita-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "verita.tables"
+file = "speakers.toml"

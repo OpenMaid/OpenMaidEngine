@@ -1,0 +1,1507 @@
+# DO NOT EDIT -- generated from vm-map/globals-verita.toml by tools/base_mod_build.py --build
+# The names verita-base 1 exports (Lua scripting spec §9.1): its globals, then its
+# record tables and their fields (data patches plan §9.1), then its scopes and their tables' short names
+# (data patches spec §6.2), then the names its OMS modules declare, oms/*.oms (modding from a release
+# spec §5.2). Each stays until the major version changes: a renamed global, table or field keeps its old
+# name, listed as OLD = NAME; a scope and a module's names have no old-name form.
+major = 1
+action_prerequisite_actions
+action_required_flags
+action_tree_slots
+actor_actions
+adv_chrome_enabled
+adv_message_window_shown
+adv_page_has_text
+adv_speaker_id
+alchemy_money_spent
+aminit_chain_script_ids
+area_cursor_areas
+area_down_neighbors
+area_icons
+area_kinds
+area_left_neighbors
+area_names
+area_right_neighbors
+area_states
+area_up_neighbors
+area_worlds
+area_x
+area_y
+arena_match_battle_modes
+arena_match_battles
+arena_match_characters
+arena_match_closing_flags
+arena_match_descriptions
+arena_match_enemy_levels
+arena_match_fees
+arena_match_id
+arena_match_kinds
+arena_match_names
+arena_match_order
+arena_match_previous
+arena_match_prizes
+arena_match_required_flags
+arena_match_reward_counts
+arena_match_reward_items
+arena_match_scenes
+arena_match_wins
+attack_element_names
+battle_animation_effect_starts
+battle_animation_effects
+battle_animation_in_play
+battle_animation_lengths
+battle_effect_blend_modes
+battle_effect_cue_times
+battle_effect_frame_counts
+battle_effect_heights
+battle_effect_in_play
+battle_effect_lengths
+battle_effect_pictures
+battle_effect_placed_flags
+battle_effect_sheet_columns
+battle_effect_sheet_rows
+battle_effect_slot_in_play
+battle_effect_sound_delays
+battle_effect_sounds
+battle_effect_still_kinds
+battle_effect_widths
+battle_effect_x_offsets
+battle_effect_y_offsets
+battle_sheet_chain
+battler_condition_effects
+battler_routine_step_uses
+boot_driver_done
+btaninit_chain_script_ids
+cg_append_numbers
+cg_gallery_pages
+cg_pictures
+cg_scroll_x
+cg_scroll_y
+cg_slot_counts
+cg_slot_unlocked_counts
+cg_slots
+cg_tabs
+cg_thumbnail_sheet_chain
+cg_unlocked_percent
+cg_variants
+chain_handled
+chain_slot_index
+chapter
+character_append_numbers
+character_arg_id
+character_carry_flags
+character_class_exps
+character_class_ranks
+character_exp
+character_icon_sheet_chains
+character_joining_parties
+character_levels
+character_parameter_caps
+character_parameters
+character_parties
+character_sort_keys
+character_titles
+character_unit_ids
+checkss_chain_script_ids
+chmode3_sheet_chain
+cimes_chain_script_ids
+class_appends
+class_equipment_notes
+class_icons
+class_names
+class_rank_exps
+class_required_weapon_masks
+class_short_names
+class_sort_keys
+commander_attacks
+commander_duel_battles
+commander_leaderships
+commander_names
+commander_sheets
+commander_tactics
+condition_affinity_columns
+condition_argument_id
+condition_argument_levels
+condition_attack_count_modifiers
+condition_boss_proof_flags
+condition_critical_modifiers
+condition_cure_bits
+condition_defense_count_modifiers
+condition_durations
+condition_evasion_modifiers
+condition_gauge_drains
+condition_hit_modifiers
+condition_hp_changes
+condition_icons
+condition_luck_modifiers
+condition_magic_attack_modifiers
+condition_magic_defense_modifiers
+condition_magic_power_modifiers
+condition_mental_resistance_modifiers
+condition_mental_speed_modifiers
+condition_mp_changes
+condition_names
+condition_physical_attack_modifiers
+condition_physical_defense_modifiers
+condition_physical_resistance_modifiers
+condition_physical_speed_modifiers
+condition_polarities
+condition_resistances
+condition_tp_changes
+config_initialized
+csinit_chain_script_ids
+current_inn_id
+current_item
+current_party_index
+current_place_id
+current_quest_id
+current_scene_id
+current_scene_script_id
+current_treasure_id
+defense_element_names
+direction_x_steps
+direction_y_steps
+element_affinities
+encounter_chances
+encounter_entry_formations
+encounter_entry_gauge_highs
+encounter_entry_gauge_lows
+encounter_entry_weights
+encounter_set_in_play
+enemy_setup_unit
+eninit_chain_script_ids
+esinit_chain_script_ids
+extra_game_id
+extra_game_scripts
+field_distance
+field_gauge
+field_land_id
+field_music
+field_puzzle_id
+fight_phase_chain_script_ids
+fish_element_values
+fish_stats
+fish_texts
+fishing_bait_hit_rows
+fishing_bait_texts
+fishing_hit_weights
+fishing_points
+fishing_rank_names
+fishing_rank_points
+fishing_rod_in_use
+fishing_rod_stats
+fishing_rod_texts
+fishing_spot_backgrounds
+fishing_spot_cast_ranges
+fishing_spot_fish
+fishing_spot_fisher_poses
+fishing_spot_maps
+fishing_spot_music
+fishing_spot_overlays
+fishing_spot_sounds
+fishing_started
+formation_effect_lines
+formation_in_play
+formation_names
+formation_slot_barring_flags
+formation_slot_chances
+formation_slot_first_columns
+formation_slot_first_rows
+formation_slot_last_columns
+formation_slot_last_rows
+formation_slot_links
+formation_slot_required_flags
+formation_slot_units
+glossary_picture_x_offsets
+glossary_picture_y_offsets
+glossary_pictures
+glossary_selected_id
+glossary_titles
+glossary_unlock_scenes
+in_inn
+inn_background_picture
+inn_clerk_picture
+item_accuracy_bonuses
+item_animations
+item_area_heights
+item_area_widths
+item_attack_count_bonuses
+item_attack_element_levels
+item_attack_elements
+item_buy_prices
+item_categories
+item_charge_flags
+item_charge_times
+item_classes
+item_condition_levels
+item_control_rate_changes
+item_count_change
+item_counts
+item_ct_rate_bonuses
+item_cursed_flags
+item_damage_kinds
+item_defense_count_bonuses
+item_defense_element_levels
+item_defense_elements
+item_equip_condition_levels
+item_evasion_bonuses
+item_exclusive_users
+item_female_only_flags
+item_fs_amounts
+item_granted_skill_levels
+item_granted_skills
+item_growth_accuracy_bonuses
+item_growth_attack_count_bonuses
+item_growth_costs
+item_growth_ct_rate_bonuses
+item_growth_defense_count_bonuses
+item_growth_element_level_bonuses
+item_growth_evasion_bonuses
+item_growth_exps
+item_growth_flags
+item_growth_kinds
+item_growth_levels
+item_growth_magic_attack_bonuses
+item_growth_magic_defense_bonuses
+item_growth_magic_power_bonuses
+item_growth_mental_speed_bonuses
+item_growth_physical_attack_bonuses
+item_growth_physical_defense_bonuses
+item_growth_physical_speed_bonuses
+item_growth_results
+item_haishera_flags
+item_hp_amounts
+item_luck_bonuses
+item_magic_attack_bonuses
+item_magic_defense_bonuses
+item_magic_power_bonuses
+item_max_hp_bonuses
+item_max_mp_bonuses
+item_max_tp_bonuses
+item_mental_resistance_bonuses
+item_mental_speed_bonuses
+item_menu_use_masks
+item_min_charge_times
+item_min_recovery_times
+item_mp_amounts
+item_names
+item_notes
+item_obtained_flags
+item_once_per_battle_flags
+item_owners
+item_physical_attack_bonuses
+item_physical_defense_bonuses
+item_physical_resistance_bonuses
+item_physical_speed_bonuses
+item_random_amounts
+item_ranks
+item_reaches
+item_recovery_times
+item_required_skills
+item_sell_prices
+item_sort_keys
+item_target_kinds
+item_tp_amounts
+item_unread_marks
+itmes_chain_script_ids
+land_drift_walkable
+land_drift_x
+land_drift_y
+land_encounter_classes
+land_footstep_sounds
+land_speed_changes
+land_sprite_columns
+lead_parameter_cap_addends
+lead_parameter_cap_level_divisors
+lead_parameter_cap_sum_divisors
+lead_parameter_costs
+lead_pool_rates
+lead_starting_parameters
+map_block_battle_backdrops
+map_block_column
+map_block_encounter_levels
+map_block_encounter_sets
+map_block_enemy_level_spreads
+map_block_enemy_levels
+map_block_event_scripts
+map_block_minimap_pictures
+map_block_music
+map_block_pictures
+map_block_pictures_0
+map_block_pictures_2
+map_block_pictures_3
+map_block_row
+map_block_scripts
+map_character_anchor_x
+map_character_anchor_y
+map_encounter_decay_distances
+map_encounter_variant
+map_entry_chain_script_ids
+map_floor_name_plates
+map_floor_names
+map_floor_numbers
+map_frame_rate
+map_music_variant
+map_object_sheets
+map_routine_step_args
+map_routine_step_args_2
+map_routine_step_chances
+map_routine_step_flags
+map_routine_step_kinds
+map_routine_step_limits
+map_start_facings
+map_start_floors
+map_start_sections
+map_start_x
+map_start_y
+map_stray_demon_rates
+map_unit_routine_step_uses
+mounted_append_flags
+music_track_bgm_numbers
+music_track_unlock_resources
+music_track_unlocked
+music_unlocked_percent
+object_kind_blend_modes
+object_kind_change_sounds
+object_kind_depth_offsets
+object_kind_heights
+object_kind_next_kinds
+object_kind_sprite_x
+object_kind_sprite_y
+object_kind_wall_point_counts
+object_kind_wall_point_x
+object_kind_wall_point_y
+object_kind_widths
+objective_chapters
+objective_done_flags
+objective_required_flags
+objective_sort_keys
+objective_texts
+on_dungeon_map
+party_area_ids
+party_area_values
+party_mode
+profile_names
+profile_picture_xs
+profile_picture_ys
+profile_pictures
+profile_scenes
+profile_shown
+profile_unit_ids
+puzzle_block_count
+puzzle_block_flags
+puzzle_block_kinds
+puzzle_block_x
+puzzle_block_y
+puzzle_grid
+puzzle_height
+puzzle_saved_block_x
+puzzle_saved_block_y
+puzzle_width
+pzinit_chain_script_ids
+quest_barring_flags
+quest_contract_held
+quest_difficulties
+quest_money_rewards
+quest_names
+quest_parties
+quest_prerequisites
+quest_required_flags
+quest_reward_counts
+quest_reward_items
+quest_states
+quest_texts
+quinit_chain_script_ids
+rank_bonuses
+rank_names
+rank_points
+recipe_blocking_flags
+recipe_ingredient_counts
+recipe_ingredients
+recipe_outputs
+recipe_party_masks
+recipe_prices
+recipe_required_flags
+replay_append_numbers
+replay_cell_states
+replay_scripts
+replay_thumbnail_sheet_chain
+replay_unlocked_percent
+rminit_chain_script_ids
+routine_in_play
+routine_step_actions
+routine_step_args
+routine_step_chances
+routine_step_flags
+routine_step_in_play
+routine_step_kinds
+routine_step_limits
+routine_step_percents
+routine_step_result
+routine_step_tactic_masks
+routine_step_target_counts
+scene_graphic_element_numbers
+scene_offer_contexts
+scene_over_map
+scene_queue
+scene_queue_count
+scene_queue_index
+scene_script_ids
+scene_seen_flags
+school_tree_actions
+scjump_chain_pending
+scjump_chain_script_ids
+scjump_context_id
+scripted_battle_case
+scripted_party_blocking_flags
+scripted_party_characters
+scripted_party_columns
+scripted_party_required_flags
+scripted_party_rows
+selected_member_index
+selected_quest_slot
+shared_number
+shinit_chain_script_ids
+shop_background
+shop_bought_counts
+shop_id
+shop_items
+shop_keeper_picture
+shop_money_spent
+shop_sign
+shop_stock_limits
+siinit_chain_script_ids
+skill_always_on_flags
+skill_amounts
+skill_append_numbers
+skill_attack_only_flags
+skill_check_values
+skill_condition_levels
+skill_descriptions
+skill_effect_sides
+skill_effects
+skill_hp_costs
+skill_kinds
+skill_message_level
+skill_message_skill
+skill_mp_costs
+skill_names
+skill_sort_keys
+skill_support_actions
+skill_support_modes
+skill_support_periods
+skill_tp_costs
+skill_trigger_chances
+skill_unlock_scenes
+speaker_names
+speaker_voice_units
+ss_damage_chain_script_ids
+ssmes_chain_script_ids
+stinit_chain_script_ids
+story_flags
+system_mode
+tactic_animations
+tactic_blend_modes
+tactic_cooldowns
+tactic_descriptions
+tactic_kinds
+tactic_max_ranges
+tactic_min_ranges
+tactic_names
+tactic_powers
+terrain_move_costs
+terrain_names
+times_chain_script_ids
+title_accuracy_bonuses
+title_attack_bonuses
+title_attack_count_bonuses
+title_battle_portraits
+title_battle_sprites
+title_carry_sprites
+title_classes
+title_critical_bonuses
+title_cutin_pictures
+title_cutin_styles
+title_defense_bonuses
+title_defense_count_bonuses
+title_description_lines
+title_earned_flags
+title_equip_kind_flags
+title_evasion_bonuses
+title_excluding_flags
+title_extra_pictures
+title_field_sprites
+title_hp_bonuses
+title_jump_sprites
+title_luck_bonuses
+title_magic_attack_bonuses
+title_magic_defense_bonuses
+title_magic_power_bonuses
+title_map_faces
+title_master_ids
+title_mental_resistance_bonuses
+title_mental_speed_bonuses
+title_mp_bonuses
+title_names
+title_orders
+title_physical_resistance_bonuses
+title_physical_speed_bonuses
+title_required_flags
+title_required_levels
+title_required_titles
+title_skill_levels
+title_special_skill_ids
+title_special_skill_levels
+title_status_portraits
+title_tp_bonuses
+title_voice_clips
+town_background
+town_location_scene_icons
+town_location_scenes
+town_music
+town_site_hot_heights
+town_site_hot_lefts
+town_site_hot_tops
+town_site_hot_widths
+town_site_id
+town_site_names
+town_site_neighbors
+town_site_pictures
+town_site_states
+town_site_x
+town_site_y
+treasure_counts
+treasure_items
+treasure_opened
+troop_morale
+troop_move_types
+troop_names
+troop_rout_points
+troop_sheets
+troop_soldiers
+troop_stats
+troop_tactics
+unit_accuracies
+unit_action_ids
+unit_attack_count_growth
+unit_attack_counts
+unit_attack_growth
+unit_attacks
+unit_base_levels
+unit_battle_sprites
+unit_book_pictures
+unit_book_sort_keys
+unit_boss_classes
+unit_capture_items
+unit_capture_levels
+unit_defense_count_growth
+unit_defense_counts
+unit_defense_element_levels
+unit_defense_elements
+unit_defense_growth
+unit_defenses
+unit_description_lines
+unit_drop_chances
+unit_drop_excluding_flags
+unit_drop_items
+unit_drop_required_flags
+unit_equip_kind_flags
+unit_evasions
+unit_exp_curves
+unit_exp_rates
+unit_exp_rewards
+unit_first_waits
+unit_fs_temperaments
+unit_full_names
+unit_heights
+unit_initial_accessories
+unit_initial_armors
+unit_initial_shields
+unit_initial_weapons
+unit_lead_growth_rows
+unit_level_catchup_divisors
+unit_luck
+unit_luck_growth
+unit_magic_attack_growth
+unit_magic_attacks
+unit_magic_defense_growth
+unit_magic_defenses
+unit_max_fs
+unit_max_hp
+unit_max_hp_growth
+unit_max_levels
+unit_max_mp
+unit_max_mp_growth
+unit_max_tp
+unit_max_tp_growth
+unit_mental_resistance_growth
+unit_mental_resistances
+unit_mental_speed_growth
+unit_mental_speeds
+unit_money
+unit_names
+unit_overlay_kinds
+unit_physical_resistance_growth
+unit_physical_resistances
+unit_physical_speed_growth
+unit_physical_speeds
+unit_routine_ids
+unit_sexes
+unit_skill_levels
+unit_starting_fs
+unit_unused_0x3790cf
+unit_voice_clips
+unit_voice_settings
+unit_widths
+vimes_chain_script_ids
+voice_group_mutes
+voice_setting_names
+voice_setting_samples
+voice_setting_units
+war_enemy_army_name
+war_player_army_name
+war_points
+war_stage_gauge_start
+war_stage_id
+war_stage_picture
+war_stage_terrain
+war_unit_commanders
+war_unit_facings
+war_unit_marks
+war_unit_reserves
+war_unit_routines
+war_unit_sides
+war_unit_troops
+war_unit_x
+war_unit_y
+weapon_category_flags
+world_map_id
+world_map_music
+world_map_pictures
+table action_tree
+table area
+table arena_match
+table battle_animation
+table battle_effect
+table cg
+table character
+table commander
+table condition
+table encounter_entry
+table fish
+table fishing_bait
+table fishing_rod
+table fishing_spot
+table formation
+table formation_slot
+table glossary_entry
+table item
+table item_class
+table item_growth
+table land
+table lead_growth
+table map
+table map_block
+table map_routine
+table music_track
+table object_kind
+table objective
+table profile
+table puzzle_block
+table quest
+table rank
+table recipe
+table replay
+table routine
+table scene
+table school_tree
+table scripted_party_slot
+table shop_slot
+table skill
+table speaker_entry
+table tactic
+table terrain
+table title
+table town_site
+table treasure
+table troop
+table unit
+table voice_setting
+table war_unit
+field action_tree.prerequisites
+field action_tree.required_flag
+field action_tree.slot
+field area.cursor_area
+field area.down
+field area.icon
+field area.kind
+field area.left
+field area.name
+field area.right
+field area.up
+field area.world
+field area.x
+field area.y
+field arena_match.battle_mode
+field arena_match.battles
+field arena_match.characters
+field arena_match.closing_flags
+field arena_match.descriptions
+field arena_match.enemy_level
+field arena_match.fee
+field arena_match.kind
+field arena_match.name
+field arena_match.previous
+field arena_match.prize
+field arena_match.required_flags
+field arena_match.reward_counts
+field arena_match.reward_items
+field arena_match.scenes
+field battle_animation.effect_starts
+field battle_animation.effects
+field battle_animation.length
+field battle_effect.blend_mode
+field battle_effect.cue_times
+field battle_effect.frame_count
+field battle_effect.height
+field battle_effect.length
+field battle_effect.picture
+field battle_effect.placed
+field battle_effect.sheet_columns
+field battle_effect.sheet_rows
+field battle_effect.sound
+field battle_effect.sound_delay
+field battle_effect.still_kind
+field battle_effect.width
+field battle_effect.x_offset
+field battle_effect.y_offset
+field cg.append_number
+field cg.picture
+field cg.scroll_x
+field cg.scroll_y
+field cg.slot
+field cg.tab
+field cg.variant
+field character.append_number
+field character.carry_flag
+field character.joining_party
+field character.party
+field character.sort_key
+field character.unit_id
+field commander.attack
+field commander.duel_battle
+field commander.leadership
+field commander.name
+field commander.sheets
+field commander.tactic
+field condition.affinity_columns
+field condition.attack_count_modifiers
+field condition.boss_proof
+field condition.critical_modifiers
+field condition.cure_bits
+field condition.defense_count_modifiers
+field condition.durations
+field condition.evasion_modifiers
+field condition.gauge_drains
+field condition.hit_modifiers
+field condition.hp_changes
+field condition.icon
+field condition.luck_modifiers
+field condition.magic_attack_modifiers
+field condition.magic_defense_modifiers
+field condition.magic_power_modifiers
+field condition.mental_resistance_modifiers
+field condition.mental_speed_modifiers
+field condition.mp_changes
+field condition.names
+field condition.physical_attack_modifiers
+field condition.physical_defense_modifiers
+field condition.physical_resistance_modifiers
+field condition.physical_speed_modifiers
+field condition.polarity
+field condition.resistance
+field condition.tp_changes
+field encounter_entry.formations
+field encounter_entry.gauge_high
+field encounter_entry.gauge_low
+field encounter_entry.weight
+field fish.element_value
+field fish.stats
+field fish.texts
+field fishing_bait.hit_rows
+field fishing_bait.texts
+field fishing_rod.stats
+field fishing_rod.texts
+field fishing_spot.background
+field fishing_spot.cast_ranges
+field fishing_spot.fish
+field fishing_spot.fisher_pose
+field fishing_spot.map
+field fishing_spot.music
+field fishing_spot.overlay
+field fishing_spot.sound
+field formation.effect_lines
+field formation.name
+field formation_slot.barring_flag
+field formation_slot.chance
+field formation_slot.first_column
+field formation_slot.first_row
+field formation_slot.last_column
+field formation_slot.last_row
+field formation_slot.link
+field formation_slot.required_flag
+field formation_slot.unit
+field glossary_entry.picture
+field glossary_entry.picture_x_offset
+field glossary_entry.picture_y_offset
+field glossary_entry.title
+field glossary_entry.unlock_scenes
+field item.accuracy
+field item.animation
+field item.area_height
+field item.area_width
+field item.attack_count
+field item.attack_element
+field item.attack_element_level
+field item.buy_price
+field item.category
+field item.charge_time
+field item.charges
+field item.class
+field item.condition_levels
+field item.control_rate_change
+field item.count
+field item.ct_rate
+field item.cursed
+field item.damage_kind
+field item.defense_count
+field item.defense_element
+field item.defense_element_level
+field item.equip_condition_levels
+field item.evasion
+field item.exclusive_users
+field item.female_only
+field item.fs
+field item.granted_skill
+field item.granted_skill_level
+field item.growth_exp
+field item.growth_level
+field item.haishera
+field item.hp
+field item.luck
+field item.magic_attack
+field item.magic_defense
+field item.magic_power
+field item.max_hp
+field item.max_mp
+field item.max_tp
+field item.mental_resistance
+field item.mental_speed
+field item.menu_use
+field item.min_charge_time
+field item.min_recovery_time
+field item.mp
+field item.name
+field item.note
+field item.obtained
+field item.once_per_battle
+field item.owners
+field item.physical_attack
+field item.physical_defense
+field item.physical_resistance
+field item.physical_speed
+field item.random_amount
+field item.rank
+field item.reach
+field item.recovery_time
+field item.required_skill
+field item.sell_price
+field item.sort_key
+field item.target_kind
+field item.tp
+field item_class.append_number
+field item_class.equipment_note
+field item_class.icon
+field item_class.name
+field item_class.rank_exps
+field item_class.required_weapons
+field item_class.short_name
+field item_class.sort_key
+field item_growth.accuracy
+field item_growth.attack_count
+field item_growth.costs
+field item_growth.ct_rate
+field item_growth.defense_count
+field item_growth.element_level
+field item_growth.evasion
+field item_growth.flag
+field item_growth.kind
+field item_growth.magic_attack
+field item_growth.magic_defense
+field item_growth.magic_power
+field item_growth.mental_speed
+field item_growth.physical_attack
+field item_growth.physical_defense
+field item_growth.physical_speed
+field item_growth.result_item
+field land.drift_walkable
+field land.drift_x
+field land.drift_y
+field land.encounter_class
+field land.footstep_sound
+field land.speed_change
+field land.sprite_column
+field lead_growth.cap_addends
+field lead_growth.cap_level_divisors
+field lead_growth.cap_sum_divisors
+field lead_growth.parameter_costs
+field lead_growth.pool_rate
+field lead_growth.starting_parameters
+field map.encounter_decay_distance
+field map.floor_name_plates
+field map.floor_names
+field map.floor_numbers
+field map.object_sheet
+field map.start_facing
+field map.start_floor
+field map.start_section
+field map.start_x
+field map.start_y
+field map.stray_demon_rate
+field map_block.battle_backdrop
+field map_block.encounter_level
+field map_block.encounter_sets
+field map_block.enemy_level
+field map_block.enemy_level_spread
+field map_block.event_script
+field map_block.minimap_picture
+field map_block.music
+field map_block.picture
+field map_block.picture_0
+field map_block.picture_2
+field map_block.picture_3
+field map_block.script
+field map_routine.step_arg
+field map_routine.step_arg_2
+field map_routine.step_chance
+field map_routine.step_flag
+field map_routine.step_kind
+field map_routine.step_limit
+field music_track.bgm_number
+field music_track.unlock_resource
+field object_kind.blend_mode
+field object_kind.change_sound
+field object_kind.depth_offset
+field object_kind.height
+field object_kind.next_kind
+field object_kind.sprite_x
+field object_kind.sprite_y
+field object_kind.wall_point_count
+field object_kind.wall_point_x
+field object_kind.wall_point_y
+field object_kind.width
+field objective.chapter
+field objective.done_flags
+field objective.required_flags
+field objective.sort_key
+field objective.text
+field profile.name
+field profile.picture
+field profile.picture_x
+field profile.picture_y
+field profile.scenes
+field profile.unit_id
+field puzzle_block.flag
+field puzzle_block.kind
+field puzzle_block.x
+field puzzle_block.y
+field quest.barring_flags
+field quest.difficulty
+field quest.money_reward
+field quest.name
+field quest.party
+field quest.prerequisite
+field quest.required_flags
+field quest.reward_counts
+field quest.reward_items
+field quest.text
+field rank.bonuses
+field rank.name
+field rank.points
+field recipe.blocking_flags
+field recipe.ingredient_counts
+field recipe.ingredients
+field recipe.output
+field recipe.party_mask
+field recipe.price
+field recipe.required_flags
+field replay.append_number
+field replay.script
+field routine.step_action
+field routine.step_arg
+field routine.step_chance
+field routine.step_flag
+field routine.step_kind
+field routine.step_limit
+field routine.step_percent
+field routine.step_tactic_mask
+field routine.step_target_count
+field scene.offer_context
+field scene.script
+field school_tree.actions
+field scripted_party_slot.blocking_flag
+field scripted_party_slot.character
+field scripted_party_slot.column
+field scripted_party_slot.required_flag
+field scripted_party_slot.row
+field shop_slot.item
+field shop_slot.stock_limit
+field skill.always_on
+field skill.amounts
+field skill.append_number
+field skill.attack_only
+field skill.condition_levels
+field skill.descriptions
+field skill.effect
+field skill.effect_side
+field skill.hp_costs
+field skill.kind
+field skill.mp_costs
+field skill.names
+field skill.sort_key
+field skill.support_actions
+field skill.support_modes
+field skill.support_periods
+field skill.tp_costs
+field skill.trigger_chances
+field skill.unlock_scenes
+field speaker_entry.name
+field speaker_entry.voice_unit
+field tactic.animation
+field tactic.blend_mode
+field tactic.cooldown
+field tactic.description
+field tactic.kind
+field tactic.max_range
+field tactic.min_range
+field tactic.name
+field tactic.power
+field terrain.move_costs
+field terrain.name
+field title.accuracy_bonus
+field title.attack_bonus
+field title.attack_count_bonus
+field title.battle_portrait
+field title.battle_sprites
+field title.carry_sprite
+field title.class
+field title.critical_bonus
+field title.cutin_picture
+field title.cutin_style
+field title.defense_bonus
+field title.defense_count_bonus
+field title.description
+field title.earned
+field title.equip_kinds
+field title.evasion_bonus
+field title.excluding_flag
+field title.extra_pictures
+field title.field_sprites
+field title.hp_bonus
+field title.jump_sprites
+field title.luck_bonus
+field title.magic_attack_bonus
+field title.magic_defense_bonus
+field title.magic_power_bonus
+field title.map_face
+field title.master_id
+field title.mental_resistance_bonus
+field title.mental_speed_bonus
+field title.mp_bonus
+field title.name
+field title.order
+field title.physical_resistance_bonus
+field title.physical_speed_bonus
+field title.required_flag
+field title.required_level
+field title.required_title
+field title.skill_levels
+field title.special_skill_ids
+field title.special_skill_levels
+field title.status_portrait
+field title.tp_bonus
+field title.voice_clips
+field town_site.hot_height
+field town_site.hot_left
+field town_site.hot_top
+field town_site.hot_width
+field town_site.name
+field town_site.neighbors
+field town_site.picture
+field town_site.state
+field town_site.x
+field town_site.y
+field treasure.counts
+field treasure.items
+field treasure.opened
+field troop.morale
+field troop.move_type
+field troop.name
+field troop.rout_points
+field troop.sheets
+field troop.soldiers
+field troop.stats
+field troop.tactic
+field unit.accessory
+field unit.accuracy
+field unit.action_ids
+field unit.armor
+field unit.attack
+field unit.attack_count
+field unit.attack_count_growth
+field unit.attack_growth
+field unit.base_level
+field unit.battle_sprite
+field unit.book_picture
+field unit.book_sort_key
+field unit.boss_class
+field unit.capture_item
+field unit.capture_level
+field unit.defense
+field unit.defense_count
+field unit.defense_count_growth
+field unit.defense_element
+field unit.defense_element_level
+field unit.defense_growth
+field unit.description
+field unit.drop_chances
+field unit.drop_excluding_flags
+field unit.drop_items
+field unit.drop_required_flags
+field unit.equip_kinds
+field unit.evasion
+field unit.exp_curve
+field unit.exp_rate
+field unit.exp_rewards
+field unit.first_wait
+field unit.fs_temperament
+field unit.full_name
+field unit.height
+field unit.lead_growth_row
+field unit.level_catchup_divisor
+field unit.luck
+field unit.luck_growth
+field unit.magic_attack
+field unit.magic_attack_growth
+field unit.magic_defense
+field unit.magic_defense_growth
+field unit.max_fs
+field unit.max_hp
+field unit.max_hp_growth
+field unit.max_level
+field unit.max_mp
+field unit.max_mp_growth
+field unit.max_tp
+field unit.max_tp_growth
+field unit.mental_resistance
+field unit.mental_resistance_growth
+field unit.mental_speed
+field unit.mental_speed_growth
+field unit.money
+field unit.name
+field unit.overlay_kind
+field unit.physical_resistance
+field unit.physical_resistance_growth
+field unit.physical_speed
+field unit.physical_speed_growth
+field unit.routine_id
+field unit.sex
+field unit.shield
+field unit.skill_levels
+field unit.starting_fs
+field unit.voice_clips
+field unit.voice_setting_id
+field unit.weapon
+field unit.width
+field voice_setting.names
+field voice_setting.sample
+field voice_setting.unit_id
+field war_unit.commanders
+field war_unit.facing
+field war_unit.mark
+field war_unit.reserve
+field war_unit.routine
+field war_unit.side
+field war_unit.troop
+field war_unit.x
+field war_unit.y
+scope dungeon
+scope dungeon.block
+scope puzzle
+scope puzzle.block
+scope town
+scope town.site
+scope war_stage
+scope war_stage.unit
+module verita.adv.adv_hide_window_handler
+module verita.adv.adv_show_window_handler
+module verita.adv.auto_button_click
+module verita.adv.auto_button_enter
+module verita.adv.auto_button_leave
+module verita.adv.begin_page_voice
+module verita.adv.begin_window_transition
+module verita.adv.begin_window_transition_2
+module verita.adv.clear_layers_0_and_2_to_8_fade_in_and_show_message_window
+module verita.adv.clear_layers_1_to_8_fade_in_and_show_message_window
+module verita.adv.clear_layers_6_and_7_fade_in_1890ms_and_show_message_window_150ms
+module verita.adv.clear_message_text
+module verita.adv.clear_speaker
+module verita.adv.create_layer_canvas
+module verita.adv.create_layer_canvas_1
+module verita.adv.crossfade_layer_graphic
+module verita.adv.cursor_key_0
+module verita.adv.cursor_key_0_2
+module verita.adv.cursor_key_0_4
+module verita.adv.cursor_key_0_6
+module verita.adv.cursor_key_1
+module verita.adv.cursor_key_2
+module verita.adv.cursor_key_3
+module verita.adv.cursor_key_7
+module verita.adv.cursor_key_8
+module verita.adv.draw_message_window
+module verita.adv.draw_message_window_1
+module verita.adv.fade_in_100ms
+module verita.adv.fade_in_1200ms_and_show_message_window_500ms
+module verita.adv.fade_in_1390ms
+module verita.adv.fade_in_2400ms
+module verita.adv.fade_in_300ms
+module verita.adv.fade_in_500ms
+module verita.adv.fade_in_890ms
+module verita.adv.fade_message_window
+module verita.adv.fade_to_red_additive_100ms_and_fade_in_150ms
+module verita.adv.fade_to_red_additive_200ms_and_fade_in_300ms
+module verita.adv.fade_to_red_additive_400ms_and_fade_in_600ms
+module verita.adv.fade_to_red_additive_50ms_and_fade_in_75ms
+module verita.adv.fade_to_white_100ms
+module verita.adv.fade_to_white_100ms_and_fade_in_150ms
+module verita.adv.fade_to_white_200ms_and_fade_in_300ms
+module verita.adv.fade_to_white_300ms
+module verita.adv.fade_to_white_500ms
+module verita.adv.fade_to_white_50ms_and_fade_in_75ms
+module verita.adv.fade_to_white_890ms
+module verita.adv.fade_to_white_additive_100ms
+module verita.adv.fade_to_white_additive_100ms_and_fade_in_150ms
+module verita.adv.fade_to_white_additive_1390ms
+module verita.adv.fade_to_white_additive_200ms_and_fade_in_300ms
+module verita.adv.fade_to_white_additive_300ms
+module verita.adv.fade_to_white_additive_500ms
+module verita.adv.fade_to_white_additive_50ms_and_fade_in_75ms
+module verita.adv.fade_to_white_additive_600ms_and_fade_in_900ms
+module verita.adv.fade_to_white_additive_890ms
+module verita.adv.hide_button_click
+module verita.adv.hide_button_enter
+module verita.adv.hide_button_leave
+module verita.adv.hide_message_window_150ms
+module verita.adv.hide_message_window_150ms_and_begin_transition
+module verita.adv.hide_message_window_150ms_and_begin_transition_2
+module verita.adv.hide_message_window_150ms_and_zoom_in_layer_7
+module verita.adv.hide_message_window_500ms_and_fade_to_black_1200ms
+module verita.adv.hide_message_window_and_reveal_layers_6_and_7
+module verita.adv.history_button_click
+module verita.adv.history_button_enter
+module verita.adv.history_button_leave
+module verita.adv.init_adv_layer_slots
+module verita.adv.line
+module verita.adv.load_party_state
+module verita.adv.place_layer_graphic
+module verita.adv.place_layer_graphic_1
+module verita.adv.present_window_transition
+module verita.adv.publish_message_text
+module verita.adv.register_adv_hotspots
+module verita.adv.request_animation_clock_sync
+module verita.adv.shake_antidiagonal_275ms_7_steps
+module verita.adv.shake_antidiagonal_370ms_9_steps
+module verita.adv.shake_diagonal_130ms_5_steps
+module verita.adv.shake_diagonal_275ms_7_steps
+module verita.adv.shake_diagonal_380ms_9_steps
+module verita.adv.shake_horizontal_130ms_5_steps
+module verita.adv.shake_horizontal_20ms_3_steps
+module verita.adv.shake_horizontal_275ms_7_steps
+module verita.adv.shake_horizontal_295ms_8_steps
+module verita.adv.shake_horizontal_370ms_9_steps
+module verita.adv.shake_vertical_100ms_3_steps
+module verita.adv.shake_vertical_130ms_5_steps
+module verita.adv.shake_vertical_20ms_3_steps
+module verita.adv.shake_vertical_295ms_8_steps
+module verita.adv.shake_vertical_375ms_8_steps
+module verita.adv.shake_vertical_40ms_3_steps
+module verita.adv.shake_vertical_470ms_10_steps
+module verita.adv.show_layer_graphic
+module verita.adv.show_message_window_150ms
+module verita.adv.show_speaker
+module verita.adv.skip_button_click
+module verita.adv.skip_button_enter
+module verita.adv.skip_button_leave
+module verita.adv.speaker
+module verita.adv.speaker_0x37
+module verita.adv.speaker_0x384
+module verita.adv.speaker_0x385
+module verita.adv.speaker_0x386
+module verita.adv.speaker_0x387
+module verita.adv.speaker_0x388
+module verita.adv.speaker_0x389
+module verita.adv.speaker_0x38a
+module verita.adv.speaker_0x38b
+module verita.adv.speaker_0x38c
+module verita.adv.speaker_0x38d
+module verita.adv.speaker_0x38e
+module verita.adv.speaker_0x38f
+module verita.adv.speaker_0x393
+module verita.adv.speaker_0x394
+module verita.adv.speaker_0x398
+module verita.adv.speaker_0x39e
+module verita.adv.speaker_0x39f
+module verita.adv.speaker_0x3a1
+module verita.adv.speaker_0x3a3
+module verita.adv.speaker_0x3a6
+module verita.adv.speaker_0x3a7
+module verita.adv.speaker_0x3a9
+module verita.adv.speaker_0x3af
+module verita.adv.speaker_0x3b3
+module verita.adv.speaker_0x3b4
+module verita.adv.speaker_0x3b5
+module verita.adv.speaker_0x3b9
+module verita.adv.speaker_0x3ba
+module verita.adv.speaker_0x3bb
+module verita.adv.speaker_0x3bc
+module verita.adv.speaker_0x3bd
+module verita.adv.speaker_0x3be
+module verita.adv.speaker_0x3bf
+module verita.adv.speaker_0x3c5
+module verita.adv.speaker_0xa
+module verita.adv.store_party_state
+module verita.adv.substitute_layer_graphic
+module verita.adv.wipe_layer_graphic
+module verita.adv.wipe_layer_graphic_1
+module verita.adv.zoom_out_layer_7_and_show_message_window_150ms
+module verita.adv.アナスタシア
+module verita.adv.アビルース
+module verita.adv.アムドシアス
+module verita.adv.アルゲレー
+module verita.adv.イリーナ
+module verita.adv.エウクレイアさん
+module verita.adv.エウシュリーちゃん
+module verita.adv.エクリア
+module verita.adv.エリザベッタ
+module verita.adv.エヴリーヌ
+module verita.adv.カファルー
+module verita.adv.カーリアン
+module verita.adv.コア
+module verita.adv.ザソ
+module verita.adv.ザソの娘
+module verita.adv.ザハーニウ
+module verita.adv.ザミルザーニィ
+module verita.adv.シェラ
+module verita.adv.シュリ
+module verita.adv.シルフィア
+module verita.adv.シルヴァン
+module verita.adv.スゥーティ
+module verita.adv.セリカ
+module verita.adv.ゼフィラ
+module verita.adv.ゾノ_ジ
+module verita.adv.タルタロス
+module verita.adv.チキ
+module verita.adv.ツェニド
+module verita.adv.テトリ
+module verita.adv.ディアーネ
+module verita.adv.ナッソス
+module verita.adv.ナベリウス
+module verita.adv.ニル_デュナミス
+module verita.adv.ネナ
+module verita.adv.ネルガル
+module verita.adv.ハイシェラ
+module verita.adv.パイモン
+module verita.adv.ファーミシルス
+module verita.adv.フィシア兵士
+module verita.adv.フェミリンス
+module verita.adv.ブラックエウシュリーちゃん
+module verita.adv.ブレアード
+module verita.adv.プレイアデス
+module verita.adv.ベルフ
+module verita.adv.ペテレーネ
+module verita.adv.マリーニャ
+module verita.adv.マーズテリア兵士
+module verita.adv.マーズテリア神官
+module verita.adv.マーズテリア騎士
+module verita.adv.マーリオン
+module verita.adv.ミストラル
+module verita.adv.メイド
+module verita.adv.メキ
+module verita.adv.メンフィル兵士
+module verita.adv.モナルカ
+module verita.adv.ヤムク
+module verita.adv.ラクシュミール
+module verita.adv.ラテンニール
+module verita.adv.ラピス
+module verita.adv.ランザブ
+module verita.adv.ラーシェナ
+module verita.adv.リウイ
+module verita.adv.リオーネ
+module verita.adv.リタ
+module verita.adv.リフィア
+module verita.adv.リン
+module verita.adv.リンユ
+module verita.adv.リーフ
+module verita.adv.レイーネ
+module verita.adv.レウィニア兵士
+module verita.adv.レウィニア女騎士
+module verita.adv.レクシュミ
+module verita.adv.レフィン
+module verita.adv.レンスト兵士
+module verita.adv.レヴィア
+module verita.adv.修道女
+module verita.adv.光に包まれた者
+module verita.adv.兵士Ａ
+module verita.adv.兵士Ｂ
+module verita.adv.兵士Ｃ
+module verita.adv.商人
+module verita.adv.声
+module verita.adv.大臣
+module verita.adv.天使ハマサエル
+module verita.adv.太めの男
+module verita.adv.子供Ａ
+module verita.adv.子供Ｂ
+module verita.adv.子供Ｃ
+module verita.adv.小柄な獣人
+module verita.adv.少女
+module verita.adv.山の主
+module verita.adv.工夫
+module verita.adv.常連客
+module verita.adv.帽子の女性
+module verita.adv.恐るべき気配の声
+module verita.adv.村人
+module verita.adv.武装した獣人
+module verita.adv.水の巫女
+module verita.adv.水竜
+module verita.adv.深凌の忍
+module verita.adv.獣人の女性
+module verita.adv.獣人の男
+module verita.adv.獣人の若者
+module verita.adv.獣人兵
+module verita.adv.羊
+module verita.adv.老いた獣人
+module verita.adv.街の若者
+module verita.adv.裏通りの住人
+module verita.adv.見張りの獣人
+module verita.adv.赤子
+module verita.adv.迷子の羊と羊飼い亭の主人
+module verita.adv.邪怨なる心臓
+module verita.adv.酒場の亭主
+module verita.adv.銀髪の若い司祭
+module verita.adv.闘士の魔霊
+module verita.adv.闘技場の受付嬢
+module verita.adv.青い髪の神官戦士
+module verita.adv.館の女魔術師
+module verita.adv.騎士
+module verita.adv.騎士見習い達
+module verita.adv.魔術師

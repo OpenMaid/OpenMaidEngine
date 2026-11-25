@@ -460,14 +460,17 @@ public static class OmsCompiler
 
         /// <summary>Links the library subs the code needs after the script (spec §6.3), breadth first in order of first
         /// reference: the subs the code references, in code order, then the subs each linked sub references in turn.
-        /// This is the original compiler's order for its library functions.</summary>
+        /// This is the original compiler's order for its library functions. A sub without an exit guard (a scene
+        /// header's handler, which a sidecar would place inside the script) gets one here when control could reach it:
+        /// falling off a script's end ends it, so the guard keeps that meaning. Verita's SC5000 ends in
+        /// <c>run GAMEOVER</c>, and its first unit is a coroutine.</summary>
         private void LinkLibrary()
         {
             if (_library.All(library => _linked.Contains(library.Sub.Name))) return;
             if (linkAll)
             {
                 foreach (LibrarySub library in _library.Where(library => !_linked.Contains(library.Sub.Name)).ToList())
-                    Link(library);
+                    LinkAfterScript(library);
                 return;
             }
             var owner = new Dictionary<string, LibrarySub>(StringComparer.Ordinal);
@@ -485,9 +488,17 @@ public static class OmsCompiler
             Scan();
             for (int i = 0; i < queue.Count; i++)
             {
-                Link(queue[i]);
+                LinkAfterScript(queue[i]);
                 Scan();
             }
+        }
+
+        private void LinkAfterScript(LibrarySub library)
+        {
+            if (!library.Sub.Guarded && _code.Count > 0 && _code[^1].Opcode != BoundaryOpcode
+                && (CanFallThrough(_code[^1]) || LabelAt(_code.Count)))
+                Add(Exit, []);
+            Link(library);
         }
 
         private void Link(LibrarySub library)
@@ -744,9 +755,8 @@ public static class OmsCompiler
                     break;
                 case ConditionalJumpStatement jump:
                 {
-                    IrOperand target = LabelOperand(Resolve(jump.Target, jump.Span), jump.Span);
-                    IrOperand otherwise = jump.Else != null
-                        ? LabelOperand(Resolve(jump.Else, jump.Span), jump.Span) : IrOperand.Literal(0, NoTarget);
+                    IrOperand target = JumpOperand(jump.Target, jump.Span);
+                    IrOperand otherwise = jump.Else != null ? JumpOperand(jump.Else, jump.Span) : IrOperand.Literal(0, NoTarget);
                     if (jump.Negated) EmitJcc(jump.Condition, otherwise, target, jump.Span);
                     else EmitJcc(jump.Condition, target, otherwise, jump.Span);
                     break;
@@ -924,10 +934,10 @@ public static class OmsCompiler
         /// the same instructions, and emits it with those slots, recording them where they are not canonical.</summary>
         private void LowerFitted(LStatement statement, SourceSpan span, int site)
         {
-            bool swap = layout?.RefSwap == true;
-            var probe = new CanonicalTemps(statement, _tempBase, swap, Probes, Probes);
+            RefOrder order = layout?.RefOrder ?? RefOrder.Plain;
+            var probe = new CanonicalTemps(statement, _tempBase, order, Probes, Probes);
             var probed = new List<IrInstruction>();
-            var plan = new CanonicalTemps(statement, _tempBase, swap);
+            var plan = new CanonicalTemps(statement, _tempBase, order);
             var canonical = new List<IrInstruction>();
             try
             {
@@ -969,7 +979,7 @@ public static class OmsCompiler
             uint[]? intPins = fittedInts.SequenceEqual(canonicalInts) ? null : fittedInts;
             uint[]? refPins = fittedRefs.SequenceEqual(canonicalRefs) ? null : fittedRefs;
             if (intPins != null || refPins != null) Fitted[site] = new OmsTempOverride { Ints = intPins, Refs = refPins };
-            ExpressionLowering.Lower(statement, new CanonicalTemps(statement, _tempBase, swap, intPins, refPins).Allocate, _code.Add);
+            ExpressionLowering.Lower(statement, new CanonicalTemps(statement, _tempBase, order, intPins, refPins).Allocate, _code.Add);
         }
 
         private void Lower(LStatement statement, SourceSpan span)
@@ -982,7 +992,8 @@ public static class OmsCompiler
             }
             OmsTempOverride? entry = null;
             layout?.Temps?.TryGetValue(site, out entry);
-            var temps = new CanonicalTemps(statement, _tempBase, layout?.RefSwap == true, entry?.Ints, entry?.Refs, _refBase);
+            var temps = new CanonicalTemps(statement, _tempBase, layout?.RefOrder ?? RefOrder.Plain, entry?.Ints, entry?.Refs,
+                _refBase);
             try
             {
                 ExpressionLowering.Lower(statement, temps.Allocate, _code.Add);
@@ -1403,6 +1414,11 @@ public static class OmsCompiler
             => expression is OperandExpr atom ? Operand(atom.Operand)
                 : expression is NamedElementExpr or ElementExpr or AssetExpr && ToL(expression) is LLeaf cell ? cell.Operand
                 : throw new OmsCompileException(expression.Span, $"{what} must be a single operand at this stage");
+
+        /// <summary>A conditional jump's operand: its target's label, or for <c>goto next</c> the operand that names no
+        /// target (-1), so the jcc goes on to the next instruction.</summary>
+        private IrOperand JumpOperand(JumpTarget target, SourceSpan span)
+            => target.Kind == JumpKind.Next ? IrOperand.Literal(0, NoTarget) : LabelOperand(Resolve(target, span), span);
 
         private string Resolve(JumpTarget target, SourceSpan span)
         {

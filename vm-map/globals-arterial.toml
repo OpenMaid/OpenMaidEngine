@@ -8,7 +8,7 @@
 # of the boot tables with a reading in that document, save the few whose reading names no use, and the
 # saved cells the tables are read through.
 [meta]
-note = "Curated Arterial global addresses. Names started 2026-11-20 from the table layouts of tools/init_arterial.py and the scripts that read them."
+note = "Curated Arterial global addresses. Names started 2026-11-20 from the table layouts of tools/init_layout.py (then init_arterial.py) and the scripts that read them."
 
 
 # ---- ADV page state (mods/arterial-base/oms/adv.oms) ----

@@ -60,7 +60,7 @@ public sealed class BaseModTests : IDisposable
     public void TheEngineShipsABaseModForEachGameWithARegistryAndItIsTheRepositorysFolder()
     {
         // The base mods, and ome-records, the library they apply record tables with (data patches spec §6.4).
-        Assert.Equal(["arterial-base", "himegari-base", "kamidori-base", "ome-records"], ShippedPackages.Ids);
+        Assert.Equal(["arterial-base", "himegari-base", "kamidori-base", "ome-records", "verita-base"], ShippedPackages.Ids);
         foreach (string id in ShippedPackages.Ids.Where(id => id.EndsWith("-base", StringComparison.Ordinal)))
         {
             using ModPackage shipped = ShippedPackages.Open(id)!;
@@ -77,7 +77,8 @@ public sealed class BaseModTests : IDisposable
             Assert.Contains(shipped.Manifest.Requires, requirement => requirement.Id == "ome-records");
             // Each accepts its game's record tables as data files, applied at the boot's data.layered and at each
             // stage's stage.loaded (data patches spec §6.2), by the same handlers; Kamidori's stage part at its stage
-            // list's preview too (plan §12.6). Arterial's scope is an area, whose part comes at area.loaded.
+            // list's preview too (plan §12.6). Arterial's scope is an area, whose part comes at area.loaded; Verita's a
+            // dungeon map, whose part comes at map.loaded and, after a load of a save made on it, at data.ready.
             string game = shipped.Manifest.Profile!;
             // Modding from a release spec §5.1: each carries its game's toolchain, its generated globals and adv.oms.
             Assert.Equal(ModManifest.ToolchainOmpVersion, shipped.Manifest.OmpVersion);
@@ -85,9 +86,13 @@ public sealed class BaseModTests : IDisposable
             Assert.Equal(["adv.oms"], shipped.Layout.Toolchain.Modules.Select(module => module.Name));
             ModKind kind = Assert.Single(shipped.Manifest.Accepts);
             Assert.Equal($"{game}.tables", kind.Kind);
-            (string, string)[] at = game == "arterial"
-                ? [("arterial.data.layered", "tables.lua:apply_boot"), ("arterial.area.loaded", "tables.lua:apply_area")]
-                : [($"{game}.data.layered", "tables.lua:apply_boot"), ($"{game}.stage.loaded", "tables.lua:apply_stage")];
+            (string, string)[] at = game switch
+            {
+                "arterial" => [("arterial.data.layered", "tables.lua:apply_boot"), ("arterial.area.loaded", "tables.lua:apply_area")],
+                "verita" => [("verita.data.layered", "tables.lua:apply_boot"), ("verita.map.loaded", "tables.lua:apply_dungeon"),
+                             ("verita.data.ready", "tables.lua:apply_loaded_dungeon")],
+                _ => [($"{game}.data.layered", "tables.lua:apply_boot"), ($"{game}.stage.loaded", "tables.lua:apply_stage")],
+            };
             if (game == "kamidori") at = [.. at, ("kamidori.stage.previewed", "tables.lua:apply_stage")];
             Assert.Equal(at, kind.At.Select(entry => (entry.Event, entry.Handler.ToString())));
             Assert.Empty(shipped.Manifest.Data);

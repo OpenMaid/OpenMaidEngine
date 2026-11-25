@@ -1,0 +1,6 @@
+# Applied at verita.map.loaded: each time FIELD starts on map 11, after every layer's RMINIT has filled the map's
+# blocks. A block is 30 * row + column, and a block's music is a row of three variants. The comment gives the game's own
+# value.
+
+[dungeon.11.block.31]                   # row 1, column 1
+music.variant_0 = 15                    # 19
