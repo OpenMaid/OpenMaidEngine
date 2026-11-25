@@ -179,7 +179,7 @@ a screen-mode present during a save restore ("Comparing engine builds" below).
 `tools/revision_diff.py` compares the native code behind every opcode two engine dumps share (usage and report
 format: `docs/tools-reference.md`, "Opcode revision diff"). Its purpose is a high-level list of what a new game's
 engine changed, read before any playthrough, so a new game needs no full native-vs-port sweep to find its
-revision changes; a sweep then checks the rows that matter. Four builds have dumps and pinned facts in
+revision changes; a sweep then checks the rows that matter. Five builds have dumps and pinned facts in
 `tools/operand_access.py` `ENGINES`:
 
 | Engine id | Game | AGE.EXE | ctx constructor | Opcode table | Handlers | C runtime starts |
@@ -188,6 +188,7 @@ revision changes; a sweep then checks the rows that matter. Four builds have dum
 | `kamidori` | Kamidori (EU12), clean install | 4.33G | `0x413e70` | `ctx+0x9f704` | 437 | `0x556878` |
 | `kamidori-433f` | Kamidori, the English translation | 4.33F | `0x413e50` | `ctx+0x9f700` | 437 | `0x556878` |
 | `arterial` | 創刻のアテリアル (EU13) | 4.38D | `0x414e10` | `ctx+0xa4b9c` | 473 | `0x583dd8` |
+| `verita` | 戦女神VERITA, being added | 4.24N | `0x414180` | `ctx+0x9b2b8` | 420 | `0x550cce` |
 
 **Himegari is 4.24J** (checked 2026-11-12). The dump's own version resource reads `FileVersion` `4.24J` (UTF-16 at
 `0x602f08`), and so does the installed `AGE.EXE` (1,105,920 bytes, dated 2009-11-13, SHA-256
@@ -235,16 +236,39 @@ runtime begins at the `operator new[]` thunk `0x583dd8` (150 callers; `__securit
 Unlike 4.24J and 4.33, most of 4.38D's engine code from about `0x4a0000` on is not 16-aligned, so alignment does
 not mark where the runtime starts.
 
-**Verita** (戦女神VERITA, EU011), from its intake on 2026-11-24 (`Ome.Cli intake`; the report is
-`build/games/verita/intake.json`). `games/verita/` has a packed `AGE.EXE` of 1,183,744 bytes whose version resource
-reads 4.24N, SHA-256 `3d529fd9479981f461076faaebaccfa63899aa812a0d09e7588059f2841d8287`; its catalog is `S4IC424`
-and every script `SYS4424`. The nearest supported build is Himegari's 4.24J. It is not dumped yet, so it has no row
-in the table above. Its catalog holds an `AGERC.DLL` of its own (`sys4-format-notes.md`, "The catalog's
-`AGERC.DLL`"), and both copies export the same twenty functions, most of them a map's collision and lookups:
-`_FindClash`, `_GetEv`, `_GetLand`, `_InitRect`, `_SetChParams`, `_SetMapParams`, the `_SetMapEvP{N,X,Y}`,
-`_SetMapLandP{N,X,Y}`, `_SetMapLandIdx`, `_SetMapWallP{N,X,Y}` and `_SetMapWallCr` setters, and the shell's
-`_OperateMenu`, `_ShowDialog` and `_GetInstance`. Its scripts' only callers of AGERC exports are `FIELD.BIN`'s 17
-`set-agerc-export` and 19 `call-agerc-export` sites, opcodes no supported game uses.
+**Verita.** `games/verita/` (戦女神VERITA) was taken in on 2026-11-24 (`Ome.Cli intake`; the report is
+`build/games/verita/intake.json`). Its packed `AGE.EXE` (1,183,744 bytes, SHA-256
+`3d529fd9479981f461076faaebaccfa63899aa812a0d09e7588059f2841d8287`, catalog `S4IC424`, scripts `SYS4424`) was dumped
+the same day from a scratch copy by `dump_engine.py --reference verita --spawn`, and the install checked unchanged.
+The module is based at `0x400000` and spans 2,650,112 bytes (`build/engines/verita/engine-dump/`); its version
+resource reads `FileVersion` `4.24N` at `0x617eee`. The table-fill search (`lea edi,[esi+0x9b2b8]; mov ecx,0x400;
+rep stosd`) found the constructor, the same code as Himegari's, and `operand_access.py --align-accessors` aligned
+all 12 accessors unanimously against Himegari and Kamidori alike: 4.24N has no float accessor. The C runtime starts
+at the `operator new` thunk `0x550cce`, whose bytes and neighbours are Himegari's `0x54f3de`'s. The Ghidra image is
+`/verita/4.24N/range_00400000.bin`. `tools/ghidra_port_names.py himegari verita` paired 2,840 functions (305 of them
+by a unique string) and ported 794 of `/v2`'s 1,223 named or commented functions; with the 12 accessors, 805
+functions got a name and plate, 124 of them new functions. Its packer sites are not restored (153 calls into the
+stub page `0x3050000`, against `/v2`'s 154 into `0x2750000`) and its imports not typed.
+
+Verita's `FIELD.BIN` is the only script of the four games that calls `AGERC.DLL` code: ops `0x14c` and `0x14d`,
+which Himegari's and Verita's handlers implement alike (both `same` in the revision diff), and no other game's
+scripts use.
+- **`0x14c` (`set-agerc-export`, slot, name)** sets its length to 5 words, looks the name up with `GetProcAddress`
+  in the module handle at `ctx+0x6dc18` (Verita `+0x6dc7c`), and stores the address in the slot table at
+  `ctx+0x6dc1c` (Verita `+0x6dc80`) when the slot is below 100. A name that is not found, or a slot of 100 or more,
+  throws. The error path for the slot formats operand 3, which the instruction does not have; that read is the one
+  `operand_access.py` reports, and the operand count is 2.
+- **`0x14d` (`call-agerc-export`, slot, result, cells, count, ref, value)** copies `count` cells from operand 3's
+  address into a new int array, decoding each from the cell encoding (`rol 11`, xor `anti_tamper_a` at `ctx+0x55120`,
+  Verita `+0x55184`, `ror 25`), calls the slot as `fn(owner window, array, count, &operand 5, operand 6)`, encodes
+  the array back into the cells, and writes the call's result to operand 2. Operand 5 is passed as its cell's
+  address, not decoded.
+- `FIELD@0x3` to `@0x53` binds slots 1 to 17 to `_FindClash@20`, `_GetLand@20`, `_GetEv@20`, `_InitRect@20`,
+  `_SetMapParams@20`, `_SetMapWallP{X,Y,N}@20`, `_SetMapWallCr@20`, `_SetMapLandP{X,Y,N}@20`, `_SetMapLandIdx@20`,
+  `_SetMapEvP{X,Y,N}@20` and `_SetChParams@20`. The setters pass whole global tables (counts 3 to 20,000 cells) and
+  the queries two to eight cells. Every installed `AGERC.DLL` but Arterial's exports these, besides the shell's
+  `_OperateMenu`, `_ShowDialog` and `_GetInstance` (Arterial's has only those three). Verita's catalog also lists an
+  `AGERC.DLL` (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`").
 
 **Method.** Same-opcode handlers pair exactly. Aligning their instruction streams, and then their callees', votes
 on which functions, context fields and globals correspond. Each function becomes a multiset of behavior facts, and
@@ -294,6 +318,17 @@ to 6), the noise class the report flags. Kamidori–Arterial's largest differenc
 - vertex-buffer render paths (`CalcDiffuse`, `RenderPolygon`, `CopyScene`) under `0x20c`, `0x222` and `0x21d`;
 - `message:AutoMessage*` settings in op `0x72`;
 - op `0x2c7`'s substring, which keeps double-byte characters whole and warns when it moves an end.
+
+**Himegari against Verita (2026-11-24).** 4.24J against 4.24N: 370 `same`, 9 `minor`, 41 `differs`; helpers 100 /
+3 / 6, none unpaired, and neither build has an opcode the other lacks. Not triaged yet. The largest differences:
+- the Direct3D device code under `0x2cf`, `0x20c`, `0x222`, `0x20d` and `0x25b`: 4.24N reads
+  `display:VirtualFullScreenType` (also in `0x109`) and has new `ResetDevice` and `RestoreBufferToTemp` messages,
+  where 4.24J has `ResetTarget` and `SetTarget` ones;
+- the numbered save and load ops (`0xaa`, `0xab`, `0x190`, `0x19e`, `0x19f`, `0x1a1`) and their helper
+  `0x40b880=0x40bfb0`, with constants 100 lower, as the context grew by `0x64` before the save data;
+- a compare with 2 that `0x8e`, `0x91`, `0x92`, `0x94`, `0x95` and `0x109` gain through the helper
+  `0x403830=0x403810`;
+- 17 rows whose only fact is the field `+0x53d90` that 4.24J reads, a correspondence gap by the report's rule.
 
 ### Kamidori against Arterial, triaged (2026-11-19)
 

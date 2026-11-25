@@ -154,6 +154,23 @@ _ARTERIAL_ACCESSORS = {
     0x4291A0: Accessor("address", 1, "vm_operand_resolve_float_address"),
 }
 
+# 戦女神VERITA AGE 4.24N, from --align-accessors against himegari (every alignment unanimous, 2026-11-24) and kamidori
+# (the same twelve; 4.33G's float fetch aligns with this build's integer fetch, so 4.24N has no float accessor).
+_VERITA_ACCESSORS = {
+    0x41C4A0: Accessor("read", 1, "vm_operand_fetch"),
+    0x4192B0: Accessor("read-string", 1, "vm_operand_read_string_buffer"),
+    0x41BF50: Accessor("read-string", 2, "vm_operand_read_std_string"),
+    0x41BA10: Accessor("read-string", 1, "vm_operand_format_as_string"),
+    0x426B30: Accessor("write", 1, "vm_operand_write"),
+    0x42C140: Accessor("write-string", 1, "vm_operand_write_string"),
+    0x416AE0: Accessor("bind", 1, "vm_pointer_operand_bind_element"),
+    0x4169E0: Accessor("bind", 1, "vm_pointer_operand_write"),
+    0x4265D0: Accessor("address", 1, "vm_operand_resolve_address"),
+    0x416930: Accessor("string-cell", 1, "vm_operand_global_string_cell"),
+    0x416800: Accessor("ref-slot", 1, "vm_pointer_operand_slot"),
+    0x416880: Accessor("cell", 1, "vm_operand_lvalue"),
+}
+
 REFERENCE_PROFILE = "himegari"
 ENGINES: dict[str, EngineFacts] = {
     "himegari": EngineFacts(0x413860, 0x9B24C, _HIMEGARI_ACCESSORS, runtime_start=0x54F3DE, version="4.24J"),
@@ -170,6 +187,10 @@ ENGINES: dict[str, EngineFacts] = {
     # at 0x414e10 fills the opcode table at ctx+0xa4b9c. The C runtime starts at the operator new[] thunk 0x583dd8
     # (much of this build's engine code is not 16-aligned, so alignment does not mark the runtime).
     "arterial": EngineFacts(0x414E10, 0xA4B9C, _ARTERIAL_ACCESSORS, runtime_start=0x583DD8, version="4.38D"),
+    # 戦女神VERITA, AGE 4.24N, dumped 2026-11-24 (a reference install until its profile). The ctx constructor at
+    # 0x414180 fills the opcode table at ctx+0x9b2b8, the same code as Himegari's 0x413860. The C runtime starts at the
+    # operator new thunk 0x550cce, whose bytes and neighbours match Himegari's 0x54f3de.
+    "verita": EngineFacts(0x414180, 0x9B2B8, _VERITA_ACCESSORS, runtime_start=0x550CCE, version="4.24N"),
 }
 
 

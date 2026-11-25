@@ -1027,6 +1027,24 @@ Port status (2026-07-29): implemented over the scene-context stack registry. All
 
 On success native writes the removed value. On empty, the release handler still writes its reused `this`/EngineCtx local into out_value, so that cell is implementation garbage and must not be consumed unless out_success is nonzero. Port status (2026-07-29): implemented as LIFO TryPop; success writes 1 and the signed dword, while empty writes 0 and deliberately preserves out_value rather than exposing a host pointer. The ten-slot/id-10 alias caveat is documented on op 0x137.
 
+### 0x14c `set-agerc-export` (set-agerc-export, argc 2)
+- **observed by:** none in recorded corpora
+- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
+- **semantic status:** investigated
+- **summary:** (slot, name) - binds slot (0..99) to the AGERC.DLL export the string names, for call-agerc-export. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
+- **grounding:** source=investigation, confidence=high
+- **depended on by:** 0x14d
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita).
+
+### 0x14d `call-agerc-export` (call-agerc-export, argc 6)
+- **observed by:** none in recorded corpora
+- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
+- **semantic status:** investigated
+- **summary:** (slot, result, cells, count, ref, value) - calls the AGERC.DLL export bound to slot with count integer cells from cells' address as an array, the address of ref's cell and value; the export may change the cells, and its return goes to result. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
+- **grounding:** source=investigation, confidence=high
+- **depends on:** 0x14c
+- **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x429ee0 and Verita 4.24N @0x42aa70, the same code (revision diff same). Length 13 words. Copies operand-4 cells from operand 3's address into a new int array, decoding each (rol 11, xor anti_tamper_a, rol 7), calls ctx+0x6dc1c[operand 1] (Verita +0x6dc80) as __stdcall fn(owner window, array, count, &operand-5 cell, operand 6), encodes the array back into the cells and writes the return to operand 2. Operand 5's cell address is passed as is, not decoded. Only Verita's FIELD.BIN uses it, 19 sites (docs/engine-re.md, Comparing engine builds, Verita).
+
 ### 0x191 `absolute-value` (absolute-value, argc 2)
 - **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433)
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4433`, `SYS4438`
@@ -4560,22 +4578,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14b`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x14c `set-agerc-export` (set-agerc-export, argc 2)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x14d `call-agerc-export` (call-agerc-export, argc 6)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x190 `u0041C5E0` (u0041C5E0, argc 2)
 - **observed by:** none in recorded corpora

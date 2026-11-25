@@ -631,9 +631,13 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   - **Six opcodes have no handler, at 40 sites, and no supported game uses them:** `0x14d` `call-agerc-export` (19)
     and `0x14c` `set-agerc-export` (17), all in `FIELD.BIN`; `0x14b` and `0x24a` (`FIELD.BIN`), `0x35` (`BTL.BIN`)
     and `0x89` (`ALCHEMY.BIN`), one site each. Their registry entries are Kelebek's names and operand counts only.
-  - **The catalog's `AGERC.DLL` exports a map engine** (`sys4-format-notes.md`, "The catalog's `AGERC.DLL`"): the two
-    agerc-export opcodes call it. The port cannot load a Windows DLL on every platform, so what `FIELD.BIN` gets from
-    it has to be read and implemented in the engine.
+  - **`FIELD.BIN` calls 17 `AGERC.DLL` map functions** through the two agerc-export opcodes (`engine-re.md`,
+    "Comparing engine builds", Verita): wall, land and event tables, character parameters, and the collision, land
+    and event queries. The port cannot load a Windows DLL on every platform, so those functions have to be read in
+    `AGERC.DLL` and implemented in the engine.
+  - **Step 2, the engine** (2026-11-24): dumped, pinned in `operand_access.py` `ENGINES`, the Ghidra image
+    `/verita/4.24N` with 805 ported names, and the revision diff against Himegari (`engine-re.md`, "Himegari against
+    Verita"). Its packer sites are not restored and its imports not typed, as Arterial's.
   - Done when the game is at P3 and M3 and its manifest says so, as Arterial's item records.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same

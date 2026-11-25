@@ -160,10 +160,10 @@ are rejected before presentation construction. Append `S4AC` catalogs do not own
 戦女神VERITA's catalog (`S4IC424`, 21,002 entries in `DATA1.ALF` to `DATA7.ALF`) lists a file type no supported
 game's has: entry 20760, `AGERC.DLL`, 761,856 bytes in `DATA1.ALF`. It is a PE image with named sections and an
 export table. The install's own `AGERC.DLL` (340,992 bytes) looks packed: its sections are unnamed, and most hold far
-fewer bytes in the file than in memory. Both export the same twenty names,
-at different addresses (`engine-re.md`, "Comparing engine builds", Verita). Which copy native AGE loads, and when, is
-not read yet. Its nine `.CUR` cursors (`CURSOR01.CUR` to `CURSOR09.CUR`) are a type another supported catalog has:
-the intake names only `.DLL` as new.
+fewer bytes in the file than in memory. Both export the same twenty names at different addresses, the names
+Himegari's and Kamidori's installed `AGERC.DLL` export too (`engine-re.md`, "Comparing engine builds", Verita).
+Which copy native AGE loads, and when, is not read yet. Its nine `.CUR` cursors (`CURSOR01.CUR` to
+`CURSOR09.CUR`) are a type another supported catalog has: the intake names only `.DLL` as new.
 
 ### SYS4INI file header: VM bank dimensions — CONFIRMED (2026-10-06)
 

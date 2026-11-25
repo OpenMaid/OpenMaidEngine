@@ -10616,13 +10616,21 @@ abi_source = "kelebek"
 
 [opcode.semantics]
 name = "set-agerc-export"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+category = "compute"
+summary = "(slot, name) - binds slot (0..99) to the AGERC.DLL export the string names, for call-agerc-export. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = "Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita)."
+
+[[opcode.semantics.args]]
+i = 1
+role = "slot"
+
+[[opcode.semantics.args]]
+i = 2
+role = "export name"
 
 [[opcode]]
 op = 0x14d
@@ -10632,13 +10640,37 @@ abi_source = "kelebek"
 
 [opcode.semantics]
 name = "call-agerc-export"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+category = "compute"
+summary = "(slot, result, cells, count, ref, value) - calls the AGERC.DLL export bound to slot with count integer cells from cells' address as an array, the address of ref's cell and value; the export may change the cells, and its return goes to result. The port has no handler yet: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
-depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+source = "investigation"
+confidence = "high"
+depends_on = [0x14c]
+evidence = "Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x429ee0 and Verita 4.24N @0x42aa70, the same code (revision diff same). Length 13 words. Copies operand-4 cells from operand 3's address into a new int array, decoding each (rol 11, xor anti_tamper_a, rol 7), calls ctx+0x6dc1c[operand 1] (Verita +0x6dc80) as __stdcall fn(owner window, array, count, &operand-5 cell, operand 6), encodes the array back into the cells and writes the return to operand 2. Operand 5's cell address is passed as is, not decoded. Only Verita's FIELD.BIN uses it, 19 sites (docs/engine-re.md, Comparing engine builds, Verita)."
+
+[[opcode.semantics.args]]
+i = 1
+role = "slot"
+
+[[opcode.semantics.args]]
+i = 2
+role = "result"
+
+[[opcode.semantics.args]]
+i = 3
+role = "cells (first integer cell of the array)"
+
+[[opcode.semantics.args]]
+i = 4
+role = "count"
+
+[[opcode.semantics.args]]
+i = 5
+role = "ref (its cell address is passed)"
+
+[[opcode.semantics.args]]
+i = 6
+role = "value"
 
 [[opcode]]
 op = 0x190
