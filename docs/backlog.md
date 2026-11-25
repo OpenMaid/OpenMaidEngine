@@ -780,6 +780,13 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     - **The galleries** (`CGMODE`, `HMODE`, `MMODE`, `ED`): op `0x19d` in 4.15D handles no append's selector byte;
       whether a gallery table holds an append id is read when they are driven.
     - **Op `0x226`** has no handler yet (`query-gfx-scale-current`, one site in `DEBUGADV2.BIN`).
+  - **Step 5, the driver, is done (2026-11-25):** `tools/drive/bg0.toml` names 4.15D's context, its `0x70`-byte frame
+    record, the polling call, op `0x60`'s draw and the title's points (`engine-re.md`, "Driving native AGE").
+    `drive.py --game bg0 native` reaches the title in a sandbox, reads positions, captures, counts a seeded draw (the
+    Eushully-chan Room's) and closes AGE its own way, and the install checks unchanged. Its movies hung in LAV
+    Splitter, a codec pack on the machine, so the profile refuses LAV's classes inside AGE (the driver's new
+    `[[native.refuse_class]]`). `scenarios/bg0-opening.steps` runs the logo, the opening, the title, the game mode
+    and SC0000's first six pages.
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

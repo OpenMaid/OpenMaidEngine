@@ -449,6 +449,21 @@ def test_profiles():
           "sandbox settings name their file")
     check(raises(core.parse_profile, '[engine]\nctx_global = 1\n', contains="unknown profile section"),
           "the pre-M2 top-level [engine] layout is rejected, not ignored")
+    check(profile.refused_classes == () and config["refuse_classes"] == [],
+          "a profile that refuses no class leaves CoCreateInstance unhooked")
+    bg0 = core.parse_profile((HERE / "drive" / "bg0.toml").read_text(encoding="utf-8"))
+    check(bg0.refused_classes[0].clsid == "171252A0-8820-4AFE-9DF8-5C92B2D66B04"
+          and native.agent_config(bg0, None, engine_ctx)["refuse_classes"][0] == bg0.refused_classes[0].clsid
+          and bg0.engine["frame_stride"] == 0x70,
+          "戦女神ZERO refuses LAV Splitter in AGE and names its 0x70-byte frame record")
+    check(core.parse_profile('[[native.refuse_class]]\nclsid = "{171252a0-8820-4afe-9df8-5c92b2d66b04}"\n')
+          .refused_classes[0].clsid == "171252A0-8820-4AFE-9DF8-5C92B2D66B04", "a CLSID may have braces and lower case")
+    check(raises(core.parse_profile, '[[native.refuse_class]]\nclsid = "LAV"\n', contains="must be a GUID"),
+          "a refused class is named by its CLSID")
+    check(raises(core.parse_profile, '[[native.refuse_class]]\nname = "x"\n', contains="takes clsid"),
+          "a refused class needs its CLSID")
+    twice = '[[native.refuse_class]]\nclsid = "171252A0-8820-4AFE-9DF8-5C92B2D66B04"\n'
+    check(raises(core.parse_profile, twice + twice, contains="twice"), "a class is refused once")
 
 
 class FakeServer:

@@ -300,6 +300,25 @@ class DialogPolicy:
 
 
 @dataclass(frozen=True)
+class ClassRefusal:
+    """[[native.refuse_class]]: a COM class the driven AGE may not create. CoCreateInstance answers it
+    REGDB_E_CLASSNOTREG inside AGE only, as if it were not installed (a codec pack's filter that a game's movies hang
+    in on this machine); the rest of the machine keeps it."""
+    clsid: str            # upper case, without braces
+    name: str = ""
+    reason: str = ""
+
+
+def _clsid(text: str) -> str:
+    value = str(text).strip().strip("{}").upper()
+    parts = value.split("-")
+    if [len(part) for part in parts] != [8, 4, 4, 4, 12] or any(c not in "0123456789ABCDEF" for c in "".join(parts)):
+        raise DriveError(f"[[native.refuse_class]] clsid must be a GUID like 171252A0-8820-4AFE-9DF8-5C92B2D66B04: "
+                         f"{text!r}")
+    return value
+
+
+@dataclass(frozen=True)
 class NativeBuild:
     """[native.build."NAME"]: one AGE.EXE build, known by the SHA-256 of the file, and the [native.*] keys whose
     values differ for it (hook addresses move between builds)."""
@@ -322,6 +341,7 @@ class Profile:
     keep_polling: dict[str, int] | None = None  # setter, activate_return [, gate]
     rand: dict[str, int] | None = None          # op60_rand_return
     builds: tuple[NativeBuild, ...] = ()        # the AGE.EXE builds the [native.*] values are given for
+    refused_classes: tuple[ClassRefusal, ...] = ()   # COM classes AGE may not create
 
     def for_build(self, sha256: str) -> tuple["Profile", str | None]:
         """The profile for the AGE.EXE whose file hashes to `sha256`, with its build's values, and the build's name.
@@ -381,7 +401,15 @@ def parse_profile(text: str) -> Profile:
     rand = _native_table(native, "rand", ("op60_rand_return",))
     if rand is not None and engine is None:
         raise DriveError("[native.rand] needs [native.engine] (it names the call site from the running frame)")
-    unknown = set(native) - {"dialog", "build"} - set(NATIVE_HOOK_TABLES)
+    refused = []
+    for entry in native.get("refuse_class", []):
+        unknown = set(entry) - {"clsid", "name", "reason"}
+        if unknown or "clsid" not in entry:
+            raise DriveError(f"[[native.refuse_class]] takes clsid, name and reason: {entry}")
+        refused.append(ClassRefusal(_clsid(entry["clsid"]), str(entry.get("name", "")), str(entry.get("reason", ""))))
+    if len({refusal.clsid for refusal in refused}) != len(refused):
+        raise DriveError("[[native.refuse_class]] names a class twice")
+    unknown = set(native) - {"dialog", "build", "refuse_class"} - set(NATIVE_HOOK_TABLES)
     if unknown:
         raise DriveError(f"unknown [native] table(s): {', '.join(sorted(unknown))}")
     builds = tuple(_native_build(name, entry, native) for name, entry in native.get("build", {}).items())
@@ -389,7 +417,7 @@ def parse_profile(text: str) -> Profile:
     if len(set(hashes)) != len(hashes):
         raise DriveError("two [native.build] tables give the same sha256")
     return Profile(points, advance, sandbox.get("settings_file", ""), settings, quiet, tuple(dialogs), engine,
-                   keep_polling, rand, builds)
+                   keep_polling, rand, builds, tuple(refused))
 
 
 def _native_build(name: str, entry: dict[str, Any], native: dict[str, Any]) -> NativeBuild:

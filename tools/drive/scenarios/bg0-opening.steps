@@ -1,0 +1,37 @@
+# 戦女神ZERO's opening: the logo movie, the opening movie skipped by a click, the title, Game Start, the game mode
+# (通常) and the first pages of SC0000. It is the scenario of the game's P2 gate (docs/adding-a-game.md, step 6).
+# Native AGE passes it since 2026-11-25, on a machine with LAV Filters only with the profile's refused classes
+# (tools/drive/bg0.toml). The port is checked against it at step 6.
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port start
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port run tools/drive/scenarios/bg0-opening.steps
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native|port stop
+# LOGO plays LOGO.AGF (an MPEG-1 stream) through op 0x20f with flags 4, then OP plays the opening, which a click ends.
+# Game Start calls GAMESTART, whose BUNKI draws the game-mode box (BUNKIMOVE animates it); 通常 goes to SC0000.
+# SC0000's pages draw no op 0x60 random number; the seed is set so that a draw would be the same on both targets.
+
+rand-seed 13
+wait-state script=OP timeout=120
+wait 3
+click adv.next                           # ends the opening movie
+wait-state script=TITLE timeout=60
+settle timeout=20
+shot bg0-opening-title
+click title.start
+wait-state top=BUNKIMOVE@0x181 timeout=60
+settle timeout=20
+shot bg0-opening-mode
+click mode.normal
+wait-state top=SC0000@0xec7 timeout=60   # page 1
+settle timeout=20
+shot bg0-opening-page1
+advance 1
+expect top=SC0000@0xefc                  # page 2
+advance 1
+expect top=SC0000@0x1175                 # page 3
+advance 1
+expect top=SC0000@0x13e9                 # page 4
+shot bg0-opening-page4
+advance 1
+expect top=SC0000@0x18e1                 # page 5
+advance 1
+expect top=SC0000@0x1ab3                 # page 6

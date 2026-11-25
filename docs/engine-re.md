@@ -4016,6 +4016,14 @@ Frida probe hooked combase and quartz only and timed SC0000's movie at `0x13c8` 
   Render took 3 ms. The VM left `0x13c8` after 10 ms and reached the 750 ms sleep at `0x16cb` 14.03 s after the
   page-17 advance. The port reaches it at 14.07 s.
 - The boot movie's Render took 34 ms with LAV and 8 ms without it.
+- **戦女神ZERO's 4.15D hangs in LAV Splitter (2026-11-25).** Its `movie_to_texture_open_asset_graph@0x458620`
+  gives the async reader `MEDIATYPE_Stream` and `MEDIASUBTYPE_MPEG1System` without reading the file, the type 4.24J
+  picks for a file that is not RIFF `AVI `. LAV Splitter takes LOGO's MPEG-1 stream (`LOGO.AGF`) and never
+  delivers a frame. Its thread spins in `avformat-lav-57.dll`, so the movie reaches neither its stop time nor, with
+  flags 4, the tick's skip: a click's `movie_skip_to_end_if_service@0x406e20` blocks in
+  `IMediaPosition::put_CurrentPosition` (`0x406e6c`), and the game stays at `LOGO@0x21`. With LAV's classes refused in
+  AGE's process the stock filters play it, the logo and the opening alike. The driver does that for 戦女神ZERO
+  (`tools/drive/bg0.toml`, `[[native.refuse_class]]`).
 
 The port opens the movie at once and does not model a codec pack's probe. Native timings on a machine with
 third-party DirectShow filters include their cost at every movie start.
@@ -8421,6 +8429,35 @@ its entries in a column on the left, so the middle of the canvas is none of them
 - The character menu opens on a right click on a page or the field (`MENU`), and its Data Save writes `SAVE00.DAT`
   (2,437,564 bytes), `SAVE00.STH`, `SAVE.DAT` and `RT.DAT` in the save folder's `SAVE`.
 - A copied install raises the same データが壊れています． registration box, answered Yes.
+
+**戦女神ZERO (SYS4415, AGE 4.15D, 2026-11-25).** `tools/drive/bg0.toml` names its own values. Each was found from
+Himegari's by its code:
+
+- `g_pEngineCtx` is `0x59eff8`: `age_win_main` calls `engine_ctx_construct@0x412070` on its allocation and stores the
+  result there at `0x4741ed`.
+- The frame record is `0x70` bytes, 8 fewer than 4.24J's, and `cur_ctx_index` is `ctx+0x52370`. The fields keep their
+  places from it: `vm_operand_fetch@0x417b80` indexes it by `0x70` to the pc at `ctx+0x52388`,
+  `age_show_message_box@0x408870` and `current_script_source_line@0x408810` subtract the codebase `ctx+0x52384`, and
+  `hotspot_check_owner_script@0x406fd0` compares the resource id `ctx+0x523c0`. `op_0x3_call_script@0x417d60` caps
+  the depth with 4.24J's compare (`cmp cur_ctx_index, 0x27`).
+- `input_set_polling_enabled` is `0x454f10`, byte for byte Himegari's. The WM_ACTIVATE case of
+  `age_main_window_proc` calls it at `0x4732b3` with `windowed && wParam == WA_INACTIVE` (windowed is `ctx+0x987a4`),
+  and the call returns to `0x4732b8`. Its two other calls pass 1. The gate is `ctx+0x1c28`.
+- `op_0x60_handler@0x41a270` calls `_rand@0x52cc5e` at `0x41a2a6`, which returns to `0x41a2ab`, with the bytes the
+  agent checks there.
+
+A driven native run confirmed them the same day (`tools/drive/scenarios/bg0-opening.steps`). The frame stack reads
+`SYSTEM4@0x2d7 > LOGO`, then `OP`, `TITLE`, and after Game Start `TITLE@0x327 > GAMESTART@0x78 > BUNKI@0x301`, the
+game-mode box; 通常 goes to `SYSTEM4@0x48c > SC0000`, whose first page waits at `SC0000@0xec7`.
+- LOGO and OP play their movies through op `0x20f` with flags 4. In 4.15D the op keeps the movie in the surface's
+  slot (`ctx+0x51350`) and sets run-state `0x2000`. Each tick the modal branch clears the bit, since no modal object
+  (`ctx+0x5134c`) is set, and sets it again while any slot holds a movie, so the VM waits until the tick deletes the
+  movie at its stop time. A click skips it while the movie is a service one (`surface_movie_is_playing`).
+- The title hit-tests five rectangles, 400 by 70, from x 400 and y 60 in steps of 70 (`TITLE@0x16a`): Game Start,
+  Load Data, Eushully-chan Room, Option and Quit, one under the other on the right half.
+- SC0000's first pages draw no random number. Opening the Eushully-chan Room from the title draws one, at
+  `ROOM@0x13`, while global `0x2be7` is 0.
+- The movies need LAV Filters refused on a machine that has them ("What the open costs").
 
 The driver uses those values in place of `engine-ctx.toml` ([tools-reference.md](tools-reference.md), "Game driver").
 

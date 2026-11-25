@@ -96,6 +96,7 @@ def agent_config(profile: core.Profile, folders: dict[int, Path] | None, engine_
         "engine": engine,
         "keep_polling": keep_polling,
         "rand": profile.rand,
+        "refuse_classes": [refusal.clsid for refusal in profile.refused_classes],
         "background": background,
     }
 

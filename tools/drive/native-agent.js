@@ -12,6 +12,8 @@
 //           window activation in a background session AGE never takes the foreground (keepInBackground)
 //   winmm   joy*              no joystick is connected
 //   shell32 SHGetFolderPathA  the folders in config.folders (keyed by CSIDL & 0xff) point into the sandbox
+//   combase CoCreateInstance  answers REGDB_E_CLASSNOTREG for the classes in config.refuse_classes (the profile's
+//                             [[native.refuse_class]]), as if they were not installed; hooked only when it names some
 //   AGE.EXE input polling     keeppolling() stops WM_ACTIVATE from closing the polling gate: windowed AGE ignores
 //                             polled buttons and the cursor while inactive, and a driven AGE always is. It is
 //                             installed once the window exists, because AGE.EXE is unpacked at run time.
@@ -374,7 +376,37 @@ function hookShell32(module) {
     });
 }
 
-const HOOKS = { 'user32.dll': hookUser32, 'winmm.dll': hookWinmm, 'shell32.dll': hookShell32 };
+const REGDB_E_CLASSNOTREG = 0x80040154;
+const refusedCreations = new Map();    // clsid -> times refused
+
+function guidText(pointer) {
+    const data4 = pointer.add(8).readByteArray(8);
+    const tail = Array.from(new Uint8Array(data4), byte => byte.toString(16).padStart(2, '0'));
+    const pad = (value, width) => value.toString(16).padStart(width, '0');
+    return [pad(pointer.readU32(), 8), pad(pointer.add(4).readU16(), 4), pad(pointer.add(6).readU16(), 4),
+            tail.slice(0, 2).join(''), tail.slice(2).join('')].join('-').toUpperCase();
+}
+
+function hookCombase(module) {
+    const refused = new Set(config.refuse_classes || []);
+    if (refused.size === 0) return;
+    const target = module.findExportByName('CoCreateInstance');
+    if (target === null) throw new Error('CoCreateInstance is not exported; the profile\'s refused classes would load');
+    // Calling the target through a NativeFunction inside its replacement reaches the original implementation.
+    const original = new NativeFunction(target, 'uint', ['pointer', 'pointer', 'uint', 'pointer', 'pointer'], 'stdcall');
+    Interceptor.replace(target, new NativeCallback((clsid, outer, context, iid, out) => {
+        const text = clsid.isNull() ? '' : guidText(clsid);
+        if (!refused.has(text)) return original(clsid, outer, context, iid, out);
+        if (!out.isNull()) out.writePointer(ptr(0));
+        const times = (refusedCreations.get(text) || 0) + 1;
+        refusedCreations.set(text, times);
+        if (times === 1) report('refused-class', { clsid: text });
+        return REGDB_E_CLASSNOTREG;
+    }, 'uint', ['pointer', 'pointer', 'uint', 'pointer', 'pointer'], 'stdcall'));
+}
+
+const HOOKS = { 'user32.dll': hookUser32, 'winmm.dll': hookWinmm, 'shell32.dll': hookShell32,
+                'combase.dll': hookCombase };
 
 function hookModule(module) {
     const name = module.name.toLowerCase();

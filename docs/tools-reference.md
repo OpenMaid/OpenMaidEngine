@@ -1690,8 +1690,9 @@ font among them; the files' headers give the commands. `text_geometry_compare.py
 
 **Profiles.** `tools/drive/<game>.toml` holds the facts for both targets: `[advance]`, `[points]`, `[sandbox]`
 (`settings_file`, `[sandbox.settings]`, `[sandbox.quiet]`), and native-only `[native.engine]`,
-`[native.keep_polling]`, `[native.rand]`, `[native.build."NAME"]` and `[[native.dialog]]`. Unknown sections are
-refused, and so are unknown keys in `[native.engine]` and `[native.keep_polling]`. A profile without
+`[native.keep_polling]`, `[native.rand]`, `[native.build."NAME"]`, `[[native.dialog]]` and
+`[[native.refuse_class]]`. Unknown sections are refused, and so are unknown keys in `[native.engine]` and
+`[native.keep_polling]`. A profile without
 `[native.engine]` still drives native AGE; it just has no `state`.
 - `[native.engine]` needs `ctx_global`, `frame_stride` and `frame_count`. The frame fields `cur_ctx_index`,
   `frame_codebase`, `frame_pc` and `frame_script_resource_id` come from `vm-map/engine-ctx.toml`, which describes
@@ -1706,6 +1707,12 @@ refused, and so are unknown keys in `[native.engine]` and `[native.keep_polling]
   spawns, or the image of the process it attaches to, and uses that build's values; the `spawned` or `attached`
   event in `serve.log` names the build. A profile that declares builds refuses an AGE.EXE that is none of them. Kamidori declares 4.33G (the
   clean install, as written) and 4.33F (the translated install; `engine-re.md`, "Kamidori engine builds").
+- `[[native.refuse_class]]` names a COM class the driven AGE may not create, by its `clsid` (a GUID, braces and case
+  as you like), with a `name` and a `reason`. AGE's `CoCreateInstance` answers it `REGDB_E_CLASSNOTREG`, as if it
+  were not installed; the rest of the machine keeps it. It is for a codec pack's DirectShow filter that a game's
+  movies hang in: 戦女神ZERO's profile refuses LAV Filters' splitter and decoders, whose splitter takes 4.15D's MPEG-1
+  movies and never delivers a frame (`engine-re.md`, "What the open costs"). A class that is not installed is
+  refused harmlessly, so the profile serves any machine.
 
 **VM position.** Both targets report frames as `SCRIPT@offset`, with `offset` the dword offset of the disassembly and
 the page locator. At a text wait the pc is already **past** the wait instruction, so a page reads as the port page
@@ -1769,6 +1776,9 @@ target's sandbox can seed the other's.
   - Its buttons carry the Windows UI language's labels, for example `&Retry` on English Windows.
 - Mouse and key messages are not posted while AGE's window is disabled, for example under a modal box, because
   hardware input would not reach it either.
+- `CoCreateInstance` (combase), only when the profile has `[[native.refuse_class]]`: a refused class gets
+  `REGDB_E_CLASSNOTREG` and a null object, and `serve.log` reports `refused-class` the first time; every other class
+  is created as usual.
 - Op `0x60`, after the first `rand-seed`: a Frida probe on the instruction after the handler's `rand()` call
   (`[native.rand] op60_rand_return`) replaces the draw with the seeded stream's value. The agent checks the bytes
   there first, since AGE.EXE is unpacked only at run time.

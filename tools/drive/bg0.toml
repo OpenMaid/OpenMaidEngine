@@ -1,0 +1,93 @@
+# Driving facts for 戦女神ZERO, read by tools/drive.py for both targets (native AGE and the port).
+# Points are native client pixels of the 800x600 canvas (SYS4INI SCREENX, SCREENY). Its engine is AGE 4.15D
+# (SYS4415), whose EngineCtx is laid out differently from Himegari's 4.24J (vm-map/engine-ctx.toml describes
+# Himegari's), so the native field offsets are given here. Evidence: docs/engine-re.md, "Driving native AGE" and
+# "Himegari against 戦女神ZERO, triaged".
+
+[advance]
+point = "adv.next"        # where `advance` clicks: the middle of the canvas
+
+# The title's entries, read from native on 2026-11-25: TITLE hit-tests five rectangles 400 by 70 from x 400, the first
+# at y 60 and each 70 below the last (its find-hit-rectangle at 0x16a and the inline arrays at 0xdfd to 0xe1c), so
+# each point is the middle of its row, on the words. Game Start calls GAMESTART, whose BUNKI asks for the game mode.
+[points]
+"adv.next" = [400, 300]
+"title.start" = [700, 95]        # Game Start
+"title.load" = [700, 165]        # Load Data
+"title.room" = [700, 235]        # Eushully-chan Room (ROOM.BIN, which draws op 0x60 once as it opens)
+"title.option" = [700, 305]      # Option
+"title.quit" = [700, 375]        # Quit
+"mode.normal" = [400, 299]       # 通常, the first of BUNKI's two game modes (-> SC0000)
+"mode.special" = [400, 329]      # 特別編
+
+# Settings written into a sandbox profile's SYS4REG.INI before every sandboxed launch (as for the other games).
+# 4.15D has no display:VirtualFullScreen key, so only the window mode is set.
+[sandbox]
+settings_file = "SYS4REG.INI"
+
+[sandbox.settings]
+"display.ScreenMode" = 1
+
+[sandbox.quiet]
+"sound.Volume0" = 0
+
+# Native AGE only. The [native.*] tables are for the install's AGE.EXE, AGE 4.15D; its unpacked image is
+# build/games/bg0/engine-dump (Ghidra /bg0/4.15D). Each value was found on 2026-11-25 from Himegari's by its code:
+# - g_pEngineCtx is 0x59eff8: age_win_main calls engine_ctx_construct@0x412070 on its allocation and stores the
+#   result there at 0x4741ed (mov [0x59eff8], eax), and the window procedure reads the ctx through it.
+# - The frame record is 0x70 bytes, 8 fewer than 4.24J's, and keeps its fields' places from cur_ctx_index:
+#   vm_operand_fetch@0x417b80 reads ctx+0x52370 and indexes it by 0x70 to the pc at ctx+0x52388;
+#   age_show_message_box@0x408870 and current_script_source_line@0x408810 subtract ctx+0x52384 (the codebase), and
+#   hotspot_check_owner_script@0x406fd0 compares ctx+0x523c0 (the resource id). op_0x3_call_script@0x417d60 caps the
+#   depth with the same compare as 4.24J's (cmp cur_ctx_index, 0x27), so the record count is Himegari's.
+[native.engine]
+ctx_global = 0x59eff8
+frame_stride = 0x70
+frame_count = 20
+cur_ctx_index = 0x52370
+frame_codebase = 0x52384
+frame_pc = 0x52388
+frame_script_resource_id = 0x523c0
+
+# input_set_polling_enabled is 0x454f10, byte for byte Himegari's 0x460180 (input manager +0x1820, ctx+0x1c28). The
+# window procedure's WM_ACTIVATE case (age_main_window_proc) calls it with (windowed && wParam == WA_INACTIVE) on the
+# input manager at ctx+0x408, windowed being ctx+0x987a4; the call at 0x4732b3 returns to 0x4732b8. It is the one call
+# of the setter with that case's code (the other two pass 1).
+[native.keep_polling]
+setter = 0x454f10
+activate_return = 0x4732b8
+gate = 0x1c28
+
+# The drive step rand-seed replaces op 0x60's rand() draw at the instruction its call returns to: op_0x60_handler at
+# 0x41a270 calls _rand@0x52cc5e (the MSVC generator, by its 0x343fd multiplier) at 0x41a2a6, before it fetches an
+# operand, as Himegari's does.
+[native.rand]
+op60_rand_return = 0x41a2ab
+
+[native.build."4.15D"]
+sha256 = "251b7dd719ef6ac14d97821fe3b4ac3f36793b74f0be88a815121d27b25487ac"   # packed, as installed
+
+# LAV Filters, a codec pack installed on the machine these values were found on, outranks Windows' own DirectShow
+# filters. 4.15D hands DirectShow an MPEG-1 system stream (LOGO.AGF and the other movies) with the same media type as
+# 4.24J, and LAV Splitter takes it but never delivers a frame: LOGO's op 0x20f waits for ever, its thread spinning in
+# avformat, and a click's skip blocks in IMediaPosition::put_CurrentPosition (2026-11-25). Refused inside AGE only,
+# the graph is built from the MPEG-1 splitter and decoders every Windows has. A machine without LAV is unchanged.
+[[native.refuse_class]]
+clsid = "171252A0-8820-4AFE-9DF8-5C92B2D66B04"
+name = "LAV Splitter"
+reason = "takes 4.15D's MPEG-1 movies and never delivers a frame"
+
+[[native.refuse_class]]
+clsid = "B98D13E7-55DB-4385-A33D-09FD1BA26338"
+name = "LAV Splitter Source"
+reason = "the source form of LAV Splitter"
+
+[[native.refuse_class]]
+clsid = "EE30215D-164F-4A92-A4EB-9D4C13390F9F"
+name = "LAV Video Decoder"
+reason = "keeps the decoders Windows' own, as the splitter is"
+
+[[native.refuse_class]]
+clsid = "E8E73B6B-4CB3-44A4-BE99-4F7BCB96E491"
+name = "LAV Audio Decoder"
+reason = "keeps the decoders Windows' own, as the splitter is"
