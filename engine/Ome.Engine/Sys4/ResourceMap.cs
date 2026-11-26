@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Ome.Engine.Model;
 
 namespace Ome.Engine.Sys4;
@@ -55,6 +56,52 @@ public sealed class ResourceMap
     /// <summary>The name of the record a packed id selects, for an error that names the file; null when it selects
     /// none.</summary>
     public string? RecordName(long resourceId) => _catalog.ResolvePacked(resourceId)?.Name;
+
+    /// <summary>
+    /// Why AGE's picture load (ops 0x1f9 and 0x249) fails for a packed id, in AGE's words; null when it reads the
+    /// record. First the opener's box (<see cref="Sys4AssetCatalog.OpenFailure"/>), thrown before the slot is touched.
+    /// Then gfx_surface_decode_and_create@0x474e90's header test, on any record whatever its name: one starting
+    /// 「BM」 goes to the BMP reader, which refuses a depth other than 1, 4, 8, 24 or 32 bits; any other must hold the
+    /// AGF type 1 or 2 at +4 and 0 at +8 (the 「ACGF」 tag is not read). Refused, the load releases the slot's texture,
+    /// writes resource id -1 into its record, and throws 「画像ファイル name の読み込みに失敗しました」 with flags
+    /// 0x10007. A file shorter than the header AGE reads is refused here: AGE would test stale heap bytes. A record that
+    /// passes and the port cannot decode (a BMP without the BMP option, a damaged section) is no failure here, as AGE
+    /// would draw it. Nor is a PNG: the store serves one only for a language package's picture (localization spec §12),
+    /// which stands for a record AGE reads as it ships.
+    /// </summary>
+    public PictureLoadFailure? CheckPictureLoad(long resourceId)
+    {
+        if (_catalog.OpenFailure(resourceId) is { } refused) return new PictureLoadFailure(refused, Opened: false);
+        if (_catalog.ResolvePacked(resourceId) is not { IsPlaceholder: false } entry) return null;
+        Span<byte> header = stackalloc byte[BmpHeaderBytes];
+        int read;
+        try
+        {
+            using Stream stream = _store.Open(entry);
+            read = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
+        }
+        catch (IOException)
+        {
+            return null;   // a file the store cannot read: the port cannot say what AGE's open would report
+        }
+        header = header[..read];
+        if (header.StartsWith(PngSignature)) return null;
+        bool accepted = header.Length >= 2 && header[0] == (byte)'B' && header[1] == (byte)'M'
+            ? header.Length >= BmpHeaderBytes
+              && BinaryPrimitives.ReadUInt16LittleEndian(header[BmpBitCountOffset..]) is 1 or 4 or 8 or 24 or 32
+            : header.Length >= AgfHeaderBytes
+              && BinaryPrimitives.ReadInt32LittleEndian(header[4..]) is 1 or 2
+              && BinaryPrimitives.ReadInt32LittleEndian(header[8..]) == 0;
+        return accepted ? null
+            : new PictureLoadFailure(AgeBoxMessage.Keyed(AgeBoxText.PictureLoadFailed, entry.Name), Opened: true);
+    }
+
+    // The bytes the header test reads: a BMP's file and information headers (14 + 40), whose bit count is at 28, and
+    // the AGF fields it tests, its type at 4 and the zero at 8.
+    private const int BmpHeaderBytes = 54;
+    private const int BmpBitCountOffset = 28;
+    private const int AgfHeaderBytes = 12;
+    private static ReadOnlySpan<byte> PngSignature => [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0d, 0x0a, 0x1a, 0x0a];
 
     /// <summary>Decode an AGF directly from loose-first VFS bytes, or the PNG a language package supplied for it
     /// (localization spec §12).</summary>
@@ -164,3 +211,8 @@ public sealed class ResourceMap
 
 public sealed record AudioPayload(string Name, byte[] Bytes);
 public sealed record MoviePayload(string Name, byte[] Bytes);
+
+/// <summary>A picture load AGE refuses (<see cref="ResourceMap.CheckPictureLoad"/>): the box it throws, and whether it
+/// had opened the record, so that the load released the slot's texture and wrote resource id -1 into its record.
+/// </summary>
+public sealed record PictureLoadFailure(AgeBoxMessage Box, bool Opened);

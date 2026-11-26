@@ -3,10 +3,10 @@
 # corps and starts a battle on map 999, which MPINIT does not have (FIELD raises koukaku.battlefield.loaded for it all
 # the same). The battle begins on 戦闘開始 with every unit on A制圧, and ends at once in 戦闘敗北; RESULT then gives
 # each of the ten commanders 2 experience, and raises koukaku.experience.award for each.
-# Native AGE, with the exported TITLE.BIN (omp export, native_scratch.py --overlay), stops at READFIELD@0x7 with
-# 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: map 999's picture is 0. After 無視 (answer &Ignore) it takes the same
-# route, and its RESULT shot is the port's, pixel for pixel (2026-11-26). The port shows no box there
-# (docs/backlog.md, 魔導巧殻's item).
+# Both targets stop at READFIELD@0x7 with 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: map 999's picture is 0, record
+# 0, which is no picture (docs/engine-re.md, "A failed picture load"). After 無視 both take the same route. Native AGE,
+# with the exported TITLE.BIN (omp export, native_scratch.py --overlay) and the steps up to the award without the lua
+# step, gave a RESULT shot that is the port's, pixel for pixel (2026-11-26).
 # Run on a fresh sandbox:
 #   py -3.11 -X utf8 tools/drive.py --game koukaku port start --mod oms/examples/mods/example.koukaku-debug-menu --mod oms/examples/mods/example.koukaku-event-log
 #   py -3.11 -X utf8 tools/drive.py --game koukaku port run tools/drive/scenarios/port/koukaku-battle-award.steps
@@ -20,6 +20,11 @@ wait 2
 settle timeout=20
 expect script=BUNKI
 click 640 475                           # 戦闘
+wait-state script=READFIELD timeout=120 # the field's picture: AGE's box
+wait 1
+dialogs
+shot koukaku-battle-picture-box
+answer Ignore
 wait-state script=OUTBREAK timeout=120
 settle timeout=60
 shot koukaku-battle-outbreak

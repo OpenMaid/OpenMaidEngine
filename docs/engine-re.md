@@ -973,7 +973,7 @@ Quit (`modding/games/koukaku.md`, "The debug menu"), is alike on both targets bu
 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: op `0x1f9` throws it with flags `0x10007` when
 `gfx_surface_load_asset` fails (`op_0x1f9_set_texture@0x421e90`), and the field's picture is 0. After 無視 native goes
 on through OUTBREAK and ORGANIZE to an immediate 戦闘敗北, and its RESULT screen is the port's, pixel for pixel. The
-port loads nothing at op `0x1f9` and shows no box (`backlog.md`, 魔導巧殻's item).
+port raises the same box, word for word ("A failed picture load", below).
 
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 
@@ -3885,6 +3885,46 @@ The port decodes an AGF on its first load (`AgfDecoder`) and caches the RGBA ima
 nothing. `drive.py port` runs Godot's Debug configuration, where the JIT optimizer is disabled unless it is started
 with `--optimize` (`tools-reference.md`, "Port timing"). There the same decodes take two to three times as long. A standalone benchmark of `AgfDecoder` gives the same split: EV052DA takes
 3.94 ms optimized and 9.20 ms in Debug.
+
+#### A failed picture load (2026-11-26)
+
+Ops `0x1f9` and `0x249` refuse a picture in two places, read in `/koukaku/4.43B` (op `0x1f9@0x421e90`) and alike in
+every build (Himegari's `gfx_op_0x1f9_load_surface@0x422360` throws the same way). Each throws with flags `0x10007`,
+so the script error box asks 中止/再試行/無視, and 無視 goes on at the next instruction.
+
+1. **The resource open.** `asset_open_indexed_entry` throws its own box before the slot is touched, as it does for a
+   script: 「ファイル番号 %d は不正な値です．」 for a base id past the file table, 「%s を開くことが出来ません．」 for a
+   record with no file, and 「拡張ファイル情報ファイル %d は読み込まれていません．」 or 「拡張ファイル %s
+   を開くことが出来ません．%d」 for an append id. The op has already deleted the slot's movie; the slot's texture and
+   record stay.
+2. **The header test.** `gfx_surface_decode_and_create` releases the slot's texture, then reads the file's first 14
+   bytes, on any record whatever its name. A file starting `BM` goes to the BMP reader, which refuses a bit count
+   other than 1, 4, 8, 24 or 32. Any other file must hold the AGF type 1 or 2 at `+4` and 0 at `+8`; the `ACGF` tag
+   at `+0` is not read. A refused file, a failed read or allocation, or a failed alpha plane returns 0.
+   `gfx_surface_load_asset` then writes resource id -1 into the slot's record, leaving its key and created flag, and
+   the op throws 「画像ファイル %s の読み込みに失敗しました」, `%s` being the record's name.
+
+The same message is thrown by op `0xa`, by the display background's loader (`engine_load_display_background`) and from
+four sites of `save_data_deserialize_and_begin_restore`, the restore of a numbered load. The port has no handler for op
+`0xa` and no display background texture.
+
+**The port** (`ResourceMap.CheckPictureLoad`, `Graphics.LoadSurface`) raises both boxes for ops `0x1f9` and `0x249`
+with native's words, leaves the slot as native does, and writes resource id -1 into the record after a refused
+header. It departs in three places:
+- After a refused open it keeps the slot's movie, which native has deleted, since the port's release stops a movie only
+  with the slot's pixels.
+- A file shorter than the header is refused: native would test whatever the header's memory held.
+- A load that passes the test and that the port cannot decode is traced and refuses nothing, since AGE would draw it:
+  a BMP without the BMP option, a damaged section. A PNG, which the store serves only for a language package's picture,
+  passes.
+
+The restore's own boxes are not raised (`backlog.md`).
+
+Of the catalogs, every record that fails the header test is an MPEG movie under an AGF name (`00 00 01 BA`): 213 in
+Himegari, 462 in Verita and 108 in 戦女神ZERO, none in the others. No literal id any script loads with op `0x1f9` or
+`0x249` names one, or any record not named `.AGF`. Checked against native AGE on 魔導巧殻's debug battle (map 999,
+whose picture 0 is `SYSTEM4.BIN`): both targets stop at `READFIELD@0x7` with the same box, word for word, and after
+無視 their OUTBREAK and RESULT screens are the same pixels (`koukaku-battle-award.steps`).
 
 #### Selected retained-object range transform — opcodes `0x229`/`0x22a`/`0x22c`/`0x22d`/`0x22f` (2026-07-21; corrected 2026-08-16)
 

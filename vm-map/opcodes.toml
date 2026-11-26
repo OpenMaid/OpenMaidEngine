@@ -5811,10 +5811,10 @@ abi_source = "kelebek+decode-validated"
 [opcode.semantics]
 name = "set-texture"
 category = "draw"
-summary = "Load a texture by universal packed SYS4INI/AAI id into a mode-0 surface slot: (resource_id, slot, colorkey). A zero high byte directly indexes the flat base catalog; a nonzero high byte selects an AAI mount and uses the low 24 bits. This is the same addressing contract as 0x249; only the native surface mode differs. A load that fails (gfx_surface_load_asset != 1) throws 「画像ファイル %s の読み込みに失敗しました」 with flags 0x10007, %s the entry's name: 魔導巧殻's READFIELD@0x7 on a picture 0 shows 「画像ファイル SYSTEM4.BIN …」 (2026-11-26). The port loads nothing and raises no box (backlog, 魔導巧殻's item)."
+summary = "Load a texture by universal packed SYS4INI/AAI id into a mode-0 surface slot: (resource_id, slot, colorkey). A zero high byte directly indexes the flat base catalog; a nonzero high byte selects an AAI mount and uses the low 24 bits. This is the same addressing contract as 0x249; only the native surface mode differs. A record the resource open cannot open throws the open's box; one whose header is no picture's (neither a BMP of 1/4/8/24/32 bits nor AGF type 1 or 2 with 0 at +8, whatever its name) releases the slot, writes resource id -1 into its record and throws 「画像ファイル %s の読み込みに失敗しました」, both with flags 0x10007; 無視 goes on (docs/engine-re.md, \"A failed picture load\"). 魔導巧殻's READFIELD@0x7 on picture 0 shows 「画像ファイル SYSTEM4.BIN …」 on both targets (2026-11-26)."
 noop_headless = false
 waits = "never"
-leaves = ["falls"]
+leaves = ["falls", "jumps"]
 source = "investigation"
 confidence = "high"
 depends_on = []
@@ -8092,10 +8092,10 @@ abi_source = "kelebek+decode-validated"
 [opcode.semantics]
 name = "load-raw-texture-surface"
 category = "draw"
-summary = "Load an AGF by universal packed SYS4INI/AAI catalog id into a retained surface slot using native surface mode 1 and the same packed-id/RGB-colorkey contract as set-texture (0x1f9)."
+summary = "Load an AGF by universal packed SYS4INI/AAI catalog id into a retained surface slot using native surface mode 1 and the same packed-id/RGB-colorkey contract as set-texture (0x1f9). A load fails, with the same boxes, where 0x1f9's does."
 noop_headless = false
 waits = "never"
-leaves = ["falls"]
+leaves = ["falls", "jumps"]
 source = "investigation"
 confidence = "high"
 depends_on = []

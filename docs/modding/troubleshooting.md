@@ -190,6 +190,13 @@ scene's menu. Insert the pages into the scene with a patch, or make the script a
 ([new scenes](new-scenes.md)). The port shows the same box as native AGE, with 中止 (abort), 再試行 (retry) and 無視
 (ignore); with an English shell it reads "An error occurred" and "Invalid depth SCRIPT != OWNER".
 
+**"エラーが発生しました" with "画像ファイル NAME の読み込みに失敗しました", or "ファイル番号 N は不正な値です．".** A
+script loaded a picture (`set_texture`, op `0x1f9`, or op `0x249`) that the engine cannot read. With a file number, the
+id selects no file of the catalog. With a name, it selects the file `NAME`, which is no picture: a script, a sound or
+a movie, or a picture whose header is damaged. Check the id your patch passes, and the files your package ships under
+picture names. Native AGE shows the same box, and the port too (with an English shell, "Could not read the picture
+file NAME"); 無視 (ignore) goes on without the picture.
+
 **My edit is gone after loading a save.** The cells you changed are part of the save, so loading restores the saved
 values. Make the edit somewhere the save does not store, or repeat it at a point that runs after loading
 ([new scenes](new-scenes.md), "Data edits at boot").

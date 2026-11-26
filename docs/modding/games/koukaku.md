@@ -243,9 +243,8 @@ that opens the same menu on native AGE.
   [koukaku-battle-award](../../../tools/drive/scenarios/port/koukaku-battle-award.steps) scenario plays 戦闘 with the
   event log to RESULT's awards.
 - 戦闘's map 999 is not one of MPINIT's, so the battle has no field: it ends at once in 戦闘敗北, and each commander
-  gets 2 experience. Native AGE first stops at READFIELD with 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」 (the
-  map's picture is 0); after 無視 it takes the same route to the same RESULT screen. The port shows no box there
-  ([the backlog](../../backlog.md), 魔導巧殻's item).
+  gets 2 experience. Both targets first stop at READFIELD with 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: the
+  map's picture is 0, a record that is no picture. After 無視 both take the same route to the same RESULT screen.
 - The scene picker needs AGERC's dialog, which the port does not have: there op `0x140` picks nothing.
 
 ## Catalogs, scenes and saves

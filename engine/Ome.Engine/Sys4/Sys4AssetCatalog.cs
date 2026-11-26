@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text;
+using Ome.Engine.Model;
 
 namespace Ome.Engine.Sys4;
 
@@ -209,6 +210,38 @@ public sealed class Sys4AssetCatalog
         long index = id & 0xffffff;
         return pack == 0 ? ResolveRaw(index)
             : _appendPacks.TryGetValue(pack, out var append) ? append.ResolveRaw(index) : null;
+    }
+
+    /// <summary>
+    /// What asset_open_indexed_entry@0x44f390 says when it cannot open the record a packed id selects, which it throws
+    /// with flags 0x10007 before any loader reads the record. A base id (high byte 0) past the file table:
+    /// 「ファイル番号 n は不正な値です．」. A record with no file: 「name を開くことが出来ません．」 with ERROR CODE 2, the
+    /// code of the loose open that failed first. A high byte naming no mounted catalog: 「拡張ファイル情報ファイル n
+    /// は読み込まれていません．」; an index past that catalog: 「拡張ファイル ERROR を開くことが出来ません．n」. Null when the
+    /// record opens, and where the port cannot follow AGE: a high byte of 0x80 and up reads below native's table of
+    /// catalogs.
+    /// </summary>
+    public AgeBoxMessage? OpenFailure(long id)
+    {
+        uint packed = unchecked((uint)id);
+        int selector = (int)(packed >> 24);
+        int index = (int)(packed & 0xffffff);
+        string Number(long value) => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (selector >= 0x80) return null;
+        Sys4AssetCatalog catalog = this;
+        if (selector != 0)
+        {
+            if (!_appendPacks.TryGetValue(selector, out Sys4AssetCatalog? append))
+                return AgeBoxMessage.Keyed(AgeBoxText.AppendCatalogMissing, Number(selector));
+            if (index >= append.RawSlots.Count)
+                return AgeBoxMessage.Keyed(AgeBoxText.AppendFileOpenFailed, "ERROR", Number(index));
+            catalog = append;
+        }
+        else if (index >= catalog.RawSlots.Count)
+            return AgeBoxMessage.Keyed(AgeBoxText.FileNumberInvalid, Number(unchecked((int)packed)));
+        AssetEntry entry = catalog.RawSlots[index];
+        if (entry.IsPlaceholder) return AgeBoxMessage.Keyed(AgeBoxText.FileOpenFailed, entry.Name, "2");
+        return null;
     }
 
     /// <summary>Case-insensitive exact-name lookup over real records.</summary>

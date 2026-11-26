@@ -3,8 +3,10 @@
 # verita.map.loaded, and example.verita-event-log lists every event of verita-base, and gives one 治癒の水・小 at
 # verita.data.ready through the base mod's helper. The debug menu's 迷宮マップ１ (DEBUGMAP1) starts FIELD on map 11
 # at row 1, column 1; its ＡＤＶデバッグ（ＰＧ用） plays DEBUGADV, which gives character 6 999,999 experience through ADDEXP
-# (DEBUGADV@0xc43) and then opens a shop. The return to the title between them starts a new session, which empties the
-# log. Run on a fresh sandbox:
+# (DEBUGADV@0xc43) and then opens a shop. On the way TITLE sets G[0xc0ba04] to -1, so DEBUGADV first runs its text test
+# and plays ED2 and ED, about 463 seconds, which a click does not skip on a new sandbox (docs/engine-re.md, "The modal
+# movie's skip"). The return to the title between them starts a new session, which empties the log. Run on a fresh
+# sandbox:
 #   py -3.11 -X utf8 tools/drive.py --game verita port start --mod oms/examples/mods/example.verita-debug-menu --mod oms/examples/mods/example.verita-map-block --mod oms/examples/mods/example.verita-event-log
 #   py -3.11 -X utf8 tools/drive.py --game verita port run tools/drive/scenarios/port/verita-debug-events.steps
 #   py -3.11 -X utf8 tools/drive.py --game verita port stop
@@ -33,5 +35,6 @@ click title.quit
 wait 2
 settle timeout=20
 click 505 180                           # ＡＤＶデバッグ（ＰＧ用）
-wait-state script=SHOP click=adv.next every=1.5 timeout=240
+wait-state script=ED2 click=adv.next every=1.5 timeout=120
+wait-state script=SHOP click=adv.next every=1.5 timeout=600
 lua mod=example.verita-event-log local log = table.concat(seen, "; ") assert(log:find("verita.experience.award character=6 amount=999999 level=22", 1, true), log) return log

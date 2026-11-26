@@ -66,12 +66,29 @@ public sealed partial class Graphics
     }
 
     /// <summary>Ops 0x1f9 and 0x249: release the slot, then load a resource into it with a colour key. Op 0x249
-    /// constructs native's mode-1 surface subclass (<paramref name="rawTextureMode"/>); the pixels are the same.</summary>
-    public void LoadSurface(int slot, long resourceId, long colorKey, bool rawTextureMode = false)
+    /// constructs native's mode-1 surface subclass (<paramref name="rawTextureMode"/>); the pixels are the same.
+    /// Returns the box AGE throws for a load it refuses (<see cref="ResourceMap.CheckPictureLoad"/>), null when it
+    /// loads. A record AGE cannot open leaves the slot as it was; AGE deletes the slot's movie before the open, which the
+    /// port keeps. A record whose header AGE refuses leaves the slot released and its record's resource id -1, as
+    /// gfx_surface_load_asset leaves it. A load the port cannot decode but AGE would draw is traced and refuses
+    /// nothing.</summary>
+    public AgeBoxMessage? LoadSurface(int slot, long resourceId, long colorKey, bool rawTextureMode = false)
     {
+        if (_res?.CheckPictureLoad(resourceId) is { } refused)
+        {
+            if (refused.Opened)
+            {
+                ReleaseSurfacePixels(slot);
+                State.ClearSurface(slot);
+            }
+            OpTrace?.Invoke($"set-texture slot={slot} res=0x{resourceId:x} refused"
+                            + (refused.Opened ? $" ({_res.RecordName(resourceId)}: not a picture)" : " (no record opens)"));
+            return refused.Box;
+        }
         ReleaseSurfacePixels(slot);
         State.SetSurface(slot, resourceId, colorKey, rawTextureMode);
         LoadSurfacePixels(resourceId, slot, colorKey);
+        return null;
     }
 
     /// <summary>Op 0x1fb: bind object <paramref name="handle"/> to the slot's surface with a source rectangle and a

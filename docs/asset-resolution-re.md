@@ -68,7 +68,8 @@ highest-risk area of the port. This doc is the steering state; it feeds the A2b 
 
    This one contract is shared by script loading, `set-texture` (`0x1f9`), mode-1 texture load (`0x249`),
    voice, SFX, cursor, and both movie paths. Type-specific facades should filter the selected packed record
-   after lookup, not reinterpret the numeric id. `play-bgm` remains the separate direct-name exception:
+   after lookup, not reinterpret the numeric id: a picture load tests the record's header, whatever its name
+   (`engine-re.md`, "A failed picture load"). `play-bgm` remains the separate direct-name exception:
    `BGM{id:03d}.OGG`.
 
    SC0010 provides the decisive static check that SC0000 could not because SC0000 begins at catalog zero.

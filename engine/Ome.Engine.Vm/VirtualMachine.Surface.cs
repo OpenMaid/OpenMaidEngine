@@ -36,7 +36,8 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
-    // 0x1f9 (resId)(slot)(colorkey) — load a file into the slot's surface
+    // 0x1f9 (resId)(slot)(colorkey) — load a file into the slot's surface. A record AGE cannot open, or whose header
+    // is no picture's, throws its box with flags 0x10007 (Graphics.LoadSurface); 無視 goes on at the next instruction.
     private StepResult OpSetTexture(Instruction ins, int pc)
     {
         var a = ins.Args;
@@ -46,7 +47,8 @@ public sealed partial class VirtualMachine
             System.Console.Error.WriteLine($"[settex] resId=0x{resourceId:x} slot={(int)Read(a[1])} " +
                 $"slotOp=(type={a[1].Type} val=0x{a[1].Value:x}){(a[1].Type == 3 ? $" G[0x{a[1].Value:x}]" : "")}");
         long colorKey = a.Count > 2 ? Read(a[2]) : -1;
-        _graphics.LoadSurface((int)Read(a[1]), resourceId, colorKey);
+        if (_graphics.LoadSurface((int)Read(a[1]), resourceId, colorKey) is { } loadFailure)
+            return StepResult.Jump(RaiseInstructionScriptError(loadFailure, pc));
         return StepResult.Next;
     }
 
@@ -68,7 +70,8 @@ public sealed partial class VirtualMachine
         // the CPU compositor does not need the D3D subclass distinction.
         long resourceId = Read(a[0]);
         int surfaceSlot = (int)Read(a[1]);
-        _graphics.LoadSurface(surfaceSlot, resourceId, Read(a[2]), rawTextureMode: true);
+        if (_graphics.LoadSurface(surfaceSlot, resourceId, Read(a[2]), rawTextureMode: true) is { } loadFailure)
+            return StepResult.Jump(RaiseInstructionScriptError(loadFailure, pc));
         return StepResult.Next;
     }
 

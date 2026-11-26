@@ -209,6 +209,12 @@ it; git history keeps the record.
   RVA `0x140f20`), which the port does not have: it runs the 32-bit steps in 64 bits and marks the region
   `Approximate`. No script of 魔導巧殻 is known to make one; a search radius of 1024 or more would. Done when
   `GdiCurveFlattener` has the 64-bit flattener and matches gdi32 on ellipses past 2048 pixels.
+- **A load's restore does not raise native's picture box.** `save_data_deserialize_and_begin_restore` reloads each
+  saved surface whose reload flag is set, and throws 「画像ファイル %s の読み込みに失敗しました」 from four sites when one
+  does not load (`engine-re.md`, "A failed picture load"); what is left of the restore after 無視 is not read. The
+  port's `Graphics.ReadSaveRecords` reloads them and goes on. A saved record holds a picture that loaded, so this needs
+  a file changed between the save and the load, a mod's picture taken out. Done when native's restore after the box is
+  read and the port raises the box there and leaves the restore as native does.
 
 ## Robustness
 
@@ -763,15 +769,6 @@ From the user's design pass on the built site (2026-11-22). The export's design 
       added, or never.
     - **REIGN's, OCCUPY's and DELCN's loads** bind in the tests but were not raised in a played game (PALACE's runs in
       a test). Done when a run raises each.
-    - **A failed picture load shows no box (older than the branch, every build).** Op `0x1f9` throws
-      「画像ファイル %s の読み込みに失敗しました」 with flags `0x10007` when `gfx_surface_load_asset` fails
-      (`op_0x1f9_set_texture@0x421e90` in `/koukaku/4.43B`), %s the entry's name. The debug menu's 戦闘 shows it on
-      native AGE at `READFIELD@0x7` (「画像ファイル SYSTEM4.BIN …」: map 999 is not MPINIT's, and its picture is 0); after
-      無視 native and the port take the same route to the same RESULT screen, pixel for pixel. The port's
-      `Graphics.LoadSurface` traces `[NO AGF]` and goes on. What native does with a placeholder entry or a format the
-      port cannot decode is not read, so making the port raise the box could stop a run that native passes. Done when
-      native's failing cases are read and the port raises the box for those alone, as ops `0xb4` and `0x329` do. To
-      settle on the branch before its merge.
   - **Next, by the plan:** the sweep (P4, step 8).
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-26. The item stays for the open points

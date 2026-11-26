@@ -217,6 +217,9 @@ through its common exit, as Game Start does, so the mode takes effect. It target
 - Run on both targets: the menu (pixel for pixel alike) and the start of ＡＤＶデバッグ（ＰＧ用）. In the port, the
   [verita-debug-events](../../../tools/drive/scenarios/port/verita-debug-events.steps) scenario plays 迷宮マップ１ and
   ＡＤＶデバッグ（ＰＧ用） with the map part and the event log.
+- ＡＤＶデバッグ（ＰＧ用） first shows a text test and plays the two ending movies, ED2 and ED, about eight minutes, before
+  its other tests. On a new sandbox a click does not skip them: AGE lets a click skip an ending movie only once it has
+  been seen.
 - Between two entries the scenario goes back to the title through the 終了 dialog's タイトルに戻る. That starts a new
   session, so a Lua mod's state starts over with it.
 
