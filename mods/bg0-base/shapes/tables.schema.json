@@ -986,18 +986,135 @@
       "type": "object",
       "properties": {
         "affinities": {
-          "description": "element.affinities: element_affinities, a row of 20 columns by number, 0 to 19; write affinities.<number> = ...",
+          "description": "element.affinities: element_affinities, a row of 20 columns by name where a column has one and by number where it has none; write affinities.<column> = ...",
           "type": "object",
-          "x-ome-decimal-keys": {
-            "minimum": 0,
-            "maximum": 19
+          "properties": {
+            "0": {
+              "description": "column 0 is named: write undefined",
+              "type": "null"
+            },
+            "1": {
+              "description": "element.affinities.1: column 1 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "10": {
+              "description": "element.affinities.10: column 10 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "11": {
+              "description": "element.affinities.11: column 11 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "12": {
+              "description": "element.affinities.12: column 12 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "13": {
+              "description": "element.affinities.13: column 13 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "14": {
+              "description": "element.affinities.14: column 14 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "15": {
+              "description": "element.affinities.15: column 15 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "16": {
+              "description": "element.affinities.16: column 16 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "17": {
+              "description": "element.affinities.17: column 17 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "18": {
+              "description": "element.affinities.18: column 18 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "19": {
+              "description": "element.affinities.19: column 19 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "2": {
+              "description": "element.affinities.2: column 2 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "3": {
+              "description": "element.affinities.3: column 3 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "4": {
+              "description": "element.affinities.4: column 4 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "5": {
+              "description": "element.affinities.5: column 5 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "6": {
+              "description": "element.affinities.6: column 6 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "7": {
+              "description": "element.affinities.7: column 7 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "8": {
+              "description": "element.affinities.8: column 8 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "9": {
+              "description": "element.affinities.9: column 9 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            },
+            "undefined": {
+              "description": "element.affinities.undefined: column 0 of element_affinities, a whole number",
+              "type": "integer",
+              "minimum": -2147483648,
+              "maximum": 4294967295
+            }
           },
-          "additionalProperties": {
-            "description": "element.affinities.<column>: a column of element_affinities, a whole number",
-            "type": "integer",
-            "minimum": -2147483648,
-            "maximum": 4294967295
-          }
+          "additionalProperties": false
         },
         "name": {
           "description": "element.name: element_defense_names, text the save's code page (932) can encode",

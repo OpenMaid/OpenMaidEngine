@@ -359,7 +359,7 @@
   "G:0x372e27": {"name": "routine_step_target_counts", "type": "int[1000][20]", "address": "0x372e27"},
   "G:0x37ca67": {"name": "routine_step_flags", "type": "int[1000][20]", "address": "0x37ca67"},
   "G:0x381887": {"name": "routine_step_limits", "type": "int[1000][20]", "address": "0x381887"},
-  "G:0x3866ad": {"name": "element_affinities", "type": "int[20][20]", "address": "0x3866ad"},
+  "G:0x3866ad": {"name": "element_affinities", "type": "int[20][20]", "address": "0x3866ad", "columns": {"0": "undefined"}},
   "G:0x38683d": {"name": "item_class_icons", "type": "int[60]", "address": "0x38683d"},
   "G:0x386879": {"name": "item_class_required_weapon_masks", "type": "int[60]", "address": "0x386879"},
   "G:0x3868b5": {"name": "item_class_rank_exps", "type": "int[60][6]", "address": "0x3868b5"},

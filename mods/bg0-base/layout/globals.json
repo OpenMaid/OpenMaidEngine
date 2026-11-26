@@ -125,7 +125,7 @@
   {"name": "current_scene_id", "bank": "G", "address": "0x91869", "dims": []},
   {"name": "current_scene_script_id", "bank": "G", "address": "0x454", "dims": []},
   {"name": "debug_map_mode", "bank": "G", "address": "0x386a6f", "dims": []},
-  {"name": "element_affinities", "bank": "G", "address": "0x3866ad", "dims": [20, 20]},
+  {"name": "element_affinities", "bank": "G", "address": "0x3866ad", "dims": [20, 20], "columns": {"undefined": 0}},
   {"name": "element_attack_names", "bank": "GS", "address": "0x8014", "dims": [20]},
   {"name": "element_defense_names", "bank": "GS", "address": "0x8028", "dims": [20]},
   {"name": "encounter_chances", "bank": "G", "address": "0x125559", "dims": [5, 10]},

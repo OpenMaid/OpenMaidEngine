@@ -81,7 +81,9 @@ filters = ["kind", "boss_class", "defense_element"]
 # Units of one name differ by the level their stats are given at.
 qualifiers = ["base_level"]
 marks = { boss_class = "Boss" }
-pictures = { portrait = "pictures.portrait", sprite = "battle_sprites.0", status = "status_portrait" }
+# An enemy's battle sprite is one picture; a party unit's (kinds 2 and 3) is a strip of six frames side by side, 720 x
+# 120, of which the first is shown.
+pictures = { portrait = "pictures.portrait", sprite = { field = "battle_sprites.0", where = { kind = [1] } }, party_sprite = { field = "battle_sprites.0", where = { kind = [2, 3] }, frames = 6 }, status = "status_portrait" }
 
 [[kind.group]]
 name = "classes"
@@ -94,6 +96,10 @@ fields = ["drop_items", "drop_chances"]
 [kind.labels]
 epithet = "Epithet"
 description = "How it fights"
+max_mp = "Max MP"
+max_tp = "Max TP"
+max_mp_growth = "Max MP growth"
+max_tp_growth = "Max TP growth"
 size = "Size"
 defense_element = "Defense element"
 attacks = "攻撃力"
@@ -212,6 +218,8 @@ critical = "痛打"
 max_hp = "Max HP bonus"
 max_mp = "Max MP bonus"
 max_tp = "Max TP bonus"
+mp = "MP"
+tp = "TP"
 fs = "FS restored"
 random_amount = "Random part"
 control_rate_change = "迷宮支配力 gained"

@@ -164,7 +164,7 @@ return {
             records = 20,
             built_by = "boot",
             fields = {
-                affinities = { global = "element_affinities", kind = "integer", width = 20 },
+                affinities = { global = "element_affinities", kind = "integer", width = 20, columns = { undefined = 0 } },
                 name = { global = "element_defense_names", kind = "string" },
             },
         },

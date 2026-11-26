@@ -767,7 +767,7 @@ def test_framed_picture():
     code, output, _ = run(framed.replace('frame = ["level", "class"]', 'blend = "art"'))
     check(code != 0 and "picture other's blend art is a row of cells" in output, "a blend is one cell")
     code, output, _ = run(GOOD.replace('other = "art.1" }', 'other = { field = "art.1" } }', 1))
-    check(code != 0 and "picture other: a table names a key, a frame, frames or a blend" in output,
+    check(code != 0 and "picture other: a table names a key, a frame, frames, a blend or a where" in output,
           "a picture table without a key, a frame or a blend is refused")
 
 
@@ -968,6 +968,19 @@ def test_owned_joins_and_borrowed_pictures():
               "picture badge: frames must be a whole number above 0", "a strip has a frame or more")
         flags(medals.replace("frames = 6", 'frames = 6, frame = ["rank", "rank"]'),
               "a picture has frame or frames, not both", "a picture has frame or frames")
+        # A picture only where fields of the record hold given values (a 戦女神ZERO party unit's strip).
+        ranked = medals.replace("frames = 6", "frames = 6, where = { rank = [2, 3] }")
+        code, output, written = run(ranked, write=True)
+        check(code == 0, f"a picture's where lints clean ({output.strip()[-300:]})")
+        kinds = {kind.get("id"): kind for kind in json.loads(written or "{}").get("kinds", [])}
+        check(kinds.get("medal", {}).get("pictures", {}).get("badge")
+              == {"field": "art.0", "frames": 6, "where": {"rank": [2, 3]}}, "the JSON keeps a picture's where")
+        flags(medals.replace("frames = 6", "frames = 6, where = { nope = [2] }"),
+              "picture badge's where: 'nope' is not a field of table medal", "a picture's where names a field")
+        flags(medals.replace("frames = 6", 'frames = 6, where = { rank = ["2"] }'),
+              "picture badge: where rank must list the whole numbers", "a picture's where lists numbers")
+        flags(medals.replace("frames = 6", "frames = 6, where = {}"),
+              "picture badge: where must be a table of field = the values", "a picture's where is not empty")
         flags(medals.replace('from = "medal"', 'from = "nope"'),
               "picture medal: from 'nope' must name another declared kind", "a borrowed picture names a kind")
         flags(medals.replace('by = "hero.weapon"', 'by = "hero.class"'),

@@ -175,7 +175,8 @@ address = "0xa07bd"
 name = "unit_kinds"
 category = "data-table"
 type = "int[1000]"
-usage = "EBINIT: 2 for a party human, 3 for a summoned partner, 1 for the rest. CHANGECHAPTER@0x00466 and LEAVECH@0x00142 run UNSUMMON for 3; UNITECH@0x002b7 sets character_flags bit 2 for 3; CHMODE1, CHMODE2, CHMODE3 and CHANGECH@0x00c9c pick a picture at (kind - 2) x 45."
+values = { "1" = "Enemy", "2" = "Party member", "3" = "Summoned partner" }
+usage = "EBINIT: 2 for a party human, 3 for a summoned partner, 1 for an enemy; 0, where EBINIT writes no kind, for a name with no battle body (a speaker: 村人, 男の声), 100 of the 102 with no stats. A party unit's battle sprite is a strip of six frames, 720 x 120, an enemy's one picture. CHANGECHAPTER@0x00466 and LEAVECH@0x00142 run UNSUMMON for 3; UNITECH@0x002b7 sets character_flags bit 2 for 3; CHMODE1, CHMODE2, CHMODE3 and CHANGECH@0x00c9c pick a picture at (kind - 2) x 45."
 source = "investigation"
 confidence = "med"
 
@@ -2196,7 +2197,8 @@ category = "data-table"
 type = "int[20][20]"
 zero = true
 columns_from = { global = "element_attack_names", first = 0 }
-usage = "AFINIT: the damage percentage by defense element (row 0..14) and attack element (column 0..17). Row 0 and column 0 are 100, column 10 is 0; 火炎 takes −100 of 火炎 and 150 of 冷却. CALCDAMAGE@0x909 and @0x3ac; a negative value gives negative damage (CALCDAMAGE@0x930..0x953). CALCILL@0x3c3 reads columns 11..17 for conditions."
+columns = { "0" = "undefined" }
+usage = "AFINIT: the damage percentage by defense element (row 0..14) and attack element (column 0..17). Row 0 and column 0 are 100, column 10 is 0; the game names column 0 none (OME's word: undefined), and SETCH gives a party unit with no weapon element 1, so a party attack never reads it; 火炎 takes −100 of 火炎 and 150 of 冷却. CALCDAMAGE@0x909 and @0x3ac; a negative value gives negative damage (CALCDAMAGE@0x930..0x953). CALCILL@0x3c3 reads columns 11..17 for conditions."
 source = "investigation"
 confidence = "high"
 

@@ -275,7 +275,8 @@ public static class GameDataExporter
                                                             ? (registry.Resolve(table, frame.Width), registry.Resolve(table, frame.Height))
                                                             : ((FieldLayout Width, FieldLayout Height)?)null,
                                                         picture.Frames,
-                                                        Blend: picture.Blend is { } blend ? registry.Resolve(table, blend) : null))
+                                                        Blend: picture.Blend is { } blend ? registry.Resolve(table, blend) : null,
+                                                        Where: picture.Where.Select(rule => (Field: registry.Resolve(table, rule.Field), rule.Values)).ToList()))
             .ToList();
         // A sheet without a field is numbered by the record's own id.
         var sheets = kind.Sheets
@@ -286,6 +287,7 @@ public static class GameDataExporter
             .. pictures.Where(picture => picture.Frame is not null)
                 .SelectMany(picture => new[] { (picture.Name, picture.Frame!.Value.Width), (picture.Name, picture.Frame!.Value.Height) }),
             .. pictures.Where(picture => picture.Blend is not null).Select(picture => (picture.Name, picture.Blend!)),
+            .. pictures.SelectMany(picture => picture.Where.Select(rule => (picture.Name, rule.Field))),
         ];
         IReadOnlyList<FieldLayout> frameFields = [.. pictureParts.Select(part => part.Field)];
         foreach ((string name, FieldLayout field) in pictures.Select(picture => (picture.Name, picture.Field))
@@ -374,10 +376,14 @@ public static class GameDataExporter
                             entity.Texts.Add(new ExportText(field.Name, element, translated, language.Tag));
                 }
             foreach ((string name, FieldLayout field, int? key, (FieldLayout Width, FieldLayout Height)? frame,
-                      int? frames, FieldLayout? blend) in pictures)
+                      int? frames, FieldLayout? blend, List<(FieldLayout Field, IReadOnlyList<long> Values)> where) in pictures)
             {
                 var (cell, refused) = At(field, 0);
                 if (refused || cell.Number == 0 || inputs.Pictures == null) continue;
+                // A record has the picture only where each field of its where holds one of the values; a withheld one
+                // leaves it out.
+                if (where.Any(rule => At(rule.Field, 0) is var (value, withheld) && (withheld || !rule.Values.Contains(value.Number))))
+                    continue;
                 // Op 0x203's mode 1, the additive glow, as the record's blend gives it; a withheld blend leaves the
                 // picture out.
                 (ExportCell Cell, bool Refused)? mode = blend is null ? null : At(blend, 0);

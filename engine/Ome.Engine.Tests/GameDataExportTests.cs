@@ -699,7 +699,8 @@ public class GameDataExportTests
     }
 
     // Items owned two to a skill (export plan §5, owned_by): the item kind joins the skill table by r ÷ 2, shows each
-    // icon as a strip of two frames, and a skill shows the icon of the first item that grants it.
+    // icon as a strip of two frames, as a glint only where its category is 2 or 3 and as a rust only where it is 4,
+    // and a skill shows the icon of the first item that grants it.
     private static ExportInputs Owned(bool itemsOwned = true)
     {
         ExportInputs game = Game();
@@ -707,7 +708,11 @@ public class GameDataExportTests
         JsonNode item = declarations["kinds"]![0]!;
         item["joins"] = JsonNode.Parse("""["skill"]""");
         item["fields"] = JsonNode.Parse("""["category", "price", "price.sell", "granted_skill", "skill.category"]""");
-        item["pictures"] = JsonNode.Parse("""{"icon": "icon", "strip": {"field": "icon", "frames": 2}}""");
+        item["pictures"] = JsonNode.Parse(
+            """
+            {"icon": "icon", "strip": {"field": "icon", "frames": 2}, "glint": {"field": "icon", "where": {"category": [2, 3]}},
+             "rust": {"field": "icon", "where": {"category": [4]}}}
+            """);
         declarations["kinds"]![1]!["pictures"] = JsonNode.Parse(
             """{"badge": {"from": "item", "by": "granted_skill", "picture": "icon"}}""");
         return new ExportInputs
@@ -737,6 +742,9 @@ public class GameDataExportTests
         // A strip's first frame is its width ÷ frames and its full height: icon 77 is 32 × 16.
         ExportPicture strip = Entity(result, "item", 1).Pictures.Single(pair => pair.Name == "strip").Picture;
         Assert.Equal(("ICON077-frame-16x16", 16, 16), (strip.Name, strip.Width, strip.Height));
+        // A picture's where: item 1, of category 2, has the glint and not the rust.
+        Assert.Equal([("icon", "ICON077"), ("strip", "ICON077-frame-16x16"), ("glint", "ICON077")],
+                     Entity(result, "item", 1).Pictures.Select(pair => (pair.Name, pair.Picture.Name)));
         // Skill 1 shows the icon of item 1, the first item that grants it; item 2's skill 2 is no entity.
         Assert.Equal([("badge", "ICON077")], Entity(result, "skill", 1).Pictures.Select(pair => (pair.Name, pair.Picture.Name)));
     }

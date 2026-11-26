@@ -300,11 +300,15 @@ public sealed record CategoryRule(string Field, string? Word);
 /// DRAWOBJ draws a map object (export plan §5). Where <see cref="Frames"/> is given, the picture is a strip of that many
 /// frames side by side and only its first is shown, its width ÷ frames and its full height (a Verita title's battle
 /// strip, six frames of 120 × 120 or of 320 × 300). <see cref="Blend"/> names a field of the record holding the mode op
-/// 0x203 draws the picture with: at 1, the additive glow, the picture is shown as it looks over black.</summary>
+/// 0x203 draws the picture with: at 1, the additive glow, the picture is shown as it looks over black. Where
+/// <see cref="Where"/> names fields of the record, a record has the picture only where each holds one of its values (a
+/// 戦女神ZERO party unit's battle sprite is a strip of six frames, an enemy's one picture, by the unit's kind).</summary>
 public sealed record FieldPictureDeclaration(string Name, string Field, int? Key = null,
                                              (string Width, string Height)? Frame = null, string? Blend = null)
 {
     public int? Frames { get; init; }
+
+    public IReadOnlyList<(string Field, IReadOnlyList<long> Values)> Where { get; init; } = [];
 
     internal static FieldPictureDeclaration Parse(string name, JsonElement picture)
     {
@@ -321,6 +325,10 @@ public sealed record FieldPictureDeclaration(string Name, string Field, int? Key
                                            picture.TryGetProperty("blend", out JsonElement blend) ? blend.GetString() : null)
         {
             Frames = picture.TryGetProperty("frames", out JsonElement frames) ? frames.GetInt32() : null,
+            Where = picture.TryGetProperty("where", out JsonElement where)
+                ? [.. where.EnumerateObject().Select(rule => (rule.Name,
+                                                              (IReadOnlyList<long>)[.. rule.Value.EnumerateArray().Select(value => value.GetInt64())]))]
+                : [],
         };
     }
 }

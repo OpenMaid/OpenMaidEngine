@@ -1211,3 +1211,22 @@ authors.
     a sheet picture, 15 icons; Undefined has none. The site shows them on the element list and beside element links
     (`linkIcons`). Checked by `tools/test_entities_build.py` (`test_titles`) and the exporter's format test (the
     `titles` column).
+- **戦女神ZERO's party sprites, unit kinds and column 0** (2026-11-25, on bg0's first build of the site, before the
+  user's look). The user: "Let's get the website set up with the BG0 data and run it so I can make sure that all
+  looks good".
+  - **A picture's `where`.** A field picture may give `where = { field = [values] }`, as a loaded table's rows do: a
+    record has the picture only where each field holds one of the values, and a withheld field leaves it out. A
+    bg0 unit's `battle_sprites.0` is a strip of six frames, 720 × 120, for the 26 party units (kinds 2 and 3) and one
+    picture for the 244 enemies (kind 1), so the unit has `sprite` where its kind is 1 and `party_sprite`, the strip's
+    first 120 × 120, where it is 2 or 3; the site's list showed the whole strip as a row of dots. The 102 units of
+    kind 0 are names with no battle body (speakers) and have no sprite.
+  - **The unit kinds' names.** `unit_kinds` takes `values`: 1 Enemy, 2 Party member, 3 Summoned partner. Kind 0 stays
+    unnamed, none.
+  - **Column 0 is "Undefined"**, as in Verita: the game names attack element 0 none (`element_attack_names`), and the
+    site labelled the column `#0`. `element_affinities` takes `columns = { "0" = "undefined" }` beside its
+    `columns_from`. A party attack never reads the column (SETCH gives a unit with no weapon element 1); an enemy's
+    was not traced.
+  - **Checked** by `tools/test_entities_build.py` (`test_owned_joins_and_borrowed_pictures`: the JSON keeps a
+    picture's where, and a where of no field, of no numbers or empty is refused) and the exporter's
+    `AnOwnedTableJoinsByItsOwnersRecordAndAPictureMayBeAStripsFrameOrAnotherKinds` (a picture whose where the item
+    meets, and one it does not). The export still writes 528 pictures: 26 frames in place of the 26 strips.

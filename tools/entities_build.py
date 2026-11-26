@@ -686,11 +686,23 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             # of a strip's `frames` frames side by side, its width ÷ frames and its full height (a Verita title's
             # battle strip, six frames of 120 x 120 or of 320 x 300); and a field
             # of the record holding the mode op 0x203 draws the picture with, whose 1, the additive glow, the export
-            # shows as it looks over black (a healing feather). Any may be left out, not all.
-            unknown_keys(ref, {"field", "key", "frame", "frames", "blend"}, f"{where}: picture {name}", errors)
-            if not {"key", "frame", "frames", "blend"} & set(ref):
-                errors.append(f"{where}: picture {name}: a table names a key, a frame, frames or a blend; a field "
-                              f"alone is written as its name")
+            # shows as it looks over black (a healing feather); and `where`, the values fields of the record must hold
+            # for it to have the picture, as a loaded table's rows (a 戦女神ZERO party unit's battle sprite is a strip
+            # of six frames, an enemy's one picture, by the unit's kind). Any may be left out, not all.
+            unknown_keys(ref, {"field", "key", "frame", "frames", "blend", "where"}, f"{where}: picture {name}", errors)
+            if not {"key", "frame", "frames", "blend", "where"} & set(ref):
+                errors.append(f"{where}: picture {name}: a table names a key, a frame, frames, a blend or a where; a "
+                              f"field alone is written as its name")
+            rules = ref.get("where", {})
+            if not isinstance(rules, dict) or ("where" in ref and not rules):
+                errors.append(f"{where}: picture {name}: where must be a table of field = the values it may hold")
+                rules = {}
+            for wref, values in rules.items():
+                one(wref, f"picture {name}'s where", "integer")
+                if not isinstance(values, list) or not values or not all(
+                        isinstance(v, int) and not isinstance(v, bool) for v in values):
+                    errors.append(f"{where}: picture {name}: where {wref} must list the whole numbers the record's "
+                                  f"{wref} may hold")
             if "frames" in ref and (not is_size(ref["frames"]) or "frame" in ref):
                 errors.append(f"{where}: picture {name}: frames must be a whole number above 0, the strip's frames "
                               f"side by side, and a picture has frame or frames, not both")
