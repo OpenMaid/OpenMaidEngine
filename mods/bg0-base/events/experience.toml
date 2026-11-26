@@ -5,8 +5,9 @@
 name = "bg0.experience.award"
 point = "bg0.experience.before_add"
 description = """
-One character's experience award, before ADDEXP adds it: from a won battle (RESULT, for each character of the \
-battle), and from the map events, scenes and FIELD, which call ADDEXP too. ADDEXP gives experience only to a \
+One character's experience award, before ADDEXP adds it: from a won battle (RESULT, for each character in the \
+party whose experience from the battle is not 0, those who did not fight included), and from the map events, scenes \
+and FIELD, which call ADDEXP too. ADDEXP gives experience only to a \
 character in the party, so this is raised only for one. A handler that changes amount changes what is added; the \
 levels it brings are worked out from it after the handler (セリカ, character 1, keeps his experience and gains no \
 level from it)."""

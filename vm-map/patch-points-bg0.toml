@@ -122,8 +122,9 @@ site` may rewrite script_arg_1. ADDEXP then adds it to character_experience (ADD
 it, capped at 999999. For any other character it is spent on levels: while it reaches the next level's need \
 (G[0x38a9f7], from CALCNEXTEXP) below level 499, the need is taken off and the level rises, and at the need of \
 level 499 the level becomes 500; then, if the level rose, ADDEXP passes CALCLVUP the new and the old level \
-(script_arg_1 and script_arg_2) and runs CALCREVISE. RESULT calls ADDEXP for each character of a won battle \
-(RESULT@0x696); FIELD, map events and scenes call it too."""
+(script_arg_1 and script_arg_2) and runs CALCREVISE. After a won battle RESULT calls ADDEXP for each character in \
+the party whose experience from the battle (G[0x952ac + character]) is not 0, those who did not fight included, in \
+order of character (RESULT@0x645 to 0x696); FIELD, map events and scenes call it too."""
 
 [[point.at]]                    # the install the guide lists
 fingerprint = "sha256:ec6872351ee7c7bbada965f1fe94a2747cb9ece28ca85febdd5deec245c31103"

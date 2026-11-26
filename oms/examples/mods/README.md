@@ -86,7 +86,8 @@ ran the same scenarios on native AGE.
   through the base mod's `give_item`, and keeps the list for the driver's `lua` step; `example.bg0-map-block` is a
   data file whose dungeon part gives map 1's block 50, where the party starts, music 14, most of the map's blocks'.
   `tools/drive/scenarios/port/bg0-debug-events.steps` runs the three: 迷宮マップ（ＰＧ１用） (the experience award,
-  the map event and the changed block).
+  the map event and the changed block). `tools/drive/scenarios/port/bg0-battle-award.steps` runs the debug menu and
+  the event log: 戦闘, won on AUTO, and the award RESULT gives each character in the party.
 
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs

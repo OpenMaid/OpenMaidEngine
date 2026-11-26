@@ -866,12 +866,12 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     `example.bg0-speaker-name` renames セリカ's name plate (`tools/drive/scenarios/port/bg0-speaker-name.steps`); the
     experience award, the map event and a map part ran through the title's debug menu
     (`tools/drive/scenarios/port/bg0-debug-events.steps`), whose menu and 迷宮マップ（ＰＧ１用） native AGE runs alike.
-    What M3 leaves open:
+    A won battle's awards ran through the debug menu's 戦闘 (`tools/drive/scenarios/port/bg0-battle-award.steps`,
+    2026-11-26): RESULT raises the event once for each character in the party, in order, with the level before the
+    award. What M3 leaves open:
     - **The world map's and a town's events in play:** no run reached ALLMAP or TOWN yet; a new game starts on the
       first dungeon, which must be cleared first, and the debug menu reaches neither. Done when a played run raises
       `bg0.world.loaded` and `bg0.town.loaded` with a part applied.
-    - **A battle's own award** was not reached in a run. Done when a run raises `bg0.experience.award` from `RESULT`
-      (`RESULT@0x696`).
     - **Loaders without an event:** the shop (`SHINIT`), the battle's tables (`BTANINIT`, `ESINIT`'s formation
       slots), the encounter entries (`ENINIT`) and `SCJUMP`. Done when a mod needs one and it is added, or never.
   - **Next, by the plan:** the sweep (P4), from where it stands (step 4's list above).

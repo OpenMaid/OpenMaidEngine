@@ -1,0 +1,39 @@
+# Port only (scenarios/port/): 戦女神ZERO's experience award from a won battle (docs/adding-a-game.md, M3).
+# example.bg0-debug-menu opens the title's debug menu from Quit, and example.bg0-event-log lists every event of
+# bg0-base. The debug menu's 戦闘 (DEBUGBTL) joins sixteen characters, gives five of them 999,999 experience through
+# ADDEXP (five awards), and starts battle formation 989. AUTO fights it for the whole party. RESULT waits for a click
+# before its count-up and again after it; between the two it calls ADDEXP for each character in the party whose
+# battle pool is not 0 (RESULT@0x696), so bg0.experience.award is raised once for each, in RESULT's order, with the
+# character's level before the award.
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port start --mod oms/examples/mods/example.bg0-debug-menu --mod oms/examples/mods/example.bg0-event-log
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port run tools/drive/scenarios/port/bg0-battle-award.steps
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port stop
+
+rand-seed 13
+wait-state script=OP timeout=120
+wait 3
+click adv.next                          # ends the opening movie
+wait-state script=TITLE timeout=60
+settle timeout=20
+click title.quit                        # the debug menu
+wait 2
+settle timeout=20
+click 290 443                           # 戦闘
+wait-state script=BTLMENU click=adv.next every=2 timeout=120   # through a 先制攻撃 box, if the battle opens with one
+settle timeout=30
+move 175 312
+wait 0.3
+click 175 312                           # AUTO: the whole party fights by itself
+wait-state script=RESULT timeout=300
+settle timeout=30
+shot bg0-battle-award-before
+# RESULT's first wait: the boot's two events and DEBUGBTL's five awards, nothing from RESULT yet. Keep the party and
+# its levels in the mod's environment, which lasts for the session.
+lua mod=example.bg0-event-log local game = require("bg0-base") local flags, levels = game.table("character_flags"), game.table("character_levels") assert(#seen == 7, table.concat(seen, "; ")) before = #seen party = {} for c = 0, 99 do if flags[c] % 4 >= 2 then party[#party + 1] = { c, levels[c] } end end return #party
+click adv.next hold=200                 # RESULT polls the button from a timer callback: hold it past one poll
+wait 2
+settle timeout=60
+expect script=RESULT
+shot bg0-battle-award-after
+lua mod=example.bg0-event-log local got = {} for i = before + 1, #seen do got[#got + 1] = seen[i] end assert(#got == #party, #got .. " awards for " .. #party .. ": " .. table.concat(got, "; ")) for i, member in ipairs(party) do local amount = got[i]:match("^bg0%.experience%.award character=" .. member[1] .. " amount=(%d+) level=" .. member[2] .. "$") assert(amount and tonumber(amount) > 0, got[i]) end return table.concat(got, "; ")

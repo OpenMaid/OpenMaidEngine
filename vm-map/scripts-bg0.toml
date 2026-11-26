@@ -402,8 +402,9 @@ summary = """Awards experience to one character, who must be in the party (bit 1
 does nothing. It adds the amount to character_experience. セリカ, character 1, keeps it, capped at 999999. Any other \
 character spends it on levels: while it reaches the next level's need, from CALCNEXTEXP, below level 499, the need is \
 taken off and the level rises, and at level 499's need the level becomes 500. If the level rose, it passes CALCLVUP \
-the new and the old level in script_arg_1 and script_arg_2 and runs CALCREVISE. RESULT calls it for each character \
-of a won battle; FIELD, map events and scenes call it too."""
+the new and the old level in script_arg_1 and script_arg_2 and runs CALCREVISE. After a won battle RESULT calls it \
+for each character in the party whose experience from the battle is not 0, those who did not fight included; FIELD, \
+map events and scenes call it too."""
 source = "the patch point bg0.experience.before_add"
 [script.arguments]
 character_arg_id = "the character who gains the experience"

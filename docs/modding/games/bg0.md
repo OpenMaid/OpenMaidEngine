@@ -210,9 +210,9 @@ teaches formation `item - 12`. The helper puts back the cells it used and return
 Every event has been raised in a run of the port: the boot events, the helper and the data file's boot edit by
 `ModLuaLinkTests` and the scenarios above; the map event on a new game's first map (map 1), and the map event and the
 experience award through the debug menu (below) by the
-[bg0-debug-events](../../../tools/drive/scenarios/port/bg0-debug-events.steps) scenario. The world and town events
-were raised by `ModLuaLinkTests` on the installed ALLMAP, SHOWALLMAP and TOWN, not yet in a played game, and a
-battle's own award was not reached yet.
+[bg0-debug-events](../../../tools/drive/scenarios/port/bg0-debug-events.steps) scenario, and a won battle's awards
+from RESULT by the [bg0-battle-award](../../../tools/drive/scenarios/port/bg0-battle-award.steps) scenario. The world and town events were raised by
+`ModLuaLinkTests` on the installed ALLMAP, SHOWALLMAP and TOWN, not yet in a played game.
 
 ## The debug menu
 
@@ -229,14 +229,15 @@ title through its common exit, as Game Start does, so the mode takes effect. It 
 | 迷宮マップ | | `DEBUGMAP`: story part 4, then FIELD on map 23 |
 | 迷宮マップ（ＰＧ１用） | 370 383 | `DEBUGMAP2`: it joins the party, gives character 53 999,999 experience (`DEBUGMAP2@0x8f`, through `ADDEXP`) and starts FIELD on map 1, at row 1, column 20 |
 | 迷宮マップ（ＰＧ２用） | | `DEBUGMAP3`, then a field map |
-| 戦闘 | | `DEBUGBTL`, then a battle |
+| 戦闘 | 290 443 | `DEBUGBTL`: a party of sixteen, 999,999 experience each for characters 53 to 57 (through `ADDEXP`), then battle formation 989, six ボズア; the battle ring's AUTO (175 312) wins it |
 | 戦闘アニメ | | `DEBUGANIME`, in the battle mode |
 | ショップ | | `DEBUGMAP2`'s party and 1,000 money, then scene 2000 |
 | キャンセル | | back to the title |
 
 - Run on both targets: the menu (alike) and 迷宮マップ（ＰＧ１用）, to the same field map. In the port, the
   [bg0-debug-events](../../../tools/drive/scenarios/port/bg0-debug-events.steps) scenario plays 迷宮マップ（ＰＧ１用）
-  with the map part and the event log.
+  with the map part and the event log, and the [bg0-battle-award](../../../tools/drive/scenarios/port/bg0-battle-award.steps) scenario plays 戦闘 with the event log to
+  RESULT's awards.
 - The scene pickers need AGERC's dialog, which the port does not have: there op `0x140` picks nothing, and the title
   goes on with the scene id the shared profile kept ([the backlog](../../backlog.md), "Sweep for ops that are still
   stubbed").
@@ -256,4 +257,4 @@ title through its common exit, as Game Start does, so the mode takes effect. It 
 | [example.bg0-speaker-name](../../../oms/examples/mods/example.bg0-speaker-name/) | a data file that renames セリカ's name plate at `bg0.data.layered`; the [bg0-speaker-name](../../../tools/drive/scenarios/port/bg0-speaker-name.steps) scenario plays a new game to his first line with it |
 | [example.bg0-event-log](../../../oms/examples/mods/example.bg0-event-log/) | a Lua mod that logs every event of `bg0-base` with its fields, and gives one 治癒の水・小 at each `bg0.data.ready` through `give_item` |
 | [example.bg0-map-block](../../../oms/examples/mods/example.bg0-map-block/) | a data file with a field map's part: map 1's block 50 takes music 14 for its own 5, at `bg0.map.loaded` |
-| [example.bg0-debug-menu](../../../oms/examples/mods/example.bg0-debug-menu/) | a script mod that opens the title's debug menu from Quit; the [bg0-debug-events](../../../tools/drive/scenarios/port/bg0-debug-events.steps) scenario plays 迷宮マップ（ＰＧ１用） with the two mods above |
+| [example.bg0-debug-menu](../../../oms/examples/mods/example.bg0-debug-menu/) | a script mod that opens the title's debug menu from Quit; the [bg0-debug-events](../../../tools/drive/scenarios/port/bg0-debug-events.steps) scenario plays 迷宮マップ（ＰＧ１用） with the two mods above, and the [bg0-battle-award](../../../tools/drive/scenarios/port/bg0-battle-award.steps) scenario 戦闘 with the event log |
