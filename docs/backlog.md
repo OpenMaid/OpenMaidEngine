@@ -752,8 +752,7 @@ From the user's design pass on the built site (2026-11-22). The export's design 
       by a selector, has none. `scjump_decode.py` reads only Himegari's `SCJUMP`. Done when the tool or a game's
       extractor covers them, or never.
     - **What the export leaves out:** the alchemy recipes, whose product is an item or a part by its type, which a
-      reference naming one table cannot say, and the production sets, whose five kinds are not decoded; and the
-      project site has no database page for the game yet (`site.config.mjs` in `ome-site` lists the other games).
+      reference naming one table cannot say, and the production sets, whose five kinds are not decoded.
   - **The base mod level, M3, is reached (2026-11-26).** `mods/koukaku-base/` declares five events at ten named points
     (`vm-map/patch-points-koukaku.toml`): the boot's data layered and ready, a battlefield map loaded by any of the six
     scripts that walk the MPINIT chain (FIELD, REIGN, PALACE, CHECKREG, OCCUPY, DELCN), the end of a week (ALLMAP), and
