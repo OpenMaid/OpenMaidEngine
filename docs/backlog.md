@@ -781,7 +781,25 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     - **For the sweep (P4):** the middle of op `0x25`'s crossfade (1,053 sites), whose start leaves a different field
       in each build and whose copy reads a render target back only in 4.24J; and objects drawn at a fractional
       position, which 4.24J's blit clips as floats and 4.15D's as integers. The opening's crossfades end as native's
-      do (step 6).
+      do (step 6). Neither has been sampled yet: the sweep so far compared settled frames only.
+    - **Where the sweep stands (2026-11-26):** on map 1 (`MP01`, 廃都ノヒア), at the stained-glass building's door,
+      after a random encounter, with every difference so far fixed. The route, save slots and click points are in the
+      checkpoint memory (step 8). It ran on native AGE and the port with `rand-seed 13`, and compared screenshots, VM
+      positions and decoded saves. Covered at parity:
+      - a new game: the opening, the title, the game mode, and SC0000's prologue to the first field. From page 17
+        (`SC0000@0x3a08`) BELTMOVE moves the text layout up 75 px, and the wait icon now follows it (op `0x198`,
+        fixed 2026-11-26, `engine-re.md`, "A layout's origin moves its indicator");
+      - map 1's field: MPEV01F0103's tutorial (SC0680, all seven topics), the field menu, save and load, the corridor,
+        the bed room and the balcony. The balcony was black after its fade-in until a source rectangle off its picture
+        was clipped as native clips it (fixed 2026-11-25, `engine-re.md`, "Object sampling");
+      - MPEV01F0102's battle tutorial (SC0010, all fourteen topics), the battle that follows against two グレイハウンド
+        (weapon attacks, target selection, the enemy turns, RESULT) and a random encounter: the same damage, the same
+        encounter at the same step, and the same rewards;
+      - a save after the battle decodes as native's does, apart from the shared-profile rows of a slot copied from
+        the other target.
+      Expected, not differences: animations out of phase (the wait icon, the room's wisp, the units' idle frames, the
+      battle ring's pulse), and a field walk's few pixels of drift. The field walks while the button is held, so the
+      walk's length follows the press's timing.
     - **The galleries** (`CGMODE`, `HMODE`, `MMODE`, `ED`): op `0x19d` in 4.15D handles no append's selector byte;
       whether a gallery table holds an append id is read when they are driven.
   - **Step 5, the driver, is done (2026-11-25):** `tools/drive/bg0.toml` names 4.15D's context, its `0x70`-byte frame
@@ -856,7 +874,7 @@ From the user's design pass on the built site (2026-11-22). The export's design 
       (`RESULT@0x696`).
     - **Loaders without an event:** the shop (`SHINIT`), the battle's tables (`BTANINIT`, `ESINIT`'s formation
       slots), the encounter entries (`ENINIT`) and `SCJUMP`. Done when a mod needs one and it is added, or never.
-  - **Next, by the plan:** the sweep (P4).
+  - **Next, by the plan:** the sweep (P4), from where it stands (step 4's list above).
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

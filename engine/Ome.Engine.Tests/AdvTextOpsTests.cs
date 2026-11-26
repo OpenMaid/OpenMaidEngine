@@ -601,6 +601,32 @@ public class AdvTextOpsTests
     }
 
     [Fact]
+    public void AWaitIndicatorFollowsItsLayoutsOrigin()
+    {
+        // Native reads the layout's origin each time it publishes an indicator frame (4.15D 0x447e80). 戦女神ZERO's
+        // BELTMOVE moves layout 1 from y 430 to 355 for a letterboxed page after SYSTEM4 has bound its indicator.
+        var table = OpcodeTableJson.Load(Paths.OpcodesJson);
+        static Operand I(long value) => new(0, value);
+        var script = ScriptAssembler.Assemble(table, "WAITMARK_ORIGIN",
+            new List<(int, Operand[])>
+            {
+                (0x70, new[] { I(1), I(800), I(160), I(0), I(430) }),
+                (0x73, new[] { I(1), I(380), I(125), I(12), I(0), I(0), I(40), I(40), I(25), I(48) }),
+                (0x212, new[] { I(1), I(0xd674) }),
+                (0x198, new[] { I(0), I(0), I(355) }),
+                (0x2, Array.Empty<Operand>()),
+            }, Array.Empty<string>());
+        var vm = new VirtualMachine(script, table, new RecordingWaits());
+
+        vm.Run();
+
+        var indicator = Assert.IsType<Ome.Engine.Text.RetainedAdvWaitIndicatorPresentation>(vm.Text.RetainedWaitIndicator(1));
+        Assert.Equal((0, 355), (indicator.LayoutOriginX, indicator.LayoutOriginY));
+        Assert.Equal((0, 355), (vm.TextHistory.GetLayoutObjectSnapshot(1).OriginX,
+                                vm.TextHistory.GetLayoutObjectSnapshot(1).OriginY));
+    }
+
+    [Fact]
     public void SlotZeroSelectsOpEightysLayoutNotTheLastOneDefinedOrReset()
     {
         // Native's current layout (text_manager+0x4c8) is 1 at construction, and only op 0x80 selects it: defining

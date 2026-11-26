@@ -407,7 +407,8 @@ public sealed partial class VirtualMachine
     {
         var a = ins.Args;
         if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
-        _text.History.SetLayoutOrigin((int)Read(a[0]), (int)Read(a[1]), (int)Read(a[2]));
+        int x = (int)Read(a[1]), y = (int)Read(a[2]);
+        _text.MoveAdvWaitIndicatorOrigin(_text.History.SetLayoutOrigin((int)Read(a[0]), x, y), x, y);
         return StepResult.Next;
     }
 

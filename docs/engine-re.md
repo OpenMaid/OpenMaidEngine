@@ -6658,6 +6658,16 @@ left, one cell left of native. The text native now keeps each layout's cursor (i
 run and by `SetAdvTextCursor`, which op `0x6f` now calls too. On `SC0000@0xfa2` the indicator now lands where
 native draws it.
 
+**A layout's origin moves its indicator (4.15D, 2026-11-25).** `adv_text_publish_wait_indicator_frame@0x447e80` (4.15D)
+computes the destination at every call from the layout's current origin (layout `+0xc`/`+0x10`) plus the configured
+offset (`+0x50`/`+0x54`), and adds the text cursor in follow mode. So op `0x198` `set-adv-text-layout-origin` takes the
+indicator with the layout. 戦女神ZERO's `BELTMOVE.BIN` raises layout 1 from y 430 to 355 (`G[0x45b] = 0x1ae - G[0x45d]`)
+when the letterbox bars slide in. From `SC0000@0x3a08` native's bat is 75 px higher than the port drew it, since the
+port had copied the origin into the retained indicator when op `0x212` bound it. **Port:** op `0x198` now calls
+`TextManager.MoveAdvWaitIndicatorOrigin` with the slot `AdvTextHistory.SetLayoutOrigin` resolved, which updates the
+retained binding's layout and rebuilds the presentation. Test: `AdvTextOpsTests.AWaitIndicatorFollowsItsLayoutsOrigin`.
+The P4 sweep's page 17 now matches native.
+
 ### SC0000 native SFX / BGM-fade family — `0xb4`/`0xb5`/`0xb6`/`0xba`/`0xc2`/`0xd9` (2026-07-11)
 
 The four SFX opcodes are a retained channel lifecycle, not immediate fire-and-forget calls. Handler

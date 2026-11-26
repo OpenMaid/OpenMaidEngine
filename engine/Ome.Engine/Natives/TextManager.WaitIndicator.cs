@@ -52,6 +52,21 @@ public sealed partial class TextManager
         foreach (ITextListener listener in _listeners) listener.WaitIndicatorBound(binding, layout);
     }
 
+    /// <summary>Op 0x198 moved layout <paramref name="layoutSlot"/>'s origin. Native reads the origin each time it
+    /// publishes an indicator frame (adv_text_publish_wait_indicator_frame, 4.15D 0x447e80), so a bound indicator
+    /// follows it: 戦女神ZERO's BELTMOVE raises the window and its indicator by 75 px for a letterboxed page.</summary>
+    public void MoveAdvWaitIndicatorOrigin(int layoutSlot, int originX, int originY)
+    {
+        if (!_scene.WaitIndicatorBindings.TryGetValue(layoutSlot, out var retained)) return;
+        _scene.WaitIndicatorBindings[layoutSlot] =
+            (retained.Binding, retained.Layout with { OriginX = originX, OriginY = originY });
+        RebuildRetainedWaitIndicator(layoutSlot);
+    }
+
+    /// <summary>The wait indicator presented for a layout, if it has one.</summary>
+    internal RetainedAdvWaitIndicatorPresentation? RetainedWaitIndicator(int layoutSlot)
+        => _scene.RetainedWaitIndicators.GetValueOrDefault(layoutSlot);
+
     private void RebuildRetainedWaitIndicator(int layoutSlot)
     {
         if (!_scene.WaitIndicators.TryGetValue(layoutSlot, out AdvWaitIndicatorConfig config)

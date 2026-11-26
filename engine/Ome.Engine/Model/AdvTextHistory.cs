@@ -330,12 +330,14 @@ public sealed class AdvTextHistory
         return layout.DrawCursorApart ? (layout.CursorX, layout.CursorY) : null;
     }
 
-    public void SetLayoutOrigin(int requestedSlot, int x, int y)
+    /// <summary>Op 0x198: the layout's origin. Returns the layout it moved (slot 0 is the current layout).</summary>
+    public int SetLayoutOrigin(int requestedSlot, int x, int y)
     {
         int slot = ResolveLayout(requestedSlot);
         var layout = GetOrCreateLayout(slot);
         layout.OriginX = x;
         layout.OriginY = y;
+        return slot;
     }
 
     /// <summary>Op 0x212: layout object <paramref name="slot"/>'s wait-indicator handle (layout+0x64). The op indexes the
