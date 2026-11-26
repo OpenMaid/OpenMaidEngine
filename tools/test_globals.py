@@ -542,7 +542,8 @@ def test_scopes_lint():
     # Each registry's scopes: the two dungeon games key stage_enemy and stage_object by stage, Himegari its goals and
     # floor sheets and Kamidori its objective rewards too;
     # Arterial keys its area tables by area; Verita a dungeon map's blocks, a war stage's units, a town's sites and a
-    # box puzzle's blocks, each by its own number.
+    # box puzzle's blocks, each by its own number; 戦女神ZERO a world map's areas, a town's sites and a field map's
+    # blocks.
     expected = {
         "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "goal": "stage_goal", "object": "stage_object",
                                             "texture": "stage_map_texture"})],
@@ -551,6 +552,8 @@ def test_scopes_lint():
         "globals-arterial.toml": [("area", 1, 299, {"point": "area_point", "route": "area_route", "unit": "area_unit"})],
         "globals-verita.toml": [("dungeon", 1, 49, {"block": "map_block"}), ("war_stage", 1, 5, {"unit": "war_unit"}),
                                 ("town", 50, 63, {"site": "town_site"}), ("puzzle", 1, 14, {"block": "puzzle_block"})],
+        "globals-bg0.toml": [("world", 1, 4, {"area": "area"}), ("town", 50, 99, {"site": "town_site"}),
+                             ("dungeon", 1, 49, {"block": "map_block"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
         entries, _ = G.load_toml(toml)
