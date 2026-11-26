@@ -525,6 +525,8 @@ public sealed partial class TextManager : ISurfaceListener
 
     void ISurfaceListener.SurfaceRangeReleasing(int firstSlot, int count) { }
 
+    void ISurfaceListener.SurfaceMovieDeleted(int slot) { }
+
     void ISurfaceListener.SurfaceRangeReleased(int firstSlot, int count)
     {
         int end = checked(firstSlot + count);

@@ -3904,21 +3904,31 @@ so the script error box asks 中止/再試行/無視, and 無視 goes on at the 
    `gfx_surface_load_asset` then writes resource id -1 into the slot's record, leaving its key and created flag, and
    the op throws 「画像ファイル %s の読み込みに失敗しました」, `%s` being the record's name.
 
-The same message is thrown by op `0xa`, by the display background's loader (`engine_load_display_background`) and from
-four sites of `save_data_deserialize_and_begin_restore`, the restore of a numbered load. The port has no handler for op
-`0xa` and no display background texture.
+The same message is thrown by op `0xa` and by the display background's loader (`engine_load_display_background`). The
+port has no handler for op `0xa` and no display background texture.
+
+**A numbered load raises no box** (`save_data_deserialize_and_begin_restore`, read 2026-11-26 in `/bg0/4.15D` at
+`0x40eea0` and `/koukaku/4.43B` at `0x40ffe0`). The restore formats the message at four sites and throws it at one: layout
+1's version-20 loop, with flags 1 and outside any try. Layouts 2 and 3 reopen each flagged record inside a try. Its
+catch (4.43B `0x410b53`, `0x411183` and `0x4112c4`; 4.15D `0x40f796`, `0x40fc6b` and `0x40fd7a`) writes the caught
+message to the host trace (`host_write_trace_plain`) and goes on with the next record. The open throws the same type
+(4.43B's ThrowInfo `0x651ee8`), so its boxes land there too. When `gfx_surface_load_asset` fails, the loop itself writes
+「画像ファイル…」 to the trace and goes on. A record that does not open keeps its restored record and the slot the
+restore's release left; a refused header leaves the slot released and its record's resource id -1. Layout 3 reloads two
+tables this way: the 100 resource records, which no port op fills (the port saves them empty), and the 1,000 surface
+records.
 
 **The port** (`ResourceMap.CheckPictureLoad`, `Graphics.LoadSurface`) raises both boxes for ops `0x1f9` and `0x249`
 with native's words, leaves the slot as native does, and writes resource id -1 into the record after a refused
-header. It departs in three places:
-- After a refused open it keeps the slot's movie, which native has deleted, since the port's release stops a movie only
-  with the slot's pixels.
+header. A refused open stops the slot's movie and keeps its pixels and record (`ISurfaceListener.SurfaceMovieDeleted`).
+It departs in two places:
 - A file shorter than the header is refused: native would test whatever the header's memory held.
 - A load that passes the test and that the port cannot decode is traced and refuses nothing, since AGE would draw it:
   a BMP without the BMP option, a damaged section. A PNG, which the store serves only for a language package's picture,
   passes.
 
-The restore's own boxes are not raised (`backlog.md`).
+A numbered load's restore (`Graphics.ReloadSurface`) refuses the same records without a box: it prints native's
+message as a diagnostic, leaves the slot as native does, and goes on.
 
 Of the catalogs, every record that fails the header test is an MPEG movie under an AGF name (`00 00 01 BA`): 213 in
 Himegari, 462 in Verita and 108 in 戦女神ZERO, none in the others. No literal id any script loads with op `0x1f9` or

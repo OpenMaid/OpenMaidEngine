@@ -68,8 +68,8 @@ public sealed partial class Graphics
     /// <summary>Ops 0x1f9 and 0x249: release the slot, then load a resource into it with a colour key. Op 0x249
     /// constructs native's mode-1 surface subclass (<paramref name="rawTextureMode"/>); the pixels are the same.
     /// Returns the box AGE throws for a load it refuses (<see cref="ResourceMap.CheckPictureLoad"/>), null when it
-    /// loads. A record AGE cannot open leaves the slot as it was; AGE deletes the slot's movie before the open, which the
-    /// port keeps. A record whose header AGE refuses leaves the slot released and its record's resource id -1, as
+    /// loads. A record AGE cannot open leaves the slot's pixels and record, without its movie, which the ops delete
+    /// before the open. A record whose header AGE refuses leaves the slot released and its record's resource id -1, as
     /// gfx_surface_load_asset leaves it. A load the port cannot decode but AGE would draw is traced and refuses
     /// nothing.</summary>
     public AgeBoxMessage? LoadSurface(int slot, long resourceId, long colorKey, bool rawTextureMode = false)
@@ -80,6 +80,10 @@ public sealed partial class Graphics
             {
                 ReleaseSurfacePixels(slot);
                 State.ClearSurface(slot);
+            }
+            else
+            {
+                foreach (ISurfaceListener listener in _listeners) listener.SurfaceMovieDeleted(slot);
             }
             OpTrace?.Invoke($"set-texture slot={slot} res=0x{resourceId:x} refused"
                             + (refused.Opened ? $" ({_res.RecordName(resourceId)}: not a picture)" : " (no record opens)"));
@@ -107,9 +111,23 @@ public sealed partial class Graphics
     }
 
     /// <summary>A numbered load's restore loop reopens a flagged record through gfx_surface_load_asset, without a
-    /// release first.</summary>
+    /// release first. A load AGE refuses raises no box there: the loop's catch writes the open's message to the host
+    /// trace, and the loop writes 「画像ファイル %s の読み込みに失敗しました」 there, then goes on with the next record (here
+    /// a diagnostic). A refused header leaves the slot released and its record's resource id -1, as
+    /// gfx_surface_load_asset leaves it; a record that does not open leaves the slot and its restored record.</summary>
     public void ReloadSurface(int slot, long resourceId, long colorKey)
     {
+        if (_res?.CheckPictureLoad(resourceId) is { } refused)
+        {
+            if (refused.Opened)
+            {
+                ReleaseSurfacePixels(slot);
+                State.ClearSurface(slot);
+            }
+            _print($"load: surface {slot} not restored: {refused.Box.Text(AgeBoxText.JapaneseText)} "
+                   + "(AGE writes it to its trace and goes on)");
+            return;
+        }
         State.SetSurface(slot, resourceId, colorKey);
         LoadSurfacePixels(resourceId, slot, colorKey);
     }

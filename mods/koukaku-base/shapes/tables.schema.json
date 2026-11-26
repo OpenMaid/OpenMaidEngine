@@ -717,7 +717,7 @@
           "maximum": 4294967295
         },
         "base_stats": {
-          "description": "character.base_stats: character_base_stats, a row of 11 columns by name where a column has one and by number where it has none; write base_stats.<column> = ...",
+          "description": "character.base_stats: character_base_stats, a row of 11 columns by name; write base_stats.<column> = ...",
           "type": "object",
           "properties": {
             "0": {
@@ -761,13 +761,17 @@
               "type": "null"
             },
             "9": {
-              "description": "character.base_stats.9: column 9 of character_base_stats, a whole number",
+              "description": "column 9 is named: write critical_rate",
+              "type": "null"
+            },
+            "control": {
+              "description": "character.base_stats.control: column 0 of character_base_stats, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
             },
-            "control": {
-              "description": "character.base_stats.control: column 0 of character_base_stats, a whole number",
+            "critical_rate": {
+              "description": "character.base_stats.critical_rate: column 9 of character_base_stats, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
@@ -1001,7 +1005,7 @@
           "maximum": 4294967295
         },
         "stat_growth": {
-          "description": "character.stat_growth: character_stat_growth, a row of 11 columns by name where a column has one and by number where it has none; write stat_growth.<column> = ...",
+          "description": "character.stat_growth: character_stat_growth, a row of 11 columns by name; write stat_growth.<column> = ...",
           "type": "object",
           "properties": {
             "0": {
@@ -1045,13 +1049,17 @@
               "type": "null"
             },
             "9": {
-              "description": "character.stat_growth.9: column 9 of character_stat_growth, a whole number",
+              "description": "column 9 is named: write critical_rate",
+              "type": "null"
+            },
+            "control": {
+              "description": "character.stat_growth.control: column 0 of character_stat_growth, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
             },
-            "control": {
-              "description": "character.stat_growth.control: column 0 of character_stat_growth, a whole number",
+            "critical_rate": {
+              "description": "character.stat_growth.critical_rate: column 9 of character_stat_growth, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
@@ -3591,7 +3599,7 @@
           "maximum": 4294967295
         },
         "stat_modifiers": {
-          "description": "title.stat_modifiers: title_stat_modifiers, a row of 11 columns by name where a column has one and by number where it has none; write stat_modifiers.<column> = ...",
+          "description": "title.stat_modifiers: title_stat_modifiers, a row of 11 columns by name; write stat_modifiers.<column> = ...",
           "type": "object",
           "properties": {
             "0": {
@@ -3635,13 +3643,17 @@
               "type": "null"
             },
             "9": {
-              "description": "title.stat_modifiers.9: column 9 of title_stat_modifiers, a whole number",
+              "description": "column 9 is named: write critical_rate",
+              "type": "null"
+            },
+            "control": {
+              "description": "title.stat_modifiers.control: column 0 of title_stat_modifiers, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295
             },
-            "control": {
-              "description": "title.stat_modifiers.control: column 0 of title_stat_modifiers, a whole number",
+            "critical_rate": {
+              "description": "title.stat_modifiers.critical_rate: column 9 of title_stat_modifiers, a whole number",
               "type": "integer",
               "minimum": -2147483648,
               "maximum": 4294967295

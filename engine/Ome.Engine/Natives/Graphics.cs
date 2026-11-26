@@ -133,6 +133,11 @@ public interface ISurfaceListener
 
     /// <summary>Surface <paramref name="slot"/>'s pixels were replaced from outside (op 0x1af's thumbnail).</summary>
     void SurfaceReplaced(int slot);
+
+    /// <summary>Surface <paramref name="slot"/>'s movie is deleted and the surface stays: ops 0x1f9 and 0x249 delete it
+    /// before they open the resource, so a resource that does not open leaves the slot's pixels and record without
+    /// it (docs/engine-re.md, "A failed picture load").</summary>
+    void SurfaceMovieDeleted(int slot);
 }
 
 internal sealed class NoGraphicsMovies : IGraphicsMovies

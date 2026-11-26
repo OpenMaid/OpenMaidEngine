@@ -456,6 +456,14 @@ public sealed partial class Movies : IGraphicsMovies, ISurfaceListener
 
     void ISurfaceListener.SurfaceReplaced(int slot) { }
 
+    // A release's stop without the release: the surface's own pixels stay.
+    void ISurfaceListener.SurfaceMovieDeleted(int slot)
+    {
+        ISurfaceListener listener = this;
+        listener.SurfaceReleasing(slot);
+        listener.SurfaceReleased(slot);
+    }
+
     // ---- diagnostics ----
 
     /// <summary>The bound surfaces, for the waits' diagnostic snapshot.</summary>

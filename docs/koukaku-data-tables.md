@@ -527,7 +527,10 @@ The 11 stat columns are named by the TIINIT tips `GS[0xfd0c]`..`GS[0xfd1e]` and 
 - 6 移動 (`@0x23b8`, x 0x13d, row 0x186);
 - 7 物理速度 (`@0x216c`, row 0x158);
 - 8 魔法速度 (`@0x2256`, row 0x1b4);
-- 9 not drawn: its work cell `G[0x22caf9]` has no reader;
+- 9 クリティカル率, not drawn. CALCABI adds the character's, the title's, the items' (`item_stat_bonuses`, which the
+  items' descriptions and INFO24 name クリティカル率) and the attack's (`attack_parameter_bonuses`, 痛打) into
+  `G[0x22caf9]` (`CALCABI@0x486`..`@0x4ec`), which no script reads: the result row takes the troop's column 9
+  (`CALCABI@0xafc`);
 - 10 政治 (`@0x2468`, row 0x1cb).
 
 CALCABI clamps each stat to the cap `G[0x22cacc + 11 × G[0x211c2a] + column]` (`CALCABI@0x863`), and raises it
@@ -2162,8 +2165,8 @@ load.
 
 **Characters, titles and voices.**
 
-- CHINIT `G[0x22e470]` (a flag on 82 named characters, `ADDCORP@0x2aa`), `G[0x2378e0]` (EXECSKILL's value 1..3) and
-  stat column 9, whose work cell `G[0x22caf9]` has no reader.
+- CHINIT `G[0x22e470]` (a flag on 82 named characters, `ADDCORP@0x2aa`) and `G[0x2378e0]` (EXECSKILL's value 1..3).
+  What a commander's クリティカル率 does: its work cell `G[0x22caf9]` has no reader.
 - CLINIT's conditions no record writes (`G[0x23c701]`, `G[0x23e641]`, the bonus `G[0x23f5e1]`), `G[0x248e39]`,
   `G[0x249221]` `[5]` and `G[0x24b931]`.
 - HAINIT `G[0xa242c8]` (a minimum of `G[0x70a9]`) and `G[0xa243d6]` (an item BROTHEL puts in play).

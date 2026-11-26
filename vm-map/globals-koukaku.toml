@@ -1152,8 +1152,8 @@ address = "0x2303b0"
 name = "character_base_stats"
 category = "data-table"
 type = "int[1000][11]"
-columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "10" = "politics" }
-usage = "CHINIT: the stats at the base level. UNITECH@0x64 copies them into character_stats at the first join; CALCABI@0xbc uses them for a character not joined, and grows them for other nations' (base + growth × (level − base level) / 50, then × (5 + G[0x63a0]) / 5; CALCABI@0x1f5..0x22b). Columns by the status screen's rows and the TIINIT tips: 0 支配, 1 ＨＰ, 2 物理攻撃, 3 物理防御, 4 魔法攻撃, 5 魔法防御, 6 移動, 7 物理速度, 8 魔法速度, 9 not drawn, 10 政治 (DRAWSTATUS@0x2082..0x2468)."
+columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "9" = "critical_rate", "10" = "politics" }
+usage = "CHINIT: the stats at the base level. UNITECH@0x64 copies them into character_stats at the first join; CALCABI@0xbc uses them for a character not joined, and grows them for other nations' (base + growth × (level − base level) / 50, then × (5 + G[0x63a0]) / 5; CALCABI@0x1f5..0x22b). Columns by the status screen's rows and the TIINIT tips: 0 支配, 1 ＨＰ, 2 物理攻撃, 3 物理防御, 4 魔法攻撃, 5 魔法防御, 6 移動, 7 物理速度, 8 魔法速度, 9 クリティカル率 (not drawn), 10 政治 (DRAWSTATUS@0x2082..0x2468). Column 9: CALCABI@0x486..0x4ec adds it with the title's, item_stat_bonuses' クリティカル率 and attack_parameter_bonuses' 痛打 into unit_calc_parameters' column 9, which no script reads (the result row takes the troop's, CALCABI@0xafc)."
 source = "investigation"
 confidence = "high"
 
@@ -1162,7 +1162,7 @@ address = "0x232ea8"
 name = "character_stat_growth"
 category = "data-table"
 type = "int[1000][11]"
-columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "10" = "politics" }
+columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "9" = "critical_rate", "10" = "politics" }
 usage = "CHINIT: the growth per stat, in hundredths a level (inferred): BREED@0x18f6 adds it to character_growth_remainders and carries each 100; CALCABI@0x1f5. Columns as character_base_stats."
 source = "investigation"
 confidence = "med"
@@ -1392,7 +1392,7 @@ address = "0x240581"
 name = "title_stat_modifiers"
 category = "data-table"
 type = "int[1000][11]"
-columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "10" = "politics" }
+columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "9" = "critical_rate", "10" = "politics" }
 usage = "CLINIT: added to each stat, by character_base_stats' columns (CALCABI@0x491)."
 source = "investigation"
 confidence = "high"
@@ -1819,7 +1819,7 @@ address = "0x10023"
 name = "character_stats"
 category = "data-table"
 type = "int[1000][11]"
-columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "10" = "politics" }
+columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "9" = "critical_rate", "10" = "politics" }
 usage = "Saved: the stats, columns as character_base_stats (UNITECH@0x74; CALCABI@0x96)."
 source = "investigation"
 confidence = "high"
@@ -1829,7 +1829,7 @@ address = "0x12b1b"
 name = "character_growth_remainders"
 category = "data-table"
 type = "int[1000][11]"
-columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "10" = "politics" }
+columns = { "0" = "control", "1" = "hp", "2" = "physical_attack", "3" = "physical_defense", "4" = "magic_attack", "5" = "magic_defense", "6" = "movement", "7" = "physical_speed", "8" = "magic_speed", "9" = "critical_rate", "10" = "politics" }
 usage = "Saved: hundredths of each stat not yet carried (BREED@0x18eb, @0x1901)."
 source = "investigation"
 confidence = "med"

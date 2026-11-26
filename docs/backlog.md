@@ -209,13 +209,6 @@ it; git history keeps the record.
   RVA `0x140f20`), which the port does not have: it runs the 32-bit steps in 64 bits and marks the region
   `Approximate`. No script of 魔導巧殻 is known to make one; a search radius of 1024 or more would. Done when
   `GdiCurveFlattener` has the 64-bit flattener and matches gdi32 on ellipses past 2048 pixels.
-- **A load's restore does not raise native's picture box.** `save_data_deserialize_and_begin_restore` reloads each
-  saved surface whose reload flag is set, and throws 「画像ファイル %s の読み込みに失敗しました」 from four sites when one
-  does not load (`engine-re.md`, "A failed picture load"); what is left of the restore after 無視 is not read. The
-  port's `Graphics.ReadSaveRecords` reloads them and goes on. A saved record holds a picture that loaded, so this needs
-  a file changed between the save and the load, a mod's picture taken out. Done when native's restore after the box is
-  read and the port raises the box there and leaves the restore as native does.
-
 ## Robustness
 
 Gaps the 2026-11-10 codebase review found and the fixes that followed it left open. None affects retail scripts.

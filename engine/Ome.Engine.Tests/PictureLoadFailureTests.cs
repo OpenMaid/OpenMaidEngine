@@ -94,6 +94,47 @@ public sealed class PictureLoadFailureTests
         Assert.Equal(1, RecordResourceId(vm, 5));
     }
 
+    [Theory]
+    [InlineData(9, true)]    // no record opens: the pixels stay
+    [InlineData(0, false)]   // a refused header: the slot is released
+    public void ARefusedLoadDeletesTheSlotsMovie(long resourceId, bool pixelsStay)
+    {
+        var graphics = new Graphics(Resources(), new FrameClock(), new Sys4LogicalCanvas(4, 4));
+        var movies = new Movies(graphics, new FakeMovieAssets(),
+                                new FakeMovieDecoderFactory(new FakeMovieDecoder { StopTimeMs = 1000 }), sound: null,
+                                dependMovieSound: 0);
+        Assert.Null(graphics.LoadSurface(5, 1, -1));
+        movies.PlayToSurface("LOADS", 0x2be3, 5, 0, 0);
+        Assert.True(movies.IsSurfaceActive(5));
+
+        Assert.NotNull(graphics.LoadSurface(5, resourceId, -1));
+
+        Assert.False(movies.IsSurfaceActive(5));
+        Assert.Empty(movies.SurfaceDiagnostics());
+        Assert.Equal(pixelsStay, graphics.TryGetSurfaceSize(5, out _));
+    }
+
+    [Theory]
+    [InlineData(0, "画像ファイル SYSTEM4.BIN の読み込みに失敗しました", false)]   // a refused header: the slot released
+    [InlineData(9, "ファイル番号 9 は不正な値です．", true)]                    // no record opens: the slot stays
+    public void ALoadsRestoreTracesARefusedPictureAndGoesOn(long resourceId, string message, bool slotStays)
+    {
+        var printed = new List<string>();
+        var graphics = new Graphics(Resources(), new FrameClock(), new Sys4LogicalCanvas(4, 4), print: printed.Add);
+        Assert.Null(graphics.LoadSurface(5, 1, -1));
+
+        graphics.ReloadSurface(5, resourceId, -1);
+        graphics.ReloadSurface(6, 1, -1);   // the next record still loads
+
+        Assert.Contains(printed, line => line.Contains("surface 5") && line.Contains(message));
+        Assert.Equal(slotStays, graphics.TryGetSurfaceSize(5, out _));
+        graphics.State.SnapshotSurfaceRecords();
+        Assert.Equal(slotStays ? 1 : -1,
+                     BitConverter.ToInt32(graphics.State.CaptureNativeSurfaceRecords(), 5 * 20));
+        Assert.True(graphics.TryGetSurfaceSize(6, out (int W, int H) size));
+        Assert.Equal((2, 2), size);
+    }
+
     [Fact]
     public void AbortEndsTheRunAtTheLoad()
     {
