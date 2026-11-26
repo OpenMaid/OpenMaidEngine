@@ -1,0 +1,29 @@
+# 戦女神ZERO's opening with oms/examples/mods/example.bg0-prologue-line: the logo movie, the opening movie skipped by
+# a click, the title, Game Start, the game mode (通常) and SC0000's first page, which is the mod's line. Native AGE
+# takes the exported patch in its own scratch copy:
+#   Ome.Cli omp export --game bg0 --output-dir build/games/bg0/prologue-export --mod oms/examples/mods/example.bg0-prologue-line
+#   py -3.11 -X utf8 tools/native_scratch.py --game bg0 --name prologue --replace --overlay build/games/bg0/prologue-export/SC0000.BIN
+#   py -3.11 -X utf8 tools/drive.py --game bg0 native start --exe build/games/bg0/native-scratch-prologue/AGE.EXE
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port start --mod oms/examples/mods/example.bg0-prologue-line
+#   py -3.11 -X utf8 tools/drive.py --game bg0 <target> run tools/drive/scenarios/bg0-prologue-line.steps
+# The route is bg0-opening.steps' up to the game mode. Both targets show the line at SC0000@0xe25 and the game's first
+# page after it at SC0000@0xefc (0xec7 unpatched). Their second shots are alike to the pixel, and their first differ
+# only in the turning wait icon's frame (2026-11-25).
+
+rand-seed 13
+wait-state script=OP timeout=120
+wait 3
+click adv.next                           # ends the opening movie
+wait-state script=TITLE timeout=60
+settle timeout=20
+click title.start
+wait-state script=BUNKI timeout=60
+settle timeout=20
+click mode.normal
+wait-state script=SC0000 timeout=60
+settle timeout=30
+state
+shot bg0-prologue-line-page1
+advance
+state
+shot bg0-prologue-line-page2

@@ -1,5 +1,6 @@
 using Ome.Engine.Model;
 using Ome.Engine.Modding;
+using Ome.Engine.Profiles;
 using Ome.Engine.Sys4;
 using Ome.Mods.Launch;
 using Ome.Mods.Linking;
@@ -60,7 +61,8 @@ public sealed class BaseModTests : IDisposable
     public void TheEngineShipsABaseModForEachGameWithARegistryAndItIsTheRepositorysFolder()
     {
         // The base mods, and ome-records, the library they apply record tables with (data patches spec §6.4).
-        Assert.Equal(["arterial-base", "himegari-base", "kamidori-base", "ome-records", "verita-base"], ShippedPackages.Ids);
+        Assert.Equal(["arterial-base", "bg0-base", "himegari-base", "kamidori-base", "ome-records", "verita-base"],
+            ShippedPackages.Ids);
         foreach (string id in ShippedPackages.Ids.Where(id => id.EndsWith("-base", StringComparison.Ordinal)))
         {
             using ModPackage shipped = ShippedPackages.Open(id)!;
@@ -73,17 +75,26 @@ public sealed class BaseModTests : IDisposable
             Assert.True(shipped.Manifest.Lua!.HasVm);
             // The embedded copy is the folder as the repository holds it.
             Assert.Equal(folder.Hash, shipped.Hash);
+            string game = shipped.Manifest.Profile!;
+            // Modding from a release spec §5.1: each carries its game's toolchain, its generated globals and adv.oms.
+            Assert.Equal(ModManifest.ToolchainOmpVersion, shipped.Manifest.OmpVersion);
+            Assert.NotNull(shipped.Layout.Toolchain!.Globals);
+            Assert.Equal(["adv.oms"], shipped.Layout.Toolchain.Modules.Select(module => module.Name));
+            // A game below M3 has its toolchain alone (docs/adding-a-game.md, step 10): 戦女神ZERO's base mod starts at
+            // M1, before its registry, so its layout names nothing and it accepts no data file yet.
+            if (GameProfileRegistry.BuiltIn.Find(game)!.Support.Modding < ModdingLevel.BaseMod)
+            {
+                Assert.Empty(shipped.BaseLayout.Globals);
+                Assert.Empty(shipped.Manifest.Requires);
+                Assert.Empty(shipped.Manifest.Accepts);
+                continue;
+            }
             // Each requires the library, which the engine ships too.
             Assert.Contains(shipped.Manifest.Requires, requirement => requirement.Id == "ome-records");
             // Each accepts its game's record tables as data files, applied at the boot's data.layered and at each
             // stage's stage.loaded (data patches spec §6.2), by the same handlers; Kamidori's stage part at its stage
             // list's preview too (plan §12.6). Arterial's scope is an area, whose part comes at area.loaded; Verita's a
             // dungeon map, whose part comes at map.loaded and, after a load of a save made on it, at data.ready.
-            string game = shipped.Manifest.Profile!;
-            // Modding from a release spec §5.1: each carries its game's toolchain, its generated globals and adv.oms.
-            Assert.Equal(ModManifest.ToolchainOmpVersion, shipped.Manifest.OmpVersion);
-            Assert.NotNull(shipped.Layout.Toolchain!.Globals);
-            Assert.Equal(["adv.oms"], shipped.Layout.Toolchain.Modules.Select(module => module.Name));
             ModKind kind = Assert.Single(shipped.Manifest.Accepts);
             Assert.Equal($"{game}.tables", kind.Kind);
             (string, string)[] at = game switch

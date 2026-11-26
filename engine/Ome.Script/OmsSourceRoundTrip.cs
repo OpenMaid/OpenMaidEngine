@@ -106,6 +106,7 @@ public static class OmsSourceRoundTrip
                 Note("temp_base", layout.TempBase != null);
                 Note("ref_swap", layout.RefSwap != null);
                 Note("ref_rotate", layout.RefRotate != null);
+                Note("ref_local", layout.RefLocal != null);
                 Note("temps", layout.Temps != null);
                 Note("library", layout.Library != null);
                 if (rebuilt.AsSpan().SequenceEqual(original)) identical++;

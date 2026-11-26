@@ -467,7 +467,12 @@ statements are lowered") records the facts. OMS lowers the same way, through one
 - **Element access** lowers to `lookup-array` or `lookup-array-2d` into a reference temporary that is then used as
   the operand, read or written.
 - **Temporary pool.** Integer temporaries come from the pool above the highest local integer the source names
-  (so they never collide with named cells). Reference temporaries start at slot 0 of their bank.
+  (so they never collide with named cells). Reference temporaries start at slot 0 of their bank and skip every
+  slot of it that the script's source names, in any statement, as the integer pool stays above the named locals, so a
+  temporary never clobbers a reference the source keeps across statements. 戦女神ZERO's SORTSALLY binds `LP0` in one
+  statement, reads through a temporary in the next and writes through `LP0` in a third, and the original compiler
+  gave that temporary `LP2`. Most of the original scripts skip only the slots the temporary's own statement names,
+  which a sidecar's `ref_local` restores (amended 2026-11-25; before, the compiler skipped only those).
 - **Canonical numbering.** One counter per statement labels the temporaries in the original compiler's order. An
   assignment labels its value, then its target; a binary node labels its binary operands, then itself, then its
   element operands; an element labels itself, then its indices. Label `k` is pool slot `k` or reference slot `k`.
@@ -477,6 +482,8 @@ statements are lowered") records the facts. OMS lowers the same way, through one
   - `ref_swap`: the script starts its integer-reference registers as `LP1`, `LP0`;
   - `ref_rotate`: the script numbers its first three integer-reference registers `LP1`, `LP2`, `LP0` (Verita's
     scenes; a sidecar sets this or `ref_swap`, not both);
+  - `ref_local`: the script's reference temporaries skip only the slots their own statement names, not every slot
+    the script names (the decompiler sets it where that fits more statements; 93 of 戦女神ZERO's 1,579 scripts);
   - `temps`: the exact slots of individual statements, keyed by the index of the statement's first instruction.
 
   The residue is published in §16.

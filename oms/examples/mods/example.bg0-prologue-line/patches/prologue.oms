@@ -1,0 +1,9 @@
+oms 1
+// A line before the first page of 戦女神ZERO's opening scene. A page of this game starts at the instruction that
+// resets the text layout, before it sets G[0x2fd1] (the page has text): 0xdf3 is that instruction of the first page.
+patch "SC0000.BIN" fingerprint "sha256:50d75547dd7ffcee34c3671133e67d39cd6ca031f03dd0cfc1258bddcac0929f"
+use bg0.adv
+
+before site 0xdf3 {
+    "[OMS] A mod inserted this line before the opening scene's first page."
+}

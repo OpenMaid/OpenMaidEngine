@@ -1,0 +1,9 @@
+omp = 1
+id = "example.bg0-prologue-line"
+name = "戦女神ZERO prologue line"
+version = "1.0.0"
+description = "Inserts a line before the first page of 戦女神ZERO's opening scene."
+
+[game]
+profile = "bg0"
+target = "native"

@@ -190,8 +190,12 @@ public enum RefOrder
 /// </list>
 /// Label k is integer slot <c>intBase + k</c> or reference slot k, the integer references in the script's
 /// <see cref="RefOrder"/> (<paramref name="refOrder"/>). A reference temporary never takes a slot of its bank that the
-/// statement itself names: the k-th reference slot is then the k-th slot the statement leaves free (Verita's
-/// SORTSALLY writes through LP1 a value it reads through two temporaries, which slots 0 and 1 would clobber). A sidecar
+/// statement itself names, nor one the script names anywhere (<paramref name="scriptNamed"/>): the k-th reference slot
+/// is then the k-th slot left free. Verita's SORTSALLY writes through LP1 a value it reads through two temporaries,
+/// which slots 0 and 1 would clobber; 戦女神ZERO's binds LP0 in one statement, reads through a temporary in the next
+/// and writes through LP0 in a third, and the original compiler took LP2 for that temporary. So a source's own
+/// references are kept as its own integer locals are, below the pool. Most of the original scripts kept off only the
+/// statement's own slots, which a null <paramref name="scriptNamed"/> gives (a sidecar's <c>ref_local</c>). A sidecar
 /// override replaces either sequence outright, listing slots in emission order.
 /// </summary>
 public sealed class CanonicalTemps
@@ -209,10 +213,15 @@ public sealed class CanonicalTemps
 
     /// <param name="refBase">The first reference slot per reference bank type, when a fragment's temporaries must stay
     /// above the base script's (spec §10.2); otherwise reference temporaries start at slot 0.</param>
+    /// <param name="scriptNamed">The reference slots the script names anywhere, by bank type
+    /// (<see cref="NameSlots"/> over its statements).</param>
     public CanonicalTemps(LStatement statement, uint intBase, RefOrder refOrder = RefOrder.Plain,
                           IReadOnlyList<uint>? intOverride = null, IReadOnlyList<uint>? refOverride = null,
-                          IReadOnlyDictionary<int, uint>? refBase = null)
+                          IReadOnlyDictionary<int, uint>? refBase = null,
+                          IReadOnlyDictionary<int, SortedSet<uint>>? scriptNamed = null)
     {
+        foreach (var (type, slots) in scriptNamed ?? new Dictionary<int, SortedSet<uint>>())
+            _named[type] = new SortedSet<uint>(slots);
         _intBase = intBase;
         _refBase = refBase;
         _refOrder = refOrder;
@@ -271,6 +280,34 @@ public sealed class CanonicalTemps
         if (operand.Kind != IrOperandKind.Literal) return;
         if (!_named.TryGetValue(operand.Type, out SortedSet<uint>? slots)) _named[operand.Type] = slots = new SortedSet<uint>();
         slots.Add(operand.Value);
+    }
+
+    /// <summary>Adds the reference slots (bank types 0xC to 0xE) <paramref name="statement"/> names to
+    /// <paramref name="into"/>, as a script's <c>scriptNamed</c> collects them.</summary>
+    public static void NameSlots(LStatement statement, Dictionary<int, SortedSet<uint>> into)
+    {
+        var pending = new Stack<LExpr>(statement switch
+        {
+            LAssign assign => [assign.Target, assign.Value],
+            LInstruction instruction => instruction.Operands,
+            _ => [],
+        });
+        void Add(IrOperand operand)
+        {
+            if (operand.Kind != IrOperandKind.Literal || operand.Type is not (0xC or 0xD or 0xE)) return;
+            if (!into.TryGetValue(operand.Type, out SortedSet<uint>? slots)) into[operand.Type] = slots = new SortedSet<uint>();
+            slots.Add(operand.Value);
+        }
+        while (pending.Count > 0)
+            switch (pending.Pop())
+            {
+                case LLeaf leaf: Add(leaf.Operand); break;
+                case LBinary binary: pending.Push(binary.Left); pending.Push(binary.Right); break;
+                case LElement element:
+                    Add(element.Base);
+                    foreach (LExpr index in element.Indices) pending.Push(index);
+                    break;
+            }
     }
 
     /// <summary>The <paramref name="index"/>-th slot from <paramref name="first"/> that the statement does not name.</summary>

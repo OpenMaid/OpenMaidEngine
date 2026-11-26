@@ -1,0 +1,689 @@
+oms 1
+// 戦女神ZERO ADV prelude (spec §11.2): the speaker table, the dialogue line template, the scene header's handlers
+// and the library its scenes link. Drafted 2026-11-25 from the core decompile of every SC and SP scene: the
+// header from SC0000 (127 of 130 scenes carry it unchanged), each library sub from the first scene that
+// links it, as many copies as one scene carries. Its library is Verita's first form, and its subs take Verita's
+// names; what Verita made functions of (the page's voice start, the speaker's name plate) is inline in each page
+// here. Maintained by hand since.
+module bg0.adv
+use bg0.scripts
+
+// Speaker ids: the index into CNINIT's names (GS[0xe0]), the ones the scenes set. Names that are not
+// identifiers (？？？？) and repeated names carry their id.
+enum speaker {
+    セリカ = 0x1
+    speaker_0x2 = 0x2  // セリカ
+    ハイシェラ = 0x3
+    speaker_0x4 = 0x4  // セリカ
+    ダルノス = 0xa
+    神殿兵 = 0xd
+    部隊長 = 0xe
+    武装神官 = 0xf
+    スフィーダ = 0x10
+    ゲーエ = 0x11
+    オレノ = 0x13
+    司祭 = 0x14
+    ストエルル = 0x15
+    暗黒魔法を操る男 = 0x16
+    迎えの水夫 = 0x19
+    水夫 = 0x1a
+    ガス = 0x24
+    鉱夫 = 0x25
+    子供 = 0x28
+    狩人 = 0x2a
+    村人 = 0x2b
+    酒場の主 = 0x2c
+    アビルース = 0x2d
+    兵士 = 0x2f
+    アーベルフ = 0x32
+    騎士 = 0x34
+    ヴィルト = 0x35
+    ロコパウル = 0x36
+    ゾノ = 0x37
+    自分の声 = 0x3d
+    男の声 = 0x3e
+    見覚えある武装神官 = 0x3f
+    乱暴な兵士 = 0x41
+    魔術師風の男 = 0x43
+    腐海の大魔術師 = 0x44
+    魔族の男 = 0x45
+    神官 = 0x46
+    戦士 = 0x47
+    商人 = 0x48
+    遺跡の声 = 0x4a
+    変容した魔神 = 0x4b
+    ハイシェラ軍使者 = 0x4c
+    獣の声 = 0x4d
+    女神官 = 0x4e
+    女の声 = 0x4f
+    背後の淫魔 = 0x50
+    神々しい人 = 0x51
+    受付の獣人 = 0x52
+    赤き髪の者 = 0x53
+    リタ = 0x54
+    speaker_0x62 = 0x62  // ？？？？？
+    男性 = 0x63
+    サティア = 0x64
+    アストライア = 0x65
+    カヤ = 0x67
+    ラウネー = 0x69
+    カミーヌ = 0x6a
+    メリエル = 0x6b
+    エカティカ = 0x6e
+    女戦士 = 0x6f
+    身体を捧げられた者 = 0x73
+    スティンルーラの娘 = 0x74
+    アメデ = 0x77
+    村長 = 0x78
+    老人 = 0x79
+    リーズ = 0x7d
+    speaker_0x7f = 0x7f  // リタ
+    セミネ = 0x82
+    魔術師 = 0x86
+    speaker_0x87 = 0x87  // 神官
+    レクシュミ = 0x8c
+    シュミネリア = 0x96
+    シャマーラ = 0x9b
+    speaker_0xa0 = 0xa0  // ルナ＝クリア
+    ヴェルロカ = 0xa3
+    アイドス = 0xa5
+    攫われた娘 = 0xaa
+    女性 = 0xab
+    店員の少女 = 0xac
+    赤い髪の少女 = 0xad
+    speaker_0xae = 0xae  // 女の声
+    厳粛な声 = 0xaf
+    得体の知れないもの = 0xb0
+    悲しみの声 = 0xb1
+    正気を失った神官 = 0xb2
+    speaker_0xb3 = 0xb3  // 正気を失った神官
+    若い僧侶 = 0xb4
+    speaker_0xb5 = 0xb5  // 女戦士
+    少年の母親 = 0xb6
+    老婆の声 = 0xb7
+    ナーガ族の戦士 = 0xb8
+    少女の声 = 0xb9
+    少女 = 0xba
+    白い羽根の少女 = 0xbb
+    美しい水の女神 = 0xbc
+    真紅の鎧の戦士 = 0xbd
+    魔力を隠した影 = 0xbe
+    門の前の少女 = 0xbf
+    小さな貴人 = 0xc0
+    元気な商人 = 0xc1
+    聖女 = 0xc2
+    美しい女性 = 0xc3
+    女性の声 = 0xc5
+    女 = 0xc7
+    白銀公 = 0xc8
+    エルフの戦士 = 0xcd
+    ヴァリエルフ = 0xcf
+    リ_クティナ = 0xdc
+    speaker_0xdd = 0xdd  // ナーガ族の戦士
+    マクアエナ = 0xde
+    ペルル = 0xf0
+    ゾキウ = 0xf9
+    ドワーフ = 0xff
+    ゴウモール = 0x104
+    パズモ = 0x14d
+    テシルヌ = 0x16a
+    シュタイフェ = 0x190
+    バラパム = 0x191
+    ロット = 0x1d9
+    クルージェ = 0x1da
+    女魔族 = 0x1e4
+    speaker_0x1e5 = 0x1e5  // 女魔族
+    speaker_0x1e6 = 0x1e6  // 女魔族
+    水の巫女 = 0x1f6
+    圧倒的な気配の主 = 0x1f8
+    アムドシアス = 0x1fa
+    ナベリウス = 0x1fc
+    speaker_0x1fd = 0x1fd  // ハイシェラ　
+    インドリト = 0x200
+    ラジスラヴァ = 0x28a
+    水竜の子 = 0x2bd
+    空の勇士 = 0x2bf
+    ラガタ_ムン = 0x2c1
+    竜族の長 = 0x2cb
+    リア = 0x386
+}
+
+// One ADV page (spec §11.2). G[0x2fd1]: the page has text; G[0x2fd0]: the current speaker (-1 for narration),
+// whose name the page draws from CNINIT's names (GS[0xe0]) and records in the history. Every spoken page in the
+// scenes is voiced; its voice is muted when the option for the speaker's voice is off (G[0x2be7], through the
+// speaker's voice character, G[0x91059]).
+@dialogue inline line(text: text, speaker: speaker = none, voice: const = none) {
+    reset_adv_text_layout(0x1)
+    G[0x2fd1] = 0x1
+    atomic {
+        if G[0x2be5] == 0x0 {
+            reset_message_voice_state()
+        }
+        G[0x2be5] = 0x0
+        set_tick_presentation(0x1)
+    }
+    static if speaker == none {
+        atomic {
+            clear_speaker()
+            arm_voice_duck_release()
+        }
+    } else {
+        atomic {
+            append_text_history_metadata(0x2, speaker)
+            G[0x2fd0] = speaker
+            if G[0x8fd3d][G[0x2fd0]] == 0x0 {
+                G[0x8fd3d][G[0x2fd0]] = 0x1
+                store_shared_profile_int(G[0x8fd3d][G[0x2fd0]])
+            }
+            create_texture(0xd, 0x258, 0x1e, 0x0)
+            draw_string(0xd, 0x1, 0x1, GS[0xe0][G[0x2fd0]])
+            draw_texture(0x4268, 0xd, 0x0, 0x0, 0x258, 0x1e, 0x3f, G[0x45b] + 0x35)
+            set_adv_text_cursor(0x1, 0x58 - 0x19, 0x56)
+        }
+        static if voice != none {
+            if G[0x2fd0] < 0x0 {
+                mute_next_voice()
+            } else if G[0x2be7][G[0x91441][G[0x91059][G[0x2fd0]]]] {
+                mute_next_voice()
+            }
+            play_voice(voice)
+        }
+    }
+    show_text(0x0, text)
+    end_text_line(0x0)
+    wait_for_input(0x0)
+    end_text_line(0x0)
+}
+
+// The scene header's hotspot handlers: placed where each scene registers them, so the sidecar records their place.
+sub register_adv_hotspots {
+    atomic {
+        if G[0x45e] {
+            register_hotspot_callbacks(0x302, G[0x45b] + 0x20, 0x19, 0x4b, skip_button_enter, skip_button_leave, skip_button_click)
+            register_hotspot_callbacks(0x303, G[0x45b] + 0x6b, 0x18, 0x1c, history_button_enter, history_button_leave, history_button_click)
+            register_hotspot_callbacks(0x2ee, G[0x45b] + 0x88, 0x1a, 0x1a, auto_button_enter, auto_button_leave, auto_button_click)
+            register_hotspot_callbacks(0x307, G[0x45b] + 0x90, 0x14, 0x16, hide_button_enter, hide_button_leave, hide_button_click)
+        }
+        register_hotspot_callbacks(-(0x3e8), -(0x3e8), 0x1, 0x1, -1, -1, history_key)
+        register_hotspot_callbacks(-(0x3e8), -(0x3f0), 0x1, 0x1, -1, -1, history_key)
+        bind_hotspot_key(-(0x3e8), -(0x3e8), 0x1, 0x1, 0x0)
+        bind_hotspot_key(-(0x3e8), -(0x3f0), 0x1, 0x1, 0x8)
+        if G[0x9100e] == 0x0 && G[0xbf006][G[0x91869]] != 0x4 {
+            register_hotspot_callbacks(-(0x3e8), -(0x3ef), 0x1, 0x1, -1, -1, menu_key)
+            bind_hotspot_key(-(0x3e8), -(0x3ef), 0x1, 0x1, 0x7)
+        }
+        arm_hotspot_wait()
+    }
+    return
+}
+sub skip_button_enter {
+    G[0x466] = 0x1
+    if G[0x45a] == 0x0 {
+        return
+    }
+    if G[0x45e] == 0x0 {
+        return
+    }
+    draw_texture(0x2eeb, 0x11, 0x176, 0x18f, 0x23, 0x5a, 0x2fd, G[0x45b] + 0x1b)
+    return
+}
+sub skip_button_leave {
+    G[0x466] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    return
+}
+sub skip_button_click {
+    atomic {
+        G[0x466] = 0x0
+        if G[0x30ae] == 0x1 {
+            G[0x91008] = get_read_message_skip()
+            G[0x91008] = 0x1 - G[0x91008]
+            set_read_message_skip(G[0x91008])
+        } else {
+            set_message_skip(0x1)
+        }
+        draw_message_window()
+        sleep(0x64)
+        get_cursor_virtual(out G[0x464], out G[0x465])
+        set_cursor_virtual(G[0x464], G[0x465] + G[0x463] * 0x2 - 0x1)
+        G[0x463] = 0x1 - G[0x463]
+        reset_message_skip_input()
+    }
+    return
+}
+sub history_button_enter {
+    G[0x467] = 0x1
+    if G[0x45a] == 0x0 {
+        return
+    }
+    if G[0x45e] == 0x0 {
+        return
+    }
+    draw_texture(0x2eeb, 0x11, 0x1bb, 0x1b3, 0x22, 0x30, 0x2fe, G[0x45b] + 0x66)
+    return
+}
+sub history_button_leave {
+    G[0x467] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    return
+}
+sub history_button_click {
+    G[0x467] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    cancel_hotspot_wait()
+    run HISTORY
+    register_adv_hotspots()
+    return
+}
+sub auto_button_enter {
+    G[0x468] = 0x1
+    if G[0x45a] == 0x0 {
+        return
+    }
+    if G[0x45e] == 0x0 {
+        return
+    }
+    draw_texture(0x2eeb, 0x11, 0x1bd, 0x18f, 0x24, 0x24, 0x2e9, G[0x45b] + 0x83)
+    return
+}
+sub auto_button_leave {
+    G[0x468] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    return
+}
+sub auto_button_click {
+    atomic {
+        G[0x462] = get_auto_message()
+        G[0x462] += 0x1
+        G[0x462] %= 0x2
+        set_auto_message(G[0x462])
+        draw_message_window()
+        sleep(0x64)
+        get_cursor_virtual(out G[0x464], out G[0x465])
+        set_cursor_virtual(G[0x464], G[0x465] + G[0x463] * 0x2 - 0x1)
+        G[0x463] = 0x1 - G[0x463]
+        reset_message_skip_input()
+    }
+    return
+}
+sub hide_button_enter {
+    G[0x469] = 0x1
+    if G[0x45a] == 0x0 {
+        return
+    }
+    if G[0x45e] == 0x0 {
+        return
+    }
+    draw_texture(0x2eeb, 0x11, 0x1ff, 0x18f, 0x1e, 0x20, 0x302, G[0x45b] + 0x8b)
+    return
+}
+sub hide_button_leave {
+    G[0x469] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    return
+}
+sub hide_button_click {
+    G[0x469] = 0x0
+    gfx_elem_erase(0x2eeb, 0x1)
+    yield_adv_coroutine()
+    sleep(0x64)
+    get_cursor_virtual(out G[0x464], out G[0x465])
+    set_cursor_virtual(G[0x464], G[0x465] + G[0x463] * 0x2 - 0x1)
+    G[0x463] = 0x1 - G[0x463]
+    reset_message_skip_input()
+    return
+}
+sub history_key {
+    atomic {
+        G[0x466] = 0x0
+        G[0x467] = 0x0
+        G[0x468] = 0x0
+        G[0x469] = 0x0
+        cancel_hotspot_wait()
+    }
+    run HISTORY
+    register_adv_hotspots()
+    return
+}
+sub menu_key {
+    atomic {
+        G[0x466] = 0x0
+        G[0x467] = 0x0
+        G[0x468] = 0x0
+        G[0x469] = 0x0
+        cancel_hotspot_wait()
+    }
+    run MENU
+    register_adv_hotspots()
+    return
+}
+coroutine adv_hide_window_handler {
+    begin_window_transition()
+    G[0x45a] = 0x1
+    draw_message_window()
+    G[0x45a] = 0x0
+    G[0x9104a] = 0x1f4
+    fade_message_window()
+    G[0x9104b] = 0x1
+    present_window_transition()
+    if G[0x9100d] {
+        cancel_hotspot_wait()
+        G[0x91010] = 0x1
+        run HIDEWIN
+        G[0x91010] = 0x0
+        if G[0x91011] {
+            atomic {
+                draw_message_window()
+                publish_message_text()
+                present_frame()
+                G[0x91011] = 0x0
+            }
+        }
+        coroutine_save_yield_handlers(adv_hide_window_handler, adv_show_window_handler)
+        register_adv_hotspots()
+        mark_save_resume_frame()
+        yield_adv_coroutine()
+    }
+    resume
+}
+coroutine adv_show_window_handler {
+    begin_window_transition()
+    G[0x45a] = 0x1
+    draw_message_window()
+    G[0x45a] = 0x1
+    G[0x9104a] = 0x1f4
+    fade_message_window()
+    G[0x9104b] = 0x1
+    G[0x2fd1] = 0x1
+    present_window_transition()
+    resume
+}
+
+// Library functions: linked after the scene behind an exit guard, breadth first in order of first reference.
+@guard sub draw_message_window {
+    gfx_elem_erase(0x2ee0, 0x2f44 - 0x2ee0)
+    if G[0x45a] {
+        draw_texture(0x2ee0, 0x11, 0x0, 0x96, 0x320, 0xaa, 0x0, G[0x45b])
+        G[0x460] = get_message_window_alpha()
+        gfx_draw_color(0x2ee0, 0x0, 0x10 - G[0x460] << 0x4, G[0x458])
+        draw_texture(0x2ee0 + 0x1, 0x11, 0x0, 0x141, 0x82, 0xae, 0x5, G[0x45d] + 0x4)
+        draw_texture(0x2ee0 + 0x2, 0x11, 0x153, 0x141, 0x5f, 0x4e, 0x2bc, G[0x45d] + 0x4)
+        draw_texture(0x2ee0 + 0x3, 0x11, 0x1b2, 0x141, 0x5f, 0x4e, 0x5, G[0x45b] + 0x57)
+        draw_texture(0x2ee0 + 0x4, 0x11, 0x82, 0x141, 0xd1, 0xae, 0x24c, G[0x45b] - 0x8)
+        if G[0x45e] {
+            draw_texture(0x2ee0 + 0x5, 0x11, 0x153, 0x18f, 0x23, 0x5a, 0x2fd, G[0x45b] + 0x1b)
+            draw_texture(0x2ee0 + 0x6, 0x11, 0x199, 0x1b3, 0x22, 0x30, 0x2fe, G[0x45b] + 0x66)
+            draw_texture(0x2ee0 + 0x7, 0x11, 0x199, 0x18f, 0x24, 0x24, 0x2e9, G[0x45b] + 0x83)
+            draw_texture(0x2ee0 + 0x8, 0x11, 0x1e1, 0x18f, 0x1e, 0x20, 0x302, G[0x45b] + 0x8b)
+            G[0x9104d] = get_read_message_skip()
+            if G[0x9104d] {
+                draw_texture(0x2ee0 + 0x9, 0x11, 0x0, 0x1ef, 0x32, 0x10, 0x267, G[0x45b] + 0x90)
+            }
+            G[0x9104e] = get_auto_message()
+            if G[0x9104e] {
+                draw_texture(0x2ee0 + 0xa, 0x11, 0x32, 0x1ef, 0x32, 0x10, 0x299, G[0x45b] + 0x90)
+            }
+            if G[0x466] {
+                draw_texture(0x2eeb, 0x11, 0x176, 0x18f, 0x23, 0x5a, 0x2fd, G[0x45b] + 0x1b)
+                goto draw_message_window_1
+            }
+            if G[0x467] {
+                draw_texture(0x2eeb, 0x11, 0x1bb, 0x1b3, 0x22, 0x30, 0x2fe, G[0x45b] + 0x66)
+                goto draw_message_window_1
+            }
+            if G[0x468] {
+                draw_texture(0x2eeb, 0x11, 0x1bd, 0x18f, 0x24, 0x24, 0x2e9, G[0x45b] + 0x83)
+                goto draw_message_window_1
+            }
+            if G[0x469] {
+                draw_texture(0x2eeb, 0x11, 0x1ff, 0x18f, 0x1e, 0x20, 0x302, G[0x45b] + 0x8b)
+            }
+        }
+    }
+draw_message_window_1:
+    return
+}
+@guard sub begin_window_transition {
+    atomic {
+        return
+        exit
+    fade_message_window:
+        if G[0x45a] {
+            G[0x460] = get_message_window_alpha()
+            gfx_blit_color(0x2ee0, 0x0, G[0x9104a], 0x10 - G[0x460] << 0x4, G[0x458])
+            gfx_draw_color(0x2ee0, 0x0, 0x0, G[0x458])
+            for G[0x91023] = 0x2ee0 + 0x1; G[0x91023] <= 0x2eeb; G[0x91023] += 0x1 {
+                G[0x91024] = op_0x215(G[0x91023])
+                if G[0x91024] >= 0x0 {
+                    gfx_blit_color(G[0x91023], 0x0, G[0x9104a], 0xff, 0xffffff)
+                    gfx_draw_color(G[0x91023], 0x0, 0x0, 0xffffff)
+                }
+            }
+            goto begin_window_transition_2
+        }
+        gfx_blit_color(0x2ee0, 0x0, G[0x9104a], 0x0, G[0x458])
+        for G[0x91023] = 0x2ee0 + 0x1; G[0x91023] <= 0x2eeb; G[0x91023] += 0x1 {
+            G[0x91024] = op_0x215(G[0x91023])
+            if G[0x91024] >= 0x0 {
+                gfx_blit_color(G[0x91023], 0x0, G[0x9104a], 0x0, 0xffffff)
+            }
+        }
+    begin_window_transition_2:
+        gfx_elem_erase(0x3264, 0x1)
+        clear_message_text()
+        return
+        exit
+    present_window_transition:
+        set_tick_presentation(0x1)
+        if G[0x9104b] {
+            G[0x9104b] = 0x0
+            if G[0x9104f] {
+                G[0x91050] = 0x0
+                for G[0x91022] = 0x0; G[0x91022] <= 0x10; G[0x91022] += 0x1 {
+                    if G[0x91050] < G[0x3066][G[0x91022]] {
+                        G[0x91050] = G[0x3066][G[0x91022]]
+                    }
+                }
+                if G[0x91050] {
+                    set_anim_clock(G[0x91050])
+                }
+                G[0x9104f] = 0x0
+            }
+            G[0x91007] = get_message_skip()
+            G[0x91008] = get_adv_read_skip_state()
+            if G[0x91007] | G[0x91008] {
+                reset_anim_clock()
+                present_frame()
+            } else {
+                mark_frame_yield()
+            }
+            clear_gfx_command_queue()
+            for G[0x91022] = 0x0; G[0x91022] <= 0x10; G[0x91022] += 0x1 {
+                if G[0x91027][G[0x91022]] {
+                    G[0x91024] = op_0x215(G[0x91027][G[0x91022]] + 0x1)
+                    if G[0x91024] >= 0x0 {
+                        gfx_elem_erase(G[0x91027][G[0x91022]] + 0x1, 0x1)
+                        gfx_elem_release(G[0x91024])
+                    }
+                    G[0x91024] = op_0x215(G[0x91027][G[0x91022]] + 0x2)
+                    if G[0x91024] >= 0x0 {
+                        gfx_draw_color(G[0x91027][G[0x91022]], 0x0, -(0x1), -(0x1))
+                        gfx_elem_erase(G[0x91027][G[0x91022]] + 0x2, 0x1)
+                        gfx_elem_release(G[0x91024])
+                    }
+                }
+            }
+            if G[0x9104c] {
+                G[0x9104c] = 0x0
+                set_gfx_range_transform(0x0, 0x0, 0x0, 0x0, 0x0)
+            }
+            publish_message_text()
+        }
+        zero_int_range(G[0x3066], 0x14)
+    }
+    return
+}
+@guard sub publish_message_text {
+    gfx_elem_erase(0x32c8, 0x1f4)
+    gfx_elem_erase(0x4268, 0x1)
+    if G[0x45a] & G[0x2fd1] {
+        publish_adv_text_layout(0x1)
+        if G[0x2fd0] >= 0x0 {
+            draw_texture(0x4268, 0xd, 0x0, 0x0, 0x258, 0x1e, 0x3f, G[0x45b] + 0x35)
+        }
+    }
+    return
+}
+@guard sub init_adv_layer_slots {
+    G[0x2fed] = 0x4
+    G[0x2fee] = 0x2b
+    G[0x2fef] = 0x33
+    G[0x2ff0] = 0x5
+    G[0x2ff1] = 0x2c
+    G[0x2ff2] = 0x34
+    G[0x300e] = 0x6
+    G[0x300f] = 0x2d
+    G[0x3010] = 0x35
+    G[0x3011] = 0x7
+    G[0x3012] = 0x2e
+    G[0x3013] = 0x36
+    G[0x3014] = 0x8
+    G[0x3015] = 0x2f
+    G[0x3016] = 0x37
+    G[0x3017] = 0x9
+    G[0x3018] = 0x30
+    G[0x3019] = 0x38
+    G[0x301a] = 0xa
+    G[0x301b] = 0x31
+    G[0x301c] = 0x39
+    G[0x301d] = 0xb
+    G[0x301e] = 0x32
+    G[0x301f] = 0x3a
+    return
+}
+@guard sub clear_message_text {
+    gfx_elem_erase(0x32c8, 0x1f4)
+    gfx_elem_erase(0x4268, 0x1)
+    G[0x2fd1] = 0x0
+    reset_message_voice_state()
+    return
+}
+@guard sub show_layer_graphic {
+    op_0x21a(G[0x91027][G[0x91022]], out G[0x91042], out G[0x91043], out G[0x91044])
+    op_0x218(G[0x91027][G[0x91022]], out G[0x91045], out G[0x91046], out G[0x91047])
+    G[0x91024] = op_0x215(G[0x91027][G[0x91022]])
+    if G[0x91024] < 0x0 {
+        G[0x91024] = G[0x2fed:0x3][G[0x91022]][0x0]
+        G[0x91045] = 0x190
+        G[0x91046] = 0x258
+        set_gfx_geom3(G[0x91027][G[0x91022]], G[0x91045], G[0x91046], G[0x91047])
+    } else {
+        get_texture_size(G[0x91024], out G[0x91025], out G[0x91026])
+        G[0x91045] = G[0x91042] + G[0x91025] / 0x2
+        G[0x91046] = G[0x91043] + G[0x91026]
+    }
+    set_texture(G[0x9100c], G[0x91024], -(0x1))
+    get_texture_size(G[0x91024], out G[0x91025], out G[0x91026])
+    G[0x91042] = G[0x91045] - G[0x91025] / 0x2
+    G[0x91043] = G[0x91046] - G[0x91026]
+    draw_texture(G[0x91027][G[0x91022]], G[0x91024], 0x0, 0x0, G[0x91025], G[0x91026], G[0x91042], G[0x91043])
+    set_object_animation_detached(G[0x91027][G[0x91022]], 0x0)
+    G[0x302a][G[0x91022]] = 0x0
+    G[0x303e][G[0x91022]] = 0x0
+    G[0x3066][G[0x91022]] = 0x0
+    return
+}
+@guard sub get_layer_anchor {
+    G[0x91024] = op_0x215(G[0x91027][G[0x91022]])
+    if G[0x91024] < 0x0 {
+        G[0x91045] = 0x190
+        G[0x91046] = 0x258
+        goto get_layer_anchor_1
+    }
+    op_0x21a(G[0x91027][G[0x91022]], out G[0x91042], out G[0x91043], out G[0x91044])
+    op_0x218(G[0x91027][G[0x91022]], out G[0x91045], out G[0x91046], out G[0x91047])
+    get_texture_size(G[0x91024], out G[0x91025], out G[0x91026])
+    if G[0x91048] == 0x0 {
+        G[0x91045] = G[0x91042]
+        G[0x91046] = G[0x91043]
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x1 {
+        G[0x91045] = G[0x91042] + G[0x91025] / 0x2
+        G[0x91046] = G[0x91043]
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x2 {
+        G[0x91045] = G[0x91042] + G[0x91025]
+        G[0x91046] = G[0x91043]
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x3 {
+        G[0x91045] = G[0x91042]
+        G[0x91046] = G[0x91043] + G[0x91026] / 0x2
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x4 {
+        G[0x91045] = G[0x91042] + G[0x91025] / 0x2
+        G[0x91046] = G[0x91043] + G[0x91026] / 0x2
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x5 {
+        G[0x91045] = G[0x91042] + G[0x91025]
+        G[0x91046] = G[0x91043] + G[0x91026] / 0x2
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x6 {
+        G[0x91045] = G[0x91042]
+        G[0x91046] = G[0x91043] + G[0x91026]
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x7 {
+        G[0x91045] = G[0x91042] + G[0x91025] / 0x2
+        G[0x91046] = G[0x91043] + G[0x91026]
+        goto get_layer_anchor_1
+    }
+    if G[0x91048] == 0x8 {
+        G[0x91045] = G[0x91042] + G[0x91025]
+        G[0x91046] = G[0x91043] + G[0x91026]
+    }
+get_layer_anchor_1:
+    G[0x91047] = 0x0
+    return
+}
+@guard sub clear_speaker {
+    G[0x2fd0] = -(0x1)
+    gfx_elem_erase(0x4268, 0x1)
+    gfx_elem_release(0xd)
+    return
+}
+@guard sub crossfade_layer_graphic {
+    G[0x91024] = op_0x215(G[0x91027][G[0x91022]])
+    if G[0x91024] < 0x0 {
+        show_layer_graphic()
+        gfx_blit_color(G[0x91027][G[0x91022]], G[0x91049], G[0x9104a], 0xff, 0xffffff)
+        gfx_draw_color(G[0x91027][G[0x91022]], 0x0, 0x0, 0xffffff)
+    } else {
+        gfx_draw_color(G[0x91027][G[0x91022]], 0x2, -(0x1), -(0x1))
+        clone_gfx_object(G[0x91027][G[0x91022]], G[0x91027][G[0x91022]] + 0x1)
+        op_0x21a(G[0x91027][G[0x91022]], out G[0x91042], out G[0x91043], out G[0x91044])
+        op_0x218(G[0x91027][G[0x91022]], out G[0x91045], out G[0x91046], out G[0x91047])
+        get_texture_size(G[0x91024], out G[0x91025], out G[0x91026])
+        G[0x91045] = G[0x91042] + G[0x91025] / 0x2
+        G[0x91046] = G[0x91043] + G[0x91026]
+        if G[0x91024] == G[0x2fed:0x3][G[0x91022]][0x0] {
+            G[0x91024] = G[0x2fed:0x3][G[0x91022]][0x1]
+        } else {
+            G[0x91024] = G[0x2fed:0x3][G[0x91022]][0x0]
+        }
+        set_texture(G[0x9100c], G[0x91024], -(0x1))
+        get_texture_size(G[0x91024], out G[0x91025], out G[0x91026])
+        G[0x91042] = G[0x91045] - G[0x91025] / 0x2
+        G[0x91043] = G[0x91046] - G[0x91026]
+        draw_texture(G[0x91027][G[0x91022]], G[0x91024], 0x0, 0x0, G[0x91025], G[0x91026], G[0x91042], G[0x91043])
+        gfx_elem_release(G[0x2fed:0x3][G[0x91022]][0x2])
+        queue_surface_alpha_transition(G[0x91027][G[0x91022]] + 0x2, G[0x2fed:0x3][G[0x91022]][0x2], G[0x91027][G[0x91022]] + 0x1, 0x1, G[0x91027][G[0x91022]], 0x1, G[0x91049], G[0x9104a])
+        draw_texture(G[0x91027][G[0x91022]] + 0x2, G[0x2fed:0x3][G[0x91022]][0x2], 0x0, 0x0, 0x320, 0x258, 0x0, 0x0)
+    }
+    return
+}

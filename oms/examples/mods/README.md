@@ -71,6 +71,11 @@ ran the same scenarios on native AGE.
   `tools/drive/scenarios/port/verita-debug-events.steps` runs the three: 迷宮マップ１ (the map event, and the changed
   block), then ＡＤＶデバッグ（ＰＧ用） (the experience award).
 
+- `example.bg0-prologue-line` is 戦女神ZERO's first mod (`docs/modding/games/bg0.md`): a line before the first page
+  of its opening scene (site 0xdf3, the instruction that resets the text layout), through `bg0.adv`.
+  `NaturalBootIntegrationTests.Bg0PrologueFragmentIsTheFirstAdvPage` boots a new game into it, and
+  `tools/drive/scenarios/bg0-prologue-line.steps` plays it on both targets, native AGE on the exported `SC0000.BIN`.
+
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs
   `ADDEXP.BIN` with it and with the guide's OMS patch, and both leave the same state. It targets `extended`, so it

@@ -39,7 +39,8 @@ For each profile with a base mod (a hand-written mods/<game>-base/manifest.toml)
 
 The last two belong to the data kind: they are written only when the manifest's [[accepts]] names the shape, since
 the package loader refuses a shape no [[accepts]] names. A base mod that does not accept the kind yet (a new game
-before its tables' handlers) has neither.
+before its tables' handlers) has neither. A base mod whose game has no registry yet (a new game at M1, which carries
+its toolchain before its data step) gets a layout and an oms/globals.json that name nothing.
 
 The rename rule (spec §9.1): a name the checked-in exports.txt lists stays exported, as a global's name or as one of
 its `aliases`, until the base mod's major version is raised. The layout and oms/globals.json name the same globals
@@ -803,19 +804,22 @@ def generate(profile_id: str, mods: Path = MODS, registry: Path | None = None,
     registry = registry or globals_source(profile_id)
     points_registry = points_registry or points_source(profile_id)
     manifest = manifest or profile_manifest(profile_id)
-    source = f"vm-map/{registry.name}"
+    # A game's base mod starts with its toolchain (adding-a-game.md, step 10, M1), which may come before its registry
+    # (step 9, M2): it then names no cell, no table and no scope.
+    has_registry = registry.is_file()
+    source = f"vm-map/{registry.name}" if has_registry else f"no registry (vm-map/{registry.name} is not written yet)"
     errors: list[str] = []
     major, error = manifest_major(root / "manifest.toml")
     if error:
         return {}, [f"{base_mod_id(profile_id)}: {error}"]
-    curated, _ = globals_build.load_toml(registry)
+    curated = globals_build.load_toml(registry)[0] if has_registry else globals_build.Registry()
     lint_errors, _ = globals_build.lint(curated, curated.addresses())
     lint_errors += globals_build.lint_aliases(curated)
     errors += [f"{source}: {message}" for message in lint_errors]
     values, shape_errors = layout_globals(list(curated.values()), source)
     errors += shape_errors
-    tables = globals_build.load_tables(registry)
-    scopes = globals_build.load_scopes(registry)
+    tables = globals_build.load_tables(registry) if has_registry else []
+    scopes = globals_build.load_scopes(registry) if has_registry else []
     table_errors = globals_build.lint_tables(tables, curated) + globals_build.lint_scopes(scopes, tables, curated)
     errors += [f"{source}: {message}" for message in table_errors]
     if not table_errors:

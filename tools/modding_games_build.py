@@ -99,9 +99,13 @@ def identity(profile_id: str) -> list[str]:
     modules = source_modules(profile_id)
     guide = GAMES_DIR / f"{profile_id}.md"
 
-    # <game>.globals comes from the game's registry: a game without one has no such module to `use`.
+    # <game>.globals comes from the game's registry: a game without one has no such module to `use`, or an empty one
+    # where its base mod carries the toolchain before the registry (adding-a-game.md, step 10).
     if globals_toml(profile_id).exists():
         module_cells = [f"`{profile_id}.globals`, `{profile_id}.scripts` (generated)"]
+    elif (paths.REPO / "mods" / f"{profile_id}-base" / "oms" / "globals.json").is_file():
+        module_cells = [f"`{profile_id}.globals` (generated, naming nothing yet: the game has no registry), "
+                        f"`{profile_id}.scripts` (generated)"]
     else:
         module_cells = [f"`{profile_id}.scripts` (generated; no `{profile_id}.globals`, the game has no registry yet)"]
     # The module's file is in the base mod: a link with words as its text (modding from a release spec §9.2, §9.3).

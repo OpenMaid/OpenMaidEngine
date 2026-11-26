@@ -12,7 +12,7 @@
   "engineBuild": "4.15D",
   "engineAbiId": "SYS4415",
   "naturalBootScript": "SYSTEM4.BIN",
-  "support": { "play": "P3", "modding": "none" },
+  "support": { "play": "P3", "modding": "M1" },
   "metadataReferences": {},
   "persistence": {
     "storageNamespace": "bg0",
@@ -28,5 +28,10 @@
       "floatPointers": 1,
       "stringPointers": 1
     }
+  },
+  "launcher": {
+    "site": "https://www.eukleia.co.jp/eushully/",
+    "banner": { "url": "https://www.eukleia.co.jp/eushully/eu09/banner_eu09a.jpg", "sha256": "a8334b227a34590205e8a45e8263c0ec65494c45518639afba4349f495aebba7" },
+    "cover": { "url": "https://www.eukleia.co.jp/eushully/eu09/package.jpg", "sha256": "990b7a80bbdb3c622066400a25924192f5f7e9ee647f92a47e5f72d29622331a" }
   }
 }

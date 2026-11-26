@@ -286,8 +286,8 @@ still handled on their own. Each change should be behaviour-neutral and pass the
   `if (G[0x36e6] & 1) != 1` block and closes it (op `0x1f5`) inside a later one, so the core decompiler cannot nest it
   and leaves the two as `@op` statements: `raw-statements=2` at the core and idiomatic levels and their fixed points
   (the round trip stays byte-identical). Arterial has no corpus tests in `OmsCoreTests`, which hold the other three
-  games to zero raw statements, and its core temporary overrides (50,283, 8.3% of the folded instructions) are above the
-  tests' 5% bound. Done when such a pair prints as source (a structured form, or a language form for an unbalanced
+  games to zero raw statements, and its core temporary overrides (50,075, 8.3% of the folded instructions, 2026-11-25) are
+  above the tests' 5% bound. Done when such a pair prints as source (a structured form, or a language form for an unbalanced
   section), and Arterial has the four corpus tests.
 - **Allocator residue (optional).** The remaining temporary-slot overrides (OMS spec §13) and Kamidori's explicit
   `L[0x0]` in `place_scene_background` (394 sidecars) only matter for sidecar-free byte identity.
@@ -804,6 +804,24 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     - **Left as they are:** native 4.15D's SAVE.DAT drops the last two catalog slots' unlocks, which the port keeps
       (a file of the full length, which native reads); and AGERC's dialog 10, コメントの入力, which no script of the
       game opens.
+  - **Step 10's scripts half is done, and it stands at M1 (2026-11-25),** before steps 8 and 9:
+    - **The gates:** all 1,579 scripts pass the round trip, the core and idiomatic levels and the fixed point. The
+      canonical and idiomatic rebuilds pass all 127 scenes, and so does the patch probe; an empty plan gives every
+      script back byte for byte. Two toolchain faults were fixed on the way:
+      - the core printer gave a loop that jumps to its own test (SC0300 at `0xeb58`) its label twice;
+      - a canonical reference temporary now skips every reference slot the script names, not only the statement's.
+        SORTSALLY in SC0030 and SC1060 had clobbered a named slot. A sidecar's `ref_local` restores the statement's
+        rule where that fits the original better (93 of the game's scripts).
+      - Like Arterial, it has no corpus tests in `OmsCoreTests`: its core temporary overrides (20,261, 5.9% of the
+        folded instructions) are above the tests' 5% bound (the allocator residue item below).
+    - **The base mod:** `bg0-base` carries only the toolchain, since the game has no registry yet (`base_mod_build.py`
+      writes it an empty layout). Its `bg0.adv` has the header's handlers, the nine library subs, the page template
+      and 135 speakers from CNINIT's names; it lifts 56.8% of the scenes' instructions. Furigana pages stay core
+      statements, as in the other games.
+    - **The example:** `example.bg0-prologue-line` links and is SC0000's first page on both targets
+      (`bg0-prologue-line.steps`). An English package of three lines and セリカ's name ran in the port.
+    - **The rest:** the guide `modding/games/bg0.md` and the launcher's art are added.
+    - **Left for M3:** the registry and the data tables (step 9), then the base mod's survey, events and helpers.
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 

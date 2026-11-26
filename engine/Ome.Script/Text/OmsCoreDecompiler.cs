@@ -112,6 +112,7 @@ public static class OmsCoreDecompiler
             ? null : script.LocalCounts.ToArray();
         if (folding.RefOrder == RefOrder.Swap) layout.RefSwap = true;
         if (folding.RefOrder == RefOrder.Rotate) layout.RefRotate = true;
+        if (!folding.ScriptNamed) layout.RefLocal = true;
         if (folding.Overrides.Count > 0) layout.Temps = folding.Overrides;
         if (context.LibrarySubs > 0)
             layout.Library = context.LibraryPlacement();
@@ -552,11 +553,20 @@ public static class OmsCoreDecompiler
         public RefOrder RefOrder { get; private set; }
 
         private bool Canonical(int start, int root, LStatement statement, RefOrder order)
-            => Canonical(start, root, statement, PoolBase, order);
+            => Canonical(start, root, statement, PoolBase, order, ScriptNamed);
 
-        private bool Canonical(int start, int root, LStatement statement, uint poolBase, RefOrder order)
-            => Reproduces(ExpressionLowering.Instructions(statement, new CanonicalTemps(statement, poolBase, order).Allocate),
-                start, root);
+        private bool Canonical(int start, int root, LStatement statement, uint poolBase, RefOrder order, bool scriptNamed)
+            => Reproduces(ExpressionLowering.Instructions(statement,
+                new CanonicalTemps(statement, poolBase, order, scriptNamed: Named(scriptNamed)).Allocate), start, root);
+
+        /// <summary>The reference slots the printed source names, which the compiler keeps from its temporaries.</summary>
+        private readonly Dictionary<int, SortedSet<uint>> _namedRefs = new();
+
+        private Dictionary<int, SortedSet<uint>>? Named(bool scriptNamed) => scriptNamed ? _namedRefs : null;
+
+        /// <summary>Whether the script's reference temporaries keep off every slot its source names (the compiler's rule)
+        /// or, false, only the slots their own statement names (the sidecar's <c>ref_local</c>).</summary>
+        public bool ScriptNamed { get; private set; } = true;
 
         /// <summary>Chooses the script's reference order by which fits more statements, then records the original
         /// slots of every statement the canonical plan does not reproduce.</summary>
@@ -573,16 +583,22 @@ public static class OmsCoreDecompiler
                 .SelectMany(root => Leaves(Statements[root]!))
                 .Where(leaf => leaf is { Kind: IrOperandKind.Literal, Type: 0x9 })
                 .Select(leaf => (long)leaf.Value).DefaultIfEmpty(-1).Max() + 1);
-            // The orders are tried plain, swap, rotate, and an order is kept only when it fits more than those before it.
-            var best = (Base: derived, Order: RefOrder.Plain, Fits: -1);
+            // The reference slots left explicit, as the compiler will find them in the printed source.
+            foreach (int root in Enumerable.Range(0, _code.Count).Where(root => Statements[root] != null))
+                CanonicalTemps.NameSlots(Statements[root]!, _namedRefs);
+            // The orders are tried plain, swap, rotate, each with the compiler's rule for named reference slots and then
+            // the statement's own, and a choice is kept only when it fits more than those before it.
+            var best = (Base: derived, Order: RefOrder.Plain, ScriptNamed: true, Fits: -1);
             foreach (uint poolBase in new[] { derived, printed, PoolBase }.Distinct())
                 foreach (RefOrder order in Enum.GetValues<RefOrder>())
-                {
-                    int fits = _accepted.Count(a => Canonical(a.Start, a.Root, a.Statement, poolBase, order));
-                    if (fits > best.Fits) best = (poolBase, order, fits);
-                }
+                    foreach (bool scriptNamed in _namedRefs.Count > 0 ? new[] { true, false } : new[] { true })
+                    {
+                        int fits = _accepted.Count(a => Canonical(a.Start, a.Root, a.Statement, poolBase, order, scriptNamed));
+                        if (fits > best.Fits) best = (poolBase, order, scriptNamed, fits);
+                    }
             PoolBase = best.Base;
             RefOrder = best.Order;
+            ScriptNamed = best.ScriptNamed;
             foreach (var (start, root, statement, slots) in _accepted)
             {
                 bool canonical = Canonical(start, root, statement, RefOrder);
@@ -592,7 +608,7 @@ public static class OmsCoreDecompiler
                     uint[] refs = slots.Where(a => a.Type != ExpressionLowering.IntTemp).Select(a => a.Slot).ToArray();
                     var expectedInts = new List<uint>();
                     var expectedRefs = new List<uint>();
-                    var plan = new CanonicalTemps(statement, PoolBase, RefOrder);
+                    var plan = new CanonicalTemps(statement, PoolBase, RefOrder, scriptNamed: Named(ScriptNamed));
                     ExpressionLowering.Instructions(statement, (node, type) =>
                     {
                         uint slot = plan.Allocate(node, type);
@@ -604,7 +620,8 @@ public static class OmsCoreDecompiler
                         Ints = ints.SequenceEqual(expectedInts) ? null : ints,
                         Refs = refs.SequenceEqual(expectedRefs) ? null : refs,
                     };
-                    var replay = new CanonicalTemps(statement, PoolBase, RefOrder, entry.Ints, entry.Refs);
+                    var replay = new CanonicalTemps(statement, PoolBase, RefOrder, entry.Ints, entry.Refs,
+                        scriptNamed: Named(ScriptNamed));
                     if (!Reproduces(ExpressionLowering.Instructions(statement, replay.Allocate), start, root))
                         throw new InvalidOperationException($"temporary override does not reproduce statement at {start}");
                     Overrides[start] = entry;
@@ -1552,7 +1569,9 @@ public static class OmsCoreDecompiler
                         break;
                 }
             }
-            if (ownsEnd && _labels.Contains(end)) PrintLabel(text, end, depth);
+            // An empty body ends where it starts: a loop that jumps to its own test (戦女神ZERO's SC0300 at 0xeb58)
+            // has its head's label printed before it already.
+            if (ownsEnd && _labels.Contains(end) && end != skipLabel) PrintLabel(text, end, depth);
         }
 
         /// <summary>Index-addressed local arrays, declared so the compiler keeps their slots. Each array runs to the

@@ -129,9 +129,10 @@ public sealed class GameProfileSelectionTests
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);
     }
 
-    /// <summary>戦女神ZERO is at P3 (docs/adding-a-game.md): the engine names its install, reads all of it, has a handler
-    /// for every opcode its scripts use, boots it by its own route to SC0000's first page, and saves as native does.
-    /// Its build is declared from 4.24J.</summary>
+    /// <summary>戦女神ZERO is at P3 and M1 (docs/adding-a-game.md): the engine names its install, reads all of it, has a
+    /// handler for every opcode its scripts use, boots it by its own route to SC0000's first page, and saves as native
+    /// does; its scripts rebuild from Open Maid Script, and its base mod carries their toolchain. Its build is declared
+    /// from 4.24J.</summary>
     [Fact]
     public void ZeroIsBeingAddedFromHimegarisBuild()
     {
@@ -141,7 +142,7 @@ public sealed class GameProfileSelectionTests
                      (zero.SysFrontendId, zero.EngineBuildId, zero.EngineAbiId, zero.NaturalBootScript));
         Assert.Equal(["SYS4415"], zero.ScriptRevisions);
         Assert.True(zero.Matches(new GameCatalogIdentity("S4IC415", "戦女神ZERO")));
-        Assert.Equal(("P3", "none"), (zero.Support.PlayId, zero.Support.ModdingId));
+        Assert.Equal(("P3", "M1"), (zero.Support.PlayId, zero.Support.ModdingId));
         Assert.True(zero.Support.IsPlayable);
         // Each target loads the other's saves, and save-diff shows only the time (tools/drive/scenarios/bg0-save-load.steps).
         Assert.True(zero.PersistenceWritesEnabled);
@@ -150,7 +151,9 @@ public sealed class GameProfileSelectionTests
         Assert.Equal([593923, 1, 224, 1, 1, 1], zero.Persistence.BankDimensions.ToArray());
         Assert.Null(zero.DirectSceneDiagnostics);
         Assert.Null(zero.DebugSceneLaunch);
-        Assert.Null(zero.Launcher);
+        // The launcher's art for it comes from the publisher's site, as the other games' does.
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu09/banner_eu09a.jpg", zero.Launcher!.Banner!.Url.ToString());
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu09/package.jpg", zero.Launcher.Cover!.Url.ToString());
         Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(zero);
         Assert.Equal(("4.15D", "SYS4415"), (build.Id, build.AbiId));
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age415D, build);

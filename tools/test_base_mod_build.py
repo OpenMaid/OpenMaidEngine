@@ -390,6 +390,24 @@ def test_no_data_kind():
               f"a shape left from before is an error ({errors})")
 
 
+def test_no_registry():
+    """A new game's base mod carries its toolchain before its registry (adding-a-game.md, step 10, M1): its layout
+    and oms/globals.json name nothing, its exports only its modules' names, and each note says there is no registry."""
+    with tempfile.TemporaryDirectory() as directory:
+        mods, source = workspace(Path(directory), accepts=False)
+        source.unlink()
+        write({mods / "test-base" / "oms" / "adv.oms": "module test.adv\nconst page_width = 0x10\n"})
+        files, errors = generate(mods, source)
+        check(not errors, f"a base mod with no registry generates ({errors})")
+        check(layout_of(files) == {}, "its layout names no global")
+        oms = oms_of(files)
+        check(oms["cells"] == {} and oms["tables"] == [], "its oms/globals.json names no cell and no table")
+        check("no registry (vm-map/globals-test.toml is not written yet)" in oms["note"], f"its note says so ({oms['note']})")
+        exports = next(text for path, text in files.items() if path.name == "exports.txt")
+        check([line for line in exports.splitlines() if not line.startswith("#")] == ["major = 1", "module test.adv.page_width"],
+              f"it exports its module's names alone ({exports.splitlines()[-2:]})")
+
+
 def test_record_map_errors():
     table = '''
 [[table]]
@@ -799,6 +817,7 @@ def main():
     test_one_record_table()
     test_record_map_without_tables()
     test_no_data_kind()
+    test_no_registry()
     test_record_map_errors()
     test_alias_lint()
     test_old_names()

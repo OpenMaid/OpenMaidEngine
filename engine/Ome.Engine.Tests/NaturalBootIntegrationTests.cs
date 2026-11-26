@@ -351,6 +351,44 @@ public class NaturalBootIntegrationTests
     }
 
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
+    /// 戦女神ZERO's opening scene through the game's ADV module, and its line is the first ADV page of a natural new
+    /// game.</summary>
+    [Fact]
+    [Trait("Profile", "bg0")]
+    public void Bg0PrologueFragmentIsTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("bg0");
+        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        Assert.True(File.Exists(sys4Ini), $"bg0 install not found at {gameRoot}");
+        GameProfileManifest profile = GameProfileRegistry.BuiltIn.Find("bg0")!;
+        OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, profile.EngineAbiId);
+        Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
+        var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
+        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("bg0", sys4Ini, catalog,
+            store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
+            Ome.Mods.Linking.GameToolchain.Shipped("bg0"));
+        string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.bg0-prologue-line");
+        using var mod = Ome.Mods.Packages.ModPackage.Open(source);
+        var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
+        Assert.True(link.Succeeded, link.Report.Render());
+
+        string layer = Path.Combine(Path.GetTempPath(), "ome-bg0-line-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(layer);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(layer, "SC0000.BIN"), link.Scripts["SC0000.BIN"].Bytes);
+            // The title's Game Start entry (tools/drive/bg0.toml, title.start), as the boot test above.
+            var (reachedAdv, _) = RunNewGameToFirstAdvPage("bg0", gameRoot, [layer, gameRoot], 700, 95);
+            Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+            Assert.Equal("[OMS] A mod inserted this line before the opening scene's first page.", reachedAdv.Text);
+        }
+        finally
+        {
+            Directory.Delete(layer, recursive: true);
+        }
+    }
+
+    /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
     /// 戦女神VERITA's opening scene through the game's ADV module, and its line is the first ADV page of a natural new
     /// game.</summary>
     [Fact]

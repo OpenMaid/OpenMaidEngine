@@ -1,0 +1,13 @@
+omp = 5
+id = "bg0-base"
+name = "戦女神ZERO base"
+version = "1.0.0"
+description = "Carries the game's OMS toolchain (oms/): its ADV module, the source its scenes decompile to. It names no cell yet: the game's registry comes with its data tables."
+
+[game]
+profile = "bg0"
+target = "extended"
+
+[lua]
+api = 1
+capabilities = ["vm"]

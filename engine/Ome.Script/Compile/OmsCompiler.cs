@@ -23,7 +23,8 @@ public sealed record OmsWarning(SourceSpan Span, string Message)
 /// <summary>
 /// Compiles a parsed script unit to the intermediate form using the canonical lowerings of spec §7. Expressions
 /// lower through <see cref="ExpressionLowering"/> with the canonical temporary plan: integer temporaries from the
-/// pool above the highest local integer the source names, reference temporaries from slot 0. Data items are one per
+/// pool above the highest local integer the source names, reference temporaries from slot 0 in the slots the source
+/// does not name. Data items are one per
 /// data-operand occurrence in code order (spec §7.5). An optional layout sidecar restores any non-canonical original
 /// layout, including the pool base and per-statement temporary slots.
 /// </summary>
@@ -177,6 +178,11 @@ public static class OmsCompiler
         private int _appendStart = -1, _appendEnd = -1;
         /// <summary>Patch mode: the first slot of each reference bank above the base's.</summary>
         private Dictionary<int, uint>? _refBase;
+        /// <summary>The reference slots the source names, by bank type: no temporary takes one.</summary>
+        private readonly Dictionary<int, SortedSet<uint>> _namedRefs = new();
+        /// <summary>The slots the temporaries keep off besides their own statement's: none where the sidecar says the script
+        /// numbers them by its statements alone (<c>ref_local</c>, spec §7.2).</summary>
+        private Dictionary<int, SortedSet<uint>>? NamedRefs => layout?.RefLocal == true ? null : _namedRefs;
         private string? _currentSub;
         private readonly HashSet<int> _warnedOpcodes = new();
 
@@ -295,6 +301,13 @@ public static class OmsCompiler
             foreach (RawOperand operand in OperandsOf(scanned))
                 if (operand is RawStorage { Bank: "L" or "LF" or "LS" } local)
                     highest[local.Bank] = Math.Max(highest.GetValueOrDefault(local.Bank, -1), local.Index);
+                else if (operand is RawStorage { Bank: "LP" or "LFP" or "LSP" } reference)
+                {
+                    // A reference the source names is its own, so no temporary takes its slot (CanonicalTemps).
+                    int type = StorageBanks.TypeByBank[reference.Bank];
+                    if (!_namedRefs.TryGetValue(type, out SortedSet<uint>? slots)) _namedRefs[type] = slots = new SortedSet<uint>();
+                    slots.Add(reference.Index);
+                }
             if (patchBase != null) UsePatchBase(highest);
             Declare(declarations, highest);
             // An operand names a cell or a constant before a label, so an imported name (a registry global, a module's
@@ -935,9 +948,9 @@ public static class OmsCompiler
         private void LowerFitted(LStatement statement, SourceSpan span, int site)
         {
             RefOrder order = layout?.RefOrder ?? RefOrder.Plain;
-            var probe = new CanonicalTemps(statement, _tempBase, order, Probes, Probes);
+            var probe = new CanonicalTemps(statement, _tempBase, order, Probes, Probes, scriptNamed: _namedRefs);
             var probed = new List<IrInstruction>();
-            var plan = new CanonicalTemps(statement, _tempBase, order);
+            var plan = new CanonicalTemps(statement, _tempBase, order, scriptNamed: NamedRefs);
             var canonical = new List<IrInstruction>();
             try
             {
@@ -979,7 +992,8 @@ public static class OmsCompiler
             uint[]? intPins = fittedInts.SequenceEqual(canonicalInts) ? null : fittedInts;
             uint[]? refPins = fittedRefs.SequenceEqual(canonicalRefs) ? null : fittedRefs;
             if (intPins != null || refPins != null) Fitted[site] = new OmsTempOverride { Ints = intPins, Refs = refPins };
-            ExpressionLowering.Lower(statement, new CanonicalTemps(statement, _tempBase, order, intPins, refPins).Allocate, _code.Add);
+            ExpressionLowering.Lower(statement,
+                new CanonicalTemps(statement, _tempBase, order, intPins, refPins, scriptNamed: NamedRefs).Allocate, _code.Add);
         }
 
         private void Lower(LStatement statement, SourceSpan span)
@@ -993,7 +1007,7 @@ public static class OmsCompiler
             OmsTempOverride? entry = null;
             layout?.Temps?.TryGetValue(site, out entry);
             var temps = new CanonicalTemps(statement, _tempBase, layout?.RefOrder ?? RefOrder.Plain, entry?.Ints, entry?.Refs,
-                _refBase);
+                _refBase, NamedRefs);
             try
             {
                 ExpressionLowering.Lower(statement, temps.Allocate, _code.Add);

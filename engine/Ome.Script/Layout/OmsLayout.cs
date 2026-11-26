@@ -55,6 +55,9 @@ public sealed class OmsLayout
     [JsonPropertyName("ref_swap")] public bool? RefSwap { get; set; }
     /// <summary>The script numbers its first three integer-reference registers LP1, LP2, LP0 (Verita's scenes).</summary>
     [JsonPropertyName("ref_rotate")] public bool? RefRotate { get; set; }
+    /// <summary>The script's reference temporaries keep off only the slots their own statement names, not every slot the
+    /// script names (spec §7.2): the original compiler's numbering in most of Himegari's and Verita's scripts.</summary>
+    [JsonPropertyName("ref_local")] public bool? RefLocal { get; set; }
 
     /// <summary>The script's order of integer-reference temporaries, from <see cref="RefSwap"/> and
     /// <see cref="RefRotate"/>, of which a sidecar sets one at most.</summary>
@@ -85,7 +88,7 @@ public sealed class OmsLayout
     [JsonIgnore]
     public bool IsEmpty => Magic == null && Field6 == null && LocalCounts == null && Data == null
                            && ItemDwords == null && Tables == null && TempBase == null && RefSwap == null
-                           && RefRotate == null
+                           && RefRotate == null && RefLocal == null
                            && Temps == null && Library == null;
 
     private static readonly ScriptJsonContext Json = new(new JsonSerializerOptions

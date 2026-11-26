@@ -1116,7 +1116,11 @@ folds 331,075 / 330,708 instructions back into expressions and recompiles both c
   - an element labels itself, then its indices.
 
   Label `k` is integer slot `pool base + k` or reference slot `k`. In 191 / 53 scripts the first two integer
-  reference registers come in the order `LP1`, `LP0` instead.
+  reference registers come in the order `LP1`, `LP0` instead. A reference temporary keeps off the reference slots
+  its own statement names, so reference slot `k` is the `k`-th one left free. Some scripts keep it off every slot
+  the script names: 戦女神ZERO's SORTSALLY binds `LP0` in one statement, reads through a temporary in the next and
+  writes through `LP0` in a third, and that temporary is `LP2` (2026-11-25; OMS compiles by that rule, and a
+  sidecar's `ref_local` gives the other, spec §7.2).
 - **Residue.** The labelling rule reproduces 221,708 of 228,256 Himegari statements with temporaries and 182,964 of
   191,296 Kamidori. The rest show allocator state carried across statements:
   - the swapped `LP0`/`LP1` order flips for single statements;

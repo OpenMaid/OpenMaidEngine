@@ -225,17 +225,41 @@ public class OmsCoreTests
     }
 
     [Fact]
-    public void AReferenceTemporaryNeverTakesASlotTheStatementNames()
+    public void AReferenceTemporaryNeverTakesASlotTheScriptNames()
     {
-        // Verita's SORTSALLY: the value is read through two temporaries and written through LP1, so the canonical
-        // slots 0 and 1 would point LP1 at the index before the write.
+        // Verita's SORTSALLY reads a value through two temporaries and writes it through LP1, so the canonical slots
+        // 0 and 1 would point LP1 at the index before the write. 戦女神ZERO's binds LP0 in one statement, reads through
+        // a temporary in the next and writes through LP0 in a third: the middle statement names no reference, and its
+        // temporary still keeps off LP0 and LP1, which the script names (OMS spec §7.2).
         IrScript script = Compile("""
             LP[1] = G[0x10][G[0x20][L[0]]]
+            G[0x30] = G[0x40][L[1]]
             LP[0] = G[0x10][G[0x20][L[0]]]
             exit
             """);
-        Assert.Equal("61(c:2,3:20,9:0) 61(c:0,3:10,c:2) 55(c:1,c:0) 61(c:2,3:20,9:0) 61(c:1,3:10,c:2) 55(c:0,c:1) 2()",
-            Shape(script));
+        Assert.Equal("61(c:3,3:20,9:0) 61(c:2,3:10,c:3) 55(c:1,c:2) 61(c:2,3:40,9:1) 55(3:30,c:2) "
+            + "61(c:3,3:20,9:0) 61(c:2,3:10,c:3) 55(c:0,c:2) 2()", Shape(script));
+    }
+
+    [Fact]
+    public void RefLocalKeepsReferenceTemporariesOffOnlyTheirStatementsSlots()
+    {
+        // Most of the original scripts number reference temporaries by the statement's own slots alone, which the
+        // sidecar's ref_local gives: the middle statement's temporary takes LP0, the others the first slots their
+        // statement leaves free.
+        IrScript script = Compile("""
+            LP[1] = G[0x10][G[0x20][L[0]]]
+            G[0x30] = G[0x40][L[1]]
+            LP[0] = G[0x10][G[0x20][L[0]]]
+            exit
+            """, new OmsLayout { RefLocal = true });
+        Assert.Equal("61(c:2,3:20,9:0) 61(c:0,3:10,c:2) 55(c:1,c:0) 61(c:0,3:40,9:1) 55(3:30,c:0) "
+            + "61(c:2,3:20,9:0) 61(c:1,3:10,c:2) 55(c:0,c:1) 2()", Shape(script));
+        // The bytes come back through the decompiler. Here it folds none of the temporaries that share a slot the script
+        // names, so it needs no ref_local; where the flag fits a script's statements better it sets it, which the
+        // installed corpora's override bounds hold it to.
+        byte[] original = IrEncoder.Encode(script);
+        Assert.Equal(original, RoundTrip(original).Second);
     }
 
     [Fact]
