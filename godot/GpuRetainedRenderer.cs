@@ -203,10 +203,12 @@ internal sealed class GpuRetainedRenderer : IDisposable, IFrameRenderer
                             Affine2D localToDest, long tint, int tintStrength,
                             float opacity, bool multiplyTint, bool dynamic, long dynamicKey, BlendKind blend)
     {
-        if (width <= 0 || height <= 0 || opacity <= 0) return false;
-        int clippedWidth = Math.Min(width, source.Width - srcX);
-        int clippedHeight = Math.Min(height, source.Height - srcY);
-        if (srcX < 0 || srcY < 0 || clippedWidth <= 0 || clippedHeight <= 0) return false;
+        // A rectangle that reaches outside the image is clipped as native clips it: what lies outside draws nothing and
+        // the rest keeps its place (FrameItem.ClipSourceToImage). 戦女神ZERO's FIELD scrolls a map's source past its edge.
+        if (opacity <= 0 || !FrameItem.ClipSourceToImage(source.Width, source.Height, ref srcX, ref srcY,
+                                                         ref width, ref height, ref localToDest))
+            return false;
+        int clippedWidth = width, clippedHeight = height;
 
         long started = _perf != null ? PerformanceFrameLog.Timestamp() : 0;
         long allocated = _perf != null ? PerformanceFrameLog.AllocatedBytes() : 0;

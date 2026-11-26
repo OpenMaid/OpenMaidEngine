@@ -435,7 +435,8 @@ public sealed partial class Graphics
 
     // A published range draws its objects plainly: each object in the range as its texture or its fill, with no
     // effects (a transition or blur on an object in the range is the backbuffer's) and fills sized to the
-    // destination. An object whose source rectangle starts off its texture, or misses it, draws nothing. With
+    // destination. A source rectangle is clipped to its texture as native clips it (FrameItem.ClipSourceToImage), and
+    // one that misses it draws nothing. With
     // sceneEffects the 3D effects are drawn in the walk, as native's frame render and range present draw them into the
     // render target, at its size (SceneEffectWalk). With copyTarget the destination is a kind-1 render target, into
     // which a colour mode 2 object is copied (BlendKind.Copy, or CopyAll where the build has no alpha test). Returns how
@@ -473,10 +474,12 @@ public sealed partial class Graphics
                 lowered++;
                 continue;
             }
+            // Only what is left of the rectangle inside the image draws (FrameItem.ClipSourceToImage).
             RgbaImage image = texture.Value.Image;
-            if (item.W <= 0 || item.H <= 0 || item.SrcX < 0 || item.SrcY < 0
-                || System.Math.Min(item.W, image.Width - item.SrcX) <= 0
-                || System.Math.Min(item.H, image.Height - item.SrcY) <= 0)
+            int srcX = item.SrcX, srcY = item.SrcY, srcW = item.W, srcH = item.H;
+            Affine2D clipMatrix = matrix;
+            if (!FrameItem.ClipSourceToImage(image.Width, image.Height, ref srcX, ref srcY, ref srcW, ref srcH,
+                                             ref clipMatrix))
                 continue;
             BlendKind blend = copyTarget && item.CopiesIntoAlphaTarget
                 ? SpriteAlphaTest ? BlendKind.Copy : BlendKind.CopyAll

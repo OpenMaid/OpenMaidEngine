@@ -2486,7 +2486,29 @@ Kamidori's backgrounds show the difference. On the prologue page (`kamidori-furi
 the band above the text window up to 78 levels off native, with 12168 pixels more than 8 off. Bilinear sampling brings it
 within 1 of native on both the GPU and the software path.
 
+**A source rectangle outside its surface (2026-11-25).** `gfx_object_blit_d3d9` (4.15D `0x469fa0`) clips the source
+rectangle to the surface's bounds, `+0x41c..+0x428` (left, top, right, bottom). These are (0, 0, width, height):
+`gfx_tiled_surface_create` (4.15D `0x42d9e0`) writes them for a tiled surface, and the other constructors for theirs.
+- A left or top edge below the bounds is raised to them. The sprite's position then moves right or down by as much,
+  before the object's transform.
+- The right and bottom edges are lowered with no shift.
+- An empty result draws nothing.
+
+So texels outside the surface draw nothing, and what is left keeps its place. 戦女神ZERO's FIELD depends on it.
+DRAWMAP draws a map picture from source x = −scroll (`DRAWMAP@0x2c2`), which is negative wherever the camera reaches
+past the picture's left edge, as it does on map 1's balcony (`MP01F0103`). Before this fix, the port went wrong in
+three places:
+- The GPU renderer dropped any item whose rectangle started off its image, so the room was black after the fade-in.
+- The reference renderer read on from the row before.
+- A render-target publication skipped the object.
+
+Native and the port gave the same frame there, to the pixel, after the fix (2026-11-25).
+
 **Port.**
+
+- `FrameItem.ClipSourceToImage` (`Ome.Engine.Devices`) is native's clip. Both renderers and the render-target lowering
+  use it, so an item's matrix moves by the part cut from its left or top. Tests: `ReferenceRendererTests` and
+  `PublishedObjectRangeTests`.
 
 - `SoftwareAffineRasterizer` covers a destination pixel when its centre `inv(x + 0.5, y + 0.5)` lies inside the source
   rectangle. It blends the four texels around `p - 0.5` in source-image coordinates with weights `round(frac * 256)`,

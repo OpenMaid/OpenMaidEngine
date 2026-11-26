@@ -52,20 +52,26 @@ public class PublishedObjectRangeTests
     }
 
     [Fact]
-    public void AnObjectWhoseSourceRectangleStartsOffItsTextureDrawsNothingInAPublication()
+    public void AnObjectWhoseSourceRectangleStartsOffItsTextureDrawsWhatIsInsideItInAPublication()
     {
+        // Native gfx_object_blit_d3d9 (4.15D 0x469fa0) clips the rectangle to the surface and moves what is left by as
+        // much (FrameItem.ClipSourceToImage): handle 100's column -1 draws nothing and its column 0 lands at x 1.
+        // Handle 101's rectangle misses the texture and draws nothing.
         var graphics = Graphics.Headless();
         GfxState gfx = graphics.State;
         graphics.CreateSurface(2, 2, 2);
-        graphics.PublishSurfacePixels(2, Image(2, 2, (_, _) => [1, 2, 3, 255]));
+        graphics.PublishSurfacePixels(2, Image(2, 2, (x, _) => [(byte)(x + 1), 2, 3, 255]));
         gfx.BindDraw(100, 2, -1, 0, 2, 2, 0, 0);
         gfx.BindDraw(101, 2, 2, 0, 2, 2, 0, 0);
         var destination = new RgbaImage(2, 2, new byte[16]);
 
         int rendered = graphics.DrawObjectRange(destination, gfx.SnapshotVisibleObjects(), 100, 2);
 
-        Assert.Equal(0, rendered);
-        Assert.All(destination.Pixels, value => Assert.Equal(0, value));
+        Assert.Equal(1, rendered);
+        AssertPixel(destination, 0, 0, 0, 0, 0, 0);
+        AssertPixel(destination, 0, 1, 0, 0, 0, 0);
+        AssertPixel(destination, 1, 0, 1, 2, 3, 255);
+        AssertPixel(destination, 1, 1, 1, 2, 3, 255);
     }
 
     [Fact]

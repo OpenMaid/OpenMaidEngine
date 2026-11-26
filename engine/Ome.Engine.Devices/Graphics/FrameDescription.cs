@@ -13,7 +13,8 @@ public enum FrameItemKind { Texture, Fill, Polygon }
 /// </summary>
 /// <remarks>
 /// <para>A <see cref="FrameItemKind.Texture"/> item draws the rectangle <see cref="SourceX"/>, <see cref="SourceY"/>,
-/// <see cref="Width"/> × <see cref="Height"/> of <see cref="Pixels"/>, clipped to the image, with texels that match
+/// <see cref="Width"/> × <see cref="Height"/> of <see cref="Pixels"/>, clipped to the image as native clips it
+/// (<see cref="ClipSourceToImage"/>: what lies outside draws nothing, and the rest keeps its place), with texels that match
 /// <see cref="ColorKey"/> made transparent. Its colour: with <see cref="MultiplyTint"/>, each texel's RGB is multiplied
 /// by <see cref="Tint"/>; otherwise it is moved toward <see cref="Tint"/> by <see cref="TintStrength"/>/255 (the LERP
 /// tint). <see cref="Opacity"/> scales its alpha, and <see cref="Blend"/> says how it lands on the frame.</para>
@@ -64,6 +65,43 @@ public readonly record struct FrameItem(
     public static FrameItem Fill(int width, int height, Affine2D matrix, long tint, float opacity)
         => new(FrameItemKind.Fill, null, 0, false, 0, -1, 0, 0, width, height, matrix, opacity, tint, 0, true,
                BlendKind.Alpha);
+
+    /// <summary>
+    /// A texture item's source rectangle clipped to its image, as native gfx_object_blit_d3d9 clips it (docs/
+    /// engine-re.md, "Object sampling"): a left or top edge outside the image moves onto it, and the matrix moves what is
+    /// left by as much in the item's own space, so it keeps its place; the right and bottom edges are cut. Texels outside
+    /// the image therefore draw nothing. False, with the arguments unchanged, when nothing is left.
+    /// </summary>
+    public static bool ClipSourceToImage(int imageWidth, int imageHeight, ref int sourceX, ref int sourceY,
+                                         ref int width, ref int height, ref Affine2D matrix)
+    {
+        if (width <= 0 || height <= 0) return false;
+        int left = System.Math.Max(sourceX, 0), top = System.Math.Max(sourceY, 0);
+        long right = System.Math.Min((long)sourceX + width, imageWidth);
+        long bottom = System.Math.Min((long)sourceY + height, imageHeight);
+        if (right <= left || bottom <= top) return false;
+        if (left != sourceX || top != sourceY) matrix = matrix.FromLocalOrigin(left - sourceX, top - sourceY);
+        sourceX = left;
+        sourceY = top;
+        width = (int)(right - left);
+        height = (int)(bottom - top);
+        return true;
+    }
+
+    /// <summary>This texture item with its source rectangle clipped to <see cref="Pixels"/>
+    /// (<see cref="ClipSourceToImage"/>); false when nothing of it is left to draw.</summary>
+    public bool TryClipToImage(out FrameItem clipped)
+    {
+        clipped = this;
+        int sourceX = SourceX, sourceY = SourceY, width = Width, height = Height;
+        Affine2D matrix = Matrix;
+        if (Pixels is not { } pixels
+            || !ClipSourceToImage(pixels.Width, pixels.Height, ref sourceX, ref sourceY, ref width, ref height,
+                                  ref matrix))
+            return false;
+        clipped = this with { SourceX = sourceX, SourceY = sourceY, Width = width, Height = height, Matrix = matrix };
+        return true;
+    }
 }
 
 /// <summary>A rectangle of the canvas in pixels; <see cref="Right"/> and <see cref="Bottom"/> are exclusive.</summary>

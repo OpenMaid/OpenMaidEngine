@@ -110,15 +110,12 @@ public sealed class ReferenceRenderer
                     second?.Pixels, second?.Width ?? 0, second?.Height ?? 0);
                 continue;
             }
-            if (item.Width <= 0 || item.Height <= 0) continue;
+            if (!item.TryClipToImage(out FrameItem clipped)) continue;
             RgbaImage source = RgbaSurfaceOps.WithColorKey(item.Pixels!, item.ColorKey);
-            int width = System.Math.Min(item.Width, source.Width - item.SourceX);
-            int height = System.Math.Min(item.Height, source.Height - item.SourceY);
-            if (width <= 0 || height <= 0) continue;
             SoftwareAffineRasterizer.BlitRgba(
                 destination.Pixels, destination.Width, destination.Height,
                 source.Pixels, source.Width, source.Height,
-                item.SourceX, item.SourceY, width, height, item.Matrix,
+                clipped.SourceX, clipped.SourceY, clipped.Width, clipped.Height, clipped.Matrix,
                 item.Tint, item.TintStrength / 255f, item.Opacity, item.MultiplyTint, item.Blend);
         }
     }
@@ -182,23 +179,20 @@ public sealed class ReferenceRenderer
         // Native gfx_object_blit_d3d9 clips the explicit source rectangle and returns without drawing when
         // right<=left or bottom<=top. FIELD deliberately creates zero-area prototype objects from SO005;
         // expanding those dimensions to the full texture leaks the entire spritesheet onto the map.
-        if (item.Width <= 0 || item.Height <= 0) return;
+        // A rectangle that reaches outside the image is clipped as native clips it (FrameItem.ClipSourceToImage).
+        if (!item.TryClipToImage(out FrameItem clipped)) return;
         long sourcePrepStarted = Perf != null ? PerformanceFrameLog.Timestamp() : 0;
         long sourcePrepAllocated = Perf != null ? PerformanceFrameLog.AllocatedBytes() : 0;
         byte[] sourcePixels = PreparedPixels(item.Pixels!, item.AssetId, item.Dynamic, item.ColorKey,
                                              out int sourceWidth, out int sourceHeight);
-
-        int width = System.Math.Min(item.Width, sourceWidth - item.SourceX);
-        int height = System.Math.Min(item.Height, sourceHeight - item.SourceY);
         Perf?.RecordSourcePrep(PerformanceFrameLog.Timestamp() - sourcePrepStarted);
         Perf?.RecordSourcePrepAllocation(PerformanceFrameLog.AllocatedBytes() - sourcePrepAllocated);
-        if (width <= 0 || height <= 0) return;
         long rasterStarted = Perf != null ? PerformanceFrameLog.Timestamp() : 0;
         SoftwareAffineRasterizer.BlitRgba(
             _pixels, _width, _height, sourcePixels, sourceWidth, sourceHeight,
-            item.SourceX, item.SourceY, width, height, item.Matrix, item.Tint, item.TintStrength / 255f,
-            item.Opacity, item.MultiplyTint, item.Blend);
-        Perf?.RecordRaster(width, height, item.Matrix, _width, _height, item.Dynamic, item.Blend,
+            clipped.SourceX, clipped.SourceY, clipped.Width, clipped.Height, clipped.Matrix, item.Tint,
+            item.TintStrength / 255f, item.Opacity, item.MultiplyTint, item.Blend);
+        Perf?.RecordRaster(clipped.Width, clipped.Height, clipped.Matrix, _width, _height, item.Dynamic, item.Blend,
                            PerformanceFrameLog.Timestamp() - rasterStarted);
     }
 
