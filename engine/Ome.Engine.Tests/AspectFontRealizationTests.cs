@@ -86,6 +86,29 @@ public class AspectFontRealizationTests
     }
 
     [Fact]
+    public void TheRaisesGlyphTopIsGgoMetricssInTheCalibratedFontOrTheReference()
+    {
+        // 魔導巧殻's メイリオ bold at 30 pixels: GGO_METRICS puts 激's top at 25 in the font at -29, where its gray-4
+        // raster has 26. Native's text manager +0x31430 held 25.
+        var probe = new FakeProbe();
+        probe.ByFace["メイリオ"] = new FontProbeMetrics(21, 21, 22, OriginY: 25);
+        probe.ByFace[AspectFontRealization.ReferenceFace] = new FontProbeMetrics(11, 19, 23, OriginY: 17);
+        var realization = new AspectFontRealization(Installed, probe);
+
+        Assert.Equal(25, realization.ReferenceGlyphOriginY("メイリオ", 22, 700, aspectMode: 1));
+        Assert.Contains(("メイリオ", 22, -18, 700, AspectFontRealization.ReferenceCode), probe.Calls);
+        // A face the mode does not calibrate compares the reference's 激, at half width.
+        Assert.Equal(17, realization.ReferenceGlyphOriginY("ＭＳ ゴシック", 22, 700, aspectMode: 1));
+        Assert.Equal(17, realization.ReferenceGlyphOriginY("Not Installed", 22, 700, aspectMode: 1));
+        Assert.Contains((AspectFontRealization.ReferenceFace, 22, -11, 700, AspectFontRealization.ReferenceCode),
+                        probe.Calls);
+        // No raise without the mode; mode 2 is not modelled, and a probe that does not know the top gives none.
+        Assert.Null(realization.ReferenceGlyphOriginY("メイリオ", 22, 700, aspectMode: 0));
+        Assert.Null(realization.ReferenceGlyphOriginY("メイリオ", 22, 700, aspectMode: 2));
+        Assert.Null(new AspectFontRealization(Installed, new FakeProbe()).ReferenceGlyphOriginY("メイリオ", 22, 700, 1));
+    }
+
+    [Fact]
     public void TheProportionalIpaFacesAreCalibratedWhateverTheirPitch()
     {
         var probe = new FakeProbe();

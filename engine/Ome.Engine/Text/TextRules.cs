@@ -41,8 +41,15 @@ namespace Ome.Engine.Text;
 /// byte interval cuts it. 4.38D's handler is SBSubstr (op_0x2c7_byte_substring@0x42fe10). 4.24J's (@0x42c2f0) and
 /// 4.33G's (@0x42d220) are std::string's substr of the bytes, with no care for such a character, and they throw
 /// out_of_range for a start past the end, which ends the program (docs/engine-re.md, "The substring").</param>
+/// <param name="LayoutPublishersGrowOnce">Whether the layout publisher (op 0x20a), op 0x82's redraw and History's
+/// renderer (op 0x1d1) add the effect's vertical offset under a cell once in effect mode 3, as the timed publisher does
+/// in every effect mode. AGE 4.43B's do (adv_text_publish_layout@0x4583e0, text_redraw_retained_group@0x463310,
+/// text_history_render_records@0x4646d0, each one add); 4.33G's and 4.38D's add it a second time in mode 3, so their
+/// History rows are one row taller than the record there (docs/engine-re.md, "The glyph publisher grows a cell" and
+/// "Arterial against 魔導巧殻, triaged").</param>
 public sealed record TextRules(GlyphCoverageAlpha GlyphCoverage, RubyRule Ruby, bool FuriganaArmsGlyphTimer,
                                bool HistoryLookupTestsSign, LineEndRule LineEnd, string? ExtendedGlyphFace,
                                AspectCalibration AspectCalibration, bool PublisherGrowsGlyphCells,
                                bool PublisherMovesAliasedEffectGlyphs = false,
-                               bool SubstringKeepsDoubleByteCharacters = false);
+                               bool SubstringKeepsDoubleByteCharacters = false,
+                               bool LayoutPublishersGrowOnce = false);

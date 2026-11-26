@@ -1,9 +1,12 @@
 namespace Ome.Engine.Text;
 
 /// <summary>GDI measurements of one CP932 glyph: GetTextMetricsA's <c>tmAveCharWidth</c> and <c>tmHeight</c>, and
-/// GetGlyphOutlineA (GGO_METRICS)'s <c>gmBlackBoxX</c> and <c>gmCellIncX</c>.</summary>
+/// GetGlyphOutlineA (GGO_METRICS)'s <c>gmBlackBoxX</c>, <c>gmCellIncX</c> and <c>gmptGlyphOrigin.y</c>
+/// (<paramref name="OriginY"/>, null when the probe does not know it). GGO_METRICS can report a box one pixel off the
+/// one an antialiased raster has: ＭＳ ゴシック bold at 22 pixels is 19 wide there and 21 in GGO_GRAY4_BITMAP, and
+/// メイリオ bold's 激 at 30 pixels and width -29 has its top at 25 there and 26 in GGO_GRAY4_BITMAP.</summary>
 public readonly record struct FontProbeMetrics(int AverageCharWidth, uint BlackBoxX, short CellIncrementX,
-                                               int Height = 0);
+                                               int Height = 0, int? OriginY = null);
 
 /// <summary>Measures glyphs the way SYS4433's font calibration does.</summary>
 public interface IFontMetricsProbe
@@ -60,6 +63,7 @@ public sealed class AspectFontRealization
     private readonly Dictionary<(string Face, int Height, int Weight), int> _calibrated = new();
     private readonly Dictionary<(string Face, int Height, int Weight, ushort Code), int> _singleByte = new();
     private readonly Dictionary<(int Height, int Weight), int> _referenceBlackBox = new();
+    private readonly Dictionary<(string Face, int Height, int Weight), int?> _referenceOriginY = new();
     private readonly object _gate = new();
 
     /// <param name="calibration">How mode 1 divides the two glyphs' measures (the build's
@@ -141,6 +145,36 @@ public sealed class AspectFontRealization
                 _referenceBlackBox.Add((pixelHeight, weight), width);
             }
             return width;
+        }
+    }
+
+    /// <summary>
+    /// The top of 激 (GGO_METRICS's <c>gmptGlyphOrigin.y</c>, text manager +0x31430) that aspect mode's raise
+    /// compares (<see cref="RetainedGlyphLayoutEngine.AspectGlyphRaise"/>). text_rebuild_primary_font_resources measures
+    /// it whenever it rebuilds the font in aspect mode (text_measure_glyph_with_aspect_mode@0x457150 in 4.43B): in the
+    /// calibrated font, the face at the size and the width <see cref="RequestedWidth"/> gives (mode 1's
+    /// text_calibrate_mode1_glyph_font@0x455910 measures it with its out pointer), and in the reference ＭＳ ゴシック at
+    /// half width for a face the mode does not calibrate. Null for mode 0, for mode 2 (not modelled), and when the
+    /// probe does not report it: the caller then takes the drawn glyph's top.
+    /// </summary>
+    public int? ReferenceGlyphOriginY(string faceName, int pixelHeight, int weight, int aspectMode)
+    {
+        ArgumentNullException.ThrowIfNull(faceName);
+        if (aspectMode == 0) return null;
+        bool calibrates = Calibrates(faceName);
+        if (calibrates && aspectMode != 1) return null;
+        int width = calibrates ? RequestedWidth(faceName, pixelHeight, weight, aspectMode) : 0;
+        lock (_gate)
+        {
+            var key = (calibrates ? faceName : ReferenceFace, pixelHeight, weight);
+            if (!_referenceOriginY.TryGetValue(key, out int? originY))
+            {
+                originY = calibrates
+                    ? _probe.Measure(faceName, pixelHeight, width, weight, ReferenceCode).OriginY
+                    : _probe.MeasureReference(pixelHeight, -(pixelHeight / 2), weight, ReferenceCode).OriginY;
+                _referenceOriginY.Add(key, originY);
+            }
+            return originY;
         }
     }
 

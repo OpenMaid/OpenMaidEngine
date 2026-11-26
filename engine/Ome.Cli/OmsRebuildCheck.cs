@@ -23,6 +23,16 @@ using Ome.Script.Text;
 /// </summary>
 internal static class OmsRebuildCheck
 {
+    /// <summary>A halt as the two runs compare it. The runaway-line guard's halt (<c>LOOP:line@0xOFF×N</c>) names its
+    /// inline string's data offset, which a canonical data layout moves as it moves every emitted line's, so it compares
+    /// without it: the line itself is in the emitted text, compared by text. 魔導巧殻's choice loops halt this way in 45
+    /// scenes.</summary>
+    private static string? ComparableHalt(string? halt)
+        => halt != null && halt.StartsWith("LOOP:line@", StringComparison.Ordinal) && halt.IndexOf('×') is var times
+           and > 0
+            ? "LOOP:line" + halt[times..]
+            : halt;
+
     /// <summary>Serves rebuilt bytes for scripts and the original bytes for every other asset.</summary>
     private sealed class RebuiltAssetStore(IAssetStore inner, Func<AssetEntry, byte[], byte[]> rebuild) : IAssetStore
     {
@@ -184,7 +194,8 @@ internal static class OmsRebuildCheck
             bool truncated = patchProbe > 0 && a.Result.Halt == "STEP-LIMIT";
             string? why = truncated ? Compare(a.Trace, b.Trace, relocations, prefix: true)
                 : Compare(a.Trace, b.Trace, relocations)
-                ?? (a.Result.Halt != b.Result.Halt ? $"halt {a.Result.Halt} vs {b.Result.Halt}" : null)
+                ?? (ComparableHalt(a.Result.Halt) != ComparableHalt(b.Result.Halt)
+                    ? $"halt {a.Result.Halt} vs {b.Result.Halt}" : null)
                 // Emitted lines carry their string's data offset, which a canonical data layout moves.
                 ?? (!a.Result.Emitted.Select(line => (line.Text, line.Script))
                         .SequenceEqual(b.Result.Emitted.Select(line => (line.Text, line.Script)))

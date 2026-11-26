@@ -166,17 +166,21 @@ public class FloatArithmeticOpsTests
     }
 
     [Fact]
-    public void TheIntegerAccessorsRefuseAFloatReference()
+    public void AnIntegerReadTruncatesAFloatReferenceAndAnIntegerWriteRefusesIt()
     {
-        // vm_operand_fetch and vm_operand_write have no case for type 0xd in AGE 4.38D: the script ends with an error.
+        // AGE 4.43B's vm_operand_fetch@0x41b2a0 reads type 0xd as the float cell it names, truncated (4.38D's throws, so
+        // no older script passes one there); vm_operand_write@0x429730 has no case for it in either build, so the
+        // script ends with an error.
         VirtualMachine read = Run(
+            (MovFloat, [GF(0x10), F(2.75f)]),
             (LookupArray, [FP(0), GF(0x10), I(0)]),
             (Add, [G(0x300), FP(0), I(1)]));
         VirtualMachine write = Run(
             (LookupArray, [FP(0), GF(0x10), I(0)]),
             (Add, [FP(0), I(1), I(2)]));
 
-        Assert.Equal("operand-type-rejected:read:type 0xd", read.HaltReason);
+        Assert.Equal("exit", read.HaltReason);
+        Assert.Equal(3L, read.Globals[0x300]);
         Assert.Equal("operand-type-rejected:write:type 0xd", write.HaltReason);
     }
 

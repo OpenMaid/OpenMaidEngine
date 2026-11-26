@@ -85,6 +85,11 @@ public sealed partial class TextManager
         int anchorY = 0;
         if (_scene.WaitIndicatorFollowLastGlyph && _scene.LayoutCursors.TryGetValue(layoutSlot, out var cursor))
             (anchorX, anchorY) = cursor;
+        // The marker the previous projection left at the same handle is the new one's to move or erase.
+        int publishedFrame = _scene.RetainedWaitIndicators.GetValueOrDefault(layoutSlot) is { IsPublished: true } previous
+                             && previous.Binding.WaitIndicatorObjectHandle == retained.Binding.WaitIndicatorObjectHandle
+            ? previous.PublishedFrame
+            : -1;
         _scene.RetainedWaitIndicators[layoutSlot] =
             new RetainedAdvWaitIndicatorPresentation(
                 config,
@@ -92,12 +97,18 @@ public sealed partial class TextManager
                 retained.Layout.OriginX,
                 retained.Layout.OriginY,
                 anchorX,
-                anchorY);
+                anchorY,
+                publishedFrame);
     }
 
-    public void SetAdvWaitIndicatorEnabled(bool enabled)
+    /// <summary>Op 0x1ce. Stopping erases the marker at once, as native's handler does (4.43B 0x41f4b0: frame -2 while
+    /// the indicator runs), so an object the script draws at the handle afterwards stays.</summary>
+    public void SetAdvWaitIndicatorEnabled(bool enabled, GfxState? gfx = null)
     {
         if (enabled && !_scene.WaitIndicatorEnabled) _waitIndicatorStartedMs = _clock.NowMs;
+        if (!enabled && gfx != null)
+            foreach (RetainedAdvWaitIndicatorPresentation indicator in _scene.RetainedWaitIndicators.Values)
+                if (indicator.IsPublished) indicator.Erase(gfx);
         _scene.WaitIndicatorEnabled = enabled;
         _graphics.RequestPresentation();
         _timeline?.Event("wait-indicator-enabled", new() { ["enabled"] = enabled });
@@ -118,8 +129,14 @@ public sealed partial class TextManager
     {
         if (_scene.RetainedTextLayouts.TryGetValue(
                 binding.LayoutSlot, out RetainedAdvTextLayoutPresentation? presentation)
-            && presentation.Binding == binding)
+            && presentation.Binding == binding
+            && presentation.PublishedGlyphCount > 0)
+        {
+            // adv_text_publish_layout erases the glyphs and, in AGE 4.43B, the line images, then binds both again.
+            EraseLineImages(gfx, History.GetLineImages(binding.LayoutSlot));
             presentation.PublishLayout(gfx, LayoutPublication, PendingCursor(binding.LayoutSlot, presentation));
+            BindLineImages(gfx, presentation, animate: false);
+        }
         if (_scene.RetainedWaitIndicators.TryGetValue(
                 binding.LayoutSlot,
                 out RetainedAdvWaitIndicatorPresentation? indicator))

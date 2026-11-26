@@ -97,7 +97,7 @@ public sealed partial class TextManager
             ImmediateSurfaceTextRenderer.CreateRequests(run.Text, run.Style, text.Policy, _textAntialias, realization));
         IReadOnlyList<AdvRubyGlyph> ruby = !string.IsNullOrEmpty(run.SourceRuby) && laid.Rows.Count > 0
             ? text.Layout.RenderRuby(
-                null, run.Text, laid.Rows, run.SourceRuby, run.Style, text.Policy, _textAntialias, _rubyRules)
+                null, run.Text, laid.Rows, run.SourceRuby, run.Style, text.Policy, _textAntialias, LiveRubyRules)
             : [];
         // A ruby record carries chain flag 1 where the build's ruby builder gives every one of them the flag, so the
         // publisher's cell growth tells the two apart in the source layout as it does in the drawn one.
@@ -246,22 +246,38 @@ public sealed partial class TextManager
         IReadOnlyList<AdvRubyGlyph> ruby = [];
         var ordered = new List<AdvRetainedGlyphRecord>(rendered.Records.Count);
         var orderedIsRuby = new List<bool>(rendered.Records.Count);
-        void Add(AdvRetainedGlyphRecord record, bool isRuby)
+        // Each record's row in the run (AGE 4.43B's line images count the rows the published glyphs reach).
+        var orderedRows = new List<int>(rendered.Records.Count);
+        void Add(AdvRetainedGlyphRecord record, bool isRuby, int row)
         {
             ordered.Add(record);
             orderedIsRuby.Add(isRuby);
+            orderedRows.Add(row);
         }
+        int[] rowOf = new int[rendered.Records.Count];
+        for (int row = 0; row < rendered.Rows.Count; row++)
+            for (int glyph = rendered.Rows[row].FirstGlyph;
+                 glyph < rendered.Rows[row].FirstGlyph + rendered.Rows[row].GlyphCount && glyph < rowOf.Length;
+                 glyph++)
+                rowOf[glyph] = row;
         if (!string.IsNullOrEmpty(run.Ruby) && rendered.Rows.Count > 0)
         {
             ruby = text.Layout.RenderRuby(
                 updated, run.Text, rendered.Rows, run.Ruby, run.Style,
-                text.Policy, _textAntialias, _rubyRules);
-            foreach ((AdvRetainedGlyphRecord record, bool isRuby) in OrderedGlyphs(rendered, ruby, byRow: true))
-                Add(record, isRuby);
+                text.Policy, _textAntialias, LiveRubyRules);
+            // AGE's drawing order (OrderedGlyphs): each row's base glyphs, then that row's ruby.
+            for (int row = 0; row < rendered.Rows.Count; row++)
+            {
+                AdvTextRow drawn = rendered.Rows[row];
+                for (int glyph = drawn.FirstGlyph; glyph < drawn.FirstGlyph + drawn.GlyphCount; glyph++)
+                    Add(rendered.Records[glyph], false, row);
+                foreach (AdvRubyGlyph character in ruby)
+                    if (character.Row == row) Add(character.Record, true, row);
+            }
         }
         else
         {
-            foreach (AdvRetainedGlyphRecord record in rendered.Records) Add(record, false);
+            for (int index = 0; index < rendered.Records.Count; index++) Add(rendered.Records[index], false, rowOf[index]);
             foreach (AdvTextRubyAnnotation annotation in historyRuby ?? [])
             {
                 int firstBase = annotation.BaseFirstGlyph;
@@ -270,8 +286,8 @@ public sealed partial class TextManager
                 AdvRetainedGlyphRecord left = rendered.Records[firstBase], right = rendered.Records[lastBase];
                 foreach (AdvRetainedGlyphRecord record in text.Layout.RenderRubyOver(
                              updated, left.Left, left.Top, right.Right - left.Left, annotation.Text, run.Style,
-                             text.Policy, _textAntialias, _rubyRules, history: true))
-                    Add(record, true);
+                             text.Policy, _textAntialias, LiveRubyRules, history: true))
+                    Add(record, true, rowOf[firstBase]);
             }
         }
 
@@ -319,13 +335,20 @@ public sealed partial class TextManager
         else if (presentation.Binding != binding)
             throw new InvalidOperationException(
                 $"ADV layout {binding.LayoutSlot} changed its retained binding without reset.");
+        // The rows count from the layout's reset; History's groups are not counted (its renderer draws no line images
+        // without op 0x1d1's flag 0x20, which no supported game passes).
+        int firstRow = history ? 0 : LayoutRow(binding.LayoutSlot);
         int first = presentation.AppendRun(
             ordered,
             orderedIsRuby,
             run.Layout.OriginX,
             run.Layout.OriginY,
             _rubyRules.ChainEveryRubyRecord,
-            sourceGlyphs);
+            sourceGlyphs,
+            history ? null : orderedRows.Select(row => firstRow + row).ToArray());
+        if (!history && rendered.Rows.Count > 0)
+            _scene.LayoutRows[binding.LayoutSlot] =
+                firstRow + rendered.Rows.Count - 1 + (rendered.Rows[^1].WrapsAfter ? 1 : 0);
         _scene.LayoutCursors[binding.LayoutSlot] = (rendered.CursorX, rendered.CursorY);
         RebuildRetainedWaitIndicator(binding.LayoutSlot);
         result = new AdvRetainedTextRunResult(
@@ -458,9 +481,12 @@ public sealed partial class TextManager
         foreach (ITextListener listener in _listeners) listener.LayoutCleared(layoutSlot);
     }
 
-    /// <summary>Op 0x71: a layout's retained glyphs and History binding go, and its surface is cleared.</summary>
+    /// <summary>Op 0x71: a layout's retained glyphs and History binding go, and its surface is cleared. Its line images
+    /// (AGE 4.43B) are erased and its rows count from 1 again.</summary>
     public void ResetRenderedAdvTextLayout(GfxState gfx, AdvTextLayoutPresentationBinding binding)
     {
+        _scene.LayoutRows.Remove(binding.LayoutSlot);
+        EraseLineImages(gfx, History.GetLineImages(binding.LayoutSlot));
         _scene.RetainedHistoryLayouts.Remove(binding.LayoutSlot);
         _scene.RetainedTextLayouts.Remove(binding.LayoutSlot);
         if (_scene.ActiveRunLayout == binding.LayoutSlot)
@@ -572,7 +598,7 @@ public sealed partial class TextManager
         IReadOnlyList<(AdvRetainedGlyphRecord Cell, bool IsRuby)> cells = batch.Presented is { } presented
             ? RedrawPresented(updated, binding, batch, presented, text)
             : text.Layout.RenderRedraw(
-                updated, batch.Records, text.Policy, _textAntialias, _rubyRules, text.Realization);
+                updated, batch.Records, text.Policy, _textAntialias, LiveRubyRules, text.Realization);
 
         bool bind = (batch.Flags & 4) == 0;
         RetainedAdvTextLayoutPresentation? presentation;
@@ -595,9 +621,9 @@ public sealed partial class TextManager
         gfx.EraseRange(binding.FirstObjectHandle, binding.ObjectCapacity);
         if (bind && presentation != null)
         {
-            // 4.33G's and 4.38D's redraw binds each record that is not ruby as the layout publisher does
-            // (LayoutPublication); 4.24J's binds the cells as they are, as the glyphs were published.
-            GlyphPublication? redrawn = LayoutPublication;
+            // 4.33G's, 4.38D's and 4.43B's redraw binds each record as the layout publisher does (LayoutPublication),
+            // by its own chain flag; 4.24J's binds the cells as they are, as the glyphs were published.
+            GlyphPublications? redrawn = LayoutPublication;
             if (presentation.PublishedGlyphCount == 0)
                 presentation.PublishThrough(gfx, presentation.Glyphs.Count, redrawn ?? default);
             else if (redrawn is { } publication) presentation.RepublishEach(gfx, publication);

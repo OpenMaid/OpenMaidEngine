@@ -543,7 +543,7 @@ def test_scopes_lint():
     # floor sheets and Kamidori its objective rewards too;
     # Arterial keys its area tables by area; Verita a dungeon map's blocks, a war stage's units, a town's sites and a
     # box puzzle's blocks, each by its own number; 戦女神ZERO a world map's areas, a town's sites and a field map's
-    # blocks.
+    # blocks; 魔導巧殻 a battlefield map's cells and deploy entries.
     expected = {
         "globals.toml": [("stage", 1, 999, {"enemy": "stage_enemy", "goal": "stage_goal", "object": "stage_object",
                                             "texture": "stage_map_texture"})],
@@ -554,6 +554,7 @@ def test_scopes_lint():
                                 ("town", 50, 63, {"site": "town_site"}), ("puzzle", 1, 14, {"block": "puzzle_block"})],
         "globals-bg0.toml": [("world", 1, 4, {"area": "area"}), ("town", 50, 99, {"site": "town_site"}),
                              ("dungeon", 1, 49, {"block": "map_block"})],
+        "globals-koukaku.toml": [("battlefield", 1, 221, {"cell": "battlefield_cell", "entry": "battlefield_entry"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
         entries, _ = G.load_toml(toml)

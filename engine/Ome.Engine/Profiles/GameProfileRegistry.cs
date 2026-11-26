@@ -101,6 +101,7 @@ public sealed partial class GameProfileRegistry
         public DebugSceneLaunchDocument? DebugSceneLaunch { get; init; }
         public LauncherDocument? Launcher { get; init; }
         public SupportDocument? Support { get; init; }
+        public TextEntryDocument? TextEntry { get; init; }
 
         public GameProfileManifest ToManifest()
         {
@@ -119,7 +120,36 @@ public sealed partial class GameProfileRegistry
                 DirectSceneDiagnostics?.ToPolicy(),
                 DebugSceneLaunch?.ToPolicy(),
                 Launcher?.ToArt(),
-                (Support ?? throw new InvalidOperationException("support is required")).ToSupport());
+                (Support ?? throw new InvalidOperationException("support is required")).ToSupport(),
+                TextEntry?.ToEntry());
+        }
+    }
+
+    /// <summary>The <c>textEntry</c> entry, read strictly: an unknown key is an error, and so is a limit's missing
+    /// number (<see cref="GameTextEntry"/>).</summary>
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed class TextEntryDocument
+    {
+        public string? Limit { get; init; }
+        public int MaxBytes { get; init; }
+        public int DoubleByteWidth { get; init; }
+        public int SingleByteWidth { get; init; }
+        public int MaxWidth { get; init; }
+        public Dictionary<string, Dictionary<string, string>>? Text { get; init; }
+
+        public GameTextEntry ToEntry()
+        {
+            TextEntryLimit limit = Limit switch
+            {
+                "fullwidth-bytes" => TextEntryLimit.FullwidthBytes,
+                "bytes" => TextEntryLimit.Bytes,
+                "width" => TextEntryLimit.Width,
+                _ => throw new InvalidOperationException(
+                    $"textEntry.limit is '{Limit}'; it is fullwidth-bytes, bytes or width"),
+            };
+            return new GameTextEntry(limit, MaxBytes, DoubleByteWidth, SingleByteWidth, MaxWidth,
+                (Text ?? []).ToDictionary(pair => pair.Key,
+                                          pair => (IReadOnlyDictionary<string, string>)pair.Value, StringComparer.Ordinal));
         }
     }
 

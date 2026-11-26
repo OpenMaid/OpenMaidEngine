@@ -627,6 +627,37 @@ public class AdvTextOpsTests
     }
 
     [Fact]
+    public void StoppingTheIndicatorErasesItsMarkerOnceAndLeavesTheHandleToTheScript()
+    {
+        // Native's op 0x1ce(0) erases the marker while the indicator runs and never touches the handle after
+        // (4.43B 0x41f4b0). 魔導巧殻's SYSTEM4 gives the indicator 0xd480; HISTORY stops it and draws its first row's
+        // icon there.
+        var table = OpcodeTableJson.Load(Paths.OpcodesJson);
+        static Operand I(long value) => new(0, value);
+        var script = ScriptAssembler.Assemble(table, "WAITMARK_HANDLE",
+            new List<(int, Operand[])>
+            {
+                (0x70, new[] { I(1), I(800), I(160), I(0), I(430) }),
+                (0x73, new[] { I(1), I(380), I(125), I(12), I(0), I(0), I(40), I(40), I(25), I(48) }),
+                (0x212, new[] { I(1), I(0xd480) }),
+                (0x2, Array.Empty<Operand>()),
+            }, Array.Empty<string>());
+        var vm = new VirtualMachine(script, table, new RecordingWaits());
+        vm.Run();
+        var indicator = vm.Text.RetainedWaitIndicator(1)!;
+        indicator.Update(vm.Gfx, 0, visible: true);
+        Assert.NotNull(vm.Gfx.TryGet(0xd480));
+
+        vm.Text.SetAdvWaitIndicatorEnabled(false, vm.Gfx);
+        Assert.Null(vm.Gfx.TryGet(0xd480));
+
+        vm.Gfx.BindDraw(0xd480, 17, 0x42a, 0x1a1, 0x21, 0x21, 0x72, 0x58);
+        vm.Text.UpdateWaitIndicators(vm.Gfx);
+        RenderObject icon = Assert.Single(vm.Gfx.SnapshotVisibleObjects(), o => o.Handle == 0xd480);
+        Assert.Equal((0x42a, 0x1a1), (icon.SrcX, icon.SrcY));
+    }
+
+    [Fact]
     public void SlotZeroSelectsOpEightysLayoutNotTheLastOneDefinedOrReset()
     {
         // Native's current layout (text_manager+0x4c8) is 1 at construction, and only op 0x80 selects it: defining

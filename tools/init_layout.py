@@ -19,6 +19,9 @@ cell is `base + stride * id + column`. This tool finds those arrays without a ha
    table's cells lie between, or the array is not indexed by the record's id (one cell a card row, say) and its
    base and ids here are not to be trusted.
 
+A leader may also declare arrays the method cannot find (`arrays`): ones the script writes through local pointers,
+whose cells follow no record, or ones with too few records for their stride to win. Each holds the cells in its range.
+
   py -3.11 -X utf8 tools/init_layout.py --game arterial              # every table: summary lines
   py -3.11 -X utf8 tools/init_layout.py --game arterial CHINIT       # one table's arrays, column by column
   py -3.11 -X utf8 tools/init_layout.py --game arterial --write      # build/games/arterial/data/<T>.layout.json
@@ -54,8 +57,8 @@ DISASM = paths.BUILD / "disasm"
 DATA = paths.BUILD / "data"
 
 # The strides a field is tried at. A stride the list lacks reads as stride-1 fields that no two records share.
-STRIDES = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 20, 24, 25, 30, 32, 40, 50, 60, 64, 90, 100, 120, 150, 160, 200,
-           300)
+STRIDES = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16, 20, 22, 24, 25, 30, 32, 40, 48, 50, 60, 64, 90, 100, 120, 150,
+           160, 200, 300)
 BANKS = {"global-int": "G", "global-string": "GS"}
 WRITE = re.compile(r"^\s+0x[0-9a-f]+:\s+(\S+) \((global-int|global-string) 0x([0-9a-f]+)\)")
 LOOKUP = re.compile(r"lookup-array \([^)]*\) \((global-int|global-string) 0x([0-9a-f]+)\)")
@@ -98,6 +101,9 @@ class Leader:
     group: int | None = None
     stride: int = 1   # the leader's own stride, where a record's first write is one of several cells per id
     also: tuple[int, ...] = ()   # other arrays that start a record, where records of several kinds share the ids
+    # Arrays the inference cannot find, as (bank, base, stride): written through local pointers, which leaves their
+    # cells outside every record, or with too few records for their stride to win. Each holds every cell in its range.
+    arrays: tuple[tuple[str, int, int], ...] = ()
 
     @property
     def bases(self) -> tuple[int, ...]:
@@ -192,7 +198,48 @@ BG0: dict[str, Leader] = {
     "OBINIT2": Leader("G", 0xdafb2, 1000),
 }
 
-LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA, "bg0": BG0}.get(paths.CONTEXT.profile_id, {})
+# 魔導巧殻's boot tables (docs/koukaku-data-tables.md), in INIT2's order. Each leader is the array a record writes
+# first. RFINIT, ANINIT2, NAINIT and the empty tables need none; MPINIT, DUINIT and SHINIT are not in the boot image.
+KOUKAKU: dict[str, Leader] = {
+    "SCINIT": Leader("G", 0x214263, 10000),   # scene ids start at 0 (SC0000)
+    "CHINIT": Leader("G", 0x22ab40, 1000),   # the base character, each record's first write
+    "CLINIT": Leader("GS", 0x3666, 1000),   # the title's name
+    "TRINIT": Leader("GS", 0x4dd6, 1000),   # troop types, ids 46..729
+    "ITINIT": Leader("GS", 0x5d76, 2000),   # the name; the arguments G[0x2597db..dc] lie just ahead
+    "FOINIT": Leader("GS", 0x9e4e, 100),   # formations, ids 0..53 (無陣 is 0)
+    "SKINIT": Leader("GS", 0x8c56, 400),   # the active skills; the passive ones are a second id space (GS[0x9296], 1000)
+    "ARINIT": Leader("GS", 0x809e, 1000),
+    "COINIT": Leader("G", 0x267a6e, 100, stride=2),   # costumes: no string; each record's first write is a pair
+    "PTINIT": Leader("GS", 0x74e6, 1000),   # costumes 1..62 and parts 101..525
+    "RTINIT": Leader("G", 0x2beb7b, 100000, group=100),   # routine × 100 + step: block A of four
+    "CNINIT": Leader("GS", 0xa1ff, 30),   # nations, ids 0..16
+    "RGINIT": Leader("GS", 0xa21d, 200),   # regions, ids 1..100
+    "ROINIT": Leader("G", 0x8e2019, 200),   # routes: the kind
+    "CRINIT": Leader("G", 0x8e32d9, 1000),   # production sets, 200 × kind + set
+    "USINIT": Leader("G", 0x8eb3c2, 2000),   # starting units: the nation
+    "LAINIT": Leader("GS", 0xa795, 100),
+    "OBINIT": Leader("GS", 0xa7f9, 1000, arrays=(   # map objects
+        ("G", 0x8f4bea, 500), ("G", 0x987f62, 110),   # written through local pointers
+        ("G", 0x9c9e12, 50))),   # eight records: stride 48 fits their cells as well as 50
+    "DPINIT": Leader("GS", 0xf82b, 100),   # object kinds; the nation matrices stay outside
+    "RUINIT": Leader("GS", 0xb3b1, 100),
+    "QUINIT": Leader("GS", 0xb98d, 1000),
+    "HAINIT": Leader("GS", 0xe09d, 30),
+    "BRINIT": Leader("G", 0xa24cf0, 1000),   # the facility type, written by every record
+    "ALINIT": Leader("G", 0xa2f101, 2000),   # the product's type, written by every recipe
+    "CVINIT": Leader("G", 0x22a757, 1000),   # the name colour
+    "CGINIT": Leader("G", 0x2253d3, 3000, stride=2),   # a CG writes its picture first
+    "SPINIT": Leader("G", 0x22a5ef, 240, group=12),   # 20 pages of 12 (HMODE@0x522)
+    "MUINIT": Leader("G", 0x22a6f3, 50),
+    "TUINIT": Leader("G", 0xa46e08, 1000),
+    "TIINIT": Leader("GS", 0xfcdb, 1000),   # a tip writes its title first
+    "CIINIT": Leader("G", 0xa4d780, 1000),   # the sort key
+    "VIINIT": Leader("G", 0xa5ecd8, 1000),   # the sort key
+    "ANINIT": Leader("G", 0xa43756, 1000),   # the file
+    "SAINIT": Leader("G", 0x2b26f9, 20),   # the area's picture
+}
+
+LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA, "bg0": BG0, "koukaku": KOUKAKU}.get(paths.CONTEXT.profile_id, {})
 AREA: AreaRule | None = AREAS.get(paths.CONTEXT.profile_id)
 
 
@@ -349,6 +396,8 @@ def infer_arrays(leader: Leader, records: list[tuple[int, int, list[tuple[str, i
     # Arrays from the keys two or more records share, widest support first, so a rare column joins the array its
     # neighbours made instead of founding one at another stride.
     arrays: list[Array] = [Array(leader.bank, base, leader.stride) for base in leader.bases]
+    declared = [Array(bank, base, stride) for bank, base, stride in leader.arrays]
+    arrays += declared
     for (bank, stride, key), _ in sorted(keys.items(), key=lambda item: (-item[1], item[0])):
         if any(a.bank == bank and a.base <= key < a.base + a.stride for a in arrays):
             continue
@@ -362,6 +411,8 @@ def infer_arrays(leader: Leader, records: list[tuple[int, int, list[tuple[str, i
         arrays.append(Array(bank, key, stride))
     # A consumer names the true base where column 0 is never written.
     for array in arrays:
+        if any(array is d for d in declared):
+            continue
         for (bank, base) in indexed:
             if bank == array.bank and array.base - array.stride < base < array.base \
                     and not any(o is not array and o.bank == bank and o.base <= base < o.base + o.stride for o in arrays):
@@ -610,13 +661,13 @@ def write(table: str) -> None:
 
 def main(argv: list[str]) -> int:
     # --leader BANK:BASE:CAPACITY[:GROUP[:STRIDE]] tries a leader for the one table named, without editing
-    # LEADERS (GROUP 0 for none).
+    # LEADERS (GROUP 0 or empty for none).
     if "--leader" in argv:
         at = argv.index("--leader")
         bank, base, capacity, *more = argv[at + 1].split(":")
         argv = argv[:at] + argv[at + 2:]
         table = next(a for a in argv if not a.startswith("--"))
-        LEADERS[table] = Leader(bank, int(base, 16), int(capacity, 0), int(more[0], 0) or None if more else None,
+        LEADERS[table] = Leader(bank, int(base, 16), int(capacity, 0), int(more[0] or "0", 0) or None if more else None,
                                 int(more[1], 0) if len(more) > 1 else 1)
     tables = [a for a in argv if not a.startswith("--")] or boot_tables()
     for table in tables:

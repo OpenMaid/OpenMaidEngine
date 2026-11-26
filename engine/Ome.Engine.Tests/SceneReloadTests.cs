@@ -77,10 +77,11 @@ public class SceneReloadTests
         [typeof(Audio)] =
         [
             // What plays keeps playing (a reset stops no channel and unloads none), with its BGM fade and duck. The BGM's
-            // retained track, pause flag and start mode are the scene's: the reset zeroes them.
+            // retained track, pause flag and start mode are the scene's: the reset zeroes them. A buffer op 0xc1 held
+            // stays held, as the reset zeroes the flag without telling the backend.
             "_playing", "_playIds", "_lastPlayId", "_soundEffectNames", "_soundEffectResourceIds", "_voicePlaybackVariant",
             "_voiceLoaded", "_voiceChannelLevel", "_bgmLoaded", "_bgmChannelClip",
-            "_bgmChannelLoaded", "_bgmLevel", "_bgmChannelLevel", "_fade", "_duckActive",
+            "_bgmChannelLoaded", "_bgmChannelHeld", "_bgmLevel", "_bgmChannelLevel", "_fade", "_duckActive",
             "_duckReleaseArmed", "_duckRestoreLevel",
             // Whether anything is timed: the reset works it out again (UpdateTimedWork).
             "_timedWork",
@@ -190,6 +191,9 @@ public class SceneReloadTests
         [
             // The settings, the last run's layout, the fonts and the language's presenter stay.
             "_messageGlyphDelayMilliseconds", "_messageWindowAlphaSetting", "_textAntialias", "_lastRunLayout",
+            "_messageSpeedSetting", "_messageFade",
+            // AGE 4.43B's glyph paddings and their flags, which the text manager's constructor alone zeroes.
+            "_glyphPaddings", "_glyphPaddingFlags",
             "_presenter", "_presentedFonts", "_presentedTextRasterizer", "_presentsText", "_recordsStringStores",
             // One run's geometry and cut, set and read around the run.
             "_runGeometry", "_runCut",

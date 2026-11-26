@@ -644,8 +644,10 @@ public partial class Main : Godot.Control
         if (textBackend == "auto" && exactUnavailable != null)
             GD.Print($"[text] exact backend unavailable; selected portable: {exactUnavailable}");
         // The font the game ships in its catalog (AGE 4.38D registers it for its own process at start-up): every
-        // rasterizer draws its face from the file.
-        GameFont? gameFont = GameFont.Load(_catalog, _assetStore, message => GD.PushWarning($"[text] {message}"));
+        // rasterizer draws its face from the file. Native reads it through asset_open_indexed_entry, which marks the
+        // resource seen in SAVE.DAT as every catalog open does, so the port reads it through the tracking store.
+        GameFont? gameFont = GameFont.Load(_catalog, trackedAssetStore ?? _assetStore,
+                                           message => GD.PushWarning($"[text] {message}"));
         if (gameFont != null)
         {
             bool added = false;
@@ -675,6 +677,7 @@ public partial class Main : Godot.Control
             TraceOps = _gfxLogPath != null,
             SpriteAlphaTest = engineBuild.Rules.Gfx.SpriteAlphaTest,
             GuardsFrameSurface = engineBuild.Rules.Gfx.GuardsFrameSurface,
+            CameraHandsEffectsTheView = engineBuild.Rules.Gfx.CameraHandsEffectsTheView,
             PixelShaderLevel = Graphics.PixelShaderLevelFor(SettingsStore?.LoadInt("display", "PixelShader", -1) ?? -1),
             TextureBits = SettingsStore?.LoadInt("display", "TextureBit", 32) ?? 32,
         };
@@ -709,7 +712,8 @@ public partial class Main : Godot.Control
             extendedGlyphFace: engineBuild.Rules.Text.ExtendedGlyphFace,
             aspectCalibration: engineBuild.Rules.Text.AspectCalibration,
             publisherGrowsGlyphCells: engineBuild.Rules.Text.PublisherGrowsGlyphCells,
-            publisherMovesAliasedEffectGlyphs: engineBuild.Rules.Text.PublisherMovesAliasedEffectGlyphs);
+            publisherMovesAliasedEffectGlyphs: engineBuild.Rules.Text.PublisherMovesAliasedEffectGlyphs,
+            layoutPublishersGrowOnce: engineBuild.Rules.Text.LayoutPublishersGrowOnce);
         // The input and waits native (milestone 11) runs every wait the VM blocks in, over the natives above; the lifted
         // host keeps what is left (the cursor, the Auto delays' seed and the message settings' shutdown write).
         _waits = new InputAndWaits(skipAndAuto, _audio, tick, _graphics, _movies, _shell, _text, _clock, _locator,

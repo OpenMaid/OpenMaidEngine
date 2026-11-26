@@ -25,6 +25,9 @@ public sealed partial class Audio
     private bool _bgmChannelLoaded;
     private int _bgmLevel = FullLevel;       // bgm object +0x420: the committed envelope level, basis points
     private int _bgmChannelLevel = FullLevel;   // the level channel 11 was last given (a fade step is not committed)
+    // Op 0xc1 stopped channel 11's buffer where it is (sound_channel_pause, sound_buffer_stop), which clears the buffer's
+    // playing flag (+0x2460): the BGM backend's is-playing (4.43B 0x47de00) then reports no music.
+    private bool _bgmChannelHeld;
     private BgmFade? _fade;
     private bool _duckActive;                // run-state 0x4000
     private int _duckRestoreLevel = FullLevel;
@@ -67,6 +70,17 @@ public sealed partial class Audio
         else StartBgm(_scene.BgmTrack, startMode, forced);
     }
 
+    /// <summary>Op 0xc3: end a running op 0xc2 fade, then set the retained track without starting it
+    /// (op_0xc3_complete_fade_set_bgm_track, 4.43B 0x420140; 4.33G's and 4.24J's the same). The next fade's arm starts
+    /// it from silence (<see cref="RestartRetainedTrackForFade"/>), and a play of track 0 starts it at once.</summary>
+    public void SetBgmTrack(long trackId)
+    {
+        CompleteScriptFade();
+        _scene.BgmTrack = trackId;
+        _timeline?.Event("bgm-track", new() { ["id"] = trackId });
+        UpdateTimedWork();
+    }
+
     /// <summary>Op 0xb8: release the source and clear the retained track (bgm_stop_release@0x464690).</summary>
     public void StopBgm()
     {
@@ -86,7 +100,11 @@ public sealed partial class Audio
     {
         _scene.BgmPaused = !_scene.BgmPaused;
         _timeline?.Event("bgm-pause", new() { ["paused"] = _scene.BgmPaused });
-        if (_bgmLoaded && _bgmChannelLoaded) _device.SetPaused(BgmChannel, _scene.BgmPaused);
+        if (_bgmLoaded && _bgmChannelLoaded)
+        {
+            _device.SetPaused(BgmChannel, _scene.BgmPaused);
+            _bgmChannelHeld = _scene.BgmPaused;
+        }
         UpdateTimedWork();
     }
 
@@ -112,13 +130,16 @@ public sealed partial class Audio
     /// endpoint at once; an advance click sets no fast-forward, so it keeps the authored length. A run on a standing
     /// clock applies it at once too (settleFadesAtOnce). Where <paramref name="zeroTargetClearsTrack"/> (the build's
     /// <see cref="AudioRules.ZeroFadeClearsTrack"/>) the arm clears the retained track for a target of exactly zero, and the
-    /// music fades on: op 0xc0 and a numbered save made during the fade read no track.</summary>
-    public void FadeBgm(int targetBasisPoints, long durationMs, bool zeroTargetClearsTrack = false)
+    /// music fades on: op 0xc0 and a numbered save made during the fade read no track. <paramref name="transferMode"/> is
+    /// set:TransferMusicVolume, for a fade still running (<see cref="TransferFadeVolume"/>).</summary>
+    public void FadeBgm(int targetBasisPoints, long durationMs, bool zeroTargetClearsTrack = false, int transferMode = 0)
     {
+        if (!_skip.FastForwardActive) TransferFadeVolume(transferMode);
         long ms = _skip.FastForwardActive || _settleFadesAtOnce ? 0 : Math.Clamp(durationMs, 0, 60_000);
         _timeline?.Event("bgm-fade", new() { ["target_basis_points"] = targetBasisPoints, ["duration_ms"] = ms });
         RestoreDuck();
         _fade = null;
+        RestartRetainedTrackForFade();
         var fade = new BgmFade(_bgmLevel, Math.Clamp(targetBasisPoints, 0, FullLevel),
             NativeAudioVolume.FadeSteps(ms), _clock.NowMs, ms, Script: true);
         if (ms == 0) CommitFade(fade, targetBasisPoints);
@@ -166,8 +187,45 @@ public sealed partial class Audio
         _bgmLoaded = true;
         _bgmChannelClip = clip;
         _bgmChannelLoaded = true;
+        _bgmChannelHeld = false;
         _device.Load(BgmChannel, AudioBus.Music, clip);
         PlayChannel(BgmChannel, loop: startMode != 0, NativeAudioVolume.ToDecibels(FullLevel));
+    }
+
+    /// <summary>
+    /// bgm_fade_arm's two restarts (4.24J 0x464830, 4.38D 0x4764d0, 4.43B 0x47a0d0, alike), before it arms a fade: with
+    /// a retained track, it plays the track again when the committed level is 0, and when channel 11 is not playing
+    /// (released, run out, or held by op 0xc1), which also makes the committed level 0. The backend plays it silent: it
+    /// sets channel 11's volume to 0 around the play and puts the stored volume back without applying it. The fade then
+    /// rises from silence. 魔導巧殻 sets a track with op 0xc3 and fades it in this way (SC0000@0x50ae). The pause flag
+    /// stays as it was.
+    /// </summary>
+    private void RestartRetainedTrackForFade()
+    {
+        if (_scene.BgmTrack == 0) return;
+        if (_bgmLevel == 0) StartRetainedTrackSilently();
+        if (_bgmChannelLoaded && _playing[BgmChannel] && !_bgmChannelHeld) return;
+        StartRetainedTrackSilently();
+        _bgmLevel = 0;
+    }
+
+    private void StartRetainedTrackSilently()
+    {
+        AudioClip? clip = _assets.Bgm(_scene.BgmTrack);
+        _timeline?.Event("bgm-fade-restart", new()
+        {
+            ["id"] = _scene.BgmTrack,
+            ["file"] = clip?.Name,
+            ["start_mode"] = _scene.BgmStartMode,
+        });
+        if (clip == null) return;
+        _bgmLoaded = true;
+        _bgmChannelClip = clip;
+        _bgmChannelLoaded = true;
+        _bgmChannelHeld = false;
+        _bgmChannelLevel = 0;
+        _device.Load(BgmChannel, AudioBus.Music, clip);
+        PlayChannel(BgmChannel, loop: _scene.BgmStartMode != 0, NativeAudioVolume.ToDecibels(0));
     }
 
     private void StopBgmSource()
@@ -189,6 +247,7 @@ public sealed partial class Audio
         _scene.BgmPaused = false;
         _bgmLoaded = false;
         _bgmChannelLoaded = false;
+        _bgmChannelHeld = false;
         UnloadChannel(BgmChannel);
         _bgmLevel = FullLevel;
         _bgmChannelLevel = FullLevel;
@@ -234,9 +293,34 @@ public sealed partial class Audio
             CommitFade(fade, fade.Target);
             return;
         }
-        int points = (int)(Math.Max(0, elapsed) * fade.Steps / fade.DurationMs) * (100 / fade.Steps);
-        ApplyBgmChannelLevel(NativeAudioVolume.InterpolateFade(fade.From, fade.Target, points));
+        ApplyBgmChannelLevel(NativeAudioVolume.InterpolateFade(fade.From, fade.Target, FadeProgress(fade, now)));
     }
+
+    /// <summary>
+    /// AGE 4.43B's op 0xc2, outside fast-forward, with a fade running (run-state 0x200, an op 0xc2 fade or the duck's
+    /// release) calls bgm_fade_transfer_volume@0x417b90 with set:TransferMusicVolume before it arms the new fade, which
+    /// starts from the committed level (+0x420). Mode 1 makes that the level mixed so far, start × (100 − p) / 100 +
+    /// target × p / 100 with the progress p below 100; mode 2 makes it the old target (+0x424); any other value keeps it,
+    /// as older builds' op 0xc2, which has no such call, does. Native's tick has run before the op, so a fade whose time
+    /// is up has ended.
+    /// </summary>
+    private void TransferFadeVolume(int mode)
+    {
+        if (mode is not (1 or 2)) return;
+        ServiceFade(_clock.NowMs);
+        if (_fade is not { } fade) return;
+        if (mode == 2)
+        {
+            _bgmLevel = fade.Target;
+            return;
+        }
+        int points = FadeProgress(fade, _clock.NowMs);
+        if (points < 100) _bgmLevel = NativeAudioVolume.InterpolateFade(fade.From, fade.Target, points);
+    }
+
+    // The progress points native's tick has reached: one per period of a 100-step fade, ten per period of a 10-step one.
+    private static int FadeProgress(BgmFade fade, long now)
+        => (int)(Math.Max(0, now - fade.StartMs) * fade.Steps / fade.DurationMs) * (100 / fade.Steps);
 
     private void CommitFade(BgmFade fade, int target)
     {
@@ -278,17 +362,21 @@ public sealed partial class Audio
             _device.Load(BgmChannel, AudioBus.Music, clip);
             _bgmChannelLoaded = true;
         }
+        _bgmChannelHeld = false;
         PlayChannel(BgmChannel, loop: startMode != 0, NativeAudioVolume.ToDecibels(_bgmChannelLevel));
     }
 
-    // voice_bgm_duck_begin@0x406de0: at a voice start, unless a fade owns the envelope, keep the level to restore and
-    // drop to sound:MusicFadeOnVoicePlayingVolume × 100 basis points (0 reads as 100) at once.
+    // voice_bgm_duck_begin@0x406de0 (4.43B 0x406e70 the same): at a voice start, with a retained track and unless a
+    // fade owns the envelope, keep the level to restore and drop to sound:MusicFadeOnVoicePlayingVolume × 100 basis
+    // points (0 reads as 100) at once. It arms a fade and ticks it to its end, so the arm's restarts come first: a
+    // track that ran out, or that op 0xc1 holds, plays again from its start at the duck level.
     private void BeginDuck(int percent)
     {
-        if (_fade != null) return;
+        if (_scene.BgmTrack == 0 || _fade != null) return;
         if (!_duckActive) _duckRestoreLevel = _bgmLevel;
         _duckActive = true;
         _duckReleaseArmed = false;
+        RestartRetainedTrackForFade();
         int target = percent * 100;
         SetBgmLevel(target == 0 ? 100 : target);
         _timeline?.Event("bgm-duck", new() { ["level"] = _bgmLevel });
@@ -323,6 +411,7 @@ public sealed partial class Audio
         _duckActive = false;
         _duckReleaseArmed = false;
         _timeline?.Event("bgm-duck-release", new() { ["level"] = _bgmLevel });
+        RestartRetainedTrackForFade();
         _fade = new BgmFade(_bgmLevel, FullLevel, DuckReleaseSteps, _clock.NowMs, DuckReleaseMs, Script: false);
     }
 }

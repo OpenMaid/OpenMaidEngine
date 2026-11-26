@@ -223,6 +223,42 @@ public class RetainedAdvTextLayoutPresentationTests
     }
 
     [Fact]
+    public void AGE443BsRubyPublicationRaisesARubyCharacterByTheTopPadding()
+    {
+        // RubyShiftMode 2 (adv_text_publish_next_glyph@0x459440): a ruby record's source top and destination rise by
+        // the top padding, its height kept; the glyphs that are not ruby keep their cells.
+        RetainedAdvTextLayoutPresentation presentation = WithOneRubyGlyph();
+        var gfx = new GfxState();
+        gfx.CreateSurface(21);
+
+        presentation.PublishThrough(gfx, 3, new GlyphPublications(default, new GlyphPublication(-2, 0, 2) { GrowTop = 2 }));
+
+        GfxState.GfxObject ruby = gfx.TryGet(102)!, glyph = gfx.TryGet(100)!;
+        Assert.Equal(((1, 2, 2, 4), 42.0), (ruby.SrcRect, ruby.V24.Y));
+        Assert.Equal(((1, 10, 4, 6), 50.0), (glyph.SrcRect, glyph.V24.Y));
+    }
+
+    [Fact]
+    public void AGE443BsFadeStartsEachGlyphItBindsTransparentAndAnimatesItToOpaqueWhite()
+    {
+        // With MessageFade and the glyph delay above 0, the timed publisher sets (0, 0x00ffffff) and animates to
+        // 0xffffffff over MessageFade percent of the delay; a republish, as op 0x20a's, fades nothing.
+        RetainedAdvTextLayoutPresentation presentation = WithOneRubyGlyph();
+        var gfx = new GfxState();
+        gfx.CreateSurface(21);
+
+        presentation.PublishThrough(gfx, 1, new GlyphPublications(default, default, FadeMs: 40));
+        GfxState.GfxObject glyph = gfx.TryGet(100)!;
+        Assert.Equal((0x00ffffffL, true, 0xffffffffL, 0L, 40L),
+                     (glyph.Color, glyph.OneShotColorEnabled, glyph.OneShotColorTarget, glyph.ColorDelayMs,
+                      glyph.ColorDurationMs));
+
+        gfx.EraseRange(100, 8);
+        presentation.RepublishEach(gfx, new GlyphPublications(default, default, FadeMs: 40));
+        Assert.Equal((0xffffffffL, false), (gfx.TryGet(100)!.Color, gfx.TryGet(100)!.OneShotColorEnabled));
+    }
+
+    [Fact]
     public void TheLayoutPublisherGrowsEveryCellItBindsAgain()
     {
         // adv_text_publish_layout (op 0x20a) adds its rows under every record, ruby too.

@@ -531,6 +531,7 @@ if (command == "gfx")
         OpTrace = traced.Add,
         SpriteAlphaTest = engineBuild.Rules.Gfx.SpriteAlphaTest,
         GuardsFrameSurface = engineBuild.Rules.Gfx.GuardsFrameSurface,
+        CameraHandsEffectsTheView = engineBuild.Rules.Gfx.CameraHandsEffectsTheView,
     };
     var session = new GameSession();
     foreach (var s in args.Where(a => a.Contains('=')))

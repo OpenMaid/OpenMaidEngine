@@ -14,6 +14,20 @@
   "naturalBootScript": "SYSTEM4.BIN",
   "support": { "play": "P3", "modding": "M3" },
   "metadataReferences": {},
+  "textEntry": {
+    "limit": "bytes",
+    "maxBytes": 24,
+    "text": {
+      "ja": {
+        "name-entry.title": "デッキ名の入力",
+        "name-entry.prompt": "デッキ名を入力してください。(最大全角12文字)"
+      },
+      "en": {
+        "name-entry.title": "Enter the deck's name",
+        "name-entry.prompt": "Enter the deck's name (at most 12 full-width characters)."
+      }
+    }
+  },
   "persistence": {
     "storageNamespace": "arterial",
     "writesEnabled": true,

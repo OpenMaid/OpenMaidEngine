@@ -18,4 +18,14 @@ public sealed partial class VirtualMachine
         if (mode is 0 or 1) _shell.RequestScreenMode(windowed: mode == 1);
         return StepResult.Next;
     }
+
+    /// <summary>Op 0x2ce (op_0x2ce_get_windowed@0x42ece0 in 4.43B; 4.33G's and 4.38D's the same): 1 while the game runs
+    /// in a window, display_windowed (4.43B ctx+0xa3c14, which engine_initialize_graphics_from_settings sets from
+    /// display:ScreenMode and a switch changes). 魔導巧殻's CONFIG1 compares it with the player's choice before op
+    /// 0x2cf.</summary>
+    private StepResult OpGetWindowed(Instruction ins, int pc)
+    {
+        Write(ins.Args[0], _shell.Windowed ? 1 : 0);
+        return StepResult.Next;
+    }
 }

@@ -8,7 +8,8 @@ namespace Ome.Engine.Text;
 /// above 0 it reads that catalog file and gives the bytes to AddFontMemResourceEx. It registers no later record, and
 /// it does not use the record's face name: its text code names the face itself
 /// (<see cref="TextRules.ExtendedGlyphFace"/>). 創刻のアテリアル's is file 37, <c>AGE-EXTEND.TTF</c>, the face
-/// <c>AGE Extend</c>.
+/// <c>AGE Extend</c>. It opens the file through asset_open_indexed_entry (4.38D at 0x416e35), which marks the resource
+/// seen in SAVE.DAT as every catalog open does; read it through a <see cref="CatalogTrackingAssetStore"/> to do the same.
 /// </summary>
 /// <param name="FaceName">The face the catalog names for the file.</param>
 /// <param name="FileName">The catalog file's name, for messages.</param>

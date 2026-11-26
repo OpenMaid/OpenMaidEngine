@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ome.Engine.Model;
+using Ome.Engine.Persistence;
 using Ome.Engine.Sys4;
 using Ome.Engine.Text;
 using Ome.Engine.Text.Windows;
@@ -270,6 +271,22 @@ public class ExtendedGlyphTests
 
         Assert.Equal((Extended, "FONT.TTF"), (font.FaceName, font.FileName));
         Assert.Equal(new byte[] { 1, 2, 3 }, font.Data);
+    }
+
+    [Fact]
+    public void TheGameFontReadThroughTheTrackingStoreIsMarkedSeen()
+    {
+        // Native opens the file through asset_open_indexed_entry, which marks it seen in SAVE.DAT: 魔導巧殻's
+        // AGE-EXTEND.TTF (file 46) is unlocked in every SAVE.DAT native writes, a run that only reaches the title too.
+        Sys4AssetCatalog catalog = Catalog(FontList((1, Extended)), "A.BIN", "FONT.TTF");
+        var profile = new SharedProfile();
+        var store = new CatalogTrackingAssetStore(new Files(new() { ["FONT.TTF"] = [1, 2, 3] }),
+                                                  entry => profile.MarkCatalogResourceOpened(entry.PackedId));
+
+        Assert.NotNull(GameFont.Load(catalog, store));
+
+        Assert.True(profile.IsCatalogResourceUnlocked(1));
+        Assert.False(profile.IsCatalogResourceUnlocked(0));
     }
 
     [Fact]

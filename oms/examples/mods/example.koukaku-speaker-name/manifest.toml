@@ -1,0 +1,17 @@
+omp = 4
+id = "example.koukaku-speaker-name"
+name = "Speaker name (魔導巧殻)"
+version = "1.0.0"
+description = "A data file that renames the name plate ヴァイスハイト shows before the opening scene names him, 戦場を眺める若き将軍 (character 1's name form 1)."
+
+[game]
+profile = "koukaku"
+target = "extended"
+
+[[requires]]
+id = "koukaku-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "koukaku.tables"
+file = "names.toml"

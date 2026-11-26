@@ -38,15 +38,15 @@ public sealed partial class DataPatchTests : IDisposable
 
     // ------------------------------------------------------------------------------------------------- helpers
 
-    /// <summary>A link base for <paramref name="profile"/> with no script but a wait-free ADDITEM.BIN, which the base
-    /// mods' <c>[lua] calls</c> name. The base mod's own copy of the patch points is used, and binds nothing here.</summary>
+    /// <summary>A link base for <paramref name="profile"/> with no script but the wait-free ones the base mods'
+    /// <c>[lua] calls</c> name (ADDITEM.BIN, ADDCARD.BIN, ADDPART.BIN). The base mod's own copy of the patch points is used, and binds nothing here.</summary>
     private ModLinkBase LinkBase(string profile)
     {
         string abi = profile switch { "himegari" => "SYS4422", "arterial" => "SYS4438", _ => "SYS4433" };
         OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, abi);
         // The scripts the base mods' Lua calls ([lua] calls), each a bare ret.
         byte[] helper = ScriptAssembler.AssembleBytes(new List<(int, Operand[])> { (0x5, []) }, [], abi);
-        string[] helpers = ["ADDITEM.BIN", "ADDCARD.BIN"];
+        string[] helpers = ["ADDITEM.BIN", "ADDCARD.BIN", "ADDPART.BIN"];
         return new ModLinkBase
         {
             Profile = profile,

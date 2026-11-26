@@ -285,7 +285,9 @@ This step is static and can start once P1 is reached.
   `layout/` (the record map and the shape wait for the manifest's `[[accepts]]` of the data kind, at M3). A game
   whose registry waits for step 9 gets both empty, and its `<id>.globals` names nothing until then. Write its ADV module `mods/<id>-base/oms/adv.oms` so the idiomatic round trip and rebuild pass too: decompile every scene at core level, collect the units the scenes share (the header's
   handlers, the library linked behind `exit` guards, as many copies of a body as one scene links), name them, and
-  write the page template from the commonest page shapes. A speaker enum needs the name table, which may wait
+  write the page template from the commonest page shapes. A value the scenes write as a negation (`-(0x1)`, a
+  subtraction from 0) cannot be a `const` argument, whose value compiles to a literal: make such a parameter
+  optional, its absence writing the negation (魔導巧殻's `face`). A speaker enum needs the name table, which may wait
   for step 9. Name patch points in `vm-map/patch-points-<id>.toml` where a point is understood; they may also
   wait for the base mod's survey. Export the text catalogs and run one language package. Write the first-mod
   example (`oms/examples/mods/example.<id>-…`) with a workspace test that links it and runs it to its page, and

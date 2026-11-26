@@ -84,6 +84,26 @@ public class RubyTextLayoutTests
     }
 
     [Fact]
+    public void AnInkRaiseDrawsTheRubyAboveTheCellsItsRecordsKeep()
+    {
+        // AGE 4.43B in RubyShiftMode 2 (adv_text_draw_ruby_over_row@0x462d70 at 0x4630c1): the cell is computed, then
+        // the ink is drawn op 0x260's top padding higher.
+        RgbaImage plain = Image(80, 60), raised = Image(80, 60);
+        RubyLayoutRules rules = RubyLayoutRules.ShiftModes(rubyShiftMode: 2, drawMode: 1);
+        IReadOnlyList<AdvRetainedGlyphRecord> kept = RubyTextLayout.Draw(plain, new SquareRasterizer(), 10, 40, 48, "か",
+            Style(renderMode: 1), GlyphRasterPolicy.NativeCp932Gray4, true, rules);
+        IReadOnlyList<AdvRetainedGlyphRecord> records = RubyTextLayout.Draw(raised, new SquareRasterizer(), 10, 40, 48,
+            "か", Style(renderMode: 1), GlyphRasterPolicy.NativeCp932Gray4, true, rules with { InkRaise = 2 });
+
+        Assert.Equal(kept, records);
+        int Alpha(RgbaImage image, int x, int y) => image.Pixels[(y * 80 + x) * 4 + 3];
+        // The plain ink pixel sits at the cell top 32 plus ascent 8 less origin 1.
+        Assert.NotEqual(0, Alpha(plain, 30, 39));
+        Assert.Equal(0, Alpha(raised, 30, 39));
+        Assert.NotEqual(0, Alpha(raised, 30, 37));
+    }
+
+    [Fact]
     public void ARubyIsDrawnPlainInTheTextColor()
     {
         RgbaImage destination = Image(80, 60);

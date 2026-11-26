@@ -63,6 +63,7 @@ public sealed partial class TextManager : ISurfaceListener
     private readonly AspectCalibration _aspectCalibration;
     private readonly bool _publisherGrowsGlyphCells;   // the build's TextRules.PublisherGrowsGlyphCells
     private readonly bool _publisherMovesAliasedEffectGlyphs;   // the build's TextRules.PublisherMovesAliasedEffectGlyphs
+    private readonly bool _layoutPublishersGrowOnce;   // the build's TextRules.LayoutPublishersGrowOnce
     private readonly bool _blankExtentMode;
     private Func<bool> _inputWaiting = static () => false;
     private ITextListener[] _listeners = [];
@@ -107,8 +108,19 @@ public sealed partial class TextManager : ISurfaceListener
 
     private readonly Lazy<EnumeratedFontFamily[]> _fontFamilies;
 
+    // Text manager +0x560 (ctx+0x14e9c), the glyph delay the reveal and the fade read, and the setting
+    // message:MessageSpeed, which the 設定 dialog shows and the quit writes: op 0x1b5 sets both, op 0x74 only the delay.
     private int _messageGlyphDelayMilliseconds = Sys4RegIniStore.DefaultMessageSpeed;
+    private int _messageSpeedSetting = Sys4RegIniStore.DefaultMessageSpeed;
     private int _messageWindowAlphaSetting = Sys4RegIniStore.DefaultMesWinAlpha;
+    // AGE 4.43B's glyph paddings (op 0x260: text manager +0x39668 left, +0x3966c right, +0x39670 top, +0x39674 bottom),
+    // op 0x261's flags (+0x39664; bit 0 turns the paddings on) and MessageFade (+0x39678, op 0x2ee and
+    // message:MessageFade). The text manager's constructor zeroes them and neither text_manager_initialize@0x4626e0 nor
+    // op 0x9 touches them, so they last as long as the engine; engine_initialize@0x4174f2 seeds MessageFade from the
+    // setting.
+    private (int Left, int Right, int Top, int Bottom) _glyphPaddings;
+    private int _glyphPaddingFlags;
+    private int _messageFade;
     // Text manager +0x544 (message:UseAntiFont): GGO_GRAY4_BITMAP glyphs when set, GGO_BITMAP when clear. Both games
     // enable it; a text manager without a settings file keeps that.
     private bool _textAntialias = true;
@@ -137,6 +149,8 @@ public sealed partial class TextManager : ISurfaceListener
         // Each layout's pending record (left, top): AGE draws into the layout's last 20-byte record and pushes the next one
         // at the cursor, which op 0x7a, op 0x6f and a reset move. The follow-last-glyph wait indicator anchors here.
         public readonly Dictionary<int, (int X, int Y)> LayoutCursors = new();
+        // Each layout's text row since its reset (LayoutRow); absent is 1.
+        public readonly Dictionary<int, int> LayoutRows = new();
         public bool AdvTextForceComplete;
         // ctx+0x55108: a click (or a held action 4) finished a reveal; every later reveal publishes at once until op 0x72.
         public bool RevealsFinishedUntilWait;
@@ -179,17 +193,20 @@ public sealed partial class TextManager : ISurfaceListener
     /// <param name="publisherGrowsGlyphCells">The engine build's <c>TextRules.PublisherGrowsGlyphCells</c>.</param>
     /// <param name="publisherMovesAliasedEffectGlyphs">The engine build's
     /// <c>TextRules.PublisherMovesAliasedEffectGlyphs</c>.</param>
+    /// <param name="layoutPublishersGrowOnce">The engine build's <c>TextRules.LayoutPublishersGrowOnce</c>.</param>
     public TextManager(Graphics graphics, SkipAndAuto skip, FrameClock clock, TextDevices? devices,
                        RubyLayoutRules ruby, bool blankExtentMode = false, Sys4RegIniStore? settings = null,
                        PageLocatorState? locator = null, TimelineLog? timeline = null, AdvTextHistory? history = null,
                        LineEndCharacters? lineEnd = null, string? extendedGlyphFace = null,
                        AspectCalibration aspectCalibration = AspectCalibration.BlackBoxOverCellIncrement,
-                       bool publisherGrowsGlyphCells = false, bool publisherMovesAliasedEffectGlyphs = false)
+                       bool publisherGrowsGlyphCells = false, bool publisherMovesAliasedEffectGlyphs = false,
+                       bool layoutPublishersGrowOnce = false)
     {
         lineEnd ??= LineEndCharacters.FixedThree;
         _aspectCalibration = aspectCalibration;
         _publisherGrowsGlyphCells = publisherGrowsGlyphCells;
         _publisherMovesAliasedEffectGlyphs = publisherMovesAliasedEffectGlyphs;
+        _layoutPublishersGrowOnce = layoutPublishersGrowOnce;
         IGlyphMaskRasterizer Faces(IGlyphMaskRasterizer rasterizer)
             => extendedGlyphFace == null ? rasterizer : new ExtendedFaceGlyphRasterizer(rasterizer, extendedGlyphFace);
         History = history ?? new AdvTextHistory();
@@ -261,10 +278,20 @@ public sealed partial class TextManager : ISurfaceListener
 
     /// <summary>End-text-line ended a line of <paramref name="layoutSlot"/>: the listeners hear it
     /// (<see cref="ITextListener.LineEnded"/>).</summary>
-    public void LineEnded(int layoutSlot)
+    /// <summary>Op 0x6f ended a line. <paramref name="drawnRow"/> is clear inside a presented message, whose sentence
+    /// draws its own breaks (localization spec §6.2): the drawn text stays on its row.</summary>
+    public void LineEnded(int layoutSlot, bool drawnRow = true)
     {
+        if (drawnRow) _scene.LayoutRows[ResolveLayoutSlot(layoutSlot)] = LayoutRow(layoutSlot) + 1;
         foreach (ITextListener listener in _listeners) listener.LineEnded(layoutSlot);
     }
+
+    private int ResolveLayoutSlot(int layoutSlot) => layoutSlot != 0 ? layoutSlot : History.CurrentLayoutSlot;
+
+    /// <summary>The text row a layout's next glyph is drawn on, counted from 1 since its reset (AGE 4.43B's window
+    /// +0x11c, which adv_text_layout_reset@0x45c1d0 sets to 1 and each newline adds 1 to).</summary>
+    private int LayoutRow(int layoutSlot)
+        => _scene.LayoutRows.TryGetValue(ResolveLayoutSlot(layoutSlot), out int row) ? row : 1;
 
     /// <summary>Where the text manager learns whether the engine thread is in an input wait: the wait indicator shows
     /// only then, and the page a hide-window callback suspends is the waiting one: the input and waits native's.
@@ -351,23 +378,32 @@ public sealed partial class TextManager : ISurfaceListener
 
     // ---- the message settings ----
 
-    /// <summary>MessageSpeed, MesWinAlpha and UseAntiFont from SYS4REG.INI's [message], native defaults when absent.
-    /// AGE writes them back when it quits (<see cref="WriteSettings"/>).</summary>
+    /// <summary>MessageSpeed, MesWinAlpha, UseAntiFont and MessageFade from SYS4REG.INI's [message], native defaults
+    /// when absent. AGE writes the first two back when it quits (<see cref="WriteSettings"/>). Only AGE 4.43B binds
+    /// MessageFade (engine_settings_load@0x480c50, registered with 0 by 0x481ef0, read by engine_initialize@0x4174f2);
+    /// another build ignores the key whatever the file holds, so the fade stays off.</summary>
     private void ReadSettings(Sys4RegIniStore store)
     {
         int speed = store.LoadMessageInt(Sys4RegIniStore.MessageSpeedKey, Sys4RegIniStore.DefaultMessageSpeed);
         _messageGlyphDelayMilliseconds = Math.Max(0, speed);
+        _messageSpeedSetting = speed;
+        _messageFade = store.Binds(Sys4RegIniStore.MessageSection, Sys4RegIniStore.MessageFadeKey)
+            ? store.LoadMessageInt(Sys4RegIniStore.MessageFadeKey, Sys4RegIniStore.DefaultMessageFade)
+            : Sys4RegIniStore.DefaultMessageFade;
         _messageWindowAlphaSetting = store.LoadMessageInt(Sys4RegIniStore.MesWinAlphaKey,
                                                           Sys4RegIniStore.DefaultMesWinAlpha);
         _textAntialias = store.TextAntialiasEnabled;
     }
 
-    /// <summary>The shutdown write of MessageSpeed and MesWinAlpha into SYS4REG.INI (UseAntiFont is the shell's to
+    /// <summary>The shutdown write of MessageSpeed and MesWinAlpha into SYS4REG.INI, and of MessageFade where the build's
+    /// settings have it (UseAntiFont is the shell's to
     /// write, when its option changes).</summary>
     public void WriteSettings(Sys4RegIniStore store)
     {
-        store.SaveMessageInt(Sys4RegIniStore.MessageSpeedKey, MessageGlyphDelayMilliseconds);
+        store.SaveMessageInt(Sys4RegIniStore.MessageSpeedKey, _messageSpeedSetting);
         store.SaveMessageInt(Sys4RegIniStore.MesWinAlphaKey, _messageWindowAlphaSetting);
+        if (store.Binds(Sys4RegIniStore.MessageSection, Sys4RegIniStore.MessageFadeKey))
+            store.SaveMessageInt(Sys4RegIniStore.MessageFadeKey, _messageFade);
     }
 
     public int MessageGlyphDelayMilliseconds
@@ -378,11 +414,52 @@ public sealed partial class TextManager : ISurfaceListener
         }
     }
 
+    /// <summary>Op 0x1b5 and the 設定 dialog's OK: the glyph delay and the setting message:MessageSpeed.</summary>
     public void SetMessageGlyphDelayMilliseconds(int milliseconds)
+    {
+        _messageSpeedSetting = milliseconds;
+        SetMessageGlyphDelayOnly(milliseconds);
+    }
+
+    /// <summary>Op 0x74 (op_0x74_set_message_glyph_delay@0x41e5c0 in 4.43B, the same in 4.33G and 4.38D): the glyph delay
+    /// the reveal reads, text manager +0x560, without the setting; 魔導巧殻's scripts make it 0 for a screen of instant
+    /// text and give it back the setting after.</summary>
+    public void SetMessageGlyphDelayOnly(int milliseconds)
     {
         int delay = Math.Max(0, milliseconds);
         _messageGlyphDelayMilliseconds = delay;
         _timeline?.Event("message-glyph-delay", new() { ["delay_ms"] = delay });
+    }
+
+    /// <summary>message:MessageSpeed as the settings hold it: what the 設定 dialog shows and the quit writes.</summary>
+    public int MessageSpeedSetting => _messageSpeedSetting;
+
+    /// <summary>Op 0x260 (op_0x260_set_glyph_padding@0x425110): the four paddings a publisher adds round a glyph's cell
+    /// while op 0x261's bit 0 is set.</summary>
+    public void SetGlyphPaddings(int left, int right, int top, int bottom)
+    {
+        _glyphPaddings = (left, right, top, bottom);
+        _timeline?.Event("glyph-paddings", new() { ["left"] = left, ["right"] = right, ["top"] = top, ["bottom"] = bottom });
+    }
+
+    /// <summary>Op 0x261 (op_0x261_set_glyph_padding_flags@0x425180): text manager +0x39664; bit 0 turns the paddings on.
+    /// </summary>
+    public void SetGlyphPaddingFlags(int flags)
+    {
+        _glyphPaddingFlags = flags;
+        _timeline?.Event("glyph-padding-flags", new() { ["flags"] = flags });
+    }
+
+    /// <summary>Text manager +0x39678, MessageFade: a glyph the timed publisher binds fades in over this percent of the
+    /// glyph delay.</summary>
+    public int MessageFade => _messageFade;
+
+    /// <summary>Op 0x2ee (op_0x2ee_set_message_fade@0x4256e0): MessageFade and the setting message:MessageFade, which
+    /// the quit writes (<see cref="WriteSettings"/>) and op 0x2ed reads.</summary>
+    public void SetMessageFade(int percent)
+    {
+        _messageFade = percent;
+        _timeline?.Event("message-fade", new() { ["percent"] = percent });
     }
 
     public int MessageWindowAlphaSetting => _messageWindowAlphaSetting;

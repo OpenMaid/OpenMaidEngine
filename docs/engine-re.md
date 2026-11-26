@@ -179,7 +179,7 @@ a screen-mode present during a save restore ("Comparing engine builds" below).
 `tools/revision_diff.py` compares the native code behind every opcode two engine dumps share (usage and report
 format: `docs/tools-reference.md`, "Opcode revision diff"). Its purpose is a high-level list of what a new game's
 engine changed, read before any playthrough, so a new game needs no full native-vs-port sweep to find its
-revision changes; a sweep then checks the rows that matter. Six builds have dumps and pinned facts in
+revision changes; a sweep then checks the rows that matter. Seven builds have dumps and pinned facts in
 `tools/operand_access.py` `ENGINES`:
 
 | Engine id | Game | AGE.EXE | ctx constructor | Opcode table | Handlers | C runtime starts |
@@ -190,6 +190,7 @@ revision changes; a sweep then checks the rows that matter. Six builds have dump
 | `arterial` | 創刻のアテリアル (EU13) | 4.38D | `0x414e10` | `ctx+0xa4b9c` | 473 | `0x583dd8` |
 | `verita` | 戦女神VERITA, being added | 4.24N | `0x414180` | `ctx+0x9b2b8` | 420 | `0x550cce` |
 | `bg0` | 戦女神ZERO, being added | 4.15D | `0x412070` | `ctx+0x99758` | 402 | `0x52b0ee` |
+| `koukaku` | 魔導巧殻, being added | 4.43B | `0x414f70` | `ctx+0xa4bd4` | 501 | `0x5f2338` |
 
 **Himegari is 4.24J** (checked 2026-11-12). The dump's own version resource reads `FileVersion` `4.24J` (UTF-16 at
 `0x602f08`), and so does the installed `AGE.EXE` (1,105,920 bytes, dated 2009-11-13, SHA-256
@@ -398,6 +399,25 @@ to 6), the noise class the report flags. Kamidori–Arterial's largest differenc
 - `message:AutoMessage*` settings in op `0x72`;
 - op `0x2c7`'s substring, which keeps double-byte characters whole and warns when it moves an end.
 
+**魔導巧殻 (`koukaku`).** `games/koukaku/` was taken in on 2026-11-26 (`Ome.Cli intake`; the report is
+`build/games/koukaku/intake.json`). Its packed `AGE.EXE` (1,417,728 bytes, dated 2013-02-08, SHA-256
+`3ce8ae6f17fdc77ec4137a7266f5b61f00e74349c416272003c61458d96760f9`) reads `FileVersion` `4.43B`, and its product
+version is 4.43.2.0. Its catalog is `S4IC443` and its scripts are `SYS4443`, newer than any build in the table. It is a
+reference install until its profile (`paths.REFERENCE_INSTALLS`). It was dumped from a scratch copy by
+`dump_engine.py --reference koukaku --spawn`, and the install checked unchanged. The module is based at `0x400000`
+and spans 3,715,072 bytes (`build/engines/koukaku/engine-dump/`); its version resource reads `FileVersion` `4.43B` at
+`0x6de002`. The table-fill search (`lea edi,[esi+0xa4bd4]; mov ecx,0x400; mov eax,0x418430; rep stosd`, at
+`0x41570f`) found the constructor at `0x414f70`, with Arterial's `0x414e10`'s prologue, and the table holds 501
+handlers. `operand_access.py --align-accessors` aligned 4.38D's 15 accessors against Arterial and against Kamidori, at
+the same addresses, the float pair and the float-cell resolver included. Every alignment is unanimous but two, and both
+dissents are one handler: op `0x191` (`absolute-value`) reads operand 2 through the float fetch and writes operand 1
+through the float write, where 4.38D reads and writes integers. The C runtime starts at the `operator new` thunk
+`0x5f2338`, whose bytes and neighbours are Arterial's `0x583dd8`'s. The Ghidra image is
+`/koukaku/4.43B/range_00400000.bin`, 7,109 functions after analysis. `tools/ghidra_port_names.py arterial koukaku`
+paired 2,940 functions (326 of them by a unique string) and ported 740 of `/arterial/4.38D`'s 1,181 named or commented
+functions. With the 28 handlers named from the registry and the 15 accessors, 783 functions got a name and plate, 67
+of them new functions. Its packer sites are not restored and its imports not typed.
+
 **Himegari against Verita (2026-11-24).** 4.24J against 4.24N: 370 `same`, 9 `minor`, 41 `differs`; helpers 100 /
 3 / 6, none unpaired, and neither build has an opcode the other lacks. Triaged below ("Himegari against Verita,
 triaged"). The largest differences:
@@ -426,6 +446,22 @@ none only 4.15D's. Verita's 4.24N against 4.15D gives 2 / 328 / 72, so 4.24J is 
   4.15D's `RestoreScreen Start` and `SetWindowPos Called` messages, and the `set:AutoFreeTex`, `set:CreateObject`
   and `set:SaveVersion` reads only 4.24J has.
 - `0x109`, `0x10a`, `0x8e` and `0x91`: the `display:VirtualFullScreen` key and a test of bit 68 only 4.24J has.
+
+**Arterial against 魔導巧殻 (2026-11-26).** 4.38D against 4.43B: 398 `same`, 50 `minor`, 25 `differs`; helpers 102 /
+19 / 5, none unpaired. 28 opcodes are only 4.43B's (`0x25c` to `0x261`, `0x2ed` to `0x2f2`, `0x330` to `0x33f`), and
+none only 4.38D's. Kamidori's 4.33G against 4.43B gives 368 / 32 / 37, so 4.38D is the nearest build. The largest
+differences (`build/revision-diff/arterial-koukaku.md`; each has a disposition in "Arterial against 魔導巧殻,
+triaged" below):
+- the text ops `0x6e`, `0x7d`, `0x196`, `0x71` and `0x20a`: a constant 20 becomes 24, a division by 100 and the
+  fields `+0x39664` and `+0x39668` are new;
+- the retained-text ops `0x82` and `0x1d1`, the scene reset `0x9` and the ADV helper `0x5154b3=0x49bba0`, which 74
+  opcodes reach: new tests of bits `0x20`, `0x30` and `0x40`, and two new callees, `0x4999c0` and `0x499c10`;
+- the Direct3D frame ops `0x20c` and `0x222`, with a new `DrawModel` error (a mesh model not created) and new flag
+  bits, and `0x2cf`, `request-screen-mode`, with new float constants (degrees to radians);
+- the numbered save and load ops (`0xab`, `0x190`, `0x19f`, `0x1a1`) and their helper `0x40b900=0x40ba70`, with
+  constants 56 lower, as the context grew before the save data;
+- `0xc2`, which reads the new setting `set:TransferMusicVolume`;
+- `0x191`, `absolute-value`, which works on floats (above).
 
 ### Kamidori against Arterial, triaged (2026-11-19)
 
@@ -742,6 +778,203 @@ does not bind has no effect, whatever the file holds (`SettingsRules.Binds`):
 `SYS4REG.INI` each target wrote at its exit is the same file byte for byte (2026-11-25). The bar and the in-game 設定
 are 4.24J's less the one check, so the build needs no `ShellRules` entry.
 
+### Arterial against 魔導巧殻, triaged (2026-11-26)
+
+Every one of the report's 25 differing opcodes and 5 differing helpers has a disposition (`adding-a-game.md`, step
+4). Each pair was decompiled from `/arterial/4.38D` and `/koukaku/4.43B` (76 function pairs) and compared with
+`tools/decomp_pair_diff.py`. Addresses are 4.38D's first, then 4.43B's. Four of the rows occur in no script of
+魔導巧殻: `0x7d`, `0xab`, `0x190` and `0x19f`. The names below are in the 4.43B image, with plates.
+
+Three facts explain most rows. The graphics manager has a third map, of models, at `+0x43c`, so every manager field
+from there on moved by `0x10` (the polygons stay at `+0x42c`). The context grew by `0x38` bytes before the save
+data. An ADV glyph record is 24 bytes, not 20.
+
+| Cause | Rows | Disposition |
+|---|---|---|
+| The models: a map of 143-dword records keyed by the objects' handles (`gfx_model_get_or_create@0x499b70`, `gfx_model_record_init@0x48cd50`), each a mesh slot of op `0x329` with a colour, a blend mode and world matrices; drawn by the frame walk, which traces `DrawModel エラー：描画元メッシュモデルが作成されていません． Mesh=%d` for a model whose slot is empty | ops `0x20c` and `0x222` (`gfx_render_frame` `0x49ab00`=`0x4a1c80`, `gfx_present_object_range` `0x49adf0`=`0x4a2060`, the new bit and `+0xb5b0`); the erases `gfx_object_erase` (`0x4942a0`=`0x49a6d0`) and `gfx_object_erase_range` (`0x494440`=`0x49a8a0`) and `retained_gfx_objects_clear` (`0x494100`=`0x49a530`, ops `0x1f6` and `0x9`), which take a handle's model with its object; op `0x242`, which also writes the model's `+0x1f8` (`gfx_object_set_animation_control_and_model@0x49c5e0`); op `0x244`, which also clears `+0x18` of each model with flag 2 (`gfx_clear_fade_state_by_flag@0x49c630`); the 143-dword constants of `0x2cf` | real, and half ported at step 7: the model map is in the graphics native, with the opcodes that write it (below, "The models"). The frame item is not built, so the port does not draw the models (`backlog.md`, "The models are not drawn (AGE 4.43B)") |
+| The projection: 4.38D builds `PerspectiveFovLH`(π/4, aspect, 1, 1000) at device setup; 4.43B builds it from manager `+0xd9e4`, `+0xd9e8` and `+0xd9ec` (`gfx_build_projection@0x48a4f0`, degrees times π/180), which the manager's constructor (`0x499e60`) sets to 45, 1 and 1000 and op `0x33d` sets | `0x2cf`, `request-screen-mode`, through `gfx_setup_3d_transforms_and_lights` (`0x486260`=`0x490cf0`) and its helper `0x485200`=`0x488e00` (the float constants), and `d3dx_matrix_perspective_fov_lh` against `0x48a4f0` | real: `Scene3DState.Projection`, the constructor's 45, 1 and 1000 until op `0x33d` sets it (below, "The models"). 45° is π/4 exactly, so 4.38D's projection is the same matrix |
+| The text effects of the new opcodes `0x74`, `0x2ee`, `0x260`, `0x261` and `0x25c` to `0x25f` (below): with the text manager's `+0x39664` bit 0, a glyph's source rectangle grows by four paddings and its destination moves back by the left and top ones; a glyph fades in when `+0x560` and `+0x39678` are both above 0; a layout can show an image under each row its glyphs reach, in the live text, the retained redraw and History | ops `0x6e`, `0x196`, `0x7d`, `0x20a`, `0x71`, `0x82`, `0x1d1` and their helpers: `adv_text_publish_next_glyph` (`0x4541b0`=`0x459440`), `adv_text_publish_layout` (`0x453990`=`0x4583e0`), the glyph layout `0x466000`=`0x468bf0` and `0x465500`=`0x468060`, `0x453c70`=`0x4588f0`, `adv_text_layout_reset` (`0x45a130`=`0x45c1d0`, which also clears the window's `+0x84` and sets `+0x11c`), `text_redraw_retained_group` (`0x460cd0`=`0x463310`), `text_history_render_records` (`0x461ea0`=`0x4646d0`), `0x45d590`=`0x45f6b0`, `0x45e670`=`0x460980`, `0x463630`=`0x466100`, `0x45b3a0`=`0x45d450`; the per-line images' setter `gfx_object_set_blend_and_color@0x49bba0`, which the report paired with `engine_free_wrapper@0x5154b3` | real. The text native, with the opcodes. A record's sixth dword, and what a window without records reads (its origin, `+0x1c`), are read when the publisher is ported. Step 6, since `SYSTEM4` sets the line images and nearly every scene the paddings |
+| `RubyShiftMode` 2 (the trailer's `RUBYSHIFTMODE`; 4.43B caches `message:RubyShiftMode` at text manager `+0x355e8`): the publisher raises a ruby record by the top padding (`+0x39670`), and the drawer draws its ink as much above the cell the record keeps (`0x4630c1`; the redraw at `0x46406c` and History at `0x464f9c` the same) | `adv_text_publish_next_glyph` above, and `adv_text_draw_ruby_over_row` (`0x460760`=`0x462d70`, 24-byte records, the window's `+0x11c`) | real: `RubyRule.ShiftModesRaisedByTopPadding`, set in the build, with `RubyLayoutRules.InkRaise`. Modes 0 and 1 are 4.33G's |
+| `set:TransferMusicVolume` (the trailer's `TRANSFERMUSICVOLUME`, 1): op `0xc2` started while a fade runs calls `bgm_fade_transfer_volume@0x417b90` first. Mode 1 moves the fade's start level to the level mixed so far, mode 2 to the old target, and any other value keeps it, as 4.38D does | op `0xc2` | real, ported at step 7: `Sys4StartupSettings.TransferMusicVolume` reaches op `0xc2` through `VmOptions`, and `Audio.FadeBgm` moves the running fade's start as native does (outside fast-forward, after the tick has ended a fade whose time is up). A catalog without the key gives 0, 4.38D's behaviour, so no build rule is needed. The SYS4INI reader `0x4847e0` stores the key through `atoi`; it is registered with 0 |
+| The scene effect's blend and colour: `display_scene_effects_at_handle` (`0x44f7a0`=`0x450ec0`) blends by the effect's `+0x4ec` (0 alpha, 1 additive, 2 one and zero, 3 reverse subtract, as a polygon's modes) and passes its colour `+0x4f0` to the effect's draw; op `0x33f` sets both | the title's leaves | real: the leaves' frame item takes a blend mode and a colour. TITLE runs op `0x33f` once, so step 6 |
+| `0x191`, `absolute-value`: `fabs` of a float operand into a float cell, where 4.38D takes integers | op `0x191` | real, ported at step 7: the registry's SYS4443 contract (`read-float`, `write-float`, from `operand_access.py`), which `VirtualMachine.OpAbsoluteValue` follows: the read rounded to a float, its `fabs` written through the float accessor (`op_0x191_absolute_value@0x42b140`) |
+| The integer fetch: `vm_operand_fetch@0x41b2a0` gains operand types 7 (a global float pointer, `ctx+0x5d3f0`) and `0xd` (a frame's local float pointer, `+0x5d494`), each loaded and truncated (`fld`, then `ftol` `0x5f36f0`); 4.38D's fetch throws for them, as the port's `Read` does. The write is unchanged | not a row: read while pinning the accessors (step 2). 魔導巧殻's scripts pass type `0xd` to integer operands of `0x50`, `0x51`, `0x55`, `0x61`, `0x12c`, `0x2d0`, `0x2ef` to `0x2f1` and others | the same in practice: a script of an older build that passed a float pointer to an integer read would stop native AGE, so truncating is right for every input either build produces. The port's `Read` gains the two cases for every build. Step 6 |
+| The context grew by `0x38` bytes before the save data | the numbered save and load ops `0xab`, `0x190`, `0x19f`, `0x1a1` (constants 56 lower); `save_data_deserialize_and_begin_restore` (`0x40fe90`=`0x40ffe0`, the same code reordered); `script_frame_restore_saved_layout` (`0x40f480`=`0x40f600`) under ops `0x2` and `0xae`; `script_frame_load_resource` (`0x40ea70`=`0x40ebf0`, the frame's fields in another order) | noise for the opcodes. The save format itself is step 7's: `save-info` on a native save, and the port's against native's |
+| The save folder | the helper `0x40b900`=`0x40ba70` under the save ops (the Windows version check, `GetVersionEx` and `SHGetFolderPath`-shaped calls) | not modelled: the port keeps saves in its profile's folder |
+| Moved manager fields | op `0x258` (`gfx_set_surface_persistence_flags`, `0x417540`=`0x417860`, the surface fields `0x10` further); op `0x1a5`'s `@%s` (the vertical font prefix, now behind a pointer; `text_set_font_face` `0x42ec40`=`0x430470`); op `0x9`'s own handler (the same code) | noise |
+| Code the port replaces whole | op `0x329`'s loader (`gfx_mesh_slot_load` `0x48b5d0`=`0x490960`, `mesh_load_from_x_memory` `0x472630`=`0x475fe0`: a 16-byte mesh object, `D3DXLoadMeshFromXInMemory` with options `0x220`); the glyph cache's reset `0x414e50` under `text_manager_initialize` (`0x460100`=`0x4626e0`, which also clears its new fields); the C runtime's allocator and the frees 4.43B adds (`0x4337d0`=`0x435010`, `text_history_deserialize` `0x45a630`=`0x45c700`, the polygon buffers in `retained_gfx_objects_clear`); the viewport setter the report paired with `display_scene_effects_step_60hz` (`0x44f6f0`=`0x487b00`) | not modelled: the port's `.X` reader, glyph renderer and scene state (each owner's `Scene`) replace them. The text manager's new fields start at 0 in the port's scene as in native's |
+| The camera's look-at | op `0x32c` (`gfx_set_view_look_at` `0x486440`=`0x48a050`), which passes the matrices to the scene effect at once when manager `+0xc600` is set; 4.38D passes them at the next device setup | real (corrected at step 7; step 4 read it as the same in practice): the rain and the leaves draw with the device's camera, but the snow projects with the view and projection the display was last handed (`display_scene_effects_set_transforms@0x450a80`, `+0x418`, `+0x458`). `+0xc600` is the display, which `gfx_create_device_objects` makes, so it is set in any running game. `GfxRules.CameraHandsEffectsTheView` in `EngineBuilds.Age443B`. 魔導巧殻 makes no snow |
+| The volume curve | the helper `0x49c8e0`=`0x4a3c70` under ops `0x72`, `0x82`, `0xb4`, `0xc4`, `0xc6`, `0xfa`: 4.43B clamps a level below −10000 mB to −10000 | the same in practice: the port already clamps those levels to silence ("Native volume curve") |
+
+**The opcodes it adds.** Read in `/koukaku/4.43B`; each is named there with a plate, and each gets its registry entry,
+scoped to SYS4443, when it is implemented. Operand indexes count from 1.
+
+| Op | Handler | What it does |
+|---|---|---|
+| `0x74` | `op_0x74_set_message_glyph_delay@0x41e5c0` | text manager `+0x560` = operand: the glyph delay alone, where op `0x1b5` also writes the setting `message:MessageSpeed`. 魔導巧殻 sets 0 for a screen of instant text, and the setting is kept |
+| `0x2ee` | `op_0x2ee_set_message_fade@0x4256e0` | text manager `+0x39678` and the setting `message:MessageFade` = operand. A glyph fades in over `+0x39678 × +0x560 / 100` ms. Its neighbour `0x2ed` (`@0x42f51a`) reads the setting back into a cell; no script uses it, and the port has no handler for it |
+| `0x260` | `op_0x260_set_glyph_padding@0x425110` | the paddings: left, right, top, bottom (`+0x39668` to `+0x39674`) |
+| `0x261` | `op_0x261_set_glyph_padding_flags@0x425180` | `+0x39664` = operand; bit 0 turns the paddings on |
+| `0x25c` to `0x25f` | `0x424f00`, `0x424f80`, `0x424fe0`, `0x425080` | a layout's line images, image `i` under row `i` at the layout's origin plus two offsets, `i` row pitches (font size and line spacing) lower: the offsets, the source surface and rectangle (`0x25c`, window record `+0xe0` to `+0x110`), the first handle and the count (`0x25d`, `+0x114`, `+0x118`), a colour animation (`0x25e`) and the blend and colour (`0x25f`). Layout 0 is the current one, except for `0x25d`, which indexes the window table itself and skips a window never allocated. The timed publisher binds an image when a row's first glyph is published and starts the animation; the layout publisher (op `0x20a`) erases them and binds them again in the animation's end colour; a layout's reset erases them and counts rows from 1. `SYSTEM4` gives layout 1 a dotted line from surface 17 under each of its first three rows |
+| `0xc3` | `op_0xc3_complete_fade_set_bgm_track@0x420140` | completes a running BGM fade, then sets the retained track (`ctx+0xaa51c`, the BGM object's `+0x40c`, which op `0xc0` reads) without starting it: 4.33G's op, which no supported game used. 魔導巧殻 fades the track in with the next op `0xc2`, whose arm starts it from silence ("BGM fades run in the background"). Port: `Audio.SetBgmTrack` |
+| `0x2ef` | `op_0x2ef_polygons_intersect@0x42f530` | 1 when two polygons share a pixel, each from an address of x cells, an address of y cells, a count and an offset (below, "The region tests") |
+| `0x2f0` | `op_0x2f0_ellipse_polygon_intersect@0x42f720` | 1 when an ellipse (four cells: left, right, top, bottom, and an offset) and a polygon share a pixel |
+| `0x2f1` | `op_0x2f1_ellipses_intersect@0x42f9a0` | 1 when two ellipses share a pixel |
+| `0x2f2` | `op_0x2f2_point_in_ellipse@0x42fb60` | 1 when an ellipse holds a point |
+| `0x2ce` | `op_0x2ce_get_windowed@0x42ece0` | 1 while the game runs in a window: `ctx+0xa3c14`, display_windowed, which `engine_initialize_graphics_from_settings@0x406460` sets from `display:ScreenMode` (`0x40698b`) and a switch changes; 4.33G's and 4.38D's handlers are the same. CONFIG1 reads it before op `0x2cf`. Port: `ShellServices.Windowed` |
+| `0x330` | `op_0x330_set_model_mesh@0x425e50` | makes a model of a handle from a mesh slot (below, "The models") |
+| `0x332` | `op_0x332_set_model_color@0x425ee0` | the model's blend mode and colour; an alpha of `0x100` or more is `0xff`, and a negative alpha or RGB takes the retained object's |
+| `0x334` | `op_0x334_reset_model_transform@0x426080` | the model's matrices back to identity |
+| `0x335` | `op_0x335_set_model_scale@0x4260c0` | scaling in percent (float operands) |
+| `0x337` | `op_0x337_set_model_translation@0x4261e0` | a translation |
+| `0x33b` | `op_0x33b_set_model_vector_8@0x426430` | three floats at the model's `+0x8`, whose reader is the frame walk's model draw, not read yet |
+| `0x33e` | `op_0x33e_rotate_model_axis@0x426560` | multiplies the model's rotation by a rotation about an axis, in degrees |
+| `0x33d` | `op_0x33d_set_projection@0x426510` | the projection's field of view in degrees, near and far, which the display's effects take at once |
+| `0x33f` | `op_0x33f_set_scene_effect_blend_color@0x4265f0` | the scene effect's blend mode and colour |
+| `0x244` | `op_0x244_clear_fade_state@0x419910` | clears `+0x34` of each object, and `+0x18` of each model, whose flags have bit 1: the colour fades op `0x202` armed start again (below, "The models"). 4.33G's and 4.38D's handlers are the same; CALLBACK_LOAD runs it |
+
+`0x2ef` and `0x2f1` loop over their operands, so their access contracts are hand-read: `operand_access.py`'s
+`LOOP_INDEXED` checks the walk's counts against them.
+
+**The region tests (2026-11-26).** Ops `0x2ef` to `0x2f2` build GDI regions and ask GDI whether two share a pixel
+(`CombineRgn` with `RGN_AND`, 1 unless `ERROR` or `NULLREGION`) or whether one holds a point (`PtInRegion`). The
+imports the packer hides are, resolved against 32-bit gdi32 from the IAT's values: `0x614040`
+`CreateEllipticRgnIndirect`, `0x614044` `CombineRgn`, `0x614048` `CreatePolygonRgn`, `0x61404c` `PtInRegion`,
+`0x614050` `DeleteObject`. So the "rectangle" of ops `0x2f0` to `0x2f2` is an ellipse's box, its four cells read left,
+right, top, bottom, the first two plus an x offset and the last two plus a y one. A polygon is `count` points, each cell
+plus an offset, after `operator new(count × 8)`, in winding mode. Each handler reads every operand first; a region GDI
+refuses traces `多角形リージョン作成に失敗しました．` (`0x6173e8`) or `楕円形リージョン作成に失敗しました．` (`0x617410`) and
+writes 0. 魔導巧殻's FIELD, SEARCHSKILL, CRAFTACT, DISPOSE and RTN_M053 call them in play (SEARCHSKILL tests a circle of
+the skill's search radius against each object), so the answer must be GDI's at every pixel.
+
+What GDI does, measured on Windows 10 19045 with ctypes (`GetRegionData`) and read from `win32kbase.sys`:
+
+- **A pixel is in a polygon region** when the point at its integer coordinates has a winding number other than 0, where
+  an edge counts on the rows from its upper end to before its lower one, and its crossing of a row counts when it is at
+  or left of the point. That matched 708 random integer polygons, self-crossing and degenerate ones among them, and 120
+  with 28.4 fixed-point corners (a path's). `CreatePolygonRgn` refuses fewer than two points and takes any `int`.
+- **`CreateEllipticRgnIndirect`** normalizes the rectangle and refuses a coordinate outside −2²⁷ to 2²⁷ − 1. Its region
+  is that of an ellipse path whose box, in 28.4, runs from (16 left − 4, 16 top − 4) to (16 right − 28,
+  16 bottom − 28), normalized again: 1420 sizes matched, the empty and one-pixel ones among them (an empty rectangle
+  gives the pixel at (left − 1, top − 1)). The path is four Bézier quarters anticlockwise from the right end, the
+  control points `ceil(rx κ)` across and `floor(ry κ)` up or down from the ends, κ = 4(√2 − 1)/3, on every width to
+  2059 pixels. So the region is not a sampled ellipse: GDI's flattening is coarse (8 points for 10 by 10), and its
+  rows are not symmetric.
+- **The flattening** is GDI's forward-differencing flattener, read from `win32kbase.sys` 10.0.19041 (setup at RVA
+  `0x83060`, step at RVA `0x82dd0`; the caller passes no clip). It works relative to the curve's bounds and only when
+  they are under `0x4000` across. Setup is in 18.14: `e0 = p0`, `e1 = p3 − p0`, `e2 = 6(p1 − 2p2 + p3)`,
+  `e3 = 6(p0 − 2p1 + p2)`; while an axis's larger `|e2|`, `|e3|` is over `0xffc0 << shift` it halves the step lazily
+  (`shift += 2`, `e2 = (e2 + e3) >> 1`, `e1 = (e1 − (e2 >> shift)) >> 1`), then moves to 15.17 (`e0`, `e1` shifted left
+  3; `e2`, `e3` by `shift − 3`) and takes the first step. Each later call gives the point `(e0 + 0x1000) >> 13`, stops
+  when no step is left, halves once when an error is over `0x7fe00`, doubles while the steps left are even and neither
+  axis's `max(|e3|, |2 e2 − e3|)` is over `0x1ff80`, and steps. 716 ellipse sizes matched point for point. A curve
+  whose bounds reach `0x4000` (an ellipse quarter of 1024 pixels or more) goes to a 64-bit flattener (setup RVA
+  `0x1414d0`, step RVA `0x140f20`) in 36.28, which cuts the curve into pieces under a coarse tolerance
+  (`0x300000000000`) and flattens each with a second basis; the port does not have it.
+
+**Port.** `GdiRegion` and `GdiCurveFlattener` (`Model/GdiRegion.cs`), and the handlers in
+`VirtualMachine.Regions.cs`. Checked against gdi32 on 3500 random polygons and ellipses, offsets up to a million pixels
+and reversed rectangles among them: every row the same. An ellipse too large for the 32-bit flattener runs the same steps
+in 64 bits and is marked `Approximate` (`docs/backlog.md`, "GDI's 64-bit curve flattener"). A test over more than 2²⁴
+shared rows stops the run (`region-test-too-large`), and a negative point count too, where native's `operator new`
+fails.
+
+**The models (2026-11-26).** 4.43B's graphics manager keeps a third map at `+0x43c`, beside the objects' (`+0x40c`)
+and the polygons' (`+0x42c`), keyed by the same handles. Every model op makes the handle's 143-dword record when it has
+none (`gfx_model_get_or_create@0x499b70`, defaults from `gfx_model_record_init@0x48cd50`), and so does op `0x242`, which
+also writes the record's `+0x1f8`. A record holds:
+
+- the flags at `+0x0`: bit 0 once op `0x330` gives it a mesh slot (`+0x4`); bit 1 while a one-shot runs;
+- op `0x33b`'s three floats (`+0x8`), and op `0x332`'s blend mode (`+0x14`) and colour (`+0x44`), opaque white until
+  set;
+- the transform flag `+0x4c`, which each transform op sets and op `0x334` clears with the matrices: the scaling
+  (`+0x50`, op `0x335`, percent over 100), a rotation (`+0xd0`), the translation (`+0x150`, op `0x337`) and the product of
+  the axis rotations (`+0x1fc`, op `0x33e`: the product so far times `D3DXMatrixRotationAxis`, degrees × π / 180);
+- the one-shots' start (`+0x18`), delays, durations and targets, which only ops `0x331`, `0x333` and `0x338` to `0x33a`
+  write (`gfx_model_animate_1f4`, `gfx_model_fade_color`, `gfx_model_animate_scale`, `gfx_model_animate_rotation`,
+  `gfx_model_animate_translation`), each setting bit 1 on a made model; op `0x336` sets the rotation at `+0xd0` and op
+  `0x33c` sets `+0x1f0`. No 魔導巧殻 script runs these seven.
+
+The erases take a handle's model with its object (`gfx_object_erase@0x49a6d0`; `gfx_object_erase_range@0x49a8a0`, the
+handles from the first to before first plus count, through `gfx_model_map_erase_range@0x499340`), and
+`retained_gfx_objects_clear@0x49a530` (ops `0x1f6` and `0x9`) clears the map (`gfx_model_map_clear@0x498c80`). Nothing
+else touches it: clone (`0x21d`) and swap (`0x214`) leave models where they are, and a numbered load
+(`save_data_deserialize_and_begin_restore@0x40ffe0`) clears the polygons but keeps the models, which a save does not
+hold. Op `0x244` (`gfx_clear_fade_state_by_flag@0x49c630` with 2) zeroes `+0x34` of each object whose flags have bit 1,
+which op `0x202` sets when it arms a colour fade on a drawn object (`gfx_op_0x202_worker_set_color_anim@0x49bd00`), and
+`+0x18` of each model with bit 1. A zero start is seeded at the next frame, so the fade and the transform channels that
+share its start run again; 魔導巧殻's CALLBACK_LOAD does it after a load.
+
+The projection is the manager's `+0xd9e4` (field of view in degrees), `+0xd9e8` (near) and `+0xd9ec` (far), 45, 1 and
+1000 from the manager's constructor (`0x499e60`), which `gfx_build_projection@0x48a4f0` makes into
+`D3DXMatrixPerspectiveFovLH(fov × 0.01745329238, width / height, near, far)`. Op `0x33d`
+(`gfx_set_projection_fov_near_far@0x48a5a0`) sets the three, sets the device's projection, and passes the projection,
+the view and the world to the display's effects (`display_scene_effects_set_transforms@0x450a80`, which keeps them at
+`+0x418`, `+0x458` and `+0x498`) whenever the display exists (`+0xc600`); 4.43B's camera (op `0x32c`) does the same.
+FIELD sets 45, 1 and 2000.
+
+**Port.** `GfxState.Models.cs` keeps the record's mesh slot, colour, blend mode, `+0x8` floats and matrices, and the
+erases, the clear and the load treat it as native does. It leaves out what only the seven unused ops read: the
+one-shots and op `0x242`'s `+0x1f8`. So op `0x242` makes no model, and op `0x244` restarts only the objects' fades
+(`GfxState.RestartArmedColorFades`). The models are not drawn (`backlog.md`, "The models are not drawn (AGE 4.43B)").
+`Scene3DState.Projection` is the device's projection, which the rain and the leaves draw with; `EffectProjection` and
+`EffectView` are what the display was handed, which the snow projects with. Op `0x33d` hands them on in every build
+(no other build has it), and the camera does where `GfxRules.CameraHandsEffectsTheView` says so (4.43B).
+
+**Settled from step 1.** `TRANSFERMUSICVOLUME` and `RUBYSHIFTMODE` 2 are above. The canvas, 1280 by 720, is the
+trailer's `SCREENX` and `SCREENY`, which the port reads for every game (`Sys4StartupSettings`). The float bank larger
+than one cell is the profile's `bankDimensions`, which the save codec already takes. The font, AGE Extend, is the
+catalog's file 46, as 創刻のアテリアル's. The catalog has no new file type.
+
+**Checked against native AGE (step 6, 2026-11-26).** The opening scenario (`koukaku-opening.steps`: the title, the
+settings screen, SC0000's pages 1 to 4) passes on both targets at the same VM positions. The shots of the settings
+screen and of pages 1 and 4 (two rows, the line images, furigana) are the same pixels; the title's differ only where
+its falling leaves are, which move with time. Two differences surfaced on the way and are fixed: the aspect raise's
+`e` (above, "Aspect-mode font calibration": the port's glyphs were one pixel low) and the ruby's ink raise in
+`RubyShiftMode` 2 (two pixels low). Read from the running game at page 1: text scale 1 and 1, aspect mode 1, size 30,
+line spacing 20, effect mode 3 at (1, 1), `UseAntiFont` 1, paddings 2, 0, 2, 2 with the flag on, MessageFade 250,
+glyph delay 5, `RubyShiftMode` 2; the primary font メイリオ bold at −30 and width −29.
+
+**Found in step 6, beside the rows.** 4.43B's layout publisher, op `0x82`'s redraw and History's renderer add the
+effect's vertical offset under a cell once in effect mode 3, as the timed publisher does in every mode; 4.33G's and
+4.38D's add it a second time there (`TextRules.LayoutPublishersGrowOnce`). The vertical publisher
+(`adv_text_publish_next_glyph_vertical@0x4588f0`) runs only for a window whose `+0x70` is 1, which only op `0x1d9`
+sets and no game runs, so the port does not have it. Still to compare with native at step 7: the models and the
+projection, History's rows with the paddings and its ruby, and the saves. Step 7 compared them (below); the models
+are kept but not drawn ("The models").
+
+**Checked against native AGE (step 7, 2026-11-26).**
+
+- **The shell and the settings** are 4.38D's with `message:MessageFade` bound after `MessageSpeed` ("4.43B's shell and
+  settings", below); AGERC's dialog 10 is the game's own ("AGERC's dialog 10 in each game", below).
+- **The saves.** `koukaku-save-load.steps` (the title, 初期設定, the prologue movie, a save in slot 000 on SC0000's
+  page 4 through the right-click menu's セーブ, two pages on, and ロード) passes on both targets at the same positions,
+  and its shots of page 4 before and after the load are the same pixels. Native's save is `S4SD`, stamped `"443B"`,
+  version 3.20, with the banks `[2169864, 88241, 433, 1, 1, 1]` and graphics records of `0x2e4` bytes, and the codec
+  writes it back byte for byte (`Ome.Cli save-info`). The two targets' saves of page 4 differ in the time stamp and the
+  play seconds only (`Ome.Cli save-diff`). Each target loads the other's from the title's 再開 and resumes page 4, and
+  the saves each makes a page on after that differ in those two fields only.
+- **Shared SAVE.DAT.** Decoded, both targets' files hold the same integer and string cells and the same unlocks.
+  Compared word by word they differ almost everywhere: the unlock tables are encrypted under a key each session picks,
+  and the payload's tail is native heap residue (`sys4-format-notes.md`, "Shared `SAVE.DAT` logical payload"). One
+  unlock differed until the port read the catalog's font through its tracking store: native marks `AGE-EXTEND.TTF`
+  (file 46) seen on every start ("Native persistence opcode family and file layouts", below).
+- **History.** A wheel up on page 4 opens it (`HISTORY`): four rows. Two differences, both fixed. Its ruby was two
+  pixels low: History's renderer raises a ruby's ink by the top padding (`0x464f9c`) under the same test as the page's
+  drawer (`0x4630a1` to `0x4630c1`), and the port's History did not. Its first row's icon was missing: HISTORY draws it
+  into the wait indicator's handle ("ADV text publication and wait-indicator service", below). What remains: HISTORY
+  sets the paddings 2, 2, 2, 2 where the page has 2, 0, 2, 2, and at the seams between glyph cells, where neighbouring
+  padded rectangles overlap, native's pixels are darker, by up to 30 levels on 4 pixels and less than 12 on about
+  4,000 (`backlog.md`).
+
+**Checked against native AGE (M3, 2026-11-26).** The title's debug menu, which `example.koukaku-debug-menu` opens from
+Quit (`modding/games/koukaku.md`, "The debug menu"), is alike on both targets but for the title's falling leaves. Its
+戦闘 starts a battle on map 999, which MPINIT does not have. Native stops at `READFIELD@0x7` with
+「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: op `0x1f9` throws it with flags `0x10007` when
+`gfx_surface_load_asset` fails (`op_0x1f9_set_texture@0x421e90`), and the field's picture is 0. After 無視 native goes
+on through OUTBREAK and ORGANIZE to an immediate 戦闘敗北, and its RESULT screen is the port's, pixel for pixel. The
+port loads nothing at op `0x1f9` and shows no box (`backlog.md`, 魔導巧殻's item).
+
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 
 Sixteen opcodes the game's scripts use had no handler once the Auto pitch (above) was in; the port has those now,
@@ -988,6 +1221,55 @@ lists agree before and after, and the `SYS4REG.INI` each target wrote at its exi
 
 Not read: the order 4.38D's `agerc_settings_apply` applies the values in, and what OK writes to
 `AutoMessageOption` when a script left more than bit 0 in it (the port writes 0 or 1).
+
+### 4.43B's shell and settings (2026-11-26)
+
+Read from native 魔導巧殻 while the driver ran it, as for 4.38D (above).
+
+- **The settings.** `engine_settings_load@0x480c50` binds 4.38D's keys and one more, `message:MessageFade`, after
+  `MessageSpeed`. `engine_settings_register_defaults@0x481ef0` registers it as 0 (`0x4823da`). It is the glyph fade's
+  percentage, which op `0x2ee` sets at run time ("Arterial against 魔導巧殻, triaged"). `EngineBuilds.Age443B` binds it
+  there (`SettingsRules.BindingAfter`), and the text native reads and writes it only where its build binds the key. The
+  trailer's `TRANSFERMUSICVOLUME` is not a `SYS4REG.INI` key: `sys4ini_apply_settings_trailer@0x4847e0` reads it
+  (`atoi` at `0x4851dc`) over the 0 registered at `0x482931`.
+- **The shell.** In the running game, 魔導巧殻's menu 110, menu 124, the bar its window shows and dialogs 2 to 9, 100 to
+  105, 134 and 136 are the same bytes as 創刻のアテリアル's; only dialog 10 differs (below). So 4.43B's `ShellRules`
+  are 4.38D's. The bar: ｹﾞｰﾑ (終了 `0x9c41`), 画像の保存 (`0x9c46`, `0x9c47`), ﾒｯｾｰｼﾞ (`0x9c63`, `0x9c6f`, `0x9c64`,
+  `0x9c65`), 設定 (画面表示 with `0x9c5a` and `0x9c5b`, then `0x9c6c`, `0x9c70`, `0x9c68`, `0x9c6e`) and ﾍﾙﾌﾟ
+  (`0x9c6d`, `0x9c45`).
+- **Checked on both targets.** `koukaku-options.steps` sets ten options across the 設定 pages at the title with
+  `option`. The `options` lists agree before and after, and the `SYS4REG.INI` each target wrote at its exit is the same
+  file byte for byte, `MessageFade=250` after `MessageSpeed` included (SYSTEM4's op `0x2ee` set it). A fresh sandbox
+  lists message-speed=5, window-opacity=8, auto-wait-voice=500, auto-wait-text=2000, auto-wait-voice-end=1,
+  auto-pitch-text=0, smooth-text=1, wheel-advance=0, master-volume=0, the three volumes at 10000, bgm, se and voice on,
+  lower-bgm-on-voice=1, lower-bgm-level=50 and effect-skip=0; auto-pitch-voice is absent while 音声終了まで待つ is on.
+
+### AGERC's dialog 10 in each game (2026-11-26)
+
+Op `0x144` opens AGERC command 10: a modal dialog with one edit box (id `0x3ee`) that returns its text. Each game's
+`AGERC.DLL` has its own dialog resource 10 and its own procedure for it. Cancel keeps the old text in each.
+
+| Game | Dialog 10 | What OK does | Where the game opens it |
+|---|---|---|---|
+| 姫狩りダンジョンマイスター | 文字入力 | at most 16 bytes, every character double-byte; otherwise 字数オーバーです or 半角文字は使用できません, and the dialog stays open (`agerc_fullwidth_text_dialog_proc@0x10002140`) | names |
+| 創刻のアテリアル | デッキ名の入力: "デッキ名を入力してください。(最大全角12文字)" | `GetDlgItemTextA` of 256; above 24 bytes 字数オーバーです, and the dialog stays open; any characters (`agerc_deck_name_dialog_proc@0x6ff21760`) | `BOOK` and `ITEM`, a deck's name |
+| 魔導巧殻 | コメント編集: "コメントを入力してください。" | `GetDlgItemTextA` of 255, then the longest prefix whose width is at most 564, at 15 for a double-byte character (`agerc_is_double_byte_at@0x6ff21100`, `_mbbtype` lead then trail) and 8 for any other byte; no error (`agerc_comment_entry_dialog_proc@0x6ff217c0`) | `SAVE@0x4f8`, a save's comment (コメント編集 on a saved slot) |
+| 戦女神ZERO | コメントの入力 | not read | no script |
+
+**How it was read.** 魔導巧殻's and 創刻のアテリアル's `AGERC.DLL` are packed (unnamed sections, `.adata`, a raw
+`.rsrc` shorter than its virtual size), so their code and resources exist only in the running game. A Frida script
+attached to the driver's native session wrote the loaded module from its base as a flat image, unreadable pages as
+zeros (`build/games/<game>/agerc-dump/`), which Ghidra imports raw at `0x6ff20000` (`/koukaku/4.43B/agerc_6ff20000.bin`,
+`/arterial/4.38D/agerc_6ff20000.bin`); the resources were compared in the same images. The exports: `_GetInstance@0`
+at `+0x1040`, `_ShowDialog@12` at `+0x1050` (`agerc_host_callback_export`, which forwards to
+`agerc_dispatch_host_command`, 魔導巧殻's `0x6ff21c90` and 創刻のアテリアル's `0x6ff21ba0`) and `_OperateMenu@16` at
+`+0x1070`.
+
+**Port.** The profile's `textEntry` gives the rule (`limit`: `fullwidth-bytes` or `bytes` with `maxBytes`, or `width`
+with `doubleByteWidth`, `singleByteWidth` and `maxWidth`) and the dialog's words by language, keyed by the shell's
+`name-entry.*` keys (`GameTextEntry`); a profile without it has Himegari's. `ShellStrings.WithGameText` puts a game's
+words directly above the shell's own table for that language and below a language package's entries. Before, every
+game had Himegari's rule, so 創刻のアテリアル's deck names refused half-width characters.
 
 ### The glyph publisher grows a cell (2026-11-19)
 
@@ -4939,6 +5221,9 @@ unlock database:
   `modular_exponent_u32@0x471e60`, then
   `asset_catalog_restore_resource_unlock_marker@0x404ca0` installs and re-encrypts them under the
   current session key. The two leading table DWORDs are private-exponent XOR `0x87912345` and modulus.
+- `engine_initialize` opens the catalog's font through `asset_open_indexed_entry` (4.38D `0x416e35`), so the font
+  file (創刻のアテリアル's file 37, 魔導巧殻's 46, `AGE-EXTEND.TTF`) is marked seen on every start. The port reads it
+  through the same tracking store as every other open (`GameFont`, 2026-11-26).
 
 CGMODE passes each CGINIT full-image AGF id; HMODE passes each SPINIT scene-script id. The copied port
 profile validates all 851 gallery images and all 118 H-scene scripts. The former all-locked presentation
@@ -6896,6 +7181,21 @@ the music fades. SYS4433 is identical (`op_0xc2_bgm_fade_sys4433@0x41e580`, serv
 zero op `0xc0` and a numbered save read no track, where 4.24J's still have it until the fade ends ("Himegari against
 Verita, triaged", 2026-11-24; `AudioRules.ZeroFadeClearsTrack`).
 
+**The arm starts the retained track again (2026-11-26).** Before it builds the fade, every build's `bgm_fade_arm`
+(4.24J `0x464830`, 4.38D `0x4764d0`, 4.43B `0x47a0d0`) plays the retained track again when there is one and the
+committed level is 0, and again when the route backend says the music is not playing, which also sets the committed
+level to 0. The DirectSound backend's is-playing (4.43B `bgm_ds_backend_is_playing@0x47de00`, vtable `0x61ee14`
+`+0x28`) is channel 11's buffer flag `+0x2460`, which a stop, the end of a track played once and op `0xc1`'s hold
+(`sound_buffer_stop`) all clear. The restart reads channel 11's volume, sets it to 0, plays the track in the retained
+start mode and stores the volume back without applying it, so the track plays silent until the fade's first step,
+and the fade rises from 0. The pause flag stays as it was. 魔導巧殻 sets a track with op `0xc3` after stopping the
+music and fades it in this way (322 sites, the first at SC0000@0x50aa). The voice duck arms through the same function,
+at its start (`voice_bgm_duck_begin`, Himegari `0x406de0`, 4.43B `0x406e70`, which then ticks the fade to its end at
+once) and at its release (the main tick), so a voice that starts while a track played once has run out, or while op
+`0xc1` holds one, plays the track again from its start at the duck level. The duck's start also needs a retained
+track (`+0x40c`). Port: `Audio.RestartRetainedTrackForFade`, for every build, and `Audio.BeginDuck`; with the Music
+route off the port plays on the muted bus, as its other starts do.
+
 Measured with `tools/drive.py` from the click on 始める (New Game) on a fresh sandbox:
 
 | | Native | Port, parked VM | Port, background fade |
@@ -7224,6 +7524,15 @@ return from a nested modal script flows through that shared redraw/wait path and
 The port's host blocks inside the enclosing wait while servicing the nested HISTORY callback, so it restores
 the previously enabled parent marker at the callback-return boundary. This is lifecycle equivalence, not a
 script-specific seed or global-state workaround.
+
+**The handle is the script's while the indicator is stopped (2026-11-26).** Native touches the indicator's handle only
+while the indicator runs: op `0x1ce(0)` and `adv_wait_indicator_stop` (4.43B `0x41f4b0` and `0x404f40`) erase it with
+frame `-2` when run bit `0x40000000` is set (and bit `0x100000` clear), then clear the bit, and nothing draws or erases
+there while the bit is clear. 魔導巧殻's SYSTEM4 gives the indicator `0xd480` (op `0x212`); HISTORY stops it and draws
+its first row's icon into `0xd480` (`HISTORY@0xea5`), which native shows. The port erased any object at the handle on
+every frame the indicator was hidden, so the icon was missing. `RetainedAdvWaitIndicatorPresentation` now erases only
+the marker it published, or the one the projection it replaced published at the same handle, and op `0x1ce(0)` erases
+it at once, as native's handler does.
 
 The port exposes the two explicit operations as host services: `0x1ce` controls marker eligibility and
 `0x20a` requests retained ADV publication. Godot's existing indicator clock/configuration remains the
@@ -8536,6 +8845,35 @@ game-mode box; 通常 goes to `SYSTEM4@0x48c > SC0000`, whose first page waits a
 - SC0000's first pages draw no random number. Opening the Eushully-chan Room from the title draws one, at
   `ROOM@0x13`, while global `0x2be7` is 0.
 - The movies need LAV Filters refused on a machine that has them ("What the open costs").
+
+**魔導巧殻 (SYS4443, AGE 4.43B, 2026-11-26).** `tools/drive/koukaku.toml` names its own values. Each was found from
+創刻のアテリアル's by its code:
+
+- `g_pEngineCtx` is `0x670818`: the main routine calls `engine_ctx_construct@0x414f70` at `0x4a828e` and stores the
+  result there at `0x4a829a`.
+- `cur_ctx_index` is `ctx+0x5d450`, `0x38` above 4.38D's. Every handler stores its instruction length at `ctx+0x5d4c4
+  + curCtx * 0x78`, record `+0x74` from it as in 4.38D, so the frame record keeps its layout: codebase `0x5d464`, pc
+  `0x5d468`, resource id `0x5d4a0`.
+- `input_set_polling_enabled` is `0x473c70`, byte for byte 4.38D's. Of its five calls, the one at `0x4a7017` has
+  4.38D's call-site bytes (`test ebx, ebx; sete cl; push ecx`, the input manager at `ctx+0x408`) and returns to
+  `0x4a701c`; the others push 0 or 1. The gate is `ctx+0x1c28`.
+- Op `0x60`'s handler (`0x42acd0`) calls `_rand@0x5f3ee5` at `0x42ad0a`, which returns to `0x42ad0f`.
+
+A driven native run confirmed them the same day (`tools/drive/scenarios/koukaku-opening.steps`). The frame stack reads
+`SYSTEM4@0x2ff > TITLE`, with no logo; after Game Start `TITLE@0x2f4 > GAMESTART@0x38d`, the 初期設定 page
+(difficulty, the carry-over settings and the other nations' modes); its ゲーム開始 goes to `SYSTEM4@0x4f0 > SC0000 >
+PROLOGUE@0x35`, and SC0000's first page waits at `SC0000@0xef2`.
+- PROLOGUE plays catalog file `0x4c31` through op `0x20f` for about 75 seconds. Its flags let a click skip it only once
+  `is-catalog-resource-unlocked` reports the file, so a fresh sandbox plays it to its end.
+- The title's five buttons lie in a row along the bottom: Game Start, Load Data, EU-Room, Option and Quit. The middle
+  of the canvas is none of them.
+- Each ADV page draws an image under each row of text: op `0x25c`'s line images ("Arterial against 魔導巧殻,
+  triaged").
+- The menu bar's メッセージスキップ skips unread text. SC0000's first choice asks whether to take the tutorial
+  (`BUNKI`); 受けない goes on to the first battle in FIELD, whose start draws 400 random numbers, all at `FIELD@0x3395`.
+  SC0000 draws none.
+- The scratch copy raised no データが壊れています． registration box in these runs; `koukaku.toml` keeps the other
+  games' answer to it.
 
 The driver uses those values in place of `engine-ctx.toml` ([tools-reference.md](tools-reference.md), "Game driver").
 
@@ -9992,9 +10330,19 @@ and `e = trunc(tmAscent - 激.gmptGlyphOrigin.y - 1)` for the realized font's �
 is 0, and otherwise the larger of `d` and `e`. A face as tall as the reference is not raised; Kamidori's メイリオ bold
 at 22 pixels is raised 3. The record keeps the cell.
 
+`+0x31430` is `GGO_METRICS`'s, not a raster's. `text_rebuild_primary_font_resources` fills `+0x31424` to `+0x31434`
+with the `GLYPHMETRICS` of 激 whenever it rebuilds the font in aspect mode: mode 1's calibration measures it in the
+calibrated font through its out pointer (4.43B: `text_calibrate_mode1_glyph_font@0x455910`), and a face the mode does
+not calibrate takes the reference ＭＳ ゴシック's at half width. The two measures can differ by a pixel. 魔導巧殻's
+メイリオ bold at 30 pixels, created at width −29, has 激's top at 25 in `GGO_METRICS` and at 26 in
+`GGO_GRAY4_BITMAP`; native's `+0x31430` held 25, read from the running game. With `tmAscent` 32 and the reference's
+26 (`+0x313f0`), `d` is 5 and `e` 6, so its glyphs are raised 6 (4.43B's builder at `0x4693eb`). At 22 pixels the two
+measures agree, which is why Kamidori and 創刻のアテリアル never showed it.
+
 **Port.** `AspectGlyphPlacement.OffsetX` and `RetainedGlyphLayoutEngine.AspectGlyphRaise`. The class-1 width comes
 from `AspectFontRealization.ReferenceBlackBoxWidth`, which measures 激 with `GGO_METRICS` as native does, not from
-the reference raster. Tests: `AspectGlyphPlacementTests` and
+the reference raster. So does the raise's `e`, from `AspectFontRealization.ReferenceGlyphOriginY`; a probe that does
+not know the top (`FontProbeMetrics.OriginY`) leaves the drawn 激's. Tests: `AspectGlyphPlacementTests` and
 `WindowsGdiGlyphMaskRasterizerTests.TheAspectReferenceBlackBoxIsTheEmbeddedBitmapsNotTheAntialiasedRasters`. Kamidori's
 「 now lands on native's pixels.
 

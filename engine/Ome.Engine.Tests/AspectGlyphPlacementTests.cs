@@ -97,8 +97,6 @@ public class AspectGlyphPlacementTests
     {
         GlyphMask glyph = Glyph(4, 2, 9, ascent: ascent);
         GlyphMask reference = Glyph(19, 1, 23, ascent: 19);
-        GlyphMask realized = Glyph(19, 1, 22, ascent: ascent, originY: realizedOriginY);
-
-        Assert.Equal(expected, RetainedGlyphLayoutEngine.AspectGlyphRaise(glyph, reference, realized, 22));
+        Assert.Equal(expected, RetainedGlyphLayoutEngine.AspectGlyphRaise(glyph, reference, realizedOriginY, 22));
     }
 }

@@ -1,0 +1,9 @@
+omp = 1
+id = "example.koukaku-debug-menu"
+name = "魔導巧殻 debug menu"
+version = "1.0.0"
+description = "Opens the developers' debug menu, which the title builds but never shows, from the title's Quit."
+
+[game]
+profile = "koukaku"
+target = "native"

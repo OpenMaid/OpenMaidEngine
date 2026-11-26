@@ -9,6 +9,23 @@ namespace Ome.Engine.Vm;
 // lowering (docs/superpowers/specs/2026-11-20-title-leaves-design.md; docs/engine-re.md, "The 3D scene").
 public sealed partial class VirtualMachine
 {
+    // 0x33f (blend mode)(alpha)(rgb): the blend the three effects are drawn with, and the colour the leaves are
+    // multiplied by (AGE 4.43B). A negative alpha or RGB takes it from the colour of the object whose handle is the first
+    // operand, white for a handle with no object (op_0x33f_set_scene_effect_blend_color@0x4265f0).
+    private StepResult OpSet3DEffectBlendColor(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        long alpha = unchecked((int)Read(a[1])), rgb = unchecked((int)Read(a[2]));
+        if (alpha < 0) alpha = ObjectColorOrWhite(Read(a[0])) >> 24;
+        if (rgb < 0) rgb = ObjectColorOrWhite(Read(a[0]));
+        _graphics.SetEffectBlendAndColor(unchecked((int)Read(a[0])), PackedCappedColor(alpha, rgb));
+        return StepResult.Next;
+    }
+
+    // gfx_object_get_color@0x49c8f0: an object's colour (+0x60), or white for a handle with no object.
+    private uint ObjectColorOrWhite(long handle)
+        => Gfx.TryGet(handle) is { HasColor: true } colored ? unchecked((uint)colored.Color) : 0xffffffffu;
+
     // 0x324: release the display's three effects
     private StepResult OpRelease3DEffects(Instruction ins, int pc)
     {

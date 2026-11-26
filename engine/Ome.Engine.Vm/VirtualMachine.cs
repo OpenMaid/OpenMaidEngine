@@ -579,16 +579,20 @@ public sealed partial class VirtualMachine
 
     /// <summary>An operand's integer value, as native's integer accessor (vm_operand_fetch) reads it: a float form is
     /// truncated toward zero (<see cref="NativeTruncate"/>), and a string is parsed by <c>atol</c>
-    /// (<see cref="NativeAtol"/>). The types that accessor throws on (string references, float references, and those
-    /// the port has no cell for) halt the VM, as they end native's script with an error (docs/engine-re.md, "VM value,
-    /// array and call semantics").</summary>
+    /// (<see cref="NativeAtol"/>). A local float reference (type 0xd) is the cell it names, truncated, as AGE 4.43B's
+    /// accessor (vm_operand_fetch@0x41b2a0) reads it: 4.38D's throws, and a script of an older build that passed one
+    /// would have stopped native AGE, so every build reads it so. The types the accessor throws on (string references,
+    /// and those the port has no cell for, among them 4.43B's global float reference, type 7, which no supported script
+    /// passes) halt the VM, as they end native's script with an error (docs/engine-re.md, "VM value, array and call
+    /// semantics").</summary>
     private long Read(Operand op) => op.Type switch
     {
         T_IMM => ScriptMemory.IntegerCell(op.Value),   // an int32, as the loader keeps its bits zero-extended
         T_FLOAT => NativeTruncate(BitConverter.Int32BitsToSingle(unchecked((int)op.Value))),
         T_STR or T_GSTR or T_LSTR => NativeAtol(ReadStr(op)),
         T_GINT => ReadGlobal((int)op.Value),
-        T_GFLOAT or T_LFLOAT => NativeTruncate(BitConverter.Int32BitsToSingle(unchecked((int)FloatBits(op)))),
+        T_GFLOAT or T_LFLOAT or T_LFLOATPTR
+            => NativeTruncate(BitConverter.Int32BitsToSingle(unchecked((int)FloatBits(op)))),
         T_GPTR => _memory.Integer(GlobalPointer((int)op.Value)),
         T_LINT => Gi(_cur.Locals.I, (int)op.Value),
         T_LPTR => ReadIntCell(Ga(_cur.Locals.P, (int)op.Value)),

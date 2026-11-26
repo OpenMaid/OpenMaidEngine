@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using Ome.Engine.Devices;
 using Ome.Engine.Sys4;
 
 namespace Ome.Engine.Natives;
@@ -23,6 +24,12 @@ public readonly record struct Scene3DLight(int Type, (float X, float Y, float Z)
 /// <remarks>Native keeps all of it across a scene reset: only the opcodes, the manager's constructor and a lost device
 /// touch the mesh slots, the lights and the camera, and only op 0x324 and the display's destructor release the
 /// effects. So it is not scene state here either.</remarks>
+public readonly record struct Scene3DProjection(float FieldOfViewDegrees, float Near, float Far)
+{
+    /// <summary>The manager constructor's: 45°, 1 and 1000.</summary>
+    public static Scene3DProjection Default { get; } = new(45f, 1f, 1000f);
+}
+
 public sealed class Scene3DState
 {
     /// <summary>Native's mesh slots (manager +0xc5f4), which op 0x32b releases one by one.</summary>
@@ -57,6 +64,29 @@ public sealed class Scene3DState
     /// the device's view. The snow projects with this one; the rain and the leaves are drawn with the device's.
     /// </summary>
     public Matrix4x4 EffectView { get; internal set; } = Matrix4x4.Identity;
+    /// <summary>The device's projection (manager +0xd9e4 to +0xd9ec), which the rain and the leaves are drawn with.
+    /// AGE 4.43B's op 0x33d sets it; the manager's constructor (0x499e60 in 4.43B) gives 45°, 1 and 1000, the
+    /// projection 4.38D fixes.</summary>
+    public Scene3DProjection Projection { get; internal set; } = Scene3DProjection.Default;
+    /// <summary>The projection the display last handed its effects (+0x418), with <see cref="EffectView"/>: the snow
+    /// projects with it.</summary>
+    public Scene3DProjection EffectProjection { get; internal set; } = Scene3DProjection.Default;
+    /// <summary>AGE 4.43B's op 0x33f: the blend mode the three effects are drawn with (the display's +0x4ec: 1 additive,
+    /// 2 one and zero, 3 reverse subtract, any other value the alpha blend), and the colour the leaves are multiplied by
+    /// (+0x4f0). The display's constructor (0x450980) makes them 0 and opaque white, which are 4.38D's.</summary>
+    public int EffectBlendMode { get; internal set; }
+
+    /// <inheritdoc cref="EffectBlendMode"/>
+    public uint LeafColorArgb { get; internal set; } = 0xffffffff;
+
+    /// <summary>The blend <see cref="EffectBlendMode"/> names (display_scene_effects_at_handle@0x450ec0).</summary>
+    public FramePolygonBlend EffectBlend => EffectBlendMode switch
+    {
+        1 => FramePolygonBlend.Additive,
+        2 => FramePolygonBlend.Replace,
+        3 => FramePolygonBlend.Subtractive,
+        _ => FramePolygonBlend.Alpha,
+    };
 
     internal void SetMesh(int slot, Scene3DMesh mesh) => _meshes[slot] = mesh;
     internal bool RemoveMesh(int slot) => _meshes.Remove(slot);
@@ -109,10 +139,28 @@ public sealed partial class Graphics
     /// <summary>Op 0x32b: release every mesh slot.</summary>
     public void ReleaseAllMeshes() => _scene3D.ClearMeshes();
 
+    /// <summary>The engine build's <c>GfxRules.CameraHandsEffectsTheView</c>: whether op 0x32c hands the display's
+    /// effects the transforms at once (AGE 4.43B), where older builds hand them at the next device setup.</summary>
+    public bool CameraHandsEffectsTheView { get; init; }
+
     /// <summary>Op 0x32c: the camera, a left-handed look-at view from <paramref name="eye"/> to
-    /// <paramref name="target"/> with the y axis up.</summary>
+    /// <paramref name="target"/> with the y axis up. With <see cref="CameraHandsEffectsTheView"/> the display's effects
+    /// take the new view at once.</summary>
     public void SetCameraLookAt((float X, float Y, float Z) eye, (float X, float Y, float Z) target)
-        => _scene3D.Camera = (eye, target);
+    {
+        _scene3D.Camera = (eye, target);
+        if (CameraHandsEffectsTheView) HandEffectsTheTransforms();
+    }
+
+    /// <summary>AGE 4.43B's op 0x33d (gfx_set_projection_fov_near_far@0x48a5a0): the device's projection, a field of
+    /// view in degrees with its near and far planes, which the display's effects take at once
+    /// (display_scene_effects_set_transforms@0x450a80, called whenever the display exists, manager +0xc600). Native
+    /// checks none of the three.</summary>
+    public void SetProjection(float fieldOfViewDegrees, float near, float far)
+    {
+        _scene3D.Projection = new Scene3DProjection(fieldOfViewDegrees, near, far);
+        HandEffectsTheTransforms();
+    }
 
     /// <summary>Op 0x32d: the ambient light colour (0xAARRGGBB).</summary>
     public void SetAmbientLight(uint argb) => _scene3D.AmbientArgb = argb;
@@ -132,6 +180,14 @@ public sealed partial class Graphics
     /// <summary>Op 0x325: the two handles the frame walk draws the effects at.</summary>
     public void SetEffectHandles(long first, long second) => _scene3D.EffectHandles = (first, second);
 
+    /// <summary>Op 0x33f: the effects' blend mode and the leaves' colour (<see cref="Scene3DState.EffectBlendMode"/>).
+    /// </summary>
+    public void SetEffectBlendAndColor(int blendMode, uint leafColorArgb)
+    {
+        _scene3D.EffectBlendMode = blendMode;
+        _scene3D.LeafColorArgb = leafColorArgb;
+    }
+
     /// <summary>Op 0x324: release the display's three effect objects. The two handles stay.</summary>
     public void ReleaseEffects()
     {
@@ -142,7 +198,15 @@ public sealed partial class Graphics
 
     /// <summary>gfx_setup_3d_transforms_and_lights@0x486260, as a screen-mode switch runs it: the display hands its
     /// effects the projection, the camera's view and the world again (<see cref="Scene3DState.EffectView"/>).</summary>
-    public void SetUpDeviceTransforms() => _scene3D.EffectView = View();
+    public void SetUpDeviceTransforms() => HandEffectsTheTransforms();
+
+    // display_scene_effects_set_transforms: the display keeps the device's projection and view (and the identity world)
+    // for its effects.
+    private void HandEffectsTheTransforms()
+    {
+        _scene3D.EffectView = View();
+        _scene3D.EffectProjection = _scene3D.Projection;
+    }
 
     /// <summary>
     /// The pixel shader level native keeps at manager +0xb62c (gfx_create_device_objects@0x4907f0, at device creation):

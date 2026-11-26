@@ -183,8 +183,44 @@ public static class EngineBuilds
         },
     };
 
+    /// <summary>AGE 4.43B, 魔導巧殻's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its changes
+    /// are the real rows of the revision diff's triage (docs/engine-re.md, "Arterial against 魔導巧殻, triaged"); each
+    /// joins this definition as it is ported, and the ones the port does not have yet are in the game's item in
+    /// docs/backlog.md. The opcodes it adds need no rule: no older build's script runs them.</summary>
+    public static EngineBuild Age443B { get; } = Age438D with
+    {
+        Id = "4.43B",
+        AbiId = "SYS4443",
+        Rules = Age438D.Rules with
+        {
+            Text = Age438D.Rules.Text with
+            {
+                // adv_text_publish_next_glyph@0x459440, adv_text_publish_layout@0x4583e0,
+                // text_redraw_retained_group@0x463310 and text_history_render_records@0x4646d0 raise a ruby character
+                // by op 0x260's top padding in RubyShiftMode 2, the catalog trailer's RUBYSHIFTMODE.
+                Ruby = RubyRule.ShiftModesRaisedByTopPadding,
+                // The last three add the effect's offset under a cell once in mode 3 (0x45867a, the redraw and
+                // History's 0x465a94), where 4.38D's add it twice.
+                LayoutPublishersGrowOnce = true,
+            },
+            // gfx_set_view_look_at@0x48a050 passes the projection, the view and the world to
+            // display_scene_effects_set_transforms@0x450a80 when the display exists (manager +0xc600), as the new op
+            // 0x33d does; 4.38D's (0x486440) leaves that to the next device setup.
+            Gfx = Age438D.Rules.Gfx with { CameraHandsEffectsTheView = true },
+            // engine_settings_load@0x480c50 binds one key more than 4.38D's, message:MessageFade after MessageSpeed
+            // (0x481308), which engine_settings_register_defaults@0x481ef0 registers with 0 (0x4823da) and
+            // engine_initialize (0x4174e4) gives the text manager.
+            Settings = Age438D.Rules.Settings
+                .BindingAfter("MessageSpeed", new Sys4RegIniKey("message", "MessageFade", "0")),
+            // The stamp follows the version, as the other builds' do; no 4.43B save has been read. The record size
+            // and the float sections are 4.38D's, unproven: the profile's writes stay off until a native save is read.
+            Saves = new SaveRules(versionStamp: "443B", numberedGfxRecordSize: NativeGfxSaveLayout.RotationCacheRecordSize,
+                                  floatSectionsFromMinor: 20),
+        },
+    };
+
     /// <summary>Every build, parents first.</summary>
-    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age415D, Age424N, Age433G, Age438D];
+    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age415D, Age424N, Age433G, Age438D, Age443B];
 
     public static EngineBuild? Find(string id)
         => All.FirstOrDefault(build => string.Equals(build.Id, id, StringComparison.Ordinal));

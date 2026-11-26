@@ -1,0 +1,38 @@
+omp = 5
+id = "koukaku-base"
+name = "魔導巧殻 base"
+version = "1.0.0"
+description = "Names the game's cells for Lua mods (the layout the engine builds a mod's game.g and game.table from), gives helpers that change the game through its own scripts, and carries the game's OMS toolchain (oms/)."
+
+[game]
+profile = "koukaku"
+target = "extended"
+
+[lua]
+api = 1
+capabilities = ["vm"]
+# The game scripts the helpers in lua/init.lua call (spec §10); omp check walks each.
+calls = ["ADDITEM", "ADDPART"]
+
+# The library tables.lua applies the record tables with (data patches spec §6.4); the engine ships it too.
+[[requires]]
+id = "ome-records"
+version = ">=1, <2"
+
+# Data files of the game's record tables (data patches spec §6): a mod that requires this base mod ships them under
+# data/, and tables.lua checks and applies each, by the record map lua/generated/tables.lua: the boot's tables at
+# koukaku.data.layered, and a battlefield map's cells each time one of the six walkers of the MPINIT chain has loaded
+# it (koukaku.battlefield.loaded). The link checks each file against shapes/tables.schema.json first, which
+# base_mod_build.py generates from the same record map (spec §7).
+[[accepts]]
+kind = "koukaku.tables"
+description = "Edits to the game's record tables: characters, titles, troops, skills, items, parts and costumes, the strategic map's nations, regions, routes, ruses and quests, the galleries and screens, which the boot builds, and a battlefield map's cells and deploy entries, which its loader writes."
+shape = "tables.schema.json"
+
+[[accepts.at]]
+event = "koukaku.data.layered"
+handler = "tables.lua:apply_boot"
+
+[[accepts.at]]
+event = "koukaku.battlefield.loaded"
+handler = "tables.lua:apply_battlefield"

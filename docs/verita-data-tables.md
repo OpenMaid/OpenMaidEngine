@@ -384,7 +384,7 @@ character's next level. The two leads (`G[0x412dbf]` set) take their stats from 
 Corrections to the layout: the three off-grid arrays the tool shows at stride 300 (`G[0x388604]`, `G[0x389629]`,
 `G[0x3b7618]`) and its four cells outside the arrays (`G[0x38454d]`, `G[0x384b68]`, `G[0x385cbd]`, `G[0x385e2c]`) are one
 array, `G[0x3805ff]`, 600 cells a unit: `SETEN@0x00cf9` and `INFO4@0x01136` index it
-`lookup-array-2d … (global-int 0x3805ff) unit 0x258 skill`. The tool's `G[0x412ad7]` stride 25 † is the one-cell array
+`lookup-array-2d … (global-int 0x3805ff) unit 0x258 skill`. The tool's `G[0x412db5]` stride 11 † is the one-cell array
 `G[0x412dbf]` (`UNITECH@0x001b0`), which only units 1 and 31 write. `G[0x37b00f]` (`SETEN@0x00808`,
 `UNITECH@0x00085`) is the initial shield, which no record writes. The 19,000 cells from `G[0x37bfaf]` to `G[0x3805fe]`
 are neither written nor read.

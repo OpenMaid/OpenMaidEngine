@@ -32,7 +32,8 @@ public static class GodotVmOptions
             WheelKeyDownAction: settings.WheelKeyDownAction,
             GameVersion: startupSettings != null ? GameVersionRule.Of(settings, registry) : "",
             HWheelKeyUpAction: settings.HWheelKeyUpAction,
-            HWheelKeyDownAction: settings.HWheelKeyDownAction);
+            HWheelKeyDownAction: settings.HWheelKeyDownAction,
+            TransferMusicVolume: settings.TransferMusicVolume);
     }
 
     /// <summary>The interactive session's skip and auto settings: the profile's CancelMesSkipOnClick and CoexistMesSkip,

@@ -45,26 +45,70 @@ public readonly record struct AdvRetainedGlyphPlacement(
     int LayoutOriginY)
 {
     /// <summary>The rows the glyph's object shows below its record's cell: what the build's publisher added to the
-    /// bottom of the source rectangle when it bound the object (<c>TextRules.PublisherGrowsGlyphCells</c>); 0 before
-    /// it is published and on a build whose publisher binds the cell as it is.</summary>
+    /// bottom of the source rectangle when it bound the object (<c>TextRules.PublisherGrowsGlyphCells</c>, or op
+    /// 0x260's bottom padding); 0 before it is published and on a build whose publisher binds the cell as it is. A
+    /// raised ruby character has a negative growth here and the same rows at <see cref="GrowTop"/>.</summary>
     public int CellGrowth { get; init; }
 
+    /// <summary>The columns and rows the object shows left of, above and right of its record's cell (op 0x260's
+    /// paddings, and the raise of a ruby character in RubyShiftMode 2); 0 before it is published.</summary>
+    public int GrowLeft { get; init; }
+
+    /// <inheritdoc cref="GrowLeft"/>
+    public int GrowTop { get; init; }
+
+    /// <inheritdoc cref="GrowLeft"/>
+    public int GrowRight { get; init; }
+
     /// <summary>How far left and up the build's publisher moved the glyph's object from its cell when it bound it
-    /// (<c>TextRules.PublisherMovesAliasedEffectGlyphs</c>); 0 before it is published.</summary>
+    /// (<c>TextRules.PublisherMovesAliasedEffectGlyphs</c>, and op 0x260's left and top paddings); 0 before it is
+    /// published.</summary>
     public int ObjectShiftX { get; init; }
 
     /// <inheritdoc cref="ObjectShiftX"/>
     public int ObjectShiftY { get; init; }
+
+    /// <summary>The text row the glyph is on, counted from 1 since its layout's reset as AGE 4.43B's window counts them
+    /// (window <c>+0x11c</c>, which a record's sixth dword keeps): each wrap and each op 0x6f starts the next. It says how
+    /// many line images op 0x25c's window shows; 0 where the host did not count rows.</summary>
+    public int Row { get; init; }
+
+    /// <summary>The surface rectangle the object shows: the cell, grown by what the publisher added on each side.</summary>
+    public (int X, int Y, int Width, int Height) SourceRect
+        => (checked(Record.Left - GrowLeft), checked(Record.Top - GrowTop),
+            checked(Record.Width + GrowLeft + GrowRight), checked(Record.Height + GrowTop + CellGrowth));
 
     /// <summary>The object's place: the layout origin plus the cell's corner, less the publisher's move.</summary>
     public (int X, int Y) ObjectPosition
         => (checked(LayoutOriginX + Record.Left - ObjectShiftX), checked(LayoutOriginY + Record.Top - ObjectShiftY));
 }
 
-/// <summary>What a build's publisher changes as it binds a glyph that is not ruby: the rows it adds under the cell
-/// (<c>TextRules.PublisherGrowsGlyphCells</c>), and how far it moves the object left and up
-/// (<c>TextRules.PublisherMovesAliasedEffectGlyphs</c>). The default changes nothing.</summary>
-public readonly record struct GlyphPublication(int CellGrowth, int ShiftX = 0, int ShiftY = 0);
+/// <summary>What a build's publisher changes as it binds a glyph: the rows it adds under the cell
+/// (<c>TextRules.PublisherGrowsGlyphCells</c>, or op 0x260's bottom padding), the columns and rows it adds on the other
+/// sides (<see cref="GrowLeft"/>), and how far it moves the object left and up
+/// (<c>TextRules.PublisherMovesAliasedEffectGlyphs</c>, op 0x260's left and top paddings). The default changes
+/// nothing.</summary>
+public readonly record struct GlyphPublication(int CellGrowth, int ShiftX = 0, int ShiftY = 0)
+{
+    /// <summary>The columns added left of the cell; with <see cref="GrowTop"/> and <see cref="GrowRight"/>, AGE 4.43B's
+    /// paddings (op 0x260 while op 0x261's bit 0 is set). A ruby character AGE 4.43B raises in RubyShiftMode 2 has
+    /// the top padding here, the same rows taken from <see cref="CellGrowth"/>, and its object moved up by them.</summary>
+    public int GrowLeft { get; init; }
+
+    /// <inheritdoc cref="GrowLeft"/>
+    public int GrowTop { get; init; }
+
+    /// <inheritdoc cref="GrowLeft"/>
+    public int GrowRight { get; init; }
+}
+
+/// <summary>What a publisher does to the glyphs it binds: <see cref="Primary"/> to a record that is not ruby (chain flag
+/// 0), <see cref="Ruby"/> to a ruby character, and with <see cref="FadeMs"/> above 0 it fades each in over that many
+/// milliseconds (AGE 4.43B's timed publisher: op 0x2ee's MessageFade percent of the glyph delay).</summary>
+public readonly record struct GlyphPublications(GlyphPublication Primary, GlyphPublication Ruby = default, int FadeMs = 0)
+{
+    public static implicit operator GlyphPublications(GlyphPublication primary) => new(primary);
+}
 
 public readonly record struct AdvRetainedTextRunResult(
     int LayoutSlot,

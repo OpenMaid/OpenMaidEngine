@@ -96,6 +96,24 @@ public class ScreenModeTests
     }
 
     [Fact]
+    public void Op0x2ceReadsWhetherTheGameRunsInAWindowAfterEachSwitch()
+    {
+        // op_0x2ce_get_windowed@0x42ece0 (4.43B) writes display_windowed: 1 in a window, 0 once the game has
+        // switched to fullscreen. 魔導巧殻's CONFIG1 reads it before it asks with op 0x2cf.
+        var window = new RecordingWindow();
+        var (vm, host) = Start(Build("SCREEN_MODE_READ",
+            (0x2ce, new[] { G(Probe) }),
+            (0x2cf, new[] { I(0) }), (0x1c7, new[] { G(Probe + 9) }), (0x2ce, new[] { G(Probe + 1) })), window);
+        host.ServiceFrames = true;
+
+        vm.Run();
+
+        Assert.Equal(1, vm.Globals.GetValueOrDefault(Probe));
+        Assert.Equal(0, vm.Globals.GetValueOrDefault(Probe + 1));
+        Assert.Equal([false], window.Shown);
+    }
+
+    [Fact]
     public void Op0x2cfOnlyAsksTheFrontEndSwitchesAtItsNextFrame()
     {
         var window = new RecordingWindow();

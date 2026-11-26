@@ -24,16 +24,23 @@ public sealed partial class ShellStrings
     public static IReadOnlyList<string> Languages { get; } = ["ja", "en"];
 
     /// <summary>The Japanese table: what the driver reports, whatever the player's language (spec §8).</summary>
-    public static ShellStrings Japanese { get; } = new(FallbackLanguage, JapaneseTable(), null);
+    public static ShellStrings Japanese { get; } = new(FallbackLanguage, JapaneseTable(), null, embedded: true);
 
     private readonly IReadOnlyDictionary<string, string> _table;
     private readonly ShellStrings? _fallback;
+    private readonly bool _embedded;   // the engine's own table for its language, not a package's or a game's text
 
     public ShellStrings(string language, IReadOnlyDictionary<string, string> table, ShellStrings? fallback)
+        : this(language, table, fallback, embedded: false)
+    {
+    }
+
+    private ShellStrings(string language, IReadOnlyDictionary<string, string> table, ShellStrings? fallback, bool embedded)
     {
         Language = language;
         _table = table;
         _fallback = fallback;
+        _embedded = embedded;
     }
 
     public string Language { get; }
@@ -46,7 +53,22 @@ public sealed partial class ShellStrings
     {
         string wanted = (language ?? "").Trim().ToLowerInvariant();
         if (wanted == FallbackLanguage || ReadTable(wanted) is not { } table) return Japanese;
-        return new ShellStrings(wanted, table, Japanese);
+        return new ShellStrings(wanted, table, Japanese, embedded: true);
+    }
+
+    /// <summary>
+    /// These tables with a game's own words (<paramref name="text"/>, by language, as a profile's <c>textEntry</c> has
+    /// them) right above the engine's table for each language, so a package's entry for a key still wins and the
+    /// engine's own text is the last resort. A language the chain lacks gets none of the game's words.
+    /// </summary>
+    public ShellStrings WithGameText(IReadOnlyDictionary<string, System.Collections.Immutable.ImmutableDictionary<string, string>> text)
+    {
+        if (text.Count == 0) return this;
+        ShellStrings? fallback = _fallback?.WithGameText(text);
+        var self = new ShellStrings(Language, _table, fallback, _embedded);
+        return _embedded && text.TryGetValue(Language, out var words) && words.Count > 0
+            ? new ShellStrings(Language, words, self, embedded: false)
+            : self;
     }
 
     /// <summary>
@@ -62,7 +84,8 @@ public sealed partial class ShellStrings
         ShellStrings strings = Japanese;
         foreach (string tag in (lookup.Count > 0 ? lookup : [wanted]).Reverse())
         {
-            if (tag != FallbackLanguage && ReadTable(tag) is { } embedded) strings = new ShellStrings(tag, embedded, strings);
+            if (tag != FallbackLanguage && ReadTable(tag) is { } embedded)
+                strings = new ShellStrings(tag, embedded, strings, embedded: true);
             var entries = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (EngineTextLayer layer in layers.Where(layer => layer.Language == tag))
                 foreach (var (key, value) in layer.Entries)

@@ -248,7 +248,7 @@ public sealed partial class VirtualMachine
     private StepResult OpSetAdvWaitIndicatorEnabled(Instruction ins, int pc)
     {
         var a = ins.Args;
-        _text.SetAdvWaitIndicatorEnabled(Read(a[0]) != 0);
+        _text.SetAdvWaitIndicatorEnabled(Read(a[0]) != 0, Gfx);
         return StepResult.Next;
     }
 
@@ -427,6 +427,86 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0x74 (milliseconds): the glyph delay, without the setting op 0x1b5 also writes
+    private StepResult OpSetGlyphDelay(Instruction ins, int pc)
+    {
+        _text.SetMessageGlyphDelayOnly(unchecked((int)Read(ins.Args[0])));
+        return StepResult.Next;
+    }
+
+    // 0x2ee (percent): MessageFade and its setting (AGE 4.43B)
+    private StepResult OpSetMessageFade(Instruction ins, int pc)
+    {
+        _text.SetMessageFade(unchecked((int)Read(ins.Args[0])));
+        return StepResult.Next;
+    }
+
+    // 0x260 (left)(right)(top)(bottom): the glyph paddings (AGE 4.43B)
+    private StepResult OpSetGlyphPaddings(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        _text.SetGlyphPaddings(unchecked((int)Read(a[0])), unchecked((int)Read(a[1])), unchecked((int)Read(a[2])),
+                               unchecked((int)Read(a[3])));
+        return StepResult.Next;
+    }
+
+    // 0x261 (flags): bit 0 turns the paddings on (AGE 4.43B)
+    private StepResult OpSetGlyphPaddingFlags(Instruction ins, int pc)
+    {
+        _text.SetGlyphPaddingFlags(unchecked((int)Read(ins.Args[0])));
+        return StepResult.Next;
+    }
+
+    // 0x25c (layout)(x offset)(y offset)(surface)(source x)(source y)(width)(height): a layout's line images (AGE
+    // 4.43B). Layout 0 is the current one; native indexes the window table unchecked.
+    private StepResult OpSetTextLineImages(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
+        _text.History.SetLineImages((int)Read(a[0]), unchecked((int)Read(a[1])), unchecked((int)Read(a[2])),
+                                    unchecked((int)Read(a[3])), unchecked((int)Read(a[4])), unchecked((int)Read(a[5])),
+                                    unchecked((int)Read(a[6])), unchecked((int)Read(a[7])));
+        return StepResult.Next;
+    }
+
+    // 0x25d (layout)(first handle)(count): the line images' handles. The op indexes the window table itself (layout 0 is
+    // layout object 0) and skips a window that was never allocated, which every slot of the table is.
+    private StepResult OpSetTextLineImageHandles(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
+        _text.History.SetLineImageHandles((int)Read(a[0]), unchecked((int)Read(a[1])), unchecked((int)Read(a[2])));
+        return StepResult.Next;
+    }
+
+    // 0x25e (layout)(delay)(duration)(alpha)(rgb): the line images' colour animation
+    private StepResult OpSetTextLineImagesFade(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
+        _text.History.SetLineImageFade((int)Read(a[0]), unchecked((int)Read(a[1])), unchecked((int)Read(a[2])),
+                                       PackedCappedColor(Read(a[3]), Read(a[4])));
+        return StepResult.Next;
+    }
+
+    // 0x25f (layout)(blend)(alpha)(rgb): the line images' blend mode and colour
+    private StepResult OpSetTextLineImagesColor(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (LayoutSlotRefused(ins, Read(a[0])) is { } refused) return refused;
+        _text.History.SetLineImageColor((int)Read(a[0]), unchecked((int)Read(a[1])),
+                                        PackedCappedColor(Read(a[2]), Read(a[3])));
+        return StepResult.Next;
+    }
+
+    /// <summary>An alpha and an RGB as ops 0x25e, 0x25f and 0x33f pack them: the alpha capped at 0xff (a negative one is
+    /// not raised), its low byte over the RGB's three.</summary>
+    private static uint PackedCappedColor(long alpha, long rgb)
+    {
+        int capped = unchecked((int)alpha) > 0xff ? 0xff : unchecked((int)alpha);
+        return unchecked((uint)(capped << 24) | ((uint)rgb & 0xffffffu));
+    }
+
     private StepResult OpEndTextLine(Instruction ins, int pc)
     {
         var a = ins.Args;
@@ -435,7 +515,7 @@ public sealed partial class VirtualMachine
         // Inside a presented message only the source cursor moves: the sentence draws its own breaks (§6.2).
         bool insideMessage = InsidePresentedMessage(pc);
         _text.History.EndLine((int)Read(a[0]), _text.Style, moveDrawCursor: !insideMessage);
-        _text.LineEnded((int)Read(a[0]));
+        _text.LineEnded((int)Read(a[0]), drawnRow: !insideMessage);
         if (insideMessage) return StepResult.Next;
         var layout = _text.History.GetDrawSnapshot((int)Read(a[0]));
         _text.SetAdvTextCursor(layout.Slot, layout.CursorX, layout.CursorY);

@@ -1,0 +1,23 @@
+# A battlefield map's cells (Lua scripting spec §9.2). Hand-written: the event names its points and gives each field's
+# cell, by the names layout/globals.json exports.
+
+[[event]]
+name = "koukaku.battlefield.loaded"
+point = ["koukaku.battlefield.after_map_loaders_field", "koukaku.battlefield.after_map_loaders_reign",
+         "koukaku.battlefield.after_map_loaders_palace", "koukaku.battlefield.after_map_loaders_checkreg",
+         "koukaku.battlefield.after_map_loaders_occupy", "koukaku.battlefield.after_map_loaders_delcn"]
+description = """
+A battlefield map's loader has run (MPINIT and $1$MPINIT, through mpinit_chain_script_ids): battlefield_cell and \
+battlefield_entry hold the cells of map `map`, its land, preset objects and levels by 20 × row + column, and its \
+deploy entries, with its size, bounds and picture. Nothing has read them yet. Six scripts load a map: FIELD for a \
+battle, REIGN for the region map in play, PALACE for the palace's map (1), and CHECKREG, OCCUPY and DELCN for a \
+region's first setup. A handler that rewrites a cell changes the map those scripts set up next: FIELD's and REIGN's \
+SETFIELD copies the size, bounds, picture and land into saved cells, and SETFORT, on a region's first setup only, \
+places the preset objects in the region's saved layers, so an object change reaches a region a save has already set \
+up only through its own layers. MPINIT clears nothing: a cell outside the map's size keeps the previous map's value. \
+The data files of koukaku.tables write their parts for the map here."""
+
+[[event.field]]
+name = "map"
+at = "battlefield_map_id"       # the map MPINIT has just written, the selector the walker set
+type = "int"

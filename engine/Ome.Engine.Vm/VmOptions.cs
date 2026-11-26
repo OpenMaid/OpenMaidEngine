@@ -30,6 +30,9 @@ namespace Ome.Engine.Vm;
 /// the logical action a horizontal wheel turn to the right raises while an ADV text wait polls
 /// (<see cref="VirtualMachine.ApplyMouseHorizontalWheel"/>); negative raises none.</param>
 /// <param name="HWheelKeyDownAction">Native set:HWheelKeyDown (SYS4INI HWHEELKEYDOWN, registered default -1).</param>
+/// <param name="TransferMusicVolume">Native set:TransferMusicVolume (SYS4INI TRANSFERMUSICVOLUME, registered default 0;
+/// AGE 4.43B): what op 0xc2 does with a fade that is still running (<c>Ome.Engine.Natives.Audio.FadeBgm</c>). 魔導巧殻
+/// sets 1.</param>
 /// <remarks>CancelMesSkipOnClick, CoexistMesSkip and the fast-forward pace are the skip and auto native's
 /// (<c>Ome.Engine.Natives.SkipAndAutoSettings</c>), and NoSaveDat is the save and settings native's
 /// (<c>Ome.Engine.Natives.SavesAndSettings</c>).</remarks>
@@ -39,7 +42,8 @@ public sealed record VmOptions(int EmitCap = 2, long MaxSteps = 2_000_000, int C
                                int AutoFreeTex = 0,
                                int WheelKeyUpAction = 3, int WheelKeyDownAction = 1,
                                string GameVersion = "",
-                               int HWheelKeyUpAction = -1, int HWheelKeyDownAction = -1)
+                               int HWheelKeyUpAction = -1, int HWheelKeyDownAction = -1,
+                               int TransferMusicVolume = 0)
 {
     /// <summary>The selected profile's id, which labels an unsupported-opcode diagnostic
     /// (<see cref="UnsupportedOpcodeDiagnostic.ProfileId"/>). No behaviour reads it.</summary>

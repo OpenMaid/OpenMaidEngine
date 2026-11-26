@@ -1,0 +1,32 @@
+# 魔導巧殻's opening: the title, Game Start, GAMESTART's initial settings left as they are, ゲーム開始, the PROLOGUE
+# movie, and the first pages of SC0000. It is the scenario of the game's P2 gate (docs/adding-a-game.md, step 6).
+# Native AGE passes it since 2026-11-26.
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port start
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port run tools/drive/scenarios/koukaku-opening.steps
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port stop
+# PROLOGUE plays catalog file 0x4c31 through op 0x20f (play-modal-movie-to-surface); a click skips it only once the
+# file is marked seen (is-catalog-resource-unlocked), so on a fresh sandbox it plays to its end. Each page shows the
+# per-line images of op 0x25c under its rows.
+# SC0000's pages draw no op 0x60 random number; the seed is set so that a draw would be the same on both targets.
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+shot koukaku-opening-title
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+shot koukaku-opening-settings
+click start.begin
+wait-state script=PROLOGUE timeout=60
+wait-state top=SC0000@0xe7e timeout=240  # the movie plays to its end, then the battlefield fades in
+wait-state top=SC0000@0xef2 timeout=60   # page 1, the first text
+settle timeout=30
+shot koukaku-opening-page1
+advance 1
+expect top=SC0000@0xf26                  # page 2, with furigana
+advance 1
+expect top=SC0000@0xf56                  # page 3
+advance 1
+expect top=SC0000@0xf9e                  # page 4, two rows with furigana
+shot koukaku-opening-page4

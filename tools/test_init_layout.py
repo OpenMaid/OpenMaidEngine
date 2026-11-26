@@ -118,6 +118,21 @@ class InferArraysTests(unittest.TestCase):
         self.assertEqual([], loose)
         self.assertEqual([0x100, 0x10a, 0x114, 0x900], [a.base for a in arrays])
 
+    def test_a_declared_array_holds_the_cells_no_record_writes(self) -> None:
+        # Cells written through a local pointer follow no record's leader: without the declaration they are outside
+        # every array; with it they are its cells at its stride, by id.
+        leader = Leader("GS", 0x1000, 10)
+        records, cells = table(leader, [("G", 0x5000, 1, [0])], [1, 2, 3])
+        pointed = {("G", 0x6000 + 4 * rid + column): (0, rid) for rid in (1, 3) for column in (0, 2)}
+        cells.update(pointed)
+        _, loose = init_layout.infer_arrays(leader, records, cells, {})
+        self.assertEqual(sorted(pointed), loose)
+        declared = Leader("GS", 0x1000, 10, arrays=(("G", 0x6000, 4),))
+        arrays, loose = init_layout.infer_arrays(declared, records, cells, {("G", 0x5ffe): {}})
+        self.assertEqual([], loose)
+        found = next(a for a in arrays if a.base == 0x6000)
+        self.assertEqual((4, {0, 2}, [1, 3]), (found.stride, set(found.columns), found.columns[2]["ids"]))
+
     def test_an_array_that_does_not_line_up_with_the_others_is_off_the_grid(self) -> None:
         leader = Leader("GS", 0x1000, 100)
         fields = [("G", 0x5000, 1, [0]), ("G", 0x5064, 1, [0]), ("G", 0x50c8, 2, [0, 1]), ("G", 0x5199, 1, [0])]
@@ -155,11 +170,14 @@ class InferArraysTests(unittest.TestCase):
                          init_layout.area_writes(listing, RULE))
 
     def test_every_leader_names_a_boot_table_a_bank_and_a_capacity(self) -> None:
-        for game in (init_layout.ARTERIAL, init_layout.VERITA):
+        for game in (init_layout.ARTERIAL, init_layout.VERITA, init_layout.BG0, init_layout.KOUKAKU):
             for name, leader in game.items():
                 self.assertRegex(name, r"^[A-Z0-9]+INIT2?$")
                 self.assertIn(leader.bank, ("G", "GS"))
                 self.assertGreater(leader.capacity, 0)
+                for bank, base, stride in leader.arrays:
+                    self.assertIn(bank, ("G", "GS"))
+                    self.assertGreater(stride, 0)
 
 
 if __name__ == "__main__":

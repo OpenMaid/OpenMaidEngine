@@ -154,40 +154,92 @@ public sealed partial class TextManager
         {
             _scene.Reveal = null;
             presentation.PublishThrough(gfx, checked(result.FirstGlyphIndex + revealGlyphCount), TimedPublication);
+            BindLineImages(gfx, presentation, animate: true);
             _graphics.RequestPresentation();
             _timeline?.State("running", new() { ["text_reveal_complete"] = true });
         }
         return result;
     }
 
-    /// <summary>What adv_text_publish_next_glyph does to a glyph that is not ruby, from the style the text manager
-    /// holds when it publishes: it adds the effect's vertical offset under the cell while an effect mode is on, and in
-    /// mode 3 with glyphs not antialiased it moves the object left and up by the offsets (4.33G, 4.38D).</summary>
-    private GlyphPublication TimedPublication
-        => new(_publisherGrowsGlyphCells && Style.RenderMode > 0 ? Style.EffectOffsetY : 0,
-               AliasedEffectShift.X, AliasedEffectShift.Y);
+    /// <summary>What adv_text_publish_next_glyph does to each glyph, from the style and the paddings the text manager
+    /// holds when it publishes. To a glyph that is not ruby: with op 0x261's paddings on (AGE 4.43B) it grows the cell
+    /// by the four paddings and moves the object back by the left and top ones; else it adds the effect's vertical
+    /// offset under the cell while an effect mode is on (4.33G, 4.38D, 4.43B); and in mode 3 with glyphs not
+    /// antialiased it moves the object left and up by the effect offsets. A ruby character it raises by the top padding
+    /// in AGE 4.43B's RubyShiftMode 2. In 4.43B it fades each glyph in, when MessageFade and the glyph delay are both
+    /// above 0 (adv_text_publish_next_glyph@0x459440).</summary>
+    private GlyphPublications TimedPublication
+        => new(PrimaryPublication(Style, extraModeThreeGrowth: false), RubyPublication, GlyphFadeMs);
 
-    /// <summary>What adv_text_publish_layout (op 0x20a) does to every glyph, and op 0x82's redraw to each that is not
-    /// ruby: the same offset under the cell, once more in effect mode 3, and the same move; null on a build whose
-    /// publishers bind the cells as they are.</summary>
-    private GlyphPublication? LayoutPublication
+    /// <summary>What adv_text_publish_layout (op 0x20a) does, and op 0x82's redraw: the timed publisher's publications,
+    /// with the effect's offset once more under the cell in mode 3 unless the build adds it once
+    /// (<c>TextRules.LayoutPublishersGrowOnce</c>), and no fade; null on a build whose publishers bind the cells as they
+    /// are.</summary>
+    private GlyphPublications? LayoutPublication
         => !_publisherGrowsGlyphCells ? null
-            : new GlyphPublication(
-                Style.RenderMode > 0 ? Style.EffectOffsetY * (Style.RenderMode == 3 ? 2 : 1) : 0,
-                AliasedEffectShift.X, AliasedEffectShift.Y);
+            : new GlyphPublications(PrimaryPublication(Style, extraModeThreeGrowth: !_layoutPublishersGrowOnce),
+                                    RubyPublication);
 
-    /// <summary>What text_history_render_records (op 0x1d1; 4.33G @0x456490, 4.38D @0x461ea0) does to each History
-    /// row that is not ruby: it binds the row's top plus the primary size, plus the effect's vertical offset in an effect
-    /// mode and again in mode 3, which is one offset more than the port's cell in mode 3, and makes the move. 4.24J's
-    /// renderer binds the cells as they are.</summary>
-    private GlyphPublication HistoryPublication(AdvTextStyle style)
+    /// <summary>What text_history_render_records (op 0x1d1; 4.33G @0x456490, 4.38D @0x461ea0, 4.43B @0x4646d0) does to
+    /// each History row: it binds the row's top plus the primary size, plus the effect's vertical offset in an effect
+    /// mode and again in mode 3 on 4.33G and 4.38D, which is one offset more than the port's cell in mode 3; 4.43B adds it
+    /// once, which is the cell, or with op 0x261's paddings on the four paddings. It makes the move, and raises a ruby
+    /// row as the timed publisher does. 4.24J's renderer binds the cells as they are.</summary>
+    private GlyphPublications HistoryPublication(AdvTextStyle style)
     {
         (int shiftX, int shiftY) = AliasedEffectShiftOf(style);
-        return new GlyphPublication(_publisherGrowsGlyphCells && style.RenderMode == 3 ? style.EffectOffsetY : 0,
-                                    shiftX, shiftY);
+        if (PaddingsOn)
+            return new GlyphPublications(PaddedPublication(shiftX, shiftY), RubyPublication);
+        bool grows = _publisherGrowsGlyphCells && !_layoutPublishersGrowOnce && style.RenderMode == 3;
+        return new GlyphPublications(new GlyphPublication(grows ? style.EffectOffsetY : 0, shiftX, shiftY),
+                                     RubyPublication);
     }
 
-    private (int X, int Y) AliasedEffectShift => AliasedEffectShiftOf(Style);
+    // Op 0x261's bit 0: the publishers add op 0x260's paddings round a cell that is not ruby, in place of the effect's
+    // offset.
+    private bool PaddingsOn => (_glyphPaddingFlags & 1) != 0;
+
+    // A glyph that is not ruby, as the timed and layout publishers bind it; the layout publisher of 4.33G and 4.38D adds
+    // the effect's offset a second time in mode 3.
+    private GlyphPublication PrimaryPublication(AdvTextStyle style, bool extraModeThreeGrowth)
+    {
+        (int shiftX, int shiftY) = AliasedEffectShiftOf(style);
+        if (PaddingsOn) return PaddedPublication(shiftX, shiftY);
+        int growth = _publisherGrowsGlyphCells && style.RenderMode > 0 ? style.EffectOffsetY : 0;
+        if (_publisherGrowsGlyphCells && extraModeThreeGrowth && style.RenderMode == 3)
+            growth = checked(growth + style.EffectOffsetY);
+        return new GlyphPublication(growth, shiftX, shiftY);
+    }
+
+    private GlyphPublication PaddedPublication(int aliasedShiftX, int aliasedShiftY)
+        => new(_glyphPaddings.Bottom, checked(_glyphPaddings.Left + aliasedShiftX),
+               checked(_glyphPaddings.Top + aliasedShiftY))
+        {
+            GrowLeft = _glyphPaddings.Left, GrowTop = _glyphPaddings.Top, GrowRight = _glyphPaddings.Right,
+        };
+
+    // The rules the ADV builder, op 0x82's redraw and History draw a ruby with: in AGE 4.43B's RubyShiftMode 2, its ink
+    // the top padding above its cells (adv_text_draw_ruby_over_row@0x462d70 at 0x4630c1,
+    // text_redraw_retained_group@0x463310 at 0x46406c, History's renderer at 0x464f9c, which moves the ruby box's top
+    // and bottom by it), the paddings on or not. Native's History and the port's show 魔導巧殻's ruby at the same
+    // pixels (docs/engine-re.md, "Arterial against 魔導巧殻, triaged").
+    private RubyLayoutRules LiveRubyRules
+        => _rubyRules.PublisherRaisesByTopPadding && _glyphPaddings.Top != 0
+            ? _rubyRules with { InkRaise = _glyphPaddings.Top }
+            : _rubyRules;
+
+    // A ruby character in AGE 4.43B's RubyShiftMode 2: its cell and object move up by the top padding, the paddings on
+    // or not.
+    private GlyphPublication RubyPublication
+        => _rubyRules.PublisherRaisesByTopPadding && _glyphPaddings.Top != 0
+            ? new GlyphPublication(-_glyphPaddings.Top, 0, _glyphPaddings.Top) { GrowTop = _glyphPaddings.Top }
+            : default;
+
+    // AGE 4.43B fades a glyph in over MessageFade percent of the glyph delay, when both are above 0.
+    private int GlyphFadeMs
+        => _messageFade > 0 && _messageGlyphDelayMilliseconds > 0
+            ? (int)Math.Min(int.MaxValue, (long)_messageFade * _messageGlyphDelayMilliseconds / 100)
+            : 0;
 
     // The publishers of 4.33G and 4.38D move the object by the effect offsets, over the text scale (1 in the port), in
     // effect mode 3 while message:UseAntiFont (their text manager's +0x548) is 0: the drawer then starts the string at
@@ -218,7 +270,10 @@ public sealed partial class TextManager
             gfx, presentation.PublicationTarget(reveal.FirstGlyphIndex, reveal.GlyphCount, reveal.Ticks),
             TimedPublication);
         if (presentation.PublishedGlyphCount != before)
+        {
+            BindLineImages(gfx, presentation, animate: true);
             _graphics.RequestPresentation();
+        }
         if (!IsRevealing)
         {
             _scene.Reveal = null;

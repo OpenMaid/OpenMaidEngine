@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Ome.Engine.Devices;
 using Ome.Engine.Hosting;
 using Ome.Engine.Model;
 using Ome.Engine.Natives;
@@ -67,6 +68,26 @@ public class Scene3DOpsTests
         Assert.Equal([0, 1], scene.Meshes.Keys.Order());
         Assert.Equal(7L, scene.Leaf!.Count);                 // op 0x328's first operand is the number of leaves
         Assert.Equal([0x1234L, 0x1235L], scene.Leaf.Meshes.Select(mesh => mesh.ResourceId));
+    }
+
+    [Theory]
+    // 魔導巧殻's TITLE.BIN: additive, opaque white.
+    [InlineData(1, 0xff, 0xffffff, FramePolygonBlend.Additive, 0xffffffffu)]
+    // An alpha above 0xff is 0xff; blend 3 is the reverse subtract, any value but 1 to 3 the alpha blend.
+    [InlineData(3, 0x1ff, 0x123456, FramePolygonBlend.Subtractive, 0xff123456u)]
+    [InlineData(9, 0x40, 0x123456, FramePolygonBlend.Alpha, 0x40123456u)]
+    // A negative alpha or RGB comes from the colour of the object whose handle is the first operand: none, so white.
+    [InlineData(2, -1, -1, FramePolygonBlend.Replace, 0xffffffffu)]
+    public void Op33fSetsTheEffectsBlendAndTheLeavesColour(int blend, long alpha, long rgb, FramePolygonBlend expected,
+                                                          uint color)
+    {
+        // op_0x33f_set_scene_effect_blend_color@0x4265f0 (AGE 4.43B).
+        var (vm, _) = Run("SYS4443", (0x33f, [I(blend), I(alpha), I(rgb)]));
+
+        Assert.Equal("exit", vm.HaltReason);
+        Scene3DState scene = vm.Graphics.Scene3D;
+        Assert.Equal((blend, color), (scene.EffectBlendMode, scene.LeafColorArgb));
+        Assert.Equal(expected, scene.EffectBlend);
     }
 
     [Fact]

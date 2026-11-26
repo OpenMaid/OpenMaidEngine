@@ -1,0 +1,36 @@
+omp = 3
+id = "example.koukaku-event-log"
+name = "Event log (魔導巧殻)"
+version = "1.0.0"
+description = "Logs every event 魔導巧殻's base mod raises, with its fields, to diagnostics/lua.log and to a list the console reads, and gives the player's nation one 転移の石 (item 101) at each koukaku.data.ready through the base mod's helper."
+
+[game]
+profile = "koukaku"
+target = "extended"
+
+[lua]
+api = 1
+
+[[requires]]
+id = "koukaku-base"
+version = ">=1.0, <2"
+
+[[hooks]]
+event = "koukaku.data.layered"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "koukaku.data.ready"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "koukaku.battlefield.loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "koukaku.turn.week_ends"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "koukaku.experience.award"
+handler = "event_log.lua:on_event"

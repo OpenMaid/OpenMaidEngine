@@ -183,6 +183,18 @@ public sealed record AdvTextRedrawBatch(
     public Localization.PresentedText? Presented { get; init; }
 }
 
+/// <summary>AGE 4.43B's line images of an ADV layout (its window record's +0xe0 to +0x118; ops 0x25c to 0x25f): while
+/// <see cref="Enabled"/>, the publishers bind one object per text row the published glyphs reach, up to
+/// <see cref="Count"/> from <see cref="FirstHandle"/>, each showing the surface rectangle at the layout's origin plus
+/// the offsets and one row pitch (the font size and the line spacing) lower per row.</summary>
+public readonly record struct AdvTextLineImages(
+    bool Enabled, int Surface, int SourceLeft, int SourceTop, int SourceRight, int SourceBottom, int OffsetX, int OffsetY,
+    int FadeDelayMs, int FadeDurationMs, int BlendMode, uint Color, uint FadeColor, long FirstHandle, long Count)
+{
+    /// <summary>A window op 0x25c has not set.</summary>
+    public static AdvTextLineImages None { get; } = default;
+}
+
 /// <summary>
 /// Engine-owned retained ADV backlog. Native numbered saves serialize this same model; live HISTORY.BIN
 /// reads it directly, so restored history is immediately available to the script UI.
@@ -209,6 +221,7 @@ public sealed class AdvTextHistory
         public long WaitIndicatorObjectHandle = -1;
         public long TextObjectRangeFirst = -1;
         public long TextObjectRangeCount;
+        public AdvTextLineImages LineImages = AdvTextLineImages.None;
     }
 
     /// <summary>Native's ADV text layouts, slots 0 to 9 (text_manager+0x414, adv_text_layouts_allocate@0x44f6d0; 4.33G
@@ -353,6 +366,51 @@ public sealed class AdvTextHistory
         layout.TextObjectRangeFirst = firstHandle;
         layout.TextObjectRangeCount = count;
     }
+
+    /// <summary>Op 0x25c (text_window_set_line_images@0x454380): the layout's line images from surface
+    /// <paramref name="surface"/>'s rectangle, placed at the origin plus the offsets, one row pitch lower each, in white
+    /// with no animation (window +0xe0 to +0x110). Slot 0 is the current layout. The handles stay as op 0x25d set them.
+    /// </summary>
+    public void SetLineImages(int requestedSlot, int offsetX, int offsetY, int surface, int sourceX, int sourceY,
+                              int width, int height)
+    {
+        LayoutState layout = GetOrCreateLayout(ResolveLayout(requestedSlot));
+        layout.LineImages = layout.LineImages with
+        {
+            Enabled = true, Surface = surface, SourceLeft = sourceX, SourceTop = sourceY,
+            SourceRight = unchecked(sourceX + width), SourceBottom = unchecked(sourceY + height),
+            OffsetX = offsetX, OffsetY = offsetY, FadeDelayMs = 0, FadeDurationMs = 0, BlendMode = 0,
+            Color = 0xffffffff, FadeColor = 0xffffffff,
+        };
+    }
+
+    /// <summary>Op 0x25d (op_0x25d_set_text_window_line_image_handles@0x424f80): layout object <paramref name="slot"/>'s
+    /// line image handles (window +0x114, +0x118). The op indexes the table itself, as op 0x213 does: slot 0 is layout
+    /// object 0.</summary>
+    public void SetLineImageHandles(int slot, long firstHandle, long count)
+    {
+        LayoutState layout = GetOrCreateLayout(slot);
+        layout.LineImages = layout.LineImages with { FirstHandle = firstHandle, Count = count };
+    }
+
+    /// <summary>Op 0x25e (text_window_set_line_images_fade@0x454400): the colour animation a line image starts when the
+    /// timed publisher binds it, which a duration of 0 turns off. Slot 0 is the current layout.</summary>
+    public void SetLineImageFade(int requestedSlot, int delayMs, int durationMs, uint color)
+    {
+        LayoutState layout = GetOrCreateLayout(ResolveLayout(requestedSlot));
+        layout.LineImages = layout.LineImages with { FadeDelayMs = delayMs, FadeDurationMs = durationMs, FadeColor = color };
+    }
+
+    /// <summary>Op 0x25f (text_window_set_line_images_color@0x454440): the blend mode and colour each line image is bound
+    /// with. Slot 0 is the current layout.</summary>
+    public void SetLineImageColor(int requestedSlot, int blendMode, uint color)
+    {
+        LayoutState layout = GetOrCreateLayout(ResolveLayout(requestedSlot));
+        layout.LineImages = layout.LineImages with { BlendMode = blendMode, Color = color };
+    }
+
+    /// <summary>Layout object <paramref name="slot"/>'s line images (no current-layout selection).</summary>
+    public AdvTextLineImages GetLineImages(int slot) => GetOrCreateLayout(slot).LineImages;
 
     public AdvTextLayoutPresentationBinding GetPresentationBinding(int requestedSlot)
         => GetLayoutObjectBinding(ResolveLayout(requestedSlot));

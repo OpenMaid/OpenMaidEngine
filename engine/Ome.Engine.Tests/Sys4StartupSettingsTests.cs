@@ -52,6 +52,17 @@ public class Sys4StartupSettingsTests
     }
 
     [Fact]
+    public void TransferMusicVolumeIsZeroWithoutTheKeyAndTheVmTakesIt()
+    {
+        // set:TransferMusicVolume (AGE 4.43B): registered 0; 魔導巧殻's trailer sets 1.
+        Assert.Equal(0, Sys4AssetCatalog.Parse(BuildCatalog()).StartupSettings.TransferMusicVolume);
+        Sys4StartupSettings koukaku = Sys4AssetCatalog.Parse(BuildCatalog(("TRANSFERMUSICVOLUME", "1"))).StartupSettings;
+        Assert.Equal(1, koukaku.TransferMusicVolume);
+        Assert.Equal(1, GodotVmOptions.Create(selftest: false, ignoreExitRequests: false, koukaku)
+            .TransferMusicVolume);
+    }
+
+    [Fact]
     public void Sys4433FontAndRubyKeysUseTheirRegisteredDefaults()
     {
         Sys4StartupSettings missing = Sys4AssetCatalog.Parse(BuildCatalog()).StartupSettings;

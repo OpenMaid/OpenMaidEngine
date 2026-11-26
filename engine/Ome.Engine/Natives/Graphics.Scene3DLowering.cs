@@ -11,9 +11,6 @@ namespace Ome.Engine.Natives;
 // 3D pass.
 public sealed partial class Graphics
 {
-    /// <summary>The far plane native's projection takes, and its near one (gfx_setup_3d_transforms_and_lights@0x486260).
-    /// </summary>
-    private const float NearPlane = 1f, FarPlane = 1000f;
     /// <summary>The most steps one frame takes (display_scene_effects_step_60hz@0x44f6f0).</summary>
     private const int MostStepsAFrame = 100;
     private const int DirectionalLight = 3;
@@ -117,7 +114,7 @@ public sealed partial class Graphics
     private void LowerLeaves(List<FrameItem> items)
     {
         if (_scene3D.Leaf is not { } effect || !EffectsDrawable) return;
-        Matrix4x4 viewProjection = View() * Projection(_screenWidth, _screenHeight);
+        Matrix4x4 viewProjection = View() * Projection(_screenWidth, _screenHeight, _scene3D.Projection);
         Vector3 ambient = Rgb(_scene3D.AmbientArgb ?? 0);
         foreach (Scene3DLeaf leaf in effect.Leaves)
         {
@@ -174,10 +171,10 @@ public sealed partial class Graphics
             {
                 int vertex = indices[triangle * 3 + corner];
                 (float x, float y) = Screen(_leafClip[vertex]);
-                corners[at++] = new FramePolygonVertex(x, y, LitColor(material, _leafLight[vertex], fade), 0, 0);
+                corners[at++] = new FramePolygonVertex(x, y, LitColor(material, _leafLight[vertex], fade, _scene3D.LeafColorArgb), 0, 0);
             }
         }
-        return new FramePolygonGeometry(corners, FramePolygonBlend.Alpha);
+        return new FramePolygonGeometry(corners, _scene3D.EffectBlend);
     }
 
     // The light a corner gets, before the material: the ambient colour plus each directional light's diffuse times
@@ -207,12 +204,18 @@ public sealed partial class Graphics
     }
 
     // The fixed function's colour with the material native draws: its ambient is its diffuse (mesh_load_from_x_memory
-    // copies it), and every colour is multiplied by (1, 1, 1, fade). Each channel is clamped, then rounded to a byte.
-    private static uint LitColor(XMeshMaterial material, Vector3 light, float fade)
+    // copies it), and every colour is multiplied by (1, 1, 1, fade); AGE 4.43B multiplies it by op 0x33f's colour, alpha
+    // times fade (the leaf draw 0x474970 and 0x4747d0), which is white until the op runs. Each channel is clamped, then
+    // rounded to a byte.
+    private static uint LitColor(XMeshMaterial material, Vector3 light, float fade, uint argb)
     {
+        var tint = new Vector4((argb >> 16 & 0xff) / 255f, (argb >> 8 & 0xff) / 255f, (argb & 0xff) / 255f,
+                               (argb >> 24) / 255f);
         Vector4 diffuse = material.Diffuse;
-        Vector3 color = material.Emissive + new Vector3(diffuse.X, diffuse.Y, diffuse.Z) * light;
-        return UnitByte(diffuse.W * fade) << 24 | UnitByte(color.X) << 16 | UnitByte(color.Y) << 8 | UnitByte(color.Z);
+        Vector3 color = (material.Emissive + new Vector3(diffuse.X, diffuse.Y, diffuse.Z) * light)
+                        * new Vector3(tint.X, tint.Y, tint.Z);
+        return UnitByte(diffuse.W * fade * tint.W) << 24 | UnitByte(color.X) << 16 | UnitByte(color.Y) << 8
+               | UnitByte(color.Z);
     }
 
     /// <summary>A colour channel from 0 to 1 as a byte: clamped, then rounded.</summary>
@@ -230,7 +233,7 @@ public sealed partial class Graphics
     private void LowerRain(List<FrameItem> items, bool rings)
     {
         if (_scene3D.Rain is not { } effect || !EffectsDrawable) return;
-        Matrix4x4 viewProjection = View() * Projection(_screenWidth, _screenHeight);
+        Matrix4x4 viewProjection = View() * Projection(_screenWidth, _screenHeight, _scene3D.Projection);
         uint rgb = (_scene3D.AmbientArgb ?? 0) & 0xffffff;
         var corners = new List<FramePolygonVertex>();
         foreach (Scene3DRainDrop drop in effect.Drops)
@@ -249,7 +252,7 @@ public sealed partial class Graphics
             }
             else LowerLine(Scene3DRainEffect.StreakTop, Scene3DRainEffect.StreakBottom, clipFromDrop, argb, corners);
             if (corners.Count > 0)
-                items.Add(FrameItem.PolygonItem(new FramePolygonGeometry([.. corners], FramePolygonBlend.Alpha), 1f));
+                items.Add(FrameItem.PolygonItem(new FramePolygonGeometry([.. corners], _scene3D.EffectBlend), 1f));
         }
     }
 
@@ -308,7 +311,8 @@ public sealed partial class Graphics
     {
         if (_scene3D.Snow is not { } effect || effect.Flakes.Count == 0 || !EffectsDrawable)
             return;
-        Matrix4x4 view = _scene3D.EffectView, projection = Projection(_screenWidth, _screenHeight);
+        Matrix4x4 view = _scene3D.EffectView,
+                  projection = Projection(_screenWidth, _screenHeight, _scene3D.EffectProjection);
         var depth = new float[effect.Flakes.Count];
         for (int index = 0; index < depth.Length; index++)
             depth[index] = Vector4.Transform(new Vector4(effect.Flakes[index].Position, 1f), view).Z;
@@ -326,7 +330,7 @@ public sealed partial class Graphics
             uint argb = UnitByte(effect.Alpha(flake)) << 24 | 0xffffff;
             FramePolygonVertex v0 = Vertex(topLeft, 0, 0), v1 = Vertex(topRight, 1, 0);
             FramePolygonVertex v2 = Vertex(bottomLeft, 0, 1), v3 = Vertex(bottomRight, 1, 1);
-            var geometry = new FramePolygonGeometry([v0, v1, v2, v1, v3, v2], FramePolygonBlend.Alpha);
+            var geometry = new FramePolygonGeometry([v0, v1, v2, v1, v3, v2], _scene3D.EffectBlend);
             items.Add(texture is { } image
                 ? FrameItem.PolygonItem(geometry, 1f, image.Image, image.AssetId, image.IsDynamic, effect.TextureSlot, -1)
                 : FrameItem.PolygonItem(geometry, 1f));
@@ -385,17 +389,21 @@ public sealed partial class Graphics
                              -Vector3.Dot(xAxis, eye), -Vector3.Dot(yAxis, eye), -Vector3.Dot(zAxis, eye), 1);
     }
 
-    /// <summary>Native's projection: D3DXMatrixPerspectiveFovLH(π/4, the viewport's width over its height, 1, 1000).
-    /// </summary>
-    internal static Matrix4x4 Projection(int width, int height)
+    // The degrees-to-radians factor gfx_build_projection@0x48a4f0 multiplies by: π/180 as a float, widened (0x6202f0).
+    private const double RadiansPerDegree = 0.01745329238474369;
+
+    /// <summary>Native's projection, gfx_build_projection: D3DXMatrixPerspectiveFovLH(the field of view in radians, the
+    /// viewport's width over its height, near, far). 45° gives π/4 exactly, 4.38D's fixed projection.</summary>
+    internal static Matrix4x4 Projection(int width, int height, Scene3DProjection projection)
     {
-        float yScale = 1f / MathF.Tan(MathF.PI / 8f);
+        float fieldOfView = (float)(projection.FieldOfViewDegrees * RadiansPerDegree);
+        float yScale = 1f / MathF.Tan(fieldOfView / 2f);
         float xScale = yScale / ((float)width / height);
-        float depth = FarPlane / (FarPlane - NearPlane);
+        float depth = projection.Far / (projection.Far - projection.Near);
         return new Matrix4x4(xScale, 0, 0, 0,
                              0, yScale, 0, 0,
                              0, 0, depth, 1,
-                             0, 0, -NearPlane * depth, 0);
+                             0, 0, -projection.Near * depth, 0);
     }
 
     // A D3DCOLOR's red, green and blue, 0 to 1, as Direct3D reads a colour render state and as native's ops convert

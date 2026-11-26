@@ -80,7 +80,8 @@ public sealed record GameProfileManifest
         DirectSceneDiagnosticPolicy? directSceneDiagnostics = null,
         DebugSceneLaunchPolicy? debugSceneLaunch = null,
         GameLauncherArt? launcher = null,
-        GameSupport? support = null)
+        GameSupport? support = null,
+        GameTextEntry? textEntry = null)
     {
         RequireStableId(id, nameof(id));
         ArgumentException.ThrowIfNullOrWhiteSpace(displayTitle);
@@ -117,6 +118,7 @@ public sealed record GameProfileManifest
         DebugSceneLaunch = debugSceneLaunch;
         Launcher = launcher;
         Support = support ?? GameSupport.Supported;
+        TextEntry = textEntry ?? GameTextEntry.NameEntry;
     }
 
     public string Id { get; }
@@ -139,6 +141,9 @@ public sealed record GameProfileManifest
     /// <summary>How far the game has come (docs/adding-a-game.md §1). A manifest file must state it; a manifest
     /// built in code without one is a supported game's.</summary>
     public GameSupport Support { get; }
+    /// <summary>The <c>textEntry</c> entry: the rule and words of the game's dialog 10, which op 0x144 opens;
+    /// Himegari's when the manifest has none.</summary>
+    public GameTextEntry TextEntry { get; }
     public string PersistenceNamespace => Persistence.StorageNamespace;
     public bool PersistenceWritesEnabled => Persistence.WritesEnabled;
 

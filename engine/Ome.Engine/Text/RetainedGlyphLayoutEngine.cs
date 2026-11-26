@@ -127,12 +127,16 @@ public sealed class RetainedGlyphLayoutEngine
             ? ReferenceRequest(options.Style, glyphs[0].Policy, glyphs[0].Antialias)
             : null;
         GlyphMask? aspectReference = referenceRequest != null ? _rasterizer.Rasterize(referenceRequest) : null;
-        // The realized font's 激, whose ink top the aspect-mode raise compares (+0x31430).
-        GlyphMask? realizedReference = aspectReference != null
-            ? _rasterizer.Rasterize(new GlyphRasterRequest(
-                glyphs[0].FontFace, glyphs[0].PixelHeight, glyphs[0].RequestedWidth, glyphs[0].Weight,
-                '激', AspectFontRealization.ReferenceCode, glyphs[0].Policy, glyphs[0].Antialias))
+        // The top of 激 that the aspect-mode raise compares (+0x31430): GGO_METRICS's, which the font realization
+        // measures, else the realized font's drawn 激's.
+        int? referenceOriginY = aspectReference != null
+            ? options.FontRealization?.ReferenceGlyphOriginY(
+                glyphs[0].FontFace, glyphs[0].PixelHeight, glyphs[0].Weight, options.Style.AspectMode)
             : null;
+        if (aspectReference != null && referenceOriginY == null)
+            referenceOriginY = _rasterizer.Rasterize(new GlyphRasterRequest(
+                glyphs[0].FontFace, glyphs[0].PixelHeight, glyphs[0].RequestedWidth, glyphs[0].Weight,
+                '激', AspectFontRealization.ReferenceCode, glyphs[0].Policy, glyphs[0].Antialias)).OriginY;
         bool placesInCell = aspectReference != null
                             && options.FontRealization?.PlacesGlyphsInCell(glyphs[0].FontFace) == true;
         // An opening bracket ends at the reference's GGO_METRICS black box (+0x313d8), not the raster's.
@@ -209,7 +213,7 @@ public sealed class RetainedGlyphLayoutEngine
             // keeps the measured cell (Himegari's mode-3 (1,1) text lands one pixel right and down).
             bool shiftByEffect = !request.Antialias && options.Style.RenderMode != 0;
             int raise = aspectReference != null
-                ? AspectGlyphRaise(mask, aspectReference, realizedReference!, request.PixelHeight)
+                ? AspectGlyphRaise(mask, aspectReference, referenceOriginY!.Value, request.PixelHeight)
                 : 0;
             // A glyph an entry narrows (localization spec §7.2) is placed in its narrowed cell.
             int drawX = placesInCell
@@ -249,19 +253,21 @@ public sealed class RetainedGlyphLayoutEngine
 
     /// <summary>
     /// How far SYS4433's aspect mode draws a glyph above its cell (adv_text_append_horizontal_glyph_records@0x45b710
-    /// at 0x45be16, and History's renderer @0x456490): with <c>d = trunc(tmAscent - ref.tmAscent - 0.5)</c> against the
-    /// reference ＭＳ ゴシック and <c>e = trunc(tmAscent - 激.gmptGlyphOrigin.y - 1)</c> for the realized font's 激, the
-    /// raise is 0 when d is 0 and the larger of the two otherwise. A face as tall as the reference is not raised;
-    /// Kamidori's メイリオ bold at 22 pixels is raised 3. The record keeps the cell.
+    /// at 0x45be16, and History's renderer @0x456490; 4.43B's builder at 0x4693eb): with
+    /// <c>d = trunc(tmAscent - ref.tmAscent - 0.5)</c> against the reference ＭＳ ゴシック and
+    /// <c>e = trunc(tmAscent - 激.gmptGlyphOrigin.y - 1)</c> for 激's GGO_METRICS top
+    /// (<paramref name="referenceOriginY"/>; <see cref="AspectFontRealization.ReferenceGlyphOriginY"/>), the raise is 0
+    /// when d is 0 and the larger of the two otherwise. A face as tall as the reference is not raised; Kamidori's
+    /// メイリオ bold at 22 pixels is raised 3, and 魔導巧殻's at 30 pixels 6 (d 5, e 32 - 25 - 1). The record keeps the
+    /// cell.
     /// </summary>
-    public static int AspectGlyphRaise(GlyphMask glyph, GlyphMask reference, GlyphMask realizedReference, int pixelHeight)
+    public static int AspectGlyphRaise(GlyphMask glyph, GlyphMask reference, int referenceOriginY, int pixelHeight)
     {
         ArgumentNullException.ThrowIfNull(glyph);
         ArgumentNullException.ThrowIfNull(reference);
-        ArgumentNullException.ThrowIfNull(realizedReference);
         int ascent = AgeGlyphMaskCompositor.CellTopToBaseline(glyph, pixelHeight);
         int d = (int)(ascent - AgeGlyphMaskCompositor.CellTopToBaseline(reference, pixelHeight) - 0.5);
-        int e = (int)(ascent - realizedReference.OriginY - 1.0);
+        int e = (int)(ascent - referenceOriginY - 1.0);
         return d == 0 ? 0 : Math.Max(d, e);
     }
 

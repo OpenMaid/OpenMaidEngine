@@ -34,6 +34,12 @@ public class Sys4CorpusScannerTests
     public void InstalledZeroCatalogCorpusDecodesThroughRuntimeStore()
         => AssertInstalledCorpus("bg0", "SYS4415");
 
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    [Fact]
+    public void InstalledKoukakuCatalogCorpusDecodesThroughRuntimeStore()
+        => AssertInstalledCorpus("koukaku", "SYS4443");
+
     private static void AssertInstalledCorpus(
         string profileId, string abiId)
     {

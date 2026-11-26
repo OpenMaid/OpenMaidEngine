@@ -103,10 +103,15 @@ public class NaturalBootIntegrationTests
         public bool StopAtNextPollSleep;
         public override long InputClockMilliseconds => _now;
 
-        public NewGameInputHost(int titlePointerX = 400, int titlePointerY = 300)
+        private readonly (int X, int Y)? _gameStartPointer;
+
+        /// <param name="gameStartPointer">Where GAMESTART's own page is clicked, for a game whose Game Start opens a
+        /// page with a start button (魔導巧殻's 初期設定); without it GAMESTART gets the input callbacks alone.</param>
+        public NewGameInputHost(int titlePointerX = 400, int titlePointerY = 300, (int X, int Y)? gameStartPointer = null)
         {
             _titlePointerX = titlePointerX;
             _titlePointerY = titlePointerY;
+            _gameStartPointer = gameStartPointer;
         }
 
         public void BeginGameStart()
@@ -159,6 +164,11 @@ public class NaturalBootIntegrationTests
                     Vm.UpdatePointer(_titlePointerX, _titlePointerY);
                     Vm.UpdateMouseButtonState(0x1, true);
                 }
+                else if (_gameStartPointer is { } point)
+                {
+                    Vm.UpdatePointer(point.X, point.Y);
+                    Vm.UpdateMouseButtonState(0x1, true);
+                }
                 Vm.UpdateInputCallbackState(input, true);
             }
             // TITLE polls its registered mouse callback every 50 ms and activates on the release edge.
@@ -166,7 +176,7 @@ public class NaturalBootIntegrationTests
             else if (cycle == 120)
             {
                 int input = _inGameStart && polls <= 400 ? 0 : 4;
-                if (!_inGameStart) Vm.UpdateMouseButtonState(0x1, false);
+                if (!_inGameStart || _gameStartPointer is not null) Vm.UpdateMouseButtonState(0x1, false);
                 Vm.UpdateInputCallbackState(input, false);
                 Vm.QueueInputCallback(10); // native/main-thread release callback unlocks the menu input gate
             }
@@ -348,6 +358,64 @@ public class NaturalBootIntegrationTests
         Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
         Assert.EndsWith("「よし、これでこっちの動きは封じた！」", reachedAdv.Text);
         Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
+    /// <summary>P2 (docs/adding-a-game.md): 魔導巧殻's own boot reaches SC0000's first page with no opcode skipped,
+    /// through the title, GAMESTART's 初期設定 page and the PROLOGUE movie.</summary>
+    [Fact]
+    [Trait("Profile", "koukaku")]
+    public void KoukakuSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("koukaku");
+        // The title's Game Start entry and GAMESTART's ゲーム開始 (tools/drive/koukaku.toml, title.start and
+        // start.begin).
+        var (reachedAdv, entered) = RunNewGameToFirstAdvPage("koukaku", gameRoot, [gameRoot], 160, 560, (995, 475),
+                                                          maxSteps: 20_000_000);   // SC0000 comes after 8.9M steps
+        Assert.Contains("TITLE.BIN", entered);
+        Assert.Contains("GAMESTART.BIN", entered);
+        Assert.Contains("PROLOGUE.BIN", entered);
+        Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+        // The two U+E000 are cp932 0xF040, a glyph of the game's own (SC0000.BIN's string at 0x10d91).
+        Assert.EndsWith("一面を覆い尽くす、焼け焦げた木々や兵\uE000\uE000。", reachedAdv.Text);
+        Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
+    /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against 魔導巧殻's
+    /// opening scene through the game's ADV module, and its line is the first ADV page of a natural new game.</summary>
+    [Fact]
+    [Trait("Profile", "koukaku")]
+    public void KoukakuPrologueFragmentIsTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("koukaku");
+        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        Assert.True(File.Exists(sys4Ini), $"koukaku install not found at {gameRoot}");
+        GameProfileManifest profile = GameProfileRegistry.BuiltIn.Find("koukaku")!;
+        OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, profile.EngineAbiId);
+        Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
+        var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
+        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("koukaku", sys4Ini, catalog,
+            store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
+            Ome.Mods.Linking.GameToolchain.Shipped("koukaku"));
+        string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.koukaku-prologue-line");
+        using var mod = Ome.Mods.Packages.ModPackage.Open(source);
+        var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
+        Assert.True(link.Succeeded, link.Report.Render());
+
+        string layer = Path.Combine(Path.GetTempPath(), "ome-koukaku-line-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(layer);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(layer, "SC0000.BIN"), link.Scripts["SC0000.BIN"].Bytes);
+            // The title's Game Start entry and GAMESTART's ゲーム開始, as the boot test above.
+            var (reachedAdv, _) = RunNewGameToFirstAdvPage("koukaku", gameRoot, [layer, gameRoot], 160, 560, (995, 475),
+                                                           maxSteps: 20_000_000);
+            Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+            Assert.Equal("[OMS] A mod inserted this line before the opening scene's first page.", reachedAdv.Text);
+        }
+        finally
+        {
+            Directory.Delete(layer, recursive: true);
+        }
     }
 
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
@@ -558,7 +626,8 @@ public class NaturalBootIntegrationTests
         => RunNewGameToFirstAdvPage("kamidori", gameRoot, looseRoots, 700, 300);
 
     private static (ReachedKamidoriAdvPageException Reached, List<string> Entered) RunNewGameToFirstAdvPage(
-        string profileId, string gameRoot, string[] looseRoots, int titlePointerX, int titlePointerY)
+        string profileId, string gameRoot, string[] looseRoots, int titlePointerX, int titlePointerY,
+        (int X, int Y)? gameStartPointer = null, long maxSteps = 5_000_000)
     {
         string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
         Assert.True(File.Exists(sys4Ini), $"{profileId} install not found at {gameRoot}");
@@ -569,11 +638,14 @@ public class NaturalBootIntegrationTests
         var scripts = new Sys4ScriptProvider(
             table, catalog, new Sys4AssetStore(catalog, gameRoot, looseRoots));
         var rig = new AudioRig();
-        var host = new NewGameInputHost(titlePointerX, titlePointerY) { AudioDevice = rig.Device, Clock = rig.Clock };
+        var host = new NewGameInputHost(titlePointerX, titlePointerY, gameStartPointer)
+        {
+            AudioDevice = rig.Device, Clock = rig.Clock,
+        };
         var sink = new KamidoriNaturalBootSink();
         var vm = new VirtualMachine(
             scripts.RequireByName(profile.NaturalBootScript), table, host,
-            new VmOptions(MaxSteps: 5_000_000), scripts, sink,
+            new VmOptions(MaxSteps: maxSteps), scripts, sink,
             build: EngineBuilds.ForProfile(profile), skipAndAuto: rig.Skip, audio: rig.Audio, tick: rig.Tick);
         host.Vm = vm;
         sink.OnEnter = name =>

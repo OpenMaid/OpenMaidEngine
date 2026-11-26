@@ -85,12 +85,13 @@ public class GdiGlyphRealizationTests
         FontProbeMetrics natural = GdiGlyphRealization.Measure(drawn, face, Request(22, 0, 700), true, glyph: 1);
         FontProbeMetrics scaled = GdiGlyphRealization.Measure(drawn, face, Request(22, -10, 700), true, glyph: 1);
 
-        // The strike's ink is 5 wide, and simulated bold widens it by one; tmAveCharWidth gains one too.
-        Assert.Equal(new FontProbeMetrics(12, 6, (short)drawn.CellAdvanceX, 22), bitmap);
+        // The strike's ink is 5 wide, and simulated bold widens it by one; tmAveCharWidth gains one too. The top is the
+        // drawn glyph's.
+        Assert.Equal(new FontProbeMetrics(12, 6, (short)drawn.CellAdvanceX, 22, drawn.OriginY), bitmap);
         Assert.Equal(6u, natural.BlackBoxX);
         Assert.Equal(12, natural.AverageCharWidth);
         // A scaled request is measured on its outline: the drawn glyph's ink.
-        Assert.Equal(new FontProbeMetrics(11, 21, (short)drawn.CellAdvanceX, 22), scaled);
+        Assert.Equal(new FontProbeMetrics(11, 21, (short)drawn.CellAdvanceX, 22, drawn.OriginY), scaled);
     }
 
     [Fact]
@@ -98,9 +99,9 @@ public class GdiGlyphRealizationTests
     {
         GlyphMask natural = Natural();
 
-        Assert.Equal(new FontProbeMetrics(11, 20, 21, 23),
+        Assert.Equal(new FontProbeMetrics(11, 20, 21, 23, natural.OriginY),
                      GdiGlyphRealization.Measure(natural, null, Request(22, 0), simulatedBold: false, glyph: 0));
-        Assert.Equal(new FontProbeMetrics(8, 20, 21, 23),
+        Assert.Equal(new FontProbeMetrics(8, 20, 21, 23, natural.OriginY),
                      GdiGlyphRealization.Measure(natural, null, Request(22, -8), simulatedBold: false, glyph: 0));
     }
 }

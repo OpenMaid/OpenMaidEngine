@@ -169,6 +169,13 @@ public sealed class InstallIntakeTests : IDisposable
     [Trait("Profile", "bg0")]
     public void InstalledZeroReadsAsItsObservationRecordsIt() => AssertInstalled("bg0");
 
+    /// <summary>Every opcode its scripts use has a handler since 2026-11-26, when the models, the region tests and
+    /// op 0x2ce got theirs (docs/backlog.md, "Onboard 魔導巧殻").</summary>
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    public void InstalledKoukakuReadsAsItsObservationRecordsIt() => AssertInstalled("koukaku");
+
     /// <summary>A game's install: the intake names its profile, finds nothing new, and counts what the registry's
     /// observation counts (vm-map/opcodes.toml), though it decodes with the whole catalog. A game whose scripts still
     /// use opcodes the port has no handler for passes <paramref name="complete"/> false: the intake must then list

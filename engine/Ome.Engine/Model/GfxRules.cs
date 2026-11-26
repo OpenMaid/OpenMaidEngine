@@ -15,4 +15,9 @@ namespace Ome.Engine.Model;
 /// <param name="GuardsFrameSurface">Whether start-up guards slot 38, the frame's surface, from the release worker as well
 /// as the composite surfaces 36 and 37. 4.24J's start-up sets only those two guards; 4.24N's, 4.33G's and 4.38D's set
 /// the third too, whether or not they create the surface (docs/engine-re.md, "Engine-owned surfaces").</param>
-public sealed record GfxRules(bool UnboundObjectReadsAbsent, bool SpriteAlphaTest = true, bool GuardsFrameSurface = false);
+/// <param name="CameraHandsEffectsTheView">Whether op 0x32c hands the display's 3D effects the projection, the new view
+/// and the world at once, as AGE 4.43B's camera (0x48a050) does whenever the display exists; older builds' hand them
+/// only at the next device setup. Only the snow projects with the transforms it was handed (docs/engine-re.md, "Arterial
+/// against 魔導巧殻, triaged").</param>
+public sealed record GfxRules(bool UnboundObjectReadsAbsent, bool SpriteAlphaTest = true, bool GuardsFrameSurface = false,
+                              bool CameraHandsEffectsTheView = false);

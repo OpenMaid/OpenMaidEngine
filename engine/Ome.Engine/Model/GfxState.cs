@@ -37,6 +37,8 @@ public sealed partial class GfxState
         // ascending index. The frame walk merges the two (GfxState.Polygons.cs).
         public readonly Dictionary<long, GfxPolygon> Polygons = new();
         public readonly List<long> OrderedPolygonHandles = new();
+        // AGE 4.43B's models: a third map keyed by the same handles (native owner +0x43c; GfxState.Models.cs).
+        public readonly Dictionary<long, GfxModel> Models = new();
         // Ops 0x229-0x22e address one embedded gfx-object record outside the ordinary object map. Its sampled
         // matrix is post-multiplied onto only the selected handle range during native composition. FIELD uses
         // this as its map camera while the surrounding dungeon UI remains screen-fixed.
@@ -114,7 +116,7 @@ public sealed partial class GfxState
                 long handle = layout.FirstHandle + index;
                 GfxObject bound = drawn.GetValueOrDefault(handle) ?? new GfxObject();
                 bound.SourceSlot = layout.SurfaceSlot;
-                bound.SrcRect = (cell.Left, cell.Top, cell.Width, checked(cell.Height + placement.CellGrowth));
+                bound.SrcRect = placement.SourceRect;
                 bound.SrcCollapsed = false;
                 bound.V24 = (placement.ObjectPosition.X, placement.ObjectPosition.Y, 0);
                 bound.Visible = true;
@@ -126,9 +128,8 @@ public sealed partial class GfxState
                 // Op 0x20a's pending record, past the last source glyph: empty, as it is bound.
                 long handle = layout.FirstHandle + layout.Glyphs.Count;
                 GfxObject bound = drawn.GetValueOrDefault(handle) ?? new GfxObject();
-                AdvRetainedGlyphRecord cell = pending.Record;
                 bound.SourceSlot = layout.SurfaceSlot;
-                bound.SrcRect = (cell.Left, cell.Top, cell.Width, checked(cell.Height + pending.CellGrowth));
+                bound.SrcRect = pending.SourceRect;
                 bound.SrcCollapsed = false;
                 bound.V24 = (pending.ObjectPosition.X, pending.ObjectPosition.Y, 0);
                 bound.Visible = true;

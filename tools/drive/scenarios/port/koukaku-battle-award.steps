@@ -1,0 +1,36 @@
+# Port only (scenarios/port/): 魔導巧殻's experience award in play (docs/adding-a-game.md, M3), with the example mods
+# example.koukaku-debug-menu and example.koukaku-event-log. The debug menu's 戦闘 (DEBUGMAP) gives the player's nation
+# corps and starts a battle on map 999, which MPINIT does not have (FIELD raises koukaku.battlefield.loaded for it all
+# the same). The battle begins on 戦闘開始 with every unit on A制圧, and ends at once in 戦闘敗北; RESULT then gives
+# each of the ten commanders 2 experience, and raises koukaku.experience.award for each.
+# Native AGE, with the exported TITLE.BIN (omp export, native_scratch.py --overlay), stops at READFIELD@0x7 with
+# 「画像ファイル SYSTEM4.BIN の読み込みに失敗しました」: map 999's picture is 0. After 無視 (answer &Ignore) it takes the same
+# route, and its RESULT shot is the port's, pixel for pixel (2026-11-26). The port shows no box there
+# (docs/backlog.md, 魔導巧殻's item).
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port start --mod oms/examples/mods/example.koukaku-debug-menu --mod oms/examples/mods/example.koukaku-event-log
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port run tools/drive/scenarios/port/koukaku-battle-award.steps
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.quit                        # the debug menu
+wait 2
+settle timeout=20
+expect script=BUNKI
+click 640 475                           # 戦闘
+wait-state script=OUTBREAK timeout=120
+settle timeout=60
+shot koukaku-battle-outbreak
+click adv.next
+wait-state script=ORGANIZE timeout=60
+settle timeout=30
+click 1125 44                           # 行動一括適用: A制圧
+wait 1.5
+settle timeout=20
+click 120 655                           # 戦闘開始
+wait-state script=RESULT timeout=120
+settle timeout=30
+lua mod=example.koukaku-event-log local log = table.concat(seen, "; ") assert(log == "koukaku.data.layered; koukaku.data.ready item101=1; koukaku.battlefield.loaded map=999; koukaku.experience.award character=1 amount=2 level=5; koukaku.experience.award character=2 amount=2 level=5; koukaku.experience.award character=3 amount=2 level=6; koukaku.experience.award character=4 amount=2 level=33; koukaku.experience.award character=5 amount=2 level=20; koukaku.experience.award character=6 amount=2 level=33; koukaku.experience.award character=7 amount=2 level=20; koukaku.experience.award character=8 amount=2 level=30; koukaku.experience.award character=9 amount=2 level=28; koukaku.experience.award character=11 amount=2 level=30", log) return log
+shot koukaku-battle-award

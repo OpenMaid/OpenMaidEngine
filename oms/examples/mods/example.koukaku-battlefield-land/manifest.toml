@@ -1,0 +1,17 @@
+omp = 4
+id = "example.koukaku-battlefield-land"
+name = "Battlefield land (魔導巧殻)"
+version = "1.0.0"
+description = "A data file with a battlefield map's part: map 98's cell at row 1, column 1 becomes 沼地 (land 5) for its own 地面 (land 1), each time a loader writes the map."
+
+[game]
+profile = "koukaku"
+target = "extended"
+
+[[requires]]
+id = "koukaku-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "koukaku.tables"
+file = "land.toml"

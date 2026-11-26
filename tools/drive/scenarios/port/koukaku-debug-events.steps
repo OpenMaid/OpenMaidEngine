@@ -1,0 +1,37 @@
+# Port only (scenarios/port/): 魔導巧殻's base mod in play (docs/adding-a-game.md, M3). Three example mods:
+# example.koukaku-debug-menu opens the title's debug menu from Quit, example.koukaku-battlefield-land edits map 98's
+# cell 21 at koukaku.battlefield.loaded, and example.koukaku-event-log lists every event of koukaku-base, and gives one
+# 転移の石 at koukaku.data.ready through the base mod's helper. The debug menu's 全体マップ (DEBUGAM) runs INITGAME,
+# whose CHECKREG sets up each of the 100 regions and loads its map, the last map 98, then opens the strategic map;
+# 週終了 ends the first week, and a right click closes its report.
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port start --mod oms/examples/mods/example.koukaku-debug-menu --mod oms/examples/mods/example.koukaku-battlefield-land --mod oms/examples/mods/example.koukaku-event-log
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port run tools/drive/scenarios/port/koukaku-debug-events.steps
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+lua mod=example.koukaku-event-log local log = table.concat(seen, "; ") assert(log == "koukaku.data.layered; koukaku.data.ready item101=1", log) return log
+click title.quit                        # the debug menu
+wait 2
+settle timeout=20
+expect script=BUNKI
+shot koukaku-debug-menu
+click 640 545                           # 全体マップ
+wait-state script=ALLMAP timeout=180
+wait 3
+settle timeout=60
+lua local g, land = maid.names.g, maid.names.table("battlefield_map_land") assert(g.battlefield_map_id == 98 and land[21] == 5 and land[22] == 1, g.battlefield_map_id .. " " .. land[21] .. " " .. land[22]) return land[21]
+lua mod=example.koukaku-event-log local n = 0 for _, line in ipairs(seen) do if line:find("^koukaku%.battlefield%.loaded") then n = n + 1 end end assert(n == 100, n) return n
+shot koukaku-debug-allmap
+click 1180 685                          # 週終了
+wait 2
+settle timeout=30
+expect script=REPORT
+rclick 640 360                          # closes the week's report
+wait 3
+settle timeout=120
+lua mod=example.koukaku-event-log assert(seen[#seen] == "koukaku.turn.week_ends week=1 player=1", seen[#seen]) return seen[#seen]
+lua local week = maid.names.g.turn_week assert(week == 2, week) return week
+shot koukaku-debug-week

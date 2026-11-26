@@ -1,0 +1,8 @@
+# Applied at koukaku.battlefield.loaded, each time one of the six scripts that walk the MPINIT chain has loaded map 98:
+# a battle on it (FIELD), the region map (REIGN), and a region's first setup (CHECKREG, OCCUPY, DELCN). A map's cells
+# are battlefield.<map>.cell.<20 × row + column>; the comment gives the game's own value. MPINIT writes only the map
+# in play, so the edit is in the cells while map 98 is the one loaded. What SETFIELD and SETFORT copy from the cells
+# into saved state keeps the value it copied (docs/modding/games/koukaku.md, "Data edits").
+
+[battlefield.98.cell.21]
+land = 5                                 # 1, 地面; 5 is 沼地

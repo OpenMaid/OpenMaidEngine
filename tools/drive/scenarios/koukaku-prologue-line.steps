@@ -1,0 +1,25 @@
+# 魔導巧殻's opening with oms/examples/mods/example.koukaku-prologue-line: the title, Game Start, GAMESTART's
+# ゲーム開始, the PROLOGUE movie and SC0000's first page, which is the mod's line. Native AGE takes the exported patch in
+# its own scratch copy:
+#   Ome.Cli omp export --game koukaku --output-dir build/games/koukaku/prologue-export --mod oms/examples/mods/example.koukaku-prologue-line
+#   py -3.11 -X utf8 tools/native_scratch.py --game koukaku --name prologue --replace --overlay build/games/koukaku/prologue-export/SC0000.BIN
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native start --exe build/games/koukaku/native-scratch-prologue/AGE.EXE
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port start --mod oms/examples/mods/example.koukaku-prologue-line
+#   py -3.11 -X utf8 tools/drive.py --game koukaku <target> run tools/drive/scenarios/koukaku-prologue-line.steps
+# The route is koukaku-save-load.steps' up to the end of the movie, before the patch's site. Both targets show the line
+# at SC0000@0xef2 and the game's first page after it at SC0000@0xf1a (0xef2 unpatched).
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0xe7e timeout=240  # the PROLOGUE movie plays to its end
+wait-state top=SC0000@0xef2 timeout=60   # the mod's line
+settle timeout=30
+shot koukaku-prologue-line-page1
+advance
+expect top=SC0000@0xf1a                  # the game's first page
+shot koukaku-prologue-line-page2

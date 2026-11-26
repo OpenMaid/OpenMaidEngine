@@ -1,0 +1,23 @@
+# Port only (scenarios/port/): 魔導巧殻's base mod example (docs/adding-a-game.md, M3). The data file of
+# example.koukaku-speaker-name renames ヴァイスハイト's name form 1, 戦場を眺める若き将軍, at koukaku.data.layered. The
+# scenario checks the cell at the title, then plays a new game to page 8 of the opening scene, his first line under that
+# form (SC0000@0x1222); pages 6 and 7 are his too, as ？？？？.
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port start --mod oms/examples/mods/example.koukaku-speaker-name
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port run tools/drive/scenarios/port/koukaku-speaker-name.steps
+#   py -3.11 -X utf8 tools/drive.py --game koukaku port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+lua local name = maid.vm.gs[0x39e + 6 + 1] assert(name == "[MOD] 戦場を眺める若き将軍", name) return name
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0xe7e timeout=240  # the PROLOGUE movie plays to its end
+wait-state top=SC0000@0xef2 timeout=60   # page 1
+settle timeout=30
+advance 7
+expect top=SC0000@0x1245                 # page 8, 「生憎と俺は聖職者ではなく、彼らとは真逆の立場にいる」
+shot koukaku-speaker-name

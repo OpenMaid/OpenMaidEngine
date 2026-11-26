@@ -38,6 +38,13 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0xc3 (track): end a running fade, then set the retained track without starting it
+    private StepResult OpSetBgmTrack(Instruction ins, int pc)
+    {
+        _audio.SetBgmTrack(Read(ins.Args[0]));
+        return StepResult.Next;
+    }
+
     private StepResult OpGetCurrentBgmTrack(Instruction ins, int pc)
     {
         Write(ins.Args[0], _audio.CurrentBgmTrack);
@@ -210,7 +217,7 @@ public sealed partial class VirtualMachine
     private StepResult OpFadeBgm(Instruction ins, int pc)
     {
         var a = ins.Args;
-        _audio.FadeBgm((int)Read(a[0]), Read(a[1]), _rules.Audio.ZeroFadeClearsTrack);
+        _audio.FadeBgm((int)Read(a[0]), Read(a[1]), _rules.Audio.ZeroFadeClearsTrack, _o.TransferMusicVolume);
         return StepResult.Next;
     }
 

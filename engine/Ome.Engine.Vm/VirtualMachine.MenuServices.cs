@@ -36,10 +36,11 @@ public sealed partial class VirtualMachine : IVmMenuServices
         SystemMenuEnabled: _shell.SystemMenuActionsEnabled != 0);
 
     /// <summary>The message settings as the 設定 dialog reads them (agerc_settings_message_page_proc): message:
-    /// MessageSpeed (the per-glyph delay, also ctx+0x14e9c), message:MesWinAlpha and the skip and auto native's
+    /// MessageSpeed (the setting; op 0x1b5 also writes it into the per-glyph delay, ctx+0x14e9c, which op 0x74 changes
+    /// alone), message:MesWinAlpha and the skip and auto native's
     /// message:AutoMessageTime0/1. The front end reads them through the waits' Invoke, on the engine thread.</summary>
     public MessageSettings MessageSettings => new(
-        _text.MessageGlyphDelayMilliseconds, _text.MessageWindowAlphaSetting, _skip.AutoMessageTime0Ms,
+        _text.MessageSpeedSetting, _text.MessageWindowAlphaSetting, _skip.AutoMessageTime0Ms,
         _skip.AutoMessageTime1Ms, _skip.AutoMessagePitch(0) ?? 0, _skip.AutoMessagePitch(1) ?? 0,
         _skip.AutoMessageOption);
 

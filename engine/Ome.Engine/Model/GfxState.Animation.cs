@@ -160,6 +160,20 @@ public sealed partial class GfxState
         GetOrCreate(handle).OneShotAnimationControlFlags = flags;
     }
 
+    /// <summary>
+    /// Op 0x244 (gfx_clear_fade_state_by_flag@0x49c630 with 2 in 4.43B; 4.33G's and 4.38D's handlers are the same): an
+    /// object whose flags have bit 1, set by op 0x202 while its colour fade is armed, gets its one-shot start (+0x34)
+    /// zeroed, so its fade and the transform channels sharing the start begin again at the next frame. 4.43B also
+    /// zeroes +0x18 of each model with bit 1, which only the model one-shots of ops 0x331, 0x333 and 0x338 to 0x33a
+    /// set; the port has none of them (no 魔導巧殻 script uses them). 魔導巧殻's CALLBACK_LOAD runs it after a load.
+    /// </summary>
+    public void RestartArmedColorFades()
+    {
+        foreach (GfxObject o in _scene.Objects.Values)
+            if (o.OneShotColorEnabled) o.OneShotStartMs = -1;
+        MarkRetainedMutation();
+    }
+
     /// <summary>Part of op 0x243: immediately commit every unprotected finite one-shot channel. Objects
     /// marked by op 0x242 bit 0 keep sampling asynchronously.</summary>
     private void ForceCompleteOneShotChannels()

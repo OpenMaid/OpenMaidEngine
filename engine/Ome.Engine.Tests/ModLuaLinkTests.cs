@@ -1735,6 +1735,8 @@ public sealed class ModLuaLinkTests : IDisposable
         new("verita", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4424"), EngineBuilds.Age424N);
     private static readonly InstalledGame Zero =
         new("bg0", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4415"), EngineBuilds.Age415D);
+    private static readonly InstalledGame Koukaku =
+        new("koukaku", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4443"), EngineBuilds.Age443B);
 
     /// <summary>The game's install, the one docs/modding/games/&lt;game&gt;.md lists, with the script provider its
     /// scripts' calls resolve through.</summary>
@@ -2034,5 +2036,130 @@ public sealed class ModLuaLinkTests : IDisposable
         Assert.Equal(1, session.Globals[0x88a3a + 101]);     // item_obtained_flags: the item is marked obtained
         Assert.Equal(1, session.Globals[0x470 + 1900 + 14]); // item_key_held_flags[14]
         Assert.Equal(0b110, session.Globals[0x8b226]);       // formation_learned_mask: formations 1 and 2
+    }
+
+    // ------------------------------------------------------------------------------------------------------ 魔導巧殻
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    public void KoukakusBaseModRaisesEachOfItsEventsAtTheInstalledScripts()
+    {
+        // The M3 gate (docs/adding-a-game.md): each event binds on the install the guide lists.
+        var (linkBase, scripts) = InstallBase(Koukaku);
+        string[] events = ["data.layered", "data.ready", "battlefield.loaded", "turn.week_ends", "experience.award"];
+        // Item 34, 配合大全　特集, is one only $1$ITINIT writes, which the append's AUTORUN runs after the base tables.
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(Koukaku, events,
+            "maid.log.info(e.event .. \" \" .. tostring(game.table(\"item_names\")[34]))"), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        Assert.DoesNotContain(linked.Report.Lines, line => line.Message.Contains("not raised in this install", StringComparison.Ordinal));
+        Assert.Equal([0x33b, 0x3ee], Offsets(linked, "INIT2"));
+        // The six walkers of the MPINIT chain, each after its walk's loop.
+        Assert.Equal([0x843], Offsets(linked, "FIELD"));
+        Assert.Equal([0x182], Offsets(linked, "REIGN"));
+        Assert.Equal([0x62], Offsets(linked, "PALACE"));
+        Assert.Equal([0xe1], Offsets(linked, "CHECKREG"));
+        Assert.Equal([0x1d0], Offsets(linked, "OCCUPY"));
+        Assert.Equal([0xd7], Offsets(linked, "DELCN"));
+        Assert.Equal([0x248f], Offsets(linked, "ALLMAP"));
+        Assert.Equal([0xbb6], Offsets(linked, "RESULT"));
+
+        GameEvent battlefield = linked.Lua.Stack.Event("koukaku.battlefield.loaded")!;
+        Assert.Equal(6, battlefield.Points.Count);
+        Assert.Equal(new FieldLocation.Global(CellKind.Integer, 0x8f01e2, "battlefield_map_id"), battlefield.Field("map")!.Location);
+        Assert.Equal(["week", "player"], linked.Lua.Stack.Event("koukaku.turn.week_ends")!.Fields.Select(field => field.Name));
+        // The award's amount is the add's third operand, the battle's count for the character; the character is
+        // RESULT's local.
+        GameEvent award = linked.Lua.Stack.Event("koukaku.experience.award")!;
+        Assert.Equal(["amount", "character", "level"], award.Fields.Select(field => field.Name));
+        Assert.Equal(new FieldLocation.Operand(2), award.Field("amount")!.Location);
+        Assert.Equal(new FieldLocation.Local(CellKind.Integer, 0x275), award.Field("character")!.Location);
+        var level = Assert.IsType<FieldLocation.Element>(award.Field("level")!.Location);
+        Assert.Equal("character_levels", level.Table.Name);
+
+        // At boot each data event comes once, after the append's AUTORUN.
+        var (_, log) = RunInit2(Koukaku, linked, scripts);
+        Assert.Equal(["koukaku.data.layered 配合大全　特集", "koukaku.data.ready 配合大全　特集"],
+                     log.Where(text => text.StartsWith("koukaku.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    public void KoukakusBattlefieldPartIsWrittenAfterTheMapsLoaders()
+    {
+        // A data file's battlefield part. PALACE loads map 1 as it starts (PALACE@0x25..0x5f) and copies its size; its
+        // menu then waits, and the run stops at the step budget. The edit holds only if it comes after MPINIT has
+        // written the map.
+        var (linkBase, scripts) = InstallBase(Koukaku);
+        ModPackage file = DataFile(Koukaku, "[battlefield.1.cell.21]\nland = 5\n");
+        ModLinkResult linked = ModLinker.Link(linkBase, [file, .. Subscriber(Koukaku, ["battlefield.loaded"],
+            "maid.log.info(e.event .. \" \" .. e.map)")], []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+
+        var session = new GameSession();
+        List<string> log = [];
+        void Run(string name, int maxSteps)
+        {
+            using var scripting = new Scripting(new ScriptMemory(), new ScriptingSetup
+            {
+                Runtime = _runtime, Stack = linked.Lua.Stack, Plan = linked.Lua.Plan, Errors = LuaErrorPolicy.Halt,
+            });
+            session.RunScene(scripts.RequireByName(name), Koukaku.Table, new HeadlessWaits(), new VmOptions(MaxSteps: maxSteps),
+                             provider: scripts, build: Koukaku.Build, scripting: scripting);
+            Assert.DoesNotContain(scripting.RecentLog, line => line.Contains(" error ", StringComparison.Ordinal));
+            log.AddRange(scripting.RecentLog.Select(line => line[(line.LastIndexOf(": ", StringComparison.Ordinal) + 2)..])
+                                            .Where(text => text.StartsWith("koukaku.", StringComparison.Ordinal)));
+        }
+
+        Run("INIT2.BIN", 5_000_000);
+        int land = LayoutAddress(Koukaku, "battlefield_map_land");
+        Run("PALACE.BIN", 200_000);
+        Assert.Equal(1, session.Globals[0x8f01e2]);                  // battlefield_map_id
+        Assert.Equal(5, session.Globals[land + 21]);                 // battlefield_map_land[21]: row 1, column 1
+        Assert.Equal(1, session.Globals[land + 22]);                 // MPINIT's own, unchanged: map 1 is all land 1
+        // PALACE's menu loop may load the map again; every load is map 1's.
+        Assert.NotEmpty(log);
+        Assert.All(log, text => Assert.Equal("koukaku.battlefield.loaded 1", text));
+    }
+
+    /// <summary>The address of <paramref name="name"/> in the game's base mod layout.</summary>
+    private static int LayoutAddress(InstalledGame game, string name)
+    {
+        using ModPackage shipped = ShippedPackages.Open($"{game.Id}-base")!;
+        Assert.True(shipped.BaseLayout!.TryGet(name, out LayoutGlobal global));
+        return global.Address;
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    public void KoukakusHelpersRunTheGamesAddItemAndAddPartAndPutTheirCellsBack()
+    {
+        // Item 101, 転移の石, sells for 80: two gifts of 600 keep 999 and sell the other 201 into the nation's money,
+        // and taking 999 leaves none. Item 34, 配合大全　特集, is a key item (kind 1): ADDITEM sets its story flag, 9001 +
+        // 34. Part 101, 頭具フェイド, stocks to 999. A bare INIT2 leaves nation_player 0, so the items go to nation 0.
+        var (linkBase, scripts) = InstallBase(Koukaku);
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(Koukaku, ["data.ready"], """
+            local names = { "current_item", "item_count_change", "nation_arg_id", "current_part", "part_count_change" }
+            local before = {}
+            for i, name in ipairs(names) do before[i] = game.g[name] end
+            local first, second = game.give_item(101, 600), game.give_item(101, 600)
+            local taken = game.give_item(101, -999)
+            local parts = game.give_part(101, 600) .. " " .. game.give_part(101, 600)
+            maid.log.info("counts " .. first .. " " .. second .. " " .. taken .. " key " .. game.give_item(34)
+                          .. " parts " .. parts)
+            for i, name in ipairs(names) do
+                if game.g[name] ~= before[i] then error(name .. " changed") end
+            end
+            """), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        var (session, log) = RunInit2(Koukaku, linked, scripts);
+        Assert.Contains("counts 600 999 0 key 1 parts 600 999", log);
+        int funds = LayoutAddress(Koukaku, "nation_funds");
+        Assert.Equal(201 * 80, session.Globals[funds]);                // nation_funds[0]: the excess, sold
+        Assert.Equal(1, session.Globals[0x1a0fea + 101]);              // item_obtained_flags: the item is marked obtained
+        Assert.Equal(1, session.Globals[0xc71 + 9000 + 34]);           // story flag 9001 + 34
+        Assert.Equal(1, session.Globals[0x1a17ba + 101]);              // part_obtained_flags
     }
 }

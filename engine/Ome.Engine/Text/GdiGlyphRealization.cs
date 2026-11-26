@@ -51,11 +51,13 @@ public static class GdiGlyphRealization
         uint blackBox = InkedColumns(drawn);
         if (face == null)
             return new FontProbeMetrics(width != 0 ? Math.Abs(width) : height / 2, blackBox,
-                                        (short)drawn.CellAdvanceX, drawn.CellHeight);
+                                        (short)drawn.CellAdvanceX, drawn.CellHeight, drawn.OriginY);
         GdiTextMetrics metrics = GdiFontRules.TextMetrics(face, height, width, simulatedBold);
         if (GdiFontRules.MeasuredBitmap(face, glyph, height, width) is { } bitmap)
             blackBox = (uint)(bitmap.InkWidth + (simulatedBold && bitmap.InkWidth > 0 ? 1 : 0));
-        return new FontProbeMetrics(metrics.AverageCharWidth, blackBox, (short)drawn.CellAdvanceX, metrics.Height);
+        // The drawn glyph's top stands in for GGO_METRICS's, which can differ from a raster's by a pixel.
+        return new FontProbeMetrics(metrics.AverageCharWidth, blackBox, (short)drawn.CellAdvanceX, metrics.Height,
+                                    drawn.OriginY);
     }
 
     /// <summary>A face whose file is unknown is taken to average half its height.</summary>

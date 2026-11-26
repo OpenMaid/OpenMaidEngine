@@ -1,0 +1,662 @@
+# 魔導巧殻's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals-koukaku.toml (its tables, their [table.refs], its
+# globals), vm-map/patch-points-koukaku.toml and the profile's saved prefix, and writes build/games/koukaku/entities.json
+# for the exporter. The tables are described in docs/koukaku-data-tables.md.
+#
+# The conventions are Kamidori's (vm-map/entities-kamidori.toml), as Verita's and 戦女神ZERO's are: scripts named without
+# the `$n$` prefix and `.BIN`; the story flags and scenes that gate a record left to the modder data; a field published
+# when it means something to a player, so sort keys, routines, voices, animations, sound and sprite machinery stay
+# modder data; what a value means left to the registry's value facets (words, the game's names, scale); and a note only
+# where the label and value leave a reader guessing. A field whose meaning the data document does not state, or states
+# only as inferred, is not published.
+#
+# The game keeps its stats in rows of 11 cells whose columns the registry names only for the characters and titles
+# (control, hp …). An item's, a part's and a costume's stats, and a troop's and a formation's parameters, are published
+# column by column, each labelled with the game's word for it (docs/koukaku-data-tables.md, CHINIT's note on the 11
+# stat columns; TRINIT's troop_parameters).
+#
+# What is not a kind here, and why:
+# - The alchemy recipes (ALINIT): a recipe's product is an item or a part by its product type, and the two tables share
+#   ids, while a reference names one table; a recipe page would leave what it makes unnamed. Its ingredients and
+#   required character are marked as references in the registry, for when a kind can name its title by a type.
+# - The production sets (CRINIT): a region reads set 200 × kind + its value for each of five kinds, and what the kinds
+#   are is not decoded. The starting units (USINIT), the brothel's girls (HAINIT, whose records are scene offers), the
+#   object kinds (DPINIT, whose names are a map object's kind), the land types, the battlefield maps (MPINIT, on
+#   demand), the battle setups (DUINIT, on demand) and the shop's offers (SHINIT, on demand) are machinery.
+# - The scenes (SCINIT), the CG gallery (CGINIT), the scene replays (SPINIT), the music room (MUINIT), the strategy
+#   screens' help lines (NAINIT), the tutorials (TUINIT), the voice settings (CVINIT), the routines (RTINIT), the battle
+#   animations (ANINIT, ANINIT2) and the skill areas (SAINIT).
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after the base tables and the append's `$1$AUTORUN`
+# (docs/koukaku-data-tables.md, "Boot"). Every boot table's arrays lie above the saved prefix, so none is a save's.
+boot = { script = "INIT2", read_at = "koukaku.boot.data_ready" }
+# The scripts whose stored values may be published: INIT2 itself, the *INIT and *INIT2 table scripts (ANINIT2) and
+# their `$1$` layers, and AUTORUN, which the append runs.
+builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery (CGINIT) and the scene replays (SPINIT).
+excluded_builders = ["CGINIT", "SPINIT"]
+# No text scripts: every description the information screens show is a table's string array (the items', parts',
+# troops', skills', tips' and glossary's lines), read here as text fields. TUMES, the one text script, plays the
+# tutorials, which are not a kind.
+# The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
+# declarations publish (2026-11-26, 1322 pictures): none shows a nipple or a bare bottom, so the list is empty. The
+# unit pictures (CB…AA) are faces and shoulders, the small figures (CPC…, CPS…) are sprite sheets, the tips (RUA…)
+# screenshots of the interface, and formations and map objects are drawings of shapes, ground and buildings.
+# Revealing but covered art (the profile pictures CR003, CR009, CR018, CR021, CR023, CR025, CR037 and $1$CR040, the
+# unit picture CB567AA) and the featureless body of the figure in the wall MO925A (the map object 壁２) are not on it.
+explicit_pictures = []
+
+[[kind]]
+id = "character"
+table = "character"
+about = "Every person, form and monster that can lead a unit: sex, kind, size and element, starting title and costume, base level and stats, loyalty and costs."
+# 406 records have name forms (the speakers); the 386 with a name in lists are the characters.
+exists = "name.name"
+title = "name.name"
+text = ["name.alias", "description"]
+fields = [
+    "sex", "kind", "size", "element", "initial_title", "initial_costume", "master", "base_level", "level_cap",
+    "weeks_per_level", "base_stats", "initial_loyalty", "hiring_cost", "weekly_fee",
+]
+filters = ["kind", "sex", "element"]
+# One person has a record for each of its forms and each side it fights on; they differ by title and level.
+qualifiers = ["initial_title", "base_level"]
+# The unit picture (CB…AA), and the sheet of the character's small figure in its four facings (CPC…), which the
+# 人物 book draws a quarter of.
+pictures = { unit = "unit_pictures.0", sprites = "portrait" }
+
+[kind.labels]
+"name.alias" = "Also called"
+description = "Description"
+initial_title = "Starting title"
+initial_costume = "Starting costume"
+master = "Master"
+level_cap = "Highest level (another nation's)"
+weeks_per_level = "Weeks a level (another nation's)"
+base_stats = "Base stats"
+initial_loyalty = "Starting loyalty"
+hiring_cost = "Hiring cost"
+weekly_fee = "Weekly fee (契約)"
+
+[kind.notes]
+"name.alias" = "The name the lists show in its place while the story hides who it is."
+base_level = "The level of its base stats, and the level it has when it first joins."
+base_stats = "At its base level. One that joins takes them as its own; another nation's grows from them with the weeks."
+level_cap = "Another nation's character gains levels with the weeks up to this one."
+weeks_per_level = "Another nation's character gains a level every this many weeks."
+initial_costume = "A 魔導巧殻's costume when it first joins."
+initial_loyalty = "Its loyalty when it joins a nation."
+hiring_cost = "Paid from the nation's funds to hire it."
+weekly_fee = "Taken from the nation's funds every week."
+
+[kind.referenced_as]
+initial_title = "Starting title of"
+initial_costume = "Starting costume of"
+master = "Its 魔導巧殻"
+
+[[kind]]
+id = "title"
+table = "title"
+about = "The titles (称号) a character holds: the class it leads as, its movement, range and stat modifiers, attacks, special, skills and formations."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "unit_class", "exclusive_character", "required_level", "movement_kind", "size", "range_bonus", "stat_modifiers",
+    "attacks", "special", "skills", "formations", "slot_unlock_levels",
+]
+filters = ["unit_class", "movement_kind"]
+
+[kind.labels]
+description = "Description"
+unit_class = "Class (兵種)"
+exclusive_character = "Only for"
+required_level = "Level needed"
+movement_kind = "Movement (形態)"
+range_bonus = "Range (射程)"
+stat_modifiers = "Stat modifiers"
+special = "Special (必殺技)"
+slot_unlock_levels = "Level that opens each slot"
+
+[kind.notes]
+required_level = "A character is offered the title at this level, among the titles of its line."
+size = "Replaces the character's size."
+range_bonus = "Added to the unit's range."
+skills = "Passive skills."
+slot_unlock_levels = "The special, the four skills and the two formations each open at a level, where a story flag does not open the slot instead."
+
+[kind.referenced_as]
+exclusive_character = "Titles only for it"
+attacks = "Attack of titles"
+special = "Special of titles"
+skills = "Skill of titles"
+formations = "Formation of titles"
+
+[[kind]]
+id = "troop"
+table = "troop"
+about = "The troop types a commander leads: kind, attribute, movement and size, each soldier's parameters, attacks, passive skill, costs and upgrade."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = [
+    "kind", "attribute", "movement_type", "size", "parameters.2", "parameters.3", "parameters.4", "parameters.5",
+    "parameters.6", "parameters.7", "parameters.8", "attacks", "passive_skill", "command_cost", "price", "upkeep_cost",
+    "upgrade_target", "command_minimum", "required_character",
+]
+filters = ["kind", "attribute", "movement_type"]
+pictures = { picture = "picture" }
+
+[kind.labels]
+description_lines = "Description"
+movement_type = "Movement"
+"parameters.2" = "物理攻撃"
+"parameters.3" = "物理防御"
+"parameters.4" = "魔法攻撃"
+"parameters.5" = "魔法防御"
+"parameters.6" = "移動"
+"parameters.7" = "物理速度"
+"parameters.8" = "魔法速度"
+passive_skill = "Passive skill"
+command_cost = "支配 a soldier"
+price = "Price a soldier"
+upkeep_cost = "Upkeep a soldier"
+upgrade_target = "Becomes"
+command_minimum = "支配 to become it"
+required_character = "Needs character"
+
+[kind.notes]
+"parameters.2" = "A soldier's; a unit has its soldiers' attack and defences together, and their speeds as one soldier's."
+attacks = "The unit's attack and the troop's attack."
+command_cost = "A commander leads at most its 支配 ÷ this many soldiers."
+upkeep_cost = "Taken from the nation's funds each turn."
+upgrade_target = "A unit becomes this type once its commander's 支配 reaches the 支配 it needs."
+required_character = "The type is offered only while this character is with the player's nation."
+
+[kind.referenced_as]
+upgrade_target = "Becomes it"
+attacks = "Attack of troops"
+passive_skill = "Skill of troops"
+required_character = "Troops it opens"
+
+[[kind]]
+id = "skill"
+table = "skill"
+about = "The active skills a unit uses in battle: cost, element, damage, power and duration."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = ["cost", "element", "effect_kind", "power", "duration"]
+filters = ["element", "effect_kind"]
+
+[kind.labels]
+description_lines = "Description"
+effect_kind = "Damage"
+duration = "Duration (効果時間)"
+
+[kind.notes]
+cost = "Taken from its side's pool when it is used."
+power = "Added to the unit's physical or magic attack for the damage."
+
+[[kind]]
+id = "passive_skill"
+table = "passive_skill"
+about = "The passive skills of titles, troops, equipment and parts: each one's effects and their levels."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = ["effects", "levels"]
+
+[[kind.group]]
+name = "effect_levels"
+fields = ["effects", "levels"]
+
+[kind.labels]
+description_lines = "Description"
+effect_levels = "Effects"
+effects = "Effect"
+levels = "Level"
+
+[kind.notes]
+effect_levels = "A unit adds up the levels of each effect its skills give, to at most 5."
+
+[[kind]]
+id = "attack"
+table = "attack"
+about = "The attacks of titles, costumes and troops: element and 痛打 bonus."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = ["element", "parameter_bonuses.9"]
+filters = ["element"]
+
+[kind.labels]
+description_lines = "Description"
+"parameter_bonuses.9" = "痛打"
+
+[kind.notes]
+element = "With 無属, the attack takes its item's element."
+
+[[kind]]
+id = "formation"
+table = "formation"
+about = "The formations a unit takes: what each changes, the squads it needs, and whether the unit moves while attacking."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = [
+    "parameter_percents.2", "parameter_percents.3", "parameter_percents.4", "parameter_percents.5",
+    "parameter_percents.6", "parameter_percents.7", "parameter_percents.8", "required_squads", "moves_while_attacking",
+]
+pictures = { picture = "picture" }
+
+[kind.labels]
+description_lines = "Description"
+"parameter_percents.2" = "物理攻撃 (%)"
+"parameter_percents.3" = "物理防御 (%)"
+"parameter_percents.4" = "魔法攻撃 (%)"
+"parameter_percents.5" = "魔法防御 (%)"
+"parameter_percents.6" = "移動 (%)"
+"parameter_percents.7" = "物理速度 (%)"
+"parameter_percents.8" = "魔法速度 (%)"
+required_squads = "Squads needed"
+moves_while_attacking = "Moves while attacking"
+
+[kind.notes]
+"parameter_percents.2" = "Added to the unit's parameters in percent, as are the rows below."
+required_squads = "With fewer squads, the unit falls back to 無陣."
+
+[[kind]]
+id = "item"
+table = "item"
+about = "Every item: key items, materials and equipment, with rank, kind, bonuses, skill, prices and who may equip it."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "kind", "rank", "exclusive_character", "required_gender", "attack_element", "range_bonus", "terrain_bonuses.0",
+    "terrain_bonuses.1", "terrain_bonuses.2", "stat_bonuses.0", "stat_bonuses.1", "stat_bonuses.2", "stat_bonuses.3",
+    "stat_bonuses.4", "stat_bonuses.5", "stat_bonuses.6", "stat_bonuses.7", "stat_bonuses.8", "stat_bonuses.9",
+    "stat_bonuses.10", "skill", "prices.0", "prices.1", "carried",
+]
+filters = ["kind", "rank", "attack_element"]
+
+[kind.labels]
+description = "Description"
+exclusive_character = "Only for"
+required_gender = "Only for sex"
+attack_element = "Attack element"
+range_bonus = "射程"
+"terrain_bonuses.0" = "対地"
+"terrain_bonuses.1" = "対空"
+"terrain_bonuses.2" = "対潜"
+"stat_bonuses.0" = "支配"
+"stat_bonuses.1" = "ＨＰ"
+"stat_bonuses.2" = "物理攻撃"
+"stat_bonuses.3" = "物理防御"
+"stat_bonuses.4" = "魔法攻撃"
+"stat_bonuses.5" = "魔法防御"
+"stat_bonuses.6" = "移動速度"
+"stat_bonuses.7" = "物理速度"
+"stat_bonuses.8" = "魔法速度"
+"stat_bonuses.9" = "クリティカル率"
+"stat_bonuses.10" = "政治"
+skill = "Passive skill"
+"prices.0" = "Price"
+"prices.1" = "Sells for"
+carried = "Kept in a new game"
+
+[kind.notes]
+attack_element = "The element an attack of 無属 takes from it."
+"prices.1" = "Past 999 held, the rest are sold at it."
+carried = "A key item a new game started from a cleared one keeps with the inventory."
+
+[kind.referenced_as]
+exclusive_character = "Equipment only for it"
+skill = "Given by items"
+
+[[kind]]
+id = "part"
+table = "part"
+joins = ["costume"]
+about = "The 魔導巧殻's costumes and the parts fitted to them: who may use each, its bonuses and skill, and a costume's attacks, formations, parts and growth."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "kind", "rank", "allowed_characters", "allowed_costumes", "move_type", "range_bonus", "terrain_bonuses.0",
+    "terrain_bonuses.1", "terrain_bonuses.2", "stat_bonuses.0", "stat_bonuses.1", "stat_bonuses.2", "stat_bonuses.3",
+    "stat_bonuses.4", "stat_bonuses.5", "stat_bonuses.6", "stat_bonuses.7", "stat_bonuses.8", "stat_bonuses.10",
+    "skill", "costume.attacks", "costume.formations", "costume.initial_parts", "costume.max_level",
+    "costume.initial_stats.0", "costume.initial_stats.1", "costume.initial_stats.2", "costume.initial_stats.3",
+    "costume.initial_stats.4", "costume.initial_stats.5", "costume.initial_stats.7", "costume.initial_stats.8",
+    "costume.initial_stats.10", "costume.stat_growth.0",
+    "costume.stat_growth.1", "costume.stat_growth.2", "costume.stat_growth.3", "costume.stat_growth.4",
+    "costume.stat_growth.5", "costume.stat_growth.6", "costume.stat_growth.7", "costume.stat_growth.8",
+]
+filters = ["kind", "rank"]
+
+[kind.labels]
+description = "Description"
+allowed_characters = "Only for"
+allowed_costumes = "Only on costume"
+move_type = "Movement"
+range_bonus = "射程"
+"terrain_bonuses.0" = "対地"
+"terrain_bonuses.1" = "対空"
+"terrain_bonuses.2" = "対潜"
+"stat_bonuses.0" = "支配"
+"stat_bonuses.1" = "ＨＰ"
+"stat_bonuses.2" = "物理攻撃"
+"stat_bonuses.3" = "物理防御"
+"stat_bonuses.4" = "魔法攻撃"
+"stat_bonuses.5" = "魔法防御"
+"stat_bonuses.6" = "移動"
+"stat_bonuses.7" = "物理速度"
+"stat_bonuses.8" = "魔法速度"
+"stat_bonuses.10" = "政治"
+skill = "Passive skill"
+"costume.attacks" = "Costume's attacks"
+"costume.formations" = "Costume's formations"
+"costume.initial_parts" = "Costume's starting parts"
+"costume.max_level" = "Costume's highest level"
+"costume.initial_stats.0" = "Starting 支配"
+"costume.initial_stats.1" = "Starting ＨＰ"
+"costume.initial_stats.2" = "Starting 物理攻撃"
+"costume.initial_stats.3" = "Starting 物理防御"
+"costume.initial_stats.4" = "Starting 魔法攻撃"
+"costume.initial_stats.5" = "Starting 魔法防御"
+"costume.initial_stats.7" = "Starting 物理速度"
+"costume.initial_stats.8" = "Starting 魔法速度"
+"costume.initial_stats.10" = "Starting 政治"
+"costume.stat_growth.0" = "支配 a level"
+"costume.stat_growth.1" = "ＨＰ a level"
+"costume.stat_growth.2" = "物理攻撃 a level"
+"costume.stat_growth.3" = "物理防御 a level"
+"costume.stat_growth.4" = "魔法攻撃 a level"
+"costume.stat_growth.5" = "魔法防御 a level"
+"costume.stat_growth.6" = "移動 a level"
+"costume.stat_growth.7" = "物理速度 a level"
+"costume.stat_growth.8" = "魔法速度 a level"
+
+[kind.notes]
+move_type = "The movement it gives its wearer."
+"costume.attacks" = "A costume gives these to the unit its wearer leads, in place of a title's, as it does its formations."
+"costume.initial_parts" = "The part in each of the costume's four slots when it is first obtained."
+"costume.initial_stats.0" = "A costume's stats when it is first obtained, added to its wearer's, as are the rows below; they grow with its level."
+
+[kind.referenced_as]
+allowed_characters = "Parts only for it"
+allowed_costumes = "Parts only for it"
+skill = "Given by parts"
+"costume.attacks" = "Attack of costumes"
+"costume.formations" = "Formation of costumes"
+"costume.initial_parts" = "Starting part of costumes"
+
+[[kind]]
+id = "breed_combination"
+table = "breed_combination"
+about = "The combinations of the 魔物 breeding and siege weapon facilities: two parents and what they make, or what a sacrifice gives."
+exists = "type"
+# Named by what it makes; a sacrifice makes nothing, and the site names it by its id.
+title = "result"
+text = ["message_lines"]
+fields = ["type", "parents", "result", "experience_gain"]
+filters = ["type"]
+
+[kind.labels]
+type = "Facility"
+message_lines = "Messages"
+parents = "Parents"
+result = "Makes"
+experience_gain = "Experience given"
+
+[kind.notes]
+type = "A facility takes the first combination of its kind that the two chosen parents meet."
+parents = "A parent left out takes any. The first parent is given up."
+
+[kind.text_blocks.message_lines]
+before = [0, 2]
+after = [3, 5]
+
+[kind.referenced_as]
+parents = "Parent in combinations"
+result = "Made by combinations"
+
+[[kind]]
+id = "nation"
+table = "nation"
+about = "The nations: starting funds, provisions, items, capital and leader."
+exists = "name"
+title = "name"
+# Nation 0 is 無所属, no nation.
+key_range = [1, 29]
+fields = ["start_funds", "start_provisions", "start_items", "start_item_counts", "start_capital", "start_leader"]
+
+[[kind.group]]
+name = "starting_items"
+fields = ["start_items", "start_item_counts"]
+
+[kind.labels]
+start_funds = "Starting funds"
+start_provisions = "Starting provisions"
+starting_items = "Starting items"
+start_items = "Item"
+start_item_counts = "Count"
+start_capital = "Starting capital"
+start_leader = "Starting leader"
+
+[kind.referenced_as]
+start_items = { heading = "Starting item of nations", details = ["start_item_counts"] }
+start_capital = "Starting capital of"
+start_leader = "Leader at the start of"
+
+[[kind]]
+id = "region"
+table = "region"
+about = "The regions of the strategic map: each one's description, its holder at the start, and the routes from it."
+exists = "name"
+title = "name"
+text = ["description_lines"]
+fields = ["start_owner"]
+filters = ["start_owner"]
+
+[kind.labels]
+description_lines = "Description"
+start_owner = "Held at the start by"
+
+[kind.referenced_as]
+start_owner = "Regions held at the start"
+
+[[kind]]
+id = "route"
+table = "route"
+about = "The routes between two regions of the strategic map."
+exists = "name"
+title = "name"
+fields = ["ends"]
+
+[kind.labels]
+ends = "Between"
+
+[kind.referenced_as]
+ends = "Routes"
+
+[[kind]]
+id = "ruse"
+table = "ruse"
+about = "The ruses (策略) a nation plays: costs, target, the friendship they change, and their texts."
+exists = "name"
+title = "name"
+text = ["description_lines", "result_messages"]
+fields = [
+    "fund_cost_ranges.0", "fund_cost_ranges.1", "provision_cost_ranges.0", "provision_cost_ranges.1",
+    "friendship_changes.0", "target_kind", "relation_mask",
+]
+
+[kind.labels]
+description_lines = "Description"
+result_messages = "Results"
+"fund_cost_ranges.0" = "Least funds"
+"fund_cost_ranges.1" = "Most funds"
+"provision_cost_ranges.0" = "Least provisions"
+"provision_cost_ranges.1" = "Most provisions"
+"friendship_changes.0" = "Friendship change"
+target_kind = "Target"
+relation_mask = "Target's relation"
+
+[kind.notes]
+"fund_cost_ranges.0" = "What the player may spend on it, as with provisions."
+"friendship_changes.0" = "Added to the target nation's friendship, which stays within 0 and 100."
+relation_mask = "The relations a target nation may have to the player's."
+
+[[kind]]
+id = "quest"
+table = "quest"
+about = "The quests (任務): who asks, what each needs before it is offered, and what it pays."
+exists = "name"
+title = "name"
+text = ["client", "request_texts", "reward_texts", "result_messages"]
+fields = [
+    "repeatable", "prerequisite", "first_week", "required_character", "required_character_value", "region",
+    "reward_money.0",
+]
+
+[[kind.group]]
+name = "required_characters"
+fields = ["required_character", "required_character_value"]
+
+[kind.labels]
+client = "Asked by"
+request_texts = "Request"
+reward_texts = "Reward"
+result_messages = "Results"
+prerequisite = "After quest"
+first_week = "From week"
+required_characters = "Characters needed"
+required_character = "Character"
+required_character_value = "Least level"
+region = "Region held"
+"reward_money.0" = "Money paid"
+
+[kind.notes]
+repeatable = "It may be taken again once it is done."
+prerequisite = "Offered once this quest is done."
+region = "Offered while the player holds this region."
+required_characters = "Each must be with the player's nation, at the level beside it."
+
+[kind.referenced_as]
+prerequisite = "Opens quests"
+required_character = "Quests needing it"
+region = "Quests needing it"
+
+[[kind]]
+id = "tip"
+table = "tip"
+about = "The 解説 pages of the information screens: the game's own explanations of its rules."
+exists = "title"
+title = "title"
+text = ["lines"]
+pictures = { picture = "picture" }
+
+[kind.labels]
+lines = "Page"
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary"
+about = "The glossary (【用語】): the world's terms, and what each means."
+exists = "title"
+title = "title"
+text = ["lines"]
+
+[kind.labels]
+lines = "Page"
+
+[[kind]]
+id = "character_profile"
+table = "profile"
+about = "The profiles of the 人物 book: each one's group, picture and lines."
+exists = "name"
+title = "name"
+text = ["group", "lines"]
+fields = ["line_characters.0"]
+pictures = { portrait = "pictures.1" }
+
+[kind.labels]
+group = "Group"
+lines = "Profile"
+"line_characters.0" = "Character"
+
+[kind.notes]
+"line_characters.0" = "The book shows the profile's lines once this character has been heard."
+
+[kind.referenced_as]
+"line_characters.0" = "Character profile"
+
+[[kind]]
+id = "map_object"
+table = "map_object"
+about = "What stands on the battlefields and in the towns: nature, bridges, barriers, walls, traps, buildings and facilities, their size and building cost."
+exists = "name"
+title = "name"
+text = ["description"]
+fields = [
+    "kind", "width", "depth", "build_weeks.1", "costs.1", "material_items.4", "material_amounts.4", "material_items.5",
+    "material_amounts.5", "material_items.6", "material_amounts.6", "material_items.7", "material_amounts.7", "costs.2",
+    "costs.3", "costs.4", "costs.5",
+]
+filters = ["kind"]
+# Objects of one name differ by kind.
+qualifiers = ["kind"]
+pictures = { picture = "pictures.1" }
+
+[kind.labels]
+description = "Description"
+width = "Width (cells)"
+depth = "Depth (cells)"
+"build_weeks.1" = "Weeks to build"
+"costs.1" = "Cost"
+"material_items.4" = "Material"
+"material_amounts.4" = "Amount"
+"material_items.5" = "Material"
+"material_amounts.5" = "Amount"
+"material_items.6" = "Material"
+"material_amounts.6" = "Amount"
+"material_items.7" = "Material"
+"material_amounts.7" = "Amount"
+"costs.2" = "Cost at level 2"
+"costs.3" = "Cost at level 3"
+"costs.4" = "Cost at level 4"
+"costs.5" = "Cost at level 5"
+
+[kind.notes]
+"material_items.4" = "The materials building it takes, each with its amount; one with no amount is not needed. A higher level's materials are in the modder data."
+
+[kind.referenced_as]
+"material_items.4" = { heading = "Material for building", details = ["material_amounts.4"] }
+"material_items.5" = { heading = "Material for building", details = ["material_amounts.5"] }
+"material_items.6" = { heading = "Material for building", details = ["material_amounts.6"] }
+"material_items.7" = { heading = "Material for building", details = ["material_amounts.7"] }
+
+# The script relations (spec §6.7, export plan §4.5): where a script sets a helper's arguments to constants and calls it.
+# ADDITEM gives or takes an item by the sign of its count, and ADDPART a part (docs/koukaku-data-tables.md, "The item
+# helpers and the inventory"; "ADDPART, the costumes and DOLL").
+[[script_relation]]
+id = "given_in"
+negative = "taken_in"
+call = "ADDITEM"
+kind = "item"
+key = "current_item"
+count = "item_count_change"
+exclude = ["DEBUG*"]
+
+[[script_relation]]
+id = "part_given_in"
+negative = "part_taken_in"
+call = "ADDPART"
+kind = "part"
+key = "current_part"
+count = "part_count_change"
+exclude = ["DEBUG*"]

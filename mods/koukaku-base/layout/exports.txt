@@ -1,0 +1,1110 @@
+# DO NOT EDIT -- generated from vm-map/globals-koukaku.toml by tools/base_mod_build.py --build
+# The names koukaku-base 1 exports (Lua scripting spec §9.1): its globals, then its
+# record tables and their fields (data patches plan §9.1), then its scopes and their tables' short names
+# (data patches spec §6.2), then the names its OMS modules declare, oms/*.oms (modding from a release
+# spec §5.2). Each stays until the major version changes: a renamed global, table or field keeps its old
+# name, listed as OLD = NAME; a scope and a module's names have no old-name form.
+major = 1
+adv_face_picture
+adv_face_shown
+adv_page_has_text
+adv_speaker_id
+adv_speaker_name_form
+adv_voice_clip
+adv_voice_setting
+alchemy_facility_masks
+alchemy_forbidding_flags
+alchemy_ingredient_counts
+alchemy_ingredients
+alchemy_prices
+alchemy_product_types
+alchemy_products
+alchemy_recipe_made_flags
+alchemy_recipe_seen_flags
+alchemy_required_character_levels
+alchemy_required_characters
+alchemy_required_facility_levels
+alchemy_required_flags
+alchemy_required_technology
+alchemy_technology_gains
+animation_arg_id
+animation_files
+animation_heights
+animation_render_kinds
+animation_scales
+animation_sequences
+animation_widths
+animation_x_offsets
+animation_y_offsets
+attack_animations
+attack_description_lines
+attack_elements
+attack_names
+attack_parameter_bonuses
+attack_timings
+attack_uses_item_element
+attribute_names
+autosave_off
+battle_end_condition_texts
+battle_id
+battle_place_name
+battlefield_bounds
+battlefield_columns
+battlefield_land
+battlefield_map_bounds
+battlefield_map_columns
+battlefield_map_entry_areas
+battlefield_map_entry_end
+battlefield_map_entry_regions
+battlefield_map_entry_sides
+battlefield_map_id
+battlefield_map_land
+battlefield_map_object_levels
+battlefield_map_objects
+battlefield_map_picture
+battlefield_map_rows
+battlefield_object_anchors
+battlefield_object_levels
+battlefield_objects
+battlefield_picture
+battlefield_probe_land
+battlefield_probe_level
+battlefield_probe_object
+battlefield_region_build_weeks_left
+battlefield_region_durability
+battlefield_region_object_levels
+battlefield_region_objects
+battlefield_rows
+board_picture_chain
+breed_done_flags
+breed_done_story_flags
+breed_experience_gains
+breed_message_lines
+breed_message_pictures
+breed_parents
+breed_required_flags
+breed_results
+breed_seen_flags
+breed_types
+brothel_girl_forbidding_flags
+brothel_girl_held_towns
+brothel_girl_names
+brothel_girl_pictures
+brothel_girl_prices
+brothel_girl_required_flags
+brothel_girl_required_nations
+brothel_girl_required_towns
+brothel_girl_scenes
+brothel_girl_town_masks
+brothel_girl_visit_flags
+brothel_girl_visit_thresholds
+brothel_visit_counts
+cg_groups
+cg_offset_x
+cg_offset_y
+cg_page_sheets
+cg_pages
+cg_pictures
+cg_places
+character_base_characters
+character_base_levels
+character_base_stats
+character_battle_voices
+character_book_viewed_flags
+character_breeding_pictures
+character_ci_pictures
+character_costumes
+character_description_lines
+character_elements
+character_experience
+character_flags
+character_generic_flags
+character_given_titles
+character_growth_remainders
+character_hiring_costs
+character_icon_layers
+character_initial_costumes
+character_initial_loyalty
+character_initial_titles
+character_kinds
+character_level_caps
+character_levels
+character_masters
+character_met_flags
+character_name_columns
+character_name_forms
+character_names
+character_portrait_scales
+character_portraits
+character_sexes
+character_sizes
+character_sort_keys
+character_stat_growth
+character_stats
+character_unit_pictures
+character_voice_settings
+character_weekly_fees
+character_weeks_per_level
+commander_troop_kind_matrix
+confirm_commands
+confirm_save_load
+costume_arg_id
+costume_attacks
+costume_experience
+costume_formations
+costume_initial_levels
+costume_initial_parts
+costume_initial_stats
+costume_levels
+costume_max_levels
+costume_parts
+costume_stat_growth
+costume_stat_growth_remainders
+costume_stats
+craft_chain_script_ids
+current_character
+current_item
+current_part
+current_scene_id
+current_scene_script_id
+current_title
+debug_am_active
+debug_map_active
+duinit_chain_script_ids
+element_damage_percents
+element_names
+extras_room_page
+facility_level
+facility_object
+facility_scripts
+formation_arg_id
+formation_centre_x
+formation_centre_y
+formation_description_lines
+formation_moves_while_attacking
+formation_names
+formation_parameter_percents
+formation_pictures
+formation_required_squads
+formation_slot_x_offsets
+formation_slot_y_offsets
+glossary_line_unlock_scenes
+glossary_lines
+glossary_read_flags
+glossary_sort_keys
+glossary_titles
+glossary_unlocked_flags
+help_line_id
+help_lines
+installed_appends_mask
+item_attack_elements
+item_carried_flags
+item_count_change
+item_counts
+item_description_lines
+item_exclusive_characters
+item_kinds
+item_move_type_overrides
+item_names
+item_obtained_flags
+item_prices
+item_range_bonuses
+item_ranks
+item_required_genders
+item_seen_flags
+item_skills
+item_sort_keys
+item_stat_bonuses
+item_terrain_bonuses
+land_names
+land_passability
+land_speed_percents
+map_object_barred_races
+map_object_build_flags
+map_object_build_weeks
+map_object_class_names
+map_object_costs
+map_object_depths
+map_object_description_lines
+map_object_ever_built
+map_object_ground_layer
+map_object_in_book
+map_object_kind_book_tabs
+map_object_kind_classes
+map_object_kind_commands
+map_object_kind_flags
+map_object_kind_icons
+map_object_kind_names
+map_object_kinds
+map_object_level_stats
+map_object_material_amounts
+map_object_material_items
+map_object_names
+map_object_only_regions
+map_object_passability
+map_object_pictures
+map_object_region_type_masks
+map_object_required_flags
+map_object_required_regions
+map_object_seen_levels
+map_object_sort_keys
+map_object_speed_percents
+map_object_trap_elements
+map_object_widths
+message_font_name
+message_window_colour
+movement_type_names
+mpinit_chain_script_ids
+music_bgm_numbers
+music_titles
+music_unlock_resources
+nation_arg_id
+nation_capitals
+nation_colors
+nation_diplomacy_flags
+nation_flags
+nation_friendship
+nation_funds
+nation_leaders
+nation_names
+nation_palace_pictures
+nation_pictures
+nation_playable_flags
+nation_player
+nation_provisions
+nation_relation_names
+nation_relations
+nation_start_capitals
+nation_start_funds
+nation_start_item_counts
+nation_start_items
+nation_start_leaders
+nation_start_pictures
+nation_start_provisions
+nation_troop_reserves
+neighbour_dx
+neighbour_dy
+part_allowed_characters
+part_allowed_costumes
+part_count_change
+part_counts
+part_description_lines
+part_kinds
+part_move_type_overrides
+part_names
+part_obtained_flags
+part_range_bonuses
+part_ranks
+part_seen_flags
+part_skills
+part_sort_keys
+part_stat_bonuses
+part_terrain_bonuses
+passive_effect_names
+passive_skill_arg_id
+passive_skill_description_lines
+passive_skill_effects
+passive_skill_levels
+passive_skill_names
+production_set_items
+production_set_kinds
+production_set_rates
+profile_groups
+profile_line_characters
+profile_line_conditions
+profile_lines
+profile_names
+profile_pictures
+profile_sort_keys
+quest_battle_counts
+quest_battles
+quest_clients
+quest_delivery_counts
+quest_delivery_ids
+quest_delivery_kinds
+quest_first_weeks
+quest_flags_closing
+quest_flags_completing
+quest_flags_required
+quest_in_battle
+quest_kinds
+quest_names
+quest_pictures
+quest_prerequisites
+quest_regions
+quest_repeatable
+quest_request_texts
+quest_required_character_values
+quest_required_characters
+quest_required_items
+quest_result_messages
+quest_reward_counts
+quest_reward_flags
+quest_reward_ids
+quest_reward_kinds
+quest_reward_money
+quest_reward_texts
+quest_sort_keys
+quest_states
+quest_takes_delivery
+region_arg_id
+region_battle_flags_closing
+region_battle_flags_required
+region_battles
+region_corps
+region_description_lines
+region_flags
+region_flags_closing
+region_flags_required
+region_kinds
+region_map_ids
+region_map_pictures
+region_map_x
+region_map_y
+region_names
+region_owner_capitals
+region_owners
+region_pictures
+region_population_limits
+region_populations
+region_production_sets
+region_required_character_values
+region_required_characters
+region_required_items
+region_start_owners
+region_start_populations
+replay_page_sheets
+replay_room_active
+replay_scripts
+route_ends
+route_flags_closing
+route_flags_required
+route_kinds
+route_names
+route_path_x
+route_path_y
+route_pictures
+ruse_animations
+ruse_arg_id
+ruse_categories
+ruse_chain_script_ids
+ruse_description_lines
+ruse_friendship_changes
+ruse_fund_cost_ranges
+ruse_names
+ruse_provision_cost_ranges
+ruse_relation_masks
+ruse_result_messages
+ruse_result_pictures
+ruse_target_corps
+ruse_target_kinds
+ruse_target_nation
+ruse_target_region
+scene_graphic_element_numbers
+scene_offer_contexts
+scene_on_map_flags
+scene_over_map
+scene_played_flags
+scene_run_mode
+scene_script_ids
+scene_seen_flags
+scene_turns_since_played
+scene_visit_ranks
+scene_window_layout
+scjump_chain_pending
+scjump_chain_script_ids
+scjump_context_id
+shinit_chain_script_ids
+shop_mode
+shop_offers
+skill_animation_rows
+skill_area_pictures
+skill_area_polygon_point_counts
+skill_area_polygon_x
+skill_area_polygon_y
+skill_area_radii
+skill_area_x_offsets
+skill_area_y_offsets
+skill_arg_id
+skill_bonus_kinds
+skill_costs
+skill_description_lines
+skill_descriptions
+skill_durations
+skill_effect_kinds
+skill_elements
+skill_names
+skill_parameter_bonuses
+skill_powers
+skill_script_slots
+skill_type_waits
+skill_types
+skillact_chain_script_ids
+sound_channels
+speaker_heard_flags
+speaker_text_colour_mode
+start_chain_script_ids
+starting_unit_arg_id
+starting_unit_items
+starting_unit_leaders
+starting_unit_nations
+starting_unit_regions
+starting_unit_troop_counts
+starting_unit_troop_kinds
+system_base_mode
+system_mode
+system_next_mode
+tip_categories
+tip_line_scenes
+tip_lines
+tip_picture_x
+tip_picture_y
+tip_pictures
+tip_read_flags
+tip_second_unlock_scenes
+tip_sort_keys
+tip_titles
+tip_unlock_scenes
+tip_unlocked_flags
+title_attacks
+title_battle_voices
+title_ci_pictures
+title_description_lines
+title_earned_flags
+title_exclusive_characters
+title_forbidding_flags
+title_formations
+title_lines
+title_movement_kinds
+title_names
+title_opened_flags
+title_picture_chain
+title_portrait_scales
+title_portraits
+title_range_bonuses
+title_required_flags
+title_required_levels
+title_seen_flags
+title_sizes
+title_skills
+title_slot_unlock_flags
+title_slot_unlock_levels
+title_sort_keys
+title_specials
+title_stat_modifiers
+title_unit_classes
+title_unit_pictures
+troop_arg_id
+troop_arg_soldiers
+troop_attacks
+troop_attributes
+troop_available_turns
+troop_command_costs
+troop_command_minimums
+troop_description_lines
+troop_forbidden_flags
+troop_kind_names
+troop_kinds
+troop_movement_types
+troop_names
+troop_parameters
+troop_passive_skills
+troop_pictures
+troop_prices
+troop_required_characters
+troop_required_flags
+troop_required_nation_levels
+troop_required_regions
+troop_sizes
+troop_sort_keys
+troop_upgrade_targets
+troop_upkeep_costs
+tumes_chain_script_ids
+turn_nation
+turn_week
+tutorial_current
+tutorial_excluding_tutorials
+tutorial_forbidden_scenes
+tutorial_regions
+tutorial_required_scenes
+tutorial_required_tutorials
+tutorial_screen
+tutorial_screens
+tutorial_seen_flags
+tutorial_shown_flags
+tutorial_sort_keys
+tutorial_text_chain_slots
+ui_font_name
+unit_arg_slot
+unit_calc_parameters
+unit_classes
+unit_commander_attacks
+unit_commanders
+unit_formations
+unit_items
+unit_soldiers
+unit_troop_attacks
+unit_troops
+visit_scenes_by_character
+visit_scenes_by_object
+visit_scenes_by_region
+voice_continues_past_page
+voice_mute_switches
+voice_name_colors
+voice_setting_characters
+voice_setting_in_play
+voice_setting_labels
+voice_setting_name_colors
+voice_setting_pictures
+voice_setting_sample_voices
+table alchemy_recipe
+table animation
+table animation_sequence
+table attack
+table battlefield_cell
+table battlefield_entry
+table breed_combination
+table brothel_girl
+table cg
+table character
+table costume
+table formation
+table glossary
+table help_line
+table item
+table land
+table map_object
+table map_object_kind
+table music
+table nation
+table part
+table passive_skill
+table production_set
+table profile
+table quest
+table region
+table replay
+table route
+table ruse
+table scene
+table skill
+table skill_area
+table starting_unit
+table tip
+table title
+table troop
+table tutorial
+table voice_setting
+field alchemy_recipe.facility_mask
+field alchemy_recipe.forbidding_flags
+field alchemy_recipe.ingredient_counts
+field alchemy_recipe.ingredients
+field alchemy_recipe.price
+field alchemy_recipe.product
+field alchemy_recipe.product_type
+field alchemy_recipe.required_character
+field alchemy_recipe.required_character_level
+field alchemy_recipe.required_facility_level
+field alchemy_recipe.required_flags
+field alchemy_recipe.required_technology
+field alchemy_recipe.technology_gains
+field animation.file
+field animation.height
+field animation.render_kind
+field animation.scale
+field animation.width
+field animation.x_offset
+field animation.y_offset
+field animation_sequence.animations
+field attack.animation
+field attack.description_lines
+field attack.element
+field attack.name
+field attack.parameter_bonuses
+field attack.timings
+field attack.uses_item_element
+field battlefield_cell.land
+field battlefield_cell.object
+field battlefield_cell.object_level
+field battlefield_entry.area
+field battlefield_entry.region
+field battlefield_entry.side
+field breed_combination.done_story_flag
+field breed_combination.experience_gain
+field breed_combination.message_lines
+field breed_combination.message_pictures
+field breed_combination.parents
+field breed_combination.required_flags
+field breed_combination.result
+field breed_combination.type
+field brothel_girl.forbidding_flags
+field brothel_girl.held_town
+field brothel_girl.name
+field brothel_girl.picture
+field brothel_girl.price
+field brothel_girl.required_flags
+field brothel_girl.required_nation
+field brothel_girl.required_town
+field brothel_girl.scenes
+field brothel_girl.town_mask
+field brothel_girl.visit_flag
+field brothel_girl.visit_thresholds
+field cg.group
+field cg.offset_x
+field cg.offset_y
+field cg.page
+field cg.pictures
+field cg.place
+field character.base_character
+field character.base_level
+field character.base_stats
+field character.battle_voices
+field character.breeding_pictures
+field character.ci_picture
+field character.description
+field character.element
+field character.generic
+field character.hiring_cost
+field character.icon_layer
+field character.initial_costume
+field character.initial_loyalty
+field character.initial_title
+field character.kind
+field character.level_cap
+field character.master
+field character.name
+field character.name_forms
+field character.portrait
+field character.portrait_scale
+field character.sex
+field character.size
+field character.sort_key
+field character.stat_growth
+field character.unit_pictures
+field character.voice_setting
+field character.weekly_fee
+field character.weeks_per_level
+field costume.attacks
+field costume.formations
+field costume.initial_level
+field costume.initial_parts
+field costume.initial_stats
+field costume.max_level
+field costume.stat_growth
+field formation.centre_x
+field formation.centre_y
+field formation.description_lines
+field formation.moves_while_attacking
+field formation.name
+field formation.parameter_percents
+field formation.picture
+field formation.required_squads
+field formation.slot_x_offsets
+field formation.slot_y_offsets
+field glossary.line_unlock_scenes
+field glossary.lines
+field glossary.read
+field glossary.sort_key
+field glossary.title
+field help_line.text
+field item.attack_element
+field item.carried
+field item.description
+field item.exclusive_character
+field item.kind
+field item.move_type
+field item.name
+field item.prices
+field item.range_bonus
+field item.rank
+field item.required_gender
+field item.skill
+field item.sort_key
+field item.stat_bonuses
+field item.terrain_bonuses
+field land.name
+field land.passability
+field land.speed_percent
+field map_object.barred_races
+field map_object.build_flag
+field map_object.build_weeks
+field map_object.costs
+field map_object.depth
+field map_object.description
+field map_object.ground_layer
+field map_object.in_book
+field map_object.kind
+field map_object.level_stats
+field map_object.material_amounts
+field map_object.material_items
+field map_object.name
+field map_object.only_region
+field map_object.passability
+field map_object.pictures
+field map_object.region_type_mask
+field map_object.required_flags
+field map_object.required_region
+field map_object.sort_key
+field map_object.speed_percents
+field map_object.trap_elements
+field map_object.width
+field map_object_kind.book_tab
+field map_object_kind.class
+field map_object_kind.command
+field map_object_kind.flag
+field map_object_kind.icon
+field map_object_kind.name
+field music.bgm
+field music.title
+field music.unlock_resource
+field nation.color
+field nation.diplomacy_flag
+field nation.name
+field nation.palace_pictures
+field nation.playable_flag
+field nation.start_capital
+field nation.start_funds
+field nation.start_item_counts
+field nation.start_items
+field nation.start_leader
+field nation.start_picture
+field nation.start_provisions
+field part.allowed_characters
+field part.allowed_costumes
+field part.description
+field part.kind
+field part.move_type
+field part.name
+field part.range_bonus
+field part.rank
+field part.skill
+field part.sort_key
+field part.stat_bonuses
+field part.terrain_bonuses
+field passive_skill.description_lines
+field passive_skill.effects
+field passive_skill.levels
+field passive_skill.name
+field production_set.items
+field production_set.kind
+field production_set.rates
+field profile.group
+field profile.line_characters
+field profile.line_conditions
+field profile.lines
+field profile.name
+field profile.pictures
+field profile.sort_key
+field quest.battle
+field quest.client
+field quest.delivery_counts
+field quest.delivery_ids
+field quest.delivery_kind
+field quest.first_week
+field quest.flags_closing
+field quest.flags_completing
+field quest.flags_required
+field quest.kind
+field quest.name
+field quest.picture
+field quest.prerequisite
+field quest.region
+field quest.repeatable
+field quest.request_texts
+field quest.required_character
+field quest.required_character_value
+field quest.required_item
+field quest.result_messages
+field quest.reward_counts
+field quest.reward_flag
+field quest.reward_ids
+field quest.reward_kinds
+field quest.reward_money
+field quest.reward_texts
+field quest.sort_key
+field quest.takes_delivery
+field region.battle
+field region.battle_flags_closing
+field region.battle_flags_required
+field region.description_lines
+field region.flags_closing
+field region.flags_required
+field region.kind
+field region.map_id
+field region.map_picture
+field region.map_x
+field region.map_y
+field region.name
+field region.picture
+field region.population_limit
+field region.production_sets
+field region.required_character
+field region.required_character_value
+field region.required_item
+field region.start_owner
+field region.start_population
+field replay.script
+field route.ends
+field route.flags_closing
+field route.flags_required
+field route.kind
+field route.name
+field route.path_x
+field route.path_y
+field route.picture
+field ruse.animation
+field ruse.category
+field ruse.description_lines
+field ruse.friendship_changes
+field ruse.fund_cost_ranges
+field ruse.name
+field ruse.provision_cost_ranges
+field ruse.relation_mask
+field ruse.result_messages
+field ruse.result_pictures
+field ruse.target_kind
+field scene.offer_context
+field scene.on_map
+field scene.played
+field scene.script
+field scene.seen
+field scene.turns_since_played
+field scene.visit_rank
+field skill.animation_rows
+field skill.bonus_kinds
+field skill.cost
+field skill.description
+field skill.description_lines
+field skill.duration
+field skill.effect_kind
+field skill.element
+field skill.name
+field skill.parameter_bonuses
+field skill.power
+field skill.script_slot
+field skill.type
+field skill_area.picture
+field skill_area.polygon_point_count
+field skill_area.polygon_x
+field skill_area.polygon_y
+field skill_area.radius
+field skill_area.x_offset
+field skill_area.y_offset
+field starting_unit.item
+field starting_unit.leader
+field starting_unit.nation
+field starting_unit.region
+field starting_unit.troop_count
+field starting_unit.troop_kind
+field tip.category
+field tip.line_scenes
+field tip.lines
+field tip.picture
+field tip.picture_x
+field tip.picture_y
+field tip.read
+field tip.second_unlock_scene
+field tip.sort_key
+field tip.title
+field tip.unlock_scenes
+field title.attacks
+field title.battle_voices
+field title.ci_picture
+field title.description
+field title.exclusive_character
+field title.forbidding_flags
+field title.formations
+field title.line
+field title.movement_kind
+field title.name
+field title.portrait
+field title.portrait_scale
+field title.range_bonus
+field title.required_flags
+field title.required_level
+field title.size
+field title.skills
+field title.slot_unlock_flags
+field title.slot_unlock_levels
+field title.sort_key
+field title.special
+field title.stat_modifiers
+field title.unit_class
+field title.unit_pictures
+field troop.attacks
+field troop.attribute
+field troop.available_turn
+field troop.command_cost
+field troop.command_minimum
+field troop.description_lines
+field troop.forbidden_flags
+field troop.kind
+field troop.movement_type
+field troop.name
+field troop.parameters
+field troop.passive_skill
+field troop.picture
+field troop.price
+field troop.required_character
+field troop.required_flags
+field troop.required_nation_levels
+field troop.required_region
+field troop.size
+field troop.sort_key
+field troop.upgrade_target
+field troop.upkeep_cost
+field tutorial.excluding_tutorial
+field tutorial.forbidden_scenes
+field tutorial.region
+field tutorial.required_scenes
+field tutorial.required_tutorial
+field tutorial.screen
+field tutorial.seen
+field tutorial.shown
+field tutorial.sort_key
+field tutorial.text_chain_slot
+field voice_setting.character
+field voice_setting.labels
+field voice_setting.name_color
+field voice_setting.pictures
+field voice_setting.sample_voice
+scope battlefield
+scope battlefield.cell
+scope battlefield.entry
+module koukaku.adv.adv_hide_window_handler
+module koukaku.adv.adv_show_window_handler
+module koukaku.adv.apply_speaker_text_style
+module koukaku.adv.apply_view_scroll
+module koukaku.adv.auto_button_click
+module koukaku.adv.auto_button_enter
+module koukaku.adv.auto_button_leave
+module koukaku.adv.begin_page_voice
+module koukaku.adv.begin_skip_suspension
+module koukaku.adv.begin_window_transition
+module koukaku.adv.begin_window_transition_3
+module koukaku.adv.clamp_view_scroll
+module koukaku.adv.clear_message_layer
+module koukaku.adv.clear_message_text
+module koukaku.adv.clear_speaker
+module koukaku.adv.clear_speaker_face
+module koukaku.adv.collapse_button_bar
+module koukaku.adv.collapse_button_bar_1
+module koukaku.adv.create_layer_canvas
+module koukaku.adv.create_layer_canvas_1
+module koukaku.adv.cursor_key_0
+module koukaku.adv.cursor_key_0_3
+module koukaku.adv.cursor_key_0_5
+module koukaku.adv.cursor_key_1
+module koukaku.adv.cursor_key_2
+module koukaku.adv.cursor_key_3
+module koukaku.adv.cursor_key_7
+module koukaku.adv.cursor_key_8
+module koukaku.adv.draw_message_window
+module koukaku.adv.draw_message_window_1
+module koukaku.adv.draw_nameplate
+module koukaku.adv.draw_speaker_name
+module koukaku.adv.end_skip_suspension
+module koukaku.adv.expand_button_bar
+module koukaku.adv.fade_in_600ms_and_show_message_window_500ms
+module koukaku.adv.fade_message_window
+module koukaku.adv.get_layer_anchor
+module koukaku.adv.get_layer_anchor_1
+module koukaku.adv.hide_button_click
+module koukaku.adv.hide_button_enter
+module koukaku.adv.hide_button_leave
+module koukaku.adv.hide_message_window_150ms
+module koukaku.adv.hide_message_window_500ms
+module koukaku.adv.hide_message_window_500ms_and_fade_to_black_600ms
+module koukaku.adv.hide_message_window_800ms
+module koukaku.adv.history_button_click
+module koukaku.adv.history_button_enter
+module koukaku.adv.history_button_leave
+module koukaku.adv.ignore_button_bar
+module koukaku.adv.init_adv_layer_slots
+module koukaku.adv.line
+module koukaku.adv.place_layer_graphic
+module koukaku.adv.present_window_transition
+module koukaku.adv.publish_message_text
+module koukaku.adv.quick_load_button_click
+module koukaku.adv.quick_load_button_enter
+module koukaku.adv.quick_load_button_leave
+module koukaku.adv.quick_save_button_click
+module koukaku.adv.quick_save_button_enter
+module koukaku.adv.quick_save_button_leave
+module koukaku.adv.read_skip_button_click
+module koukaku.adv.read_skip_button_enter
+module koukaku.adv.read_skip_button_leave
+module koukaku.adv.redraw_message_window
+module koukaku.adv.refresh_map
+module koukaku.adv.register_adv_hotspots
+module koukaku.adv.set_message_text_origins
+module koukaku.adv.set_speaker_face
+module koukaku.adv.show_layer_graphic
+module koukaku.adv.show_message_window_150ms
+module koukaku.adv.show_message_window_500ms
+module koukaku.adv.show_message_window_800ms
+module koukaku.adv.show_speaker
+module koukaku.adv.skip_button_click
+module koukaku.adv.skip_button_enter
+module koukaku.adv.skip_button_leave
+module koukaku.adv.speaker
+module koukaku.adv.speaker_0x10
+module koukaku.adv.speaker_0x17
+module koukaku.adv.speaker_0x61
+module koukaku.adv.speaker_0x69
+module koukaku.adv.wipe_layer_graphic
+module koukaku.adv.アイシャ
+module koukaku.adv.アル
+module koukaku.adv.アルフィミア
+module koukaku.adv.アンナローツェ兵
+module koukaku.adv.アンナローツェ貴族
+module koukaku.adv.エイフェリア
+module koukaku.adv.エミリイ
+module koukaku.adv.エルファティシア
+module koukaku.adv.エルミナ
+module koukaku.adv.オルファン
+module koukaku.adv.カイナッツ
+module koukaku.adv.ガルムス
+module koukaku.adv.キルヒライア
+module koukaku.adv.ギュランドロス
+module koukaku.adv.ギルク
+module koukaku.adv.クナイ
+module koukaku.adv.クライス
+module koukaku.adv.ケスラー
+module koukaku.adv.コロナ
+module koukaku.adv.コーネリア
+module koukaku.adv.ザフハ獣人兵士
+module koukaku.adv.ザルマグス
+module koukaku.adv.シュタイフェ
+module koukaku.adv.シーラ
+module koukaku.adv.ジルタニア
+module koukaku.adv.センタクス兵
+module koukaku.adv.センタクス部隊長
+module koukaku.adv.ダルマグナ
+module koukaku.adv.ナフカ
+module koukaku.adv.ネネカ
+module koukaku.adv.ノイアス
+module koukaku.adv.ハイシェラ
+module koukaku.adv.パティルナ
+module koukaku.adv.フェイス
+module koukaku.adv.フェルアノ
+module koukaku.adv.フランシスカ
+module koukaku.adv.ベル
+module koukaku.adv.ベルモン
+module koukaku.adv.マルギレッタ
+module koukaku.adv.ミスティ
+module koukaku.adv.ミリアーナ
+module koukaku.adv.メイメイ
+module koukaku.adv.モクラン
+module koukaku.adv.ラクリール
+module koukaku.adv.リセル
+module koukaku.adv.リューン
+module koukaku.adv.リリエッタ
+module koukaku.adv.ルイーネ
+module koukaku.adv.レクシュミ
+module koukaku.adv.ヴァイスハイト
+module koukaku.adv.傭兵
+module koukaku.adv.商人
+module koukaku.adv.女の子
+module koukaku.adv.男の子
+module koukaku.adv.青年

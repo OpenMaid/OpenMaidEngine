@@ -110,9 +110,17 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0x191 (out)(value): op_0x191_absolute_value. Through 4.38D it is (v ^ (v >> 31)) - (v >> 31) on integers
+    // (/v2 0x426de0); 4.43B's (0x42b140) rounds the float read to a float and writes its fabs through the float accessor,
+    // which the registry's SYS4443 contract says (read-float, write-float).
     private StepResult OpAbsoluteValue(Instruction ins, int pc)
     {
         var a = ins.Args;
+        if (IsFloatOperand(ins, 1))
+        {
+            WriteFloat(a[0], MathF.Abs(ReadFloat(a[1])));
+            return StepResult.Next;
+        }
         int value = unchecked((int)Read(a[1]));
         int sign = value >> 31;
         Write(a[0], unchecked((value ^ sign) - sign));

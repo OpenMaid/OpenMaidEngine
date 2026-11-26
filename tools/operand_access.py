@@ -55,6 +55,20 @@ ACCESS_KINDS = tuple(kind for kind in M.ACCESS_KINDS if kind != "ignored")
 VERIFIED_IGNORED = {
     (0x1A7, 1),   # comment: handler only sets the instruction length (SYS4422 0x416630, SYS4433 4.33G 0x416dd0)
 }
+
+# Operands a handler reaches through a loop's computed index, which the backward argument scan cannot resolve. Each
+# handler is read by hand, and build() checks the entry against the walk: the call sites it leaves unresolved, each run
+# once per iteration, must make the entry's accesses exactly, as many of each kind, or the report stops.
+# {(engine id, op): (iterations, {operand: kinds})}.
+LOOP_INDEXED = {
+    # 4.43B op_0x2ef_handler@0x42f530 loops twice over five operands, from index 2 and 7: the addresses of an x and a
+    # y array, then the point count and the x and y offsets (docs/engine-re.md, "Arterial against 魔導巧殻, triaged").
+    ("koukaku", 0x2EF): (2, {2: ["address"], 3: ["address"], 4: ["read"], 5: ["read"], 6: ["read"],
+                             7: ["address"], 8: ["address"], 9: ["read"], 10: ["read"], 11: ["read"]}),
+    # 4.43B op_0x2f1_handler@0x42f9a0 loops twice over three operands, from index 2 and 5: the address of four cells,
+    # then the x and y offsets.
+    ("koukaku", 0x2F1): (2, {2: ["address"], 3: ["read"], 4: ["read"], 5: ["address"], 6: ["read"], 7: ["read"]}),
+}
 TYPE_NAMES = {0x0: "imm", 0x1: "float", 0x2: "string", 0x3: "g-int", 0x4: "g-float",
               0x5: "g-str", 0x6: "g-ptr", 0x8: "g-str-ptr", 0x9: "l-int", 0xa: "l-float",
               0xb: "l-str", 0xc: "l-ptr", 0xd: "l-float-ptr", 0xe: "l-str-ptr"}
@@ -188,6 +202,28 @@ _BG0_ACCESSORS = {
     0x414460: Accessor("cell", 1, "vm_operand_lvalue"),
 }
 
+# 魔導巧殻 AGE 4.43B, from --align-accessors against arterial and kamidori (2026-11-26): the same fifteen against both,
+# 4.38D's float pair and its float-cell resolver included. Every alignment is unanimous but two, and both dissents are one
+# handler: op 0x191 (absolute-value) reads operand 2 through the float fetch and writes operand 1 through the float
+# write, where 4.38D reads and writes integers. That is the handler's change, not an accessor's.
+_KOUKAKU_ACCESSORS = {
+    0x41B2A0: Accessor("read", 1, "vm_operand_fetch"),
+    0x41B640: Accessor("read-float", 1, "vm_operand_fetch_float"),
+    0x41A990: Accessor("read-string", 1, "vm_operand_read_string_buffer"),
+    0x4286D0: Accessor("read-string", 2, "vm_operand_read_std_string"),
+    0x41AD00: Accessor("read-string", 1, "vm_operand_format_as_string"),
+    0x429730: Accessor("write", 1, "vm_operand_write"),
+    0x430990: Accessor("write-string", 1, "vm_operand_write_string"),
+    0x429C80: Accessor("write-float", 1, "vm_operand_write_float"),
+    0x4182C0: Accessor("bind", 1, "vm_pointer_operand_bind_element"),
+    0x418190: Accessor("bind", 1, "vm_pointer_operand_write"),
+    0x429120: Accessor("address", 1, "vm_operand_resolve_address"),
+    0x4180E0: Accessor("string-cell", 1, "vm_operand_global_string_cell"),
+    0x417FB0: Accessor("ref-slot", 1, "vm_pointer_operand_slot"),
+    0x418030: Accessor("cell", 1, "vm_operand_lvalue"),
+    0x42A1E0: Accessor("address", 1, "vm_operand_resolve_float_address"),
+}
+
 REFERENCE_PROFILE = "himegari"
 ENGINES: dict[str, EngineFacts] = {
     "himegari": EngineFacts(0x413860, 0x9B24C, _HIMEGARI_ACCESSORS, runtime_start=0x54F3DE, version="4.24J"),
@@ -212,6 +248,11 @@ ENGINES: dict[str, EngineFacts] = {
     # fills the opcode table at ctx+0x99758 (default handler 0x414990), with Himegari's 0x413860's prologue. The C
     # runtime starts at the operator new thunk 0x52b0ee, whose neighbours match Himegari's 0x54f3de.
     "bg0": EngineFacts(0x412070, 0x99758, _BG0_ACCESSORS, runtime_start=0x52B0EE, version="4.15D"),
+    # 魔導巧殻, AGE 4.43B, dumped 2026-11-26 (a profile since the same day). The ctx constructor at 0x414f70, with
+    # Arterial's 0x414e10's prologue, fills the opcode table at ctx+0xa4bd4 (default handler 0x418430; 501
+    # handlers). The C runtime starts at the operator new thunk 0x5f2338, whose bytes and neighbours match
+    # Arterial's 0x583dd8.
+    "koukaku": EngineFacts(0x414F70, 0xA4BD4, _KOUKAKU_ACCESSORS, runtime_start=0x5F2338, version="4.43B"),
 }
 
 
@@ -637,6 +678,18 @@ def build(profile_id: str) -> dict:
     for op, handler in sorted(table.items()):
         found = accesses(image, facts.accessors, handler)
         by_arg, unresolved = contracts(found, argc.get(op))
+        loop = LOOP_INDEXED.get((profile_id, op))
+        if loop is not None:
+            iterations, hand_read = loop
+            walked = collections.Counter({kind: count * iterations for kind, count in
+                                          collections.Counter(record["access"] for record in unresolved).items()})
+            expected = collections.Counter(kind for kinds in hand_read.values() for kind in kinds)
+            if walked != expected:
+                raise SystemExit(f"{profile_id} op 0x{op:x}: LOOP_INDEXED expects {dict(expected)}, but the walk "
+                                 f"leaves {dict(walked)} unresolved; read the handler again")
+            by_arg = {**by_arg, **{index: list(kinds) for index, kinds in hand_read.items()}}
+            by_arg = dict(sorted(by_arg.items()))
+            unresolved = []
         opcodes[op] = {
             "handler": f"0x{handler:x}",
             "argc": argc.get(op),

@@ -19,6 +19,13 @@ public abstract class RubyRule
     /// adv_text_draw_ruby_over_row_sys4433@0x4590d0 and its History renderer @0x456490.</summary>
     public static RubyRule ShiftModes { get; } = new ShiftMode();
 
+    /// <summary><see cref="ShiftModes"/>, and in RubyShiftMode 2 the publishers raise a ruby character by op 0x260's top
+    /// padding: AGE 4.43B's adv_text_publish_next_glyph@0x459440, adv_text_publish_layout@0x4583e0,
+    /// text_redraw_retained_group@0x463310 and text_history_render_records@0x4646d0. Its drawer,
+    /// adv_text_draw_ruby_over_row@0x462d70, places the ruby's cells as 4.33G's does and draws their ink that much
+    /// higher (0x4630c1; <see cref="RubyLayoutRules.InkRaise"/>).</summary>
+    public static RubyRule ShiftModesRaisedByTopPadding { get; } = new ShiftMode(raisesByTopPadding: true);
+
     /// <summary>The rules for a RubyShiftMode and a DrawMode.</summary>
     public abstract RubyLayoutRules For(int rubyShiftMode, int drawMode);
 
@@ -36,10 +43,13 @@ public abstract class RubyRule
         public override RubyLayoutRules For(int rubyShiftMode, int drawMode) => RubyLayoutRules.FixedOffsets;
     }
 
-    private sealed class ShiftMode : RubyRule
+    private sealed class ShiftMode(bool raisesByTopPadding = false) : RubyRule
     {
         public override RubyLayoutRules For(int rubyShiftMode, int drawMode)
-            => RubyLayoutRules.ShiftModes(rubyShiftMode, drawMode);
+            => RubyLayoutRules.ShiftModes(rubyShiftMode, drawMode) with
+            {
+                PublisherRaisesByTopPadding = raisesByTopPadding && rubyShiftMode == 2,
+            };
     }
 }
 
@@ -87,6 +97,18 @@ public sealed record RubyLayoutRules
 
     /// <summary>Whether a mode-3 effect raises the ruby by its y offset.</summary>
     public bool RaiseByEffectInMode3 { get; init; }
+
+    /// <summary>Whether the publishers raise a ruby character's cell and object by op 0x260's top padding (AGE 4.43B in
+    /// RubyShiftMode 2; <see cref="RubyRule.ShiftModesRaisedByTopPadding"/>). The cell keeps its height: the object
+    /// shows the rows above it and loses as many at its bottom.</summary>
+    public bool PublisherRaisesByTopPadding { get; init; }
+
+    /// <summary>Pixels the drawer draws the ruby's ink above its cells, which the records keep. AGE 4.43B's
+    /// adv_text_draw_ruby_over_row@0x462d70 computes the cell, then draws at its top less op 0x260's top padding in
+    /// RubyShiftMode 2 (0x4630bc): the text manager sets it to that padding where
+    /// <see cref="PublisherRaisesByTopPadding"/> holds, and the publisher's raise shows the rows the ink moved
+    /// into.</summary>
+    public int InkRaise { get; init; }
 
     /// <summary>Every ruby record gets chain flag 1 and the pending record resets to 0, so a run's whole ruby
     /// publishes in one tick and the next run starts its own (4.33G). Otherwise (4.24J) the record chains after each

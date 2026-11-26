@@ -1,0 +1,30 @@
+# One experience award (Lua scripting spec §9.2). Hand-written: the event names its point and gives each field's cell,
+# by the names layout/globals.json exports.
+
+[[event]]
+name = "koukaku.experience.award"
+point = "koukaku.experience.before_add"
+description = """
+One character's experience from a battle, before RESULT adds it to character_experience: the experience the \
+character earned in the battle, its attacks and skills, raised by 5 or 2 at the battle's end and capped at 999. \
+RESULT raises this for the commander of each of the player's units whose level is below its cap. A handler that \
+changes amount changes what is added; each 100 of experience then makes a level, up to the cap. The cell amount \
+names is the battle's count for the character, which FIELD clears when the next battle starts."""
+
+[[event.field]]
+name = "amount"
+at = "arg[3]"                   # the add's third operand: G[0xc0cd + character], the experience from the battle
+type = "int"
+access = "rw"
+
+[[event.field]]
+name = "character"
+at = "L[0x275]"                 # RESULT's local: the commander the award goes to, a CHINIT id
+type = "int"
+access = "r"
+
+[[event.field]]
+name = "level"
+at = "character_levels[L[0x275]]"
+type = "int"
+access = "r"

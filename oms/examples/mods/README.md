@@ -89,6 +89,26 @@ ran the same scenarios on native AGE.
   the map event and the changed block). `tools/drive/scenarios/port/bg0-battle-award.steps` runs the debug menu and
   the event log: 戦闘, won on AUTO, and the award RESULT gives each character in the party.
 
+- `example.koukaku-prologue-line` is 魔導巧殻's first mod (`docs/modding/games/koukaku.md`): a line before the first
+  page of its opening scene (site 0xecd, the instruction that turns the tick presentation off), through `koukaku.adv`.
+  `NaturalBootIntegrationTests.KoukakuPrologueFragmentIsTheFirstAdvPage` boots a new game into it, and
+  `tools/drive/scenarios/koukaku-prologue-line.steps` plays it on both targets, native AGE on the exported
+  `SC0000.BIN`.
+- `example.koukaku-speaker-name` is 魔導巧殻's base mod example (M3): a data file of `koukaku.tables` that renames
+  ヴァイスハイト's name form 1, the name plate 戦場を眺める若き将軍, at `koukaku.data.layered`.
+  `tools/drive/scenarios/port/koukaku-speaker-name.steps` checks the cell at the title and plays a new game to his
+  first line under that form. It targets `extended`, so it runs in the port only.
+- `example.koukaku-debug-menu` opens the developers' debug menu, which 魔導巧殻's title builds but never shows, from
+  the title's Quit (`docs/modding/games/koukaku.md`, "The debug menu"). It targets `native`; the exported `TITLE.BIN`
+  opens the same menu on native AGE.
+- `example.koukaku-event-log` logs every event `koukaku-base` raises, with its fields, gives one item at
+  `koukaku.data.ready` through the base mod's `give_item`, and keeps the list for the driver's `lua` step;
+  `example.koukaku-battlefield-land` is a data file whose battlefield part makes map 98's cell at row 1, column 1
+  沼地. `tools/drive/scenarios/port/koukaku-debug-events.steps` runs the three: 全体マップ (the 100 regions' maps
+  loaded at the game's start, the last map 98 with the changed cell, and the end of the first week).
+  `tools/drive/scenarios/port/koukaku-battle-award.steps` runs the debug menu and the event log: 戦闘, lost at once on
+  a map MPINIT does not have, and the award RESULT gives each commander.
+
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs
   `ADDEXP.BIN` with it and with the guide's OMS patch, and both leave the same state. It targets `extended`, so it

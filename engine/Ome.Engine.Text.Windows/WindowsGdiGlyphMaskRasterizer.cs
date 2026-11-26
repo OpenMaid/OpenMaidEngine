@@ -150,7 +150,7 @@ public sealed class WindowsGdiGlyphMaskRasterizer
                         out GlyphMetrics metrics, 0, null, ref identity) == GdiError)
                     ThrowWin32($"GetGlyphOutlineA(GGO_METRICS) failed for CP932 0x{code:x4}");
                 return new FontProbeMetrics(textMetrics.AveCharWidth, metrics.BlackBoxX, metrics.CellIncrementX,
-                                            textMetrics.Height);
+                                            textMetrics.Height, metrics.GlyphOrigin.Y);
             }
             finally
             {

@@ -69,9 +69,9 @@ public class RetainedAdvWaitIndicatorPresentationTests
         var previous = new RetainedAdvWaitIndicatorPresentation(Config, Binding, 0, 430);
         previous.Update(gfx, 96, visible: true);
         var next = new RetainedAdvWaitIndicatorPresentation(
-            Config, Binding, 0, 430, anchorOffsetX: 75, anchorOffsetY: 20);
+            Config, Binding, 0, 430, anchorOffsetX: 75, anchorOffsetY: 20, publishedFrame: previous.PublishedFrame);
 
-        Assert.False(next.IsPublished);
+        Assert.True(next.IsPublished);
         Assert.True(republish
             ? next.Republish(gfx, 0, visible: false)
             : next.Update(gfx, 0, visible: false));
@@ -82,6 +82,24 @@ public class RetainedAdvWaitIndicatorPresentationTests
         Assert.Equal(460, Assert.Single(gfx.SnapshotVisibleObjects()).DstX);
         Assert.True(next.Update(gfx, 48, visible: true));
         Assert.Equal(30, Assert.Single(gfx.SnapshotVisibleObjects()).SrcX);
+    }
+
+    [Fact]
+    public void AStoppedIndicatorLeavesTheScriptsObjectAtItsHandle()
+    {
+        // Native erases the handle only when the indicator stops running: 魔導巧殻's HISTORY stops it, then draws its
+        // first row's icon into the same handle, and the icon stays.
+        var presentation = new RetainedAdvWaitIndicatorPresentation(Config, Binding, 0, 430);
+        var gfx = new GfxState();
+        presentation.Update(gfx, 0, visible: true);
+        presentation.Erase(gfx);
+        gfx.BindDraw(Binding.WaitIndicatorObjectHandle, 17, 0x42a, 0x1a1, 0x21, 0x21, 0x72, 0x58);
+
+        Assert.False(presentation.Update(gfx, 48, visible: false));
+        Assert.False(presentation.Republish(gfx, 48, visible: false));
+
+        RenderObject icon = Assert.Single(gfx.SnapshotVisibleObjects());
+        Assert.Equal((0xd674L, 0x42a, 0x1a1), (icon.Handle, icon.SrcX, icon.SrcY));
     }
 
     [Fact]

@@ -1,0 +1,14 @@
+oms 1
+// 魔導巧殻's title builds a debug menu (デバッグメニュー) right after its Quit calls QUIT (TITLE@0x360), which fades out
+// and ends the game (throw-exit-request, QUIT@0x76), so no run reaches it. Deleting the call makes Quit open the menu
+// instead. Its entries: ＡＤＶパート picks a scene by file; ＡＤＶデバッグ（ＰＧ用） and ＡＤＶデバッグ２ play DEBUGADV and
+// DEBUGADV2; 戦闘 runs DEBUGMAP, which gives the player 100 of every item and one of every part, adds corps to nations
+// 1 and 5 and starts a battle on map 999; 全体マップ runs DEBUGAM, which runs INITGAME, has the player's nation occupy
+// every open region another nation holds (OCCUPY, which loads each region's map the first time), gives 100 of every
+// item and one of every part, adds corps and opens the strategic map; システム runs DEBUG; キャンセル goes back. Each
+// entry that starts a mode sets it (system_mode: 1 a scene, 2 the strategic map, 3 a battle) and leaves the title
+// through its common exit, so SYSTEM4 starts that mode.
+patch "TITLE.BIN" fingerprint "sha256:00731a9a8f5f03cb412ec757784eea0da1b1b3596afb766c1ff9e775305c129d"
+
+replace site 0x360 {
+}

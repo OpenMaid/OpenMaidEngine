@@ -1,0 +1,10 @@
+oms 1
+// A line before the first page of 魔導巧殻's opening scene. A page of this game starts at the instruction that turns
+// the tick presentation off, before it resets the text layouts and sets G[0x37d1] (the page has text): 0xecd is that
+// instruction of the first page.
+patch "SC0000.BIN" fingerprint "sha256:ea1a8a1337210691675abdc219f4d83c2a5eaac4920c376278a52b64ac6f1bff"
+use koukaku.adv
+
+before site 0xecd {
+    "[OMS] A mod inserted this line before the opening scene's first page."
+}

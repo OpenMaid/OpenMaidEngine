@@ -19,6 +19,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Ikusa Megami ZERO | `bg0` | `SYS4415` | P3 (complete) | M3 (base mod) | [the guide](bg0.md) |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
+| Madou Koukaku | `koukaku` | `SYS4443` | P3 (complete) | M3 (base mod) | [the guide](koukaku.md) |
 | Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | M3 (base mod) | [the guide](verita.md) |
 
 ## Soukoku no Arterial
@@ -100,6 +101,26 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Named patch points | `kamidori.experience.after_calculation`, `kamidori.boot.data_layered`, `kamidori.boot.data_ready`, `kamidori.stage.after_loader`, `kamidori.class_change.rules_run`, `kamidori.stage.after_info_reload`, `kamidori.stage.after_list_preview`, `kamidori.stage.after_ready_handlers`, `kamidori.stage.after_round_handlers`, `kamidori.stage.after_close_handlers` ([reference](../../patch-point-reference-kamidori.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [Kamidori Alchemy Meister's guide](kamidori.md) |
+
+## Madou Koukaku
+
+| Fact | Value |
+|---|---|
+| Game id | `koukaku` (`--game koukaku`) |
+| Title | Madou Koukaku (魔導巧殻 ～闇の月女神は導国で詠う～) |
+| Support | play P3 (complete); modding M3 (base mod) |
+| Engine build | AGE `4.43B` |
+| Engine ABI | `SYS4443` |
+| Catalog revision | `S4IC443` |
+| Boot script | `SYSTEM4.BIN` |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/koukaku/` beside the repository by default |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/koukaku/` of the engine's data folder) |
+| OMS modules | `koukaku.globals`, `koukaku.scripts` (generated); `koukaku.adv` ([its source in `koukaku-base`](../../../mods/koukaku-base/oms/adv.oms)) |
+| Speakers | 59 in `koukaku.adv`'s `enum speaker` |
+| Tables | `scene[10000]` (7 fields), `cg[3000]` (6 fields), `replay[240]` (1 fields), `music[50]` (3 fields), `help_line[1000]` (1 fields), `tutorial[1000]` (10 fields), `tip[1000]` (11 fields), `glossary[1000]` (5 fields), `character[1000]` (29 fields), `title[1000]` (24 fields), `voice_setting[1000]` (5 fields), `profile[1000]` (7 fields), `brothel_girl[30]` (12 fields), `skill_area[20]` (7 fields), `troop[1000]` (22 fields), `skill[400]` (13 fields), `passive_skill[1000]` (4 fields), `attack[1000]` (7 fields), `formation[100]` (10 fields), `costume[100]` (7 fields), `animation[1000]` (7 fields), `animation_sequence[1000]` (1 fields), `item[2000]` (15 fields), `part[1000]` (12 fields), `alchemy_recipe[2000]` (13 fields), `breed_combination[1000]` (8 fields), `nation[30]` (12 fields), `region[200]` (20 fields), `route[200]` (8 fields), `production_set[1000]` (3 fields), `starting_unit[2000]` (6 fields), `ruse[100]` (11 fields), `quest[1000]` (28 fields), `land[100]` (3 fields), `map_object[1000]` (23 fields), `map_object_kind[100]` (6 fields), `battlefield_cell[400]` (3 fields), `battlefield_entry[20]` (3 fields) ([reference](../../global-reference-koukaku.md)) |
+| Named patch points | `koukaku.boot.data_layered`, `koukaku.boot.data_ready`, `koukaku.battlefield.after_map_loaders_field`, `koukaku.battlefield.after_map_loaders_reign`, `koukaku.battlefield.after_map_loaders_palace`, `koukaku.battlefield.after_map_loaders_checkreg`, `koukaku.battlefield.after_map_loaders_occupy`, `koukaku.battlefield.after_map_loaders_delcn`, `koukaku.turn.before_week_advance`, `koukaku.experience.before_add` ([reference](../../patch-point-reference-koukaku.md)) |
+| Publisher's page | <https://www.eukleia.co.jp/eushully/> |
+| Guide | [Madou Koukaku's guide](koukaku.md) |
 
 ## Ikusa Megami VERITA
 

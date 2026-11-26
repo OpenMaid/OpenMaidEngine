@@ -161,6 +161,43 @@ public sealed class GameProfileSelectionTests
         Assert.Equal(Ome.Engine.Vm.EngineBuilds.Age424J.Rules.Text, build.Rules.Text);
     }
 
+    /// <summary>魔導巧殻 is at P3 and M1 (docs/adding-a-game.md): the engine names its install, reads all of it, has a
+    /// handler for every opcode its scripts use, boots it by its own route to SC0000's first page, and saves as native
+    /// does; its scripts rebuild from Open Maid Script, and its base mod carries their toolchain. Its build is declared
+    /// from 4.38D.</summary>
+    [Fact]
+    public void KoukakuIsAddedFromArterialsBuild()
+    {
+        GameProfileManifest koukaku = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("koukaku"));
+
+        Assert.Equal(("SYS4", "4.43B", "SYS4443", "SYSTEM4.BIN"),
+                     (koukaku.SysFrontendId, koukaku.EngineBuildId, koukaku.EngineAbiId, koukaku.NaturalBootScript));
+        Assert.Equal(["SYS4443"], koukaku.ScriptRevisions);
+        Assert.True(koukaku.Matches(new GameCatalogIdentity("S4IC443", "魔導巧殻 ～闇の月女神は導国で詠う～")));
+        Assert.Equal(("P3", "M3"), (koukaku.Support.PlayId, koukaku.Support.ModdingId));
+        Assert.True(koukaku.Support.IsPlayable);
+        // Its saves load on native AGE and the port alike (koukaku-save-load.steps, 2026-11-26).
+        Assert.True(koukaku.PersistenceWritesEnabled);
+        Assert.Null(koukaku.Persistence.ReadOnlyReason);
+        Assert.Equal(320, koukaku.Persistence.ExpectedPackedSaveVersion);
+        Assert.Equal([2169864, 88241, 433, 1, 1, 1], koukaku.Persistence.BankDimensions.ToArray());
+        Assert.Null(koukaku.DirectSceneDiagnostics);
+        Assert.Null(koukaku.DebugSceneLaunch);
+        // The launcher's art for it comes from the publisher's site, as the other games' does.
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu14/banner/banner_eu14_a.jpg",
+            koukaku.Launcher!.Banner!.Url.ToString());
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu14/image/eu14_package.jpg", koukaku.Launcher.Cover!.Url.ToString());
+        Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(koukaku);
+        Assert.Equal(("4.43B", "SYS4443"), (build.Id, build.AbiId));
+        Assert.Same(Ome.Engine.Vm.EngineBuilds.Age443B, build);
+        // 4.38D's text rules with 4.43B's two publisher changes (EngineBuilds.Age443B).
+        Assert.Equal(Ome.Engine.Vm.EngineBuilds.Age438D.Rules.Text with
+                     {
+                         Ruby = Ome.Engine.Text.RubyRule.ShiftModesRaisedByTopPadding, LayoutPublishersGrowOnce = true,
+                     },
+                     build.Rules.Text);
+    }
+
     [Fact]
     public void NormalKamidoriProfileInjectsNoHimegariState()
     {
@@ -329,6 +366,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("arterial")]
     [InlineData("verita")]
     [InlineData("bg0")]
+    [InlineData("koukaku")]
     public void InstalledCatalogAutoSelectsExpectedProfile(string expectedProfile)
     {
         string path = Path.Combine(Paths.GameInstall(expectedProfile), "SYS4INI.BIN");
@@ -350,6 +388,7 @@ public sealed class GameProfileSelectionTests
     [InlineData("arterial")]
     [InlineData("verita")]
     [InlineData("bg0")]
+    [InlineData("koukaku")]
     public void InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions(string game)
     {
         string path = Path.Combine(Paths.GameInstall(game), "SYS4INI.BIN");
@@ -386,6 +425,16 @@ public sealed class GameProfileSelectionTests
     {
         InstalledCatalogAutoSelectsExpectedProfile("bg0");
         InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("bg0");
+    }
+
+    /// <summary>魔導巧殻's workspace gate, likewise.</summary>
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "koukaku")]
+    public void InstalledKoukakuSelectsItsProfileWithItsBankDimensions()
+    {
+        InstalledCatalogAutoSelectsExpectedProfile("koukaku");
+        InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("koukaku");
     }
 
     private static GameProfileManifest SyntheticProfile(string id, GameCatalogIdentity identity)

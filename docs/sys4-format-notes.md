@@ -113,6 +113,15 @@ among them. Its values differ in `SAVEPATH` (`Eushully\戦女神ZERO\SAVE`), `RE
 (`455EE66A-17E3-4E66-9D3C-D630723C3B00`) and `REGKEY` (`1163847274`). It is the only `SAVEVERSION` of 300 among the
 games. Its saves are version 3.0, with Himegari's layout (the save container's header, below).
 
+魔導巧殻's trailer (`S4IC443`, AGE 4.43B) has 50 pairs: 創刻のアテリアル's 49 in the same order and
+`TRANSFERMUSICVOLUME` (`1`) after `SAVEWINPOS`, a key no other game has. Its canvas is `1280` by `720`, larger than any
+other game's, and its `RUBYSHIFTMODE` is `2`, where Kamidori's and 創刻のアテリアル's are `1`. Its other values differ
+in `SAVEPATH` (`Eushully\魔導巧殻\SAVE`), `REGFILEPATH` (`Eushully\魔導巧殻`), `COPYRIGHT` (`Copyright (c) Eushully
+2013`), `RCVERSION` (`34`), `VERREGPOS` (`399534C4-4B96-477C-BD2E-90B46EF7CBF1`) and `REGKEY` (`966079684`).
+`SAVEVERSION` is `320`, as 創刻のアテリアル's. Its font list names one font, as 創刻のアテリアル's does: AGE Extend
+(`AGE-EXTEND.TTF`, file 46). Its saved prefix is the first with a float bank larger than one cell: 88,241 float
+globals, beside 2,169,864 integers and 433 strings (the header's `+0xf0` counts, below).
+
 #### The font list (AGE 4.38D) — CONFIRMED (2026-11-19)
 
 Since AGE 4.38D the stream goes on after the settings pairs with a list of the fonts the game ships in its catalog:
@@ -384,6 +393,11 @@ After decoding the common container, the shared payload is sequential:
 | 4 | for version 3.10 or later, `selector_counts[256]:u32` for append-catalog unlock tables |
 | 5 | for version 3.10 or later, `extended_count:u32`, then the flattened encrypted append tables |
 | 6 | `reserved_tail[9]:u32` |
+
+The tail is not a field. The writer stores one zero after the last section and leaves the next eight DWORDs of its
+allocation unwritten (`shared_profile_payload_write@0x430a20`, 4.24J), so they hold heap residue, which the reader
+ignores: native 4.43B wrote `0, -1, -1, -1, -1, -1, 0x3db1, 0, 0` in one session and zeros in another (2026-11-26). The
+port writes back the tail it read, and zeros for a new profile.
 
 An integer entry is:
 

@@ -23,6 +23,10 @@ public sealed class Sys4RegIniStore
     // Himegari's SYS4INI trailer overrides neither. (CONFIG's reset button instead sets 50 ms and 4.)
     public const int DefaultMessageSpeed = 5;
     public const int DefaultMesWinAlpha = 8;
+    // AGE 4.43B: the percent of the glyph delay a glyph fades in over (op 0x2ee), registered with 0 by 0x481ef0 and read
+    // by engine_initialize@0x4174f2 into text manager +0x39678.
+    public const string MessageFadeKey = "MessageFade";
+    public const int DefaultMessageFade = 0;
     public const string AutoMessageTime0Key = "AutoMessageTime0"; // ops 0x1b8/0x1b9 selector 0: post-voice delay
     public const string AutoMessageTime1Key = "AutoMessageTime1"; // selector 1: unvoiced delay
     public const int DefaultAutoMessageTime0 = 500;

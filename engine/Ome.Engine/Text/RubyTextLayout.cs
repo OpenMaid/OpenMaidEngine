@@ -196,6 +196,7 @@ public static class RubyTextLayout
     {
         AdvTextStyle plain = style with { RenderMode = 0 };
         var records = new List<AdvRetainedGlyphRecord>(requests.Count);
+        int inkY = checked(y - rules.InkRaise);
         for (int index = 0; index < requests.Count; index++)
         {
             GlyphMask mask = masks[index];
@@ -203,11 +204,11 @@ public static class RubyTextLayout
             if (destination != null)
             {
                 AgeGlyphMaskCompositor.DrawGlyph(
-                    destination, mask, x, y,
+                    destination, mask, x, inkY,
                     AgeGlyphMaskCompositor.CellTopToBaseline(mask, requests[index].PixelHeight), plain, coverageAlpha);
                 // The style keeps the primary size and the effect offset the join reads.
                 if (dashJoin != null && ExtendedDashJoin.Applies(requests[index].Cp932Code))
-                    ExtendedDashJoin.AfterGlyph(destination, requests[index], mask, x, y,
+                    ExtendedDashJoin.AfterGlyph(destination, requests[index], mask, x, inkY,
                                                 checked(x + dashJoin.Of(requests[index]).Advance), style);
             }
             int chain = rules.ChainEveryRubyRecord || index > 0 ? 1 : 0;

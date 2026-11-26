@@ -152,4 +152,31 @@ public static class Cp932Text
     public static FullwidthTextValidationError ValidateFullwidthName(
         string value, int byteLimit = NativeNameByteLimit)
         => ValidateFullwidthName(value, NativeEncoding, byteLimit);
+
+    /// <summary>A result of more than <paramref name="byteLimit"/> CP932 bytes is too long, whatever its characters:
+    /// 創刻のアテリアル's dialog 10 (AGERC.DLL <c>+0x1760</c>, 字数オーバーです over 24).</summary>
+    public static FullwidthTextValidationError ValidateByteLength(string value, int byteLimit)
+        => EncodeCString(value, NativeEncoding).Length > byteLimit
+            ? FullwidthTextValidationError.TooLong
+            : FullwidthTextValidationError.None;
+
+    /// <summary>
+    /// The longest prefix of <paramref name="value"/> whose width fits <paramref name="maxWidth"/>, a double-byte
+    /// character counting <paramref name="doubleByteWidth"/> and any other byte <paramref name="singleByteWidth"/>: 魔導巧殻's
+    /// dialog 10 (AGERC.DLL <c>+0x17c0</c>, 15, 8 and 564), which shows no error and keeps the prefix. A character is
+    /// double-byte when its first byte is a lead byte and its second a trail byte (the CRT's <c>_mbbtype</c>).
+    /// </summary>
+    public static string WidthPrefix(string value, int doubleByteWidth, int singleByteWidth, int maxWidth)
+    {
+        byte[] bytes = EncodeCString(value, NativeEncoding);
+        int width = 0, length = 0;
+        while (length < bytes.Length)
+        {
+            bool doubleByte = length + 1 < bytes.Length && IsLeadByte(bytes[length]) && IsTrailByte(bytes[length + 1]);
+            width += doubleByte ? doubleByteWidth : singleByteWidth;
+            if (width > maxWidth) break;
+            length += doubleByte ? 2 : 1;
+        }
+        return length == bytes.Length ? value : NativeEncoding.GetString(bytes, 0, length);
+    }
 }

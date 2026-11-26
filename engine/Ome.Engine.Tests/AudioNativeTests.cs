@@ -36,6 +36,28 @@ public class AudioNativeTests
         Assert.Empty(rig.Device.Commands);   // the fade is over: the tick sends nothing
     }
 
+    /// <summary>AGE 4.43B's op 0xc2 with a fade running calls bgm_fade_transfer_volume@0x417b90 with
+    /// set:TransferMusicVolume: 1 starts the new fade from the level mixed so far, 2 from the old target, and 0 (older
+    /// builds, and a catalog without the key) from the committed level.</summary>
+    [Theory]
+    [InlineData(0, 10000)]   // from the committed full level to full: the level the first fade had reached is lost
+    [InlineData(1, 8800)]    // from 7600, the first fade's 30 points: (50 × 7600 + 50 × 10000) / 100
+    [InlineData(2, 6000)]    // from the first fade's target, 2000
+    public void ASecondFadeStartsWhereTransferMusicVolumeSays(int mode, int levelHalfway)
+    {
+        var rig = new AudioRig();
+        rig.Audio.PlayBgm(5);
+        rig.Audio.FadeBgm(2000, 1000);                  // 100 steps of one point, one each 10 ms
+        rig.Advance(300);
+        Assert.Equal(Volume(7600), rig.Device.CommandsStartingWith("volume 11")[^1]);
+
+        rig.Audio.FadeBgm(10000, 1000, transferMode: mode);
+        rig.Advance(500);
+        Assert.Equal(Volume(levelHalfway), rig.Device.CommandsStartingWith("volume 11")[^1]);
+        rig.Advance(500);
+        Assert.Equal(Volume(10000), rig.Device.CommandsStartingWith("volume 11")[^1]);
+    }
+
     [Fact]
     public void ThePauseToggleHoldsThePlayingTrackAndAStartOrAStopClearsIt()
     {
@@ -86,6 +108,74 @@ public class AudioNativeTests
         Assert.Equal(5, rig.Audio.CurrentBgmTrack);
     }
 
+    private static readonly string Silent = RecordingAudioDevice.Db(NativeAudioVolume.ToDecibels(0));
+
+    [Fact]
+    public void OpC3SetsTheTrackAndAFadeArmedOnASilentChannelStartsItFromSilence()
+    {
+        // 魔導巧殻's SC0000@0x50aa: stop-bgm, restart-bgm-loop 0, set-bgm-track 2, fade-bgm 10000 over 5000 ms.
+        // bgm_fade_arm finds channel 11 silent and a track retained: it plays the track at volume 0, and the fade rises.
+        var rig = new AudioRig();
+        rig.Audio.PlayBgm(5);
+        rig.Audio.StopBgm();
+        rig.Audio.RestartBgm(0, 1);
+        rig.Device.Commands.Clear();
+
+        rig.Audio.SetBgmTrack(2);
+        Assert.Empty(rig.Device.Commands);
+        Assert.Equal(2, rig.Audio.CurrentBgmTrack);
+
+        rig.Audio.FadeBgm(10000, 5000);
+        Assert.Equal(["load 11 Music bgm:2", $"play 11 bgm:2 loop {Silent}"], rig.Device.Commands);
+        rig.Advance(2500);
+        Assert.Equal(Volume(5000), rig.Device.CommandsStartingWith("volume 11")[^1]);
+        rig.Advance(2500);
+        Assert.Equal(Volume(10000), rig.Device.CommandsStartingWith("volume 11")[^1]);
+    }
+
+    [Fact]
+    public void OpC3EndsARunningFadeBeforeItSetsTheTrack()
+    {
+        var rig = new AudioRig();
+        rig.Audio.PlayBgm(5);
+        rig.Audio.FadeBgm(0, 1000);
+        rig.Advance(500);
+
+        rig.Audio.SetBgmTrack(7);   // the fade to zero ends: the source goes and the track clears, then 7 is set
+        Assert.False(rig.Device.IsLoaded(Audio.BgmChannel));
+        Assert.Equal(7, rig.Audio.CurrentBgmTrack);
+    }
+
+    [Fact]
+    public void TheFadesArmStartsTheTrackAgainOnlyWhenTheChannelIsSilentOrTheLevelIsZero()
+    {
+        var rig = new AudioRig();
+        rig.Audio.PlayBgm(5);
+        rig.Device.Commands.Clear();
+        rig.Audio.FadeBgm(5000, 1000);   // playing at a level above zero: the arm starts nothing
+        Assert.Empty(rig.Device.CommandsStartingWith("play"));
+
+        // Op 0xc1's hold stops the buffer, whose playing flag clears: the arm plays the track again, silent, and the
+        // pause flag stays.
+        rig.Audio.ToggleBgmPause();
+        rig.Device.Commands.Clear();
+        rig.Audio.FadeBgm(10000, 1000);
+        Assert.Equal(["load 11 Music bgm:5", $"play 11 bgm:5 loop {Silent}"], rig.Device.Commands);
+        Assert.True(rig.Audio.BgmPaused);
+
+        // A track played once that has run out: so does the duck's release, which arms a fade to full.
+        rig.Audio.RestartBgm(6, 0);
+        rig.Audio.PlayVoice(10);
+        rig.Audio.ArmVoiceBgmDuckRelease();
+        rig.Device.End(Audio.BgmChannel);
+        rig.Device.End(Audio.VoiceChannel);
+        rig.Device.Commands.Clear();
+        rig.Advance(0);
+        Assert.Equal(["load 11 Music bgm:6", $"play 11 bgm:6 once {Silent}"], rig.Device.CommandsStartingWith("load").Concat(rig.Device.CommandsStartingWith("play")));
+        rig.Advance(1000);
+        Assert.Equal(Volume(10000), rig.Device.CommandsStartingWith("volume 11")[^1]);
+    }
+
     [Fact]
     public void AFadeArmedAgainPartWayStartsFromTheCommittedLevel()
     {
@@ -127,6 +217,29 @@ public class AudioNativeTests
         {
             Directory.Delete(Path.GetDirectoryName(path)!, recursive: true);
         }
+    }
+
+    [Fact]
+    public void TheDuckNeedsARetainedTrackAndItsArmStartsATrackThatRanOutAtTheDuckLevel()
+    {
+        // voice_bgm_duck_begin (the settings' default: on, 50 %): no retained track, no duck.
+        var rig = new AudioRig();
+        rig.Audio.PlayVoice(10);
+        Assert.Empty(rig.Device.CommandsStartingWith("volume 11"));
+        rig.Audio.PlayBgm(5);
+        rig.Device.Commands.Clear();
+        rig.Audio.FadeBgm(10000, 0);   // the level is still full: the voice ducked nothing
+        Assert.Empty(rig.Device.CommandsStartingWith("volume 11"));
+
+        // It arms a fade and ticks it to its end, after the arm's restarts: a track played once that has run out plays
+        // again from its start, at the duck level.
+        rig.Audio.RestartBgm(6, 0);
+        rig.Device.End(Audio.BgmChannel);
+        rig.Tick.Service();
+        rig.Device.Commands.Clear();
+        rig.Audio.PlayVoice(11);
+        Assert.Equal(["load 11 Music bgm:6", $"play 11 bgm:6 once {Silent}", Volume(5000)],
+            rig.Device.Commands.Where(command => command.Split(' ')[1] == "11"));
     }
 
     [Fact]

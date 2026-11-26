@@ -1,0 +1,20 @@
+# The strategic map's turn (Lua scripting spec §9.2). Hand-written: the event names its point and gives each field's
+# cell, by the names layout/globals.json exports.
+
+[[event]]
+name = "koukaku.turn.week_ends"
+point = "koukaku.turn.before_week_advance"
+description = """
+A week ends on the strategic map: ALLMAP has raised the weeks since each played scene and is about to raise \
+turn_week, then open the new week's first phase. week is the week ending. ALLMAP reaches here once a week, so a \
+handler that gives the player items here (give_item) gives them once a week."""
+
+[[event.field]]
+name = "week"
+at = "turn_week"                # the week ending; ALLMAP adds 1 after the handlers
+type = "int"
+
+[[event.field]]
+name = "player"
+at = "nation_player"            # the player's nation, a CNINIT id
+type = "int"

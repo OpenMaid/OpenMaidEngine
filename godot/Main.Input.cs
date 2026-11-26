@@ -350,7 +350,7 @@ public partial class Main
             _fullwidthTextEditor.QueueFree();
         }
 
-        var editor = new FullwidthTextEditorDialog(_shellStrings);
+        var editor = new FullwidthTextEditorDialog(_shellStrings, _selectedProfile.Profile.TextEntry);
         _fullwidthTextEditor = editor;
         editor.EditCompleted += (accepted, text) =>
         {

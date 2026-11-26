@@ -1,10 +1,12 @@
 using System;
 using Ome.Engine.Frontend.Shell;
+using Ome.Engine.Profiles;
 using Ome.Engine.Sys4;
 using Godot;
 
-/// <summary>Godot presentation for AGERc command 10's blocking INPUTNAME editor, in the shell's language
-/// (<see cref="ShellBoxes"/>).</summary>
+/// <summary>Godot presentation for AGERc command 10's blocking editor, in the shell's language
+/// (<see cref="ShellBoxes"/>) with the game's own words, and its accept by the game's rule
+/// (<see cref="GameTextEntry"/>).</summary>
 public partial class FullwidthTextEditorDialog : Window
 {
     private readonly LineEdit _edit = new() { MaxLength = 255 };
@@ -14,12 +16,15 @@ public partial class FullwidthTextEditorDialog : Window
         CustomMinimumSize = new Vector2(0, 28),
     };
     private readonly ShellStrings _strings;
+    private readonly GameTextEntry _entry;
     private bool _completed;
 
     public event Action<bool, string>? EditCompleted;
 
-    public FullwidthTextEditorDialog(ShellStrings strings)
+    public FullwidthTextEditorDialog(ShellStrings strings, GameTextEntry entry)
     {
+        _entry = entry;
+        strings = strings.WithGameText(entry.Text);
         _strings = strings;
         Title = strings[ShellBoxes.NameEntryTitle];
         Exclusive = true;
@@ -67,25 +72,25 @@ public partial class FullwidthTextEditorDialog : Window
 
     private void TryAccept()
     {
-        FullwidthTextValidationError error = Cp932Text.ValidateFullwidthName(_edit.Text);
-        if (error != FullwidthTextValidationError.None)
+        TextEntryCheck check = _entry.Check(_edit.Text);
+        if (check.Error != FullwidthTextValidationError.None)
         {
-            _error.Text = error == FullwidthTextValidationError.TooLong
+            _error.Text = check.Error == FullwidthTextValidationError.TooLong
                 ? _strings[ShellBoxes.NameEntryTooLong]
                 : _strings[ShellBoxes.NameEntryHalfWidth];
             _edit.GrabFocus();
             return;
         }
-        Complete(true);
+        Complete(true, check.Text);
     }
 
-    private void Cancel() => Complete(false);
+    private void Cancel() => Complete(false, _edit.Text);
 
-    private void Complete(bool accepted)
+    private void Complete(bool accepted, string text)
     {
         if (_completed) return;
         _completed = true;
         Hide();
-        EditCompleted?.Invoke(accepted, _edit.Text);
+        EditCompleted?.Invoke(accepted, text);
     }
 }

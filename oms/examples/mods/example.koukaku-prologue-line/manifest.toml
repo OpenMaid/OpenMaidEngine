@@ -1,0 +1,9 @@
+omp = 1
+id = "example.koukaku-prologue-line"
+name = "魔導巧殻 prologue line"
+version = "1.0.0"
+description = "Inserts a line before the first page of 魔導巧殻's opening scene."
+
+[game]
+profile = "koukaku"
+target = "native"

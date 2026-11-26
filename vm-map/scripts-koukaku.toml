@@ -1,0 +1,738 @@
+# What 魔導巧殻's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-koukaku.json, into the
+# reference bundle's games/koukaku/scripts.json. The format is vm-map/scripts-kamidori.toml's. Every note here
+# comes from docs/koukaku-data-tables.md, or from the patch points of vm-map/patch-points-koukaku.toml its source names.
+#
+# The install has one append, whose $1$ layers get the base script's note on the site (the bundle's `layer_of`). A
+# layer has its own note below only where it does something else.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "SYSTEM4"
+summary = """Boots and runs the game. Where the shared profile has G[0x5] unset it runs INITCONFIG and sets it; \
+otherwise LOADCONFIG reads the options back; then CHECKCONFIG. It runs INIT2 on every boot, and a load restores the \
+save after it, so INIT2 runs on every load too. On the first run of the root it plays LOGO; then, on every run, INIT \
+and TITLE. After the title it runs one mode a pass, from system_mode: 1 a scene, 2 ALLMAP, 3 FIELD, 4 REIGN and 5 \
+DEAL. A scene pass copies the scene's SCINIT script into current_scene_script_id and runs it, marks the scene seen in \
+the shared profile (scene_seen_flags) outside the debug and replay runs, and, where system_next_mode is set, runs the \
+scene dispatch again, so a scene can lead straight into the next."""
+source = "docs/koukaku-data-tables.md (Boot; The boot order; Scenes; The scene pass)"
+
+[[script]]
+name = "INITCONFIG"
+summary = """The first run's options: SYSTEM4 runs it once for each shared profile, and it sets each option and stores \
+it in the profile: the two fonts, the save and command questions (confirm_save_load, confirm_commands), the autosave \
+(autosave_off), the message window's colour, the voice and text colour switches, and the 1000 voice settings' mutes \
+and name colours (voice_mute_switches, voice_name_colors). LOADCONFIG reads them back afterwards, and the option \
+pages CONFIG1 and CONFIG2 change them."""
+source = "docs/koukaku-data-tables.md (Boot; INITCONFIG)"
+
+[[script]]
+name = "LOADCONFIG"
+summary = """Reads the options INITCONFIG stored back from the shared profile, on every boot after the first."""
+source = "docs/koukaku-data-tables.md (Boot; The boot order; INITCONFIG)"
+
+[[script]]
+name = "CHECKCONFIG"
+summary = """Puts ＭＳ 明朝 and ＭＳ ゴシック in place of a saved font that is not installed, and sets the text's \
+effect colour from speaker_text_colour_mode: the speaker's colour, white with no effect, or the default."""
+source = "docs/koukaku-data-tables.md (Boot; The boot order; INITCONFIG)"
+
+[[script]]
+name = "INIT"
+summary = """Run on every run of the root before the title: it makes nation 1 the player's (nation_player), and starts \
+the turn at week 1 (turn_week) with nation 0 (turn_nation)."""
+source = "docs/koukaku-data-tables.md (Boot; The boot order)"
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it runs the 37 boot tables, puts the base game's scripts in slot 0 of the hook \
+chains, and writes its constants: the scene's graphic element numbers, the neighbour steps, the caps, the ruses' \
+numbers and the strategy screens' words. Op 0x143 then runs the append's $1$AUTORUN. After it, INIT2 gives the shared \
+profile CVINIT's colour where it has none, and on a load inside a scene over the map it rebuilds the screen beneath. \
+SYSTEM4 runs it on every boot and on every load."""
+source = "docs/koukaku-data-tables.md (Boot; INIT2; Hook chains)"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The append's boot: op 0x143 at INIT2's end runs it. It calls the append's $1$ layers of 36 boot tables in \
+INIT2's order, with no test, puts the append's scripts and pictures in slot 1 of the hook chains, adds one file number \
+and sets bit 1 of installed_appends_mask."""
+source = "docs/koukaku-data-tables.md (Boot; The append's driver)"
+
+# ------------------------------------------------------------------------ scenes and the screens
+
+[[script]]
+name = "SCINIT"
+summary = """The scenes, keyed by scene number (0 to 6986, 791 of them): the script that plays each one, which SYSTEM4 \
+copies into current_scene_script_id; the SCJUMP context whose rules offer it (scene_offer_contexts); and whether it \
+plays over the map (scene_on_map_flags). One scene script holds ten numbers. $1$SCINIT adds the append's 13 scenes, \
+4000 to 4015."""
+source = "docs/koukaku-data-tables.md (Scenes; SCINIT)"
+
+[[script]]
+name = "SCJUMP"
+summary = """The scene dispatch, slot 0 of a 32-slot chain whose slot 1 is $1$SCJUMP. scjump_context_id picks a rule \
+list, 1 to 13: the turn's start and end, the world map, internal affairs, a battle's start, a sortie, a retreat, a \
+victory. The first rule whose condition holds while scjump_chain_pending is open sets system_mode to 1 and \
+current_scene_id to its scene, and closes the turn. Context 2 instead fills the visit slots that ALLMAP, REIGN and \
+PALACE offer (visit_scenes_by_region, visit_scenes_by_object, visit_scenes_by_character). Its 549 rules and 360 visit \
+rules test scene_played_flags most, then the turn, scene_turns_since_played, the nation acting and the place in play."""
+source = "docs/koukaku-data-tables.md (Scenes; SCJUMP)"
+[script.arguments]
+scjump_context_id = "which rule list to walk"
+scjump_chain_pending = "0x7fffffff while no rule of the chain has taken the turn"
+
+[[script]]
+name = "SETADVFLAG"
+summary = """Clears the dispatch's visit slots before each walk of the SCJUMP chain: the three slot arrays to -1 and \
+their three cells each to 0. The callers run it after they set scjump_context_id."""
+source = "docs/koukaku-data-tables.md (Scenes; SCJUMP)"
+
+# ---------------------------------------------------------------------------------------------- information screens
+
+[[script]]
+name = "NAINIT"
+summary = """The help lines a strategy screen shows at its top for the button under the cursor, keyed by line id (1 to \
+326): help_lines, drawn by help_line_id."""
+source = "docs/koukaku-data-tables.md (Information screens; NAINIT)"
+
+[[script]]
+name = "TUINIT"
+summary = """The tutorials, keyed by tutorial id (1 to 76, 17 of them): the screen each belongs to, its order, and \
+what it needs: a tutorial shown first, scenes played or not played, a value of the place in play, a region. TUTORIAL \
+picks from them and TUMES holds their text."""
+source = "docs/koukaku-data-tables.md (Information screens; TUINIT)"
+
+[[script]]
+name = "TUTORIAL"
+summary = """Shows the next tutorial for a screen: FIELD, ALLMAP and REIGN call it with tutorial_screen set. For the \
+player's own nation, it takes the tutorials of that screen in sort order and shows the first not yet shown whose \
+conditions hold, with the text of the TUMES chain's slot, then sets tutorial_shown_flags and tutorial_seen_flags."""
+source = "docs/koukaku-data-tables.md (Information screens; TUINIT)"
+[script.arguments]
+tutorial_screen = "the screen asking: 1 and 2 a battle, 3 the world map, 4 internal affairs"
+
+[[script]]
+name = "TUMES"
+summary = """The tutorials' text, slot 0 of a 32-slot chain whose slot 1 is $1$TUMES: it branches on tutorial_current \
+and shows that tutorial's pages."""
+source = "docs/koukaku-data-tables.md (Information screens; TUINIT)"
+[script.arguments]
+tutorial_current = "the tutorial TUTORIAL has chosen"
+
+[[script]]
+name = "TIINIT"
+summary = """The tips (解説), keyed by tip id (1 to 224, 221 of them): the name, a page of a heading and six lines, the \
+category, the picture, the order, and the scenes whose seeing unlocks the tip."""
+source = "docs/koukaku-data-tables.md (Information screens; TIINIT)"
+
+[[script]]
+name = "VIINIT"
+summary = """The glossary, keyed by entry id (1 to 231, 99 of them; 2 from $1$VIINIT): the title, a page of a heading \
+and fifteen lines, the order, and for each line three scenes, one of which must be seen to show it; the first line's \
+unlock the entry."""
+source = "docs/koukaku-data-tables.md (Information screens; VIINIT)"
+
+[[script]]
+name = "INFO"
+summary = """The information screen the game's menu opens: it runs INFO1 or INFO2, by the page the player picks, \
+until one leaves."""
+source = "docs/koukaku-data-tables.md (Information screens)"
+
+[[script]]
+name = "INFO2"
+summary = """The second information screen: on entry it rebuilds which tips and glossary entries are unlocked, from \
+scene_seen_flags, and counts the tips of each category read; then it runs one page a pass, INFO21 to INFO27. The \
+title's extras room enters it directly."""
+source = "docs/koukaku-data-tables.md (Information screens; TIINIT; VIINIT)"
+
+[[script]]
+name = "INFO22"
+summary = """The tips page: the unlocked tips in sort order, a mark on those not yet read, and the chosen tip's \
+picture and lines; showing one sets tip_read_flags in the shared profile."""
+source = "docs/koukaku-data-tables.md (Information screens; TIINIT)"
+
+[[script]]
+name = "INFO23"
+summary = """A book of three tabs. 人物 lists the CIINIT profiles with a name in their sort order under their headings, \
+and shows a profile's pictures and those of its lines whose character has been heard and whose shared-profile \
+conditions hold. The regions' tab follows; the glossary lists its unlocked entries in sort order and shows their lines \
+once their scenes are seen, and showing an entry sets glossary_read_flags in the shared profile."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CIINIT; Information screens; VIINIT)"
+
+[[script]]
+name = "GSMES"
+summary = """The help text of the new-game options: GAMESTART calls it for the option under the cursor, and it shows \
+that option's lines (the difficulty, the enemies' level cap, the second-run controls and what carries over from a \
+cleared game)."""
+source = "docs/koukaku-data-tables.md (Information screens)"
+
+[[script]]
+name = "HISTORY"
+summary = """The message log: the scene scripts call it from their ADV menu, and it pages back through the text \
+history. It reads none of the boot tables."""
+source = "docs/koukaku-data-tables.md (Information screens)"
+
+# ---------------------------------------------------------------------------------------------- galleries
+
+[[script]]
+name = "ROOM"
+summary = """The title's extras room: it runs one page a pass by extras_room_page, 0 CGMODE, 1 HMODE, 2 MMODE and 3 \
+INFO2, and ends with a soft reset back to the title."""
+source = "docs/koukaku-data-tables.md (Galleries)"
+[script.arguments]
+extras_room_page = "the page the title's button picked"
+
+[[script]]
+name = "CGINIT"
+summary = """The CG gallery, keyed by CG id (1 to 1336; 9 from $1$CGINIT): each CG's picture and the one a save's \
+thumbnail shows in its place, its page, group and place in the group, and an offset for a picture of another size."""
+source = "docs/koukaku-data-tables.md (Galleries; CGINIT)"
+
+[[script]]
+name = "CGMODE"
+summary = """The CG gallery: eleven pages of groups, each CG shown once the catalog marks its picture seen."""
+source = "docs/koukaku-data-tables.md (Galleries; CGINIT)"
+
+[[script]]
+name = "SPINIT"
+summary = """The scene replays, keyed by page x 12 + slot (61 of them): the script that replays each scene."""
+source = "docs/koukaku-data-tables.md (Galleries; SPINIT)"
+
+[[script]]
+name = "HMODE"
+summary = """The replay room: it offers each SPINIT slot whose script the catalog marks seen and plays it with \
+replay_room_active set, so the replay marks nothing seen."""
+source = "docs/koukaku-data-tables.md (Galleries; SPINIT)"
+
+[[script]]
+name = "MUINIT"
+summary = """The music room's tracks, keyed by track id (1 to 42): the title, the BGM number and the resource whose \
+being seen unlocks the track."""
+source = "docs/koukaku-data-tables.md (Galleries; MUINIT)"
+
+[[script]]
+name = "MMODE"
+summary = """The music room: it lists the MUINIT tracks the catalog has unlocked and plays the chosen one."""
+source = "docs/koukaku-data-tables.md (Galleries; MUINIT)"
+
+# ------------------------------------------------------------------------------------ characters
+
+[[script]]
+name = "CHINIT"
+summary = """Writes the characters, keyed by character id (1 to 907; monsters from 471): the base character, sex, \
+kind, size, element, starting title and costume, a 魔導巧殻's master, the base level and the weeks per level, base \
+stats and growth, starting loyalty, hiring cost and weekly fee, pictures, battle voices, name forms, names and \
+description. INIT2 calls it on every boot and load; $1$CHINIT adds 18 characters."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CHINIT)"
+
+[[script]]
+name = "CLINIT"
+summary = """Writes the titles (称号), keyed by title id: each title's line, unit class (兵種), the conditions for \
+being offered it, movement kind, size, range, stat modifiers, three attacks, special, four skills, two formations \
+and the flag and level unlocking each, and the pictures and voices it replaces. $1$CLINIT adds 18 titles."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CLINIT)"
+
+[[script]]
+name = "CVINIT"
+summary = """Writes the voice settings, keyed by setting id (1 エキストラ男, 2 エキストラ女, 3 and up the voiced \
+characters): the default name colour, the setting's character, the sample voice, two pictures, and the name, \
+epithet and voice actor the 設定 voice page shows. It also writes each character's voice setting, keyed by character \
+id. $1$CVINIT adds two settings."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CVINIT)"
+
+[[script]]
+name = "CIINIT"
+summary = """Writes the profiles of the 人物 book, INFO23: each one's full name, heading, sort key, two pictures and \
+16 lines, with the character that must have been heard and three shared-profile conditions for each line. \
+$1$CIINIT adds two profiles."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CIINIT)"
+
+[[script]]
+name = "HAINIT"
+summary = """Writes the brothel's girls for BROTHEL: the town bits and the value at which each is offered, the \
+story flags that allow or withhold her, her price, four visit thresholds with the scene each plays, the flag a \
+visit sets and her picture."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; HAINIT)"
+
+[[script]]
+name = "SAINIT"
+summary = """Writes the skill areas, by SKINIT's area of a skill: the picture FIELD shows and the shape SEARCHSKILL \
+tests, either an ellipse of a radius or a polygon of up to 10 points, placed for facing 1."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; SAINIT)"
+
+[[script]]
+name = "CALCABI"
+summary = """Works out a unit's commander: current_character's level and stats into unit_calc_parameters. A joined \
+character of the player's nation keeps its saved level and stats, or its costume's through CALCCOS. One not joined \
+uses the base values, and another nation's grows from its base level with the weeks, up to its level cap. It adds \
+the title's stat modifiers, size, movement kind, class and range, and the element bonus in a war of its wind; then \
+the troop's row from troop_parameters, the attribute and skill bonuses, the attacks' elements and timings and the \
+most soldiers the commander's command allows; and it caps each value."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CHINIT; CLINIT; Troops and battle; TRINIT, SKINIT, ARINIT)"
+
+[[script]]
+name = "UNITECH"
+summary = """Sets up current_character at the first join (character_flags bit 0 unset): copies the base level, base \
+stats and a 魔導巧殻's starting costume into the saved level, stats and costume, and sets the flag bits."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CHINIT; What is saved)"
+
+[[script]]
+name = "SETCLASSLIST"
+summary = """Lists up to five titles current_character may take: the title given (character_given_titles) when there \
+is one, otherwise the titles of current_title's line, in sort order, that pass the exclusive character, the level \
+and the required and forbidding story flags. It marks titles opened (title_opened_flags)."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CLINIT)"
+
+[[script]]
+name = "SETBRAND"
+summary = """Gives current_character the title in play: fixes it in character_given_titles, writes it into every \
+nation slot that holds the character, and marks it earned and opened."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CLINIT; What is saved)"
+
+[[script]]
+name = "SETPARTYVOICE"
+summary = """Plays a battle voice of a random party member, from the column G[0x213ef6] gives: the title's clip \
+when it has one, otherwise the character's."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CHINIT)"
+
+[[script]]
+name = "SORTCORP"
+summary = """Orders a nation's members by the characters' sort keys, putting a 魔導巧殻 right after its master."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; CHINIT)"
+
+[[script]]
+name = "BROTHEL"
+summary = """The brothel: offers the HAINIT girls whose town, nation and story-flag conditions hold, checks the \nprice against the nation's money and the saved visit count against her thresholds, sets the visit's flag and \npasses the scene of the threshold reached."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; HAINIT)"
+
+[[script]]
+name = "SEARCHSKILL"
+summary = """Tests whether a unit lies in a skill's area: places the SAINIT shape at the acting unit by its facing, \
+and tests the ellipse or the polygon against the other unit's position."""
+source = "docs/koukaku-data-tables.md (Characters, titles and voices; SAINIT)"
+
+# ----------------------------------------------------------------------------- troops and battle
+
+[[script]]
+name = "TRINIT"
+summary = """Writes the troop types at boot (troop_names): for each its kind, attribute, movement type and size, its \
+parameters per soldier, its two attacks and passive skill, its command cost, price and upkeep, its upgrade target, \
+and the hiring conditions SELTR checks (a character, story flags, the nation's levels). INIT2 runs it on every boot \
+and load; nothing of it is saved. The append's layer adds seven types, three of them replacing base records."""
+source = "docs/koukaku-data-tables.md (Troops and battle; TRINIT)"
+
+[[script]]
+name = "SKINIT"
+summary = """Writes two tables at boot, each with ids of its own. The active skills (skill_names), which EXECSKILL runs: \
+cost, element, kind of effect, power, duration, the animation for each facing and the parameter bonuses. The passive \
+skills (passive_skill_names): up to two effects with a level each, which SETUN sums for a unit. Nothing of it is \
+saved. The append's layer adds four active skills, which call their own script, and one passive."""
+source = "docs/koukaku-data-tables.md (Troops and battle; SKINIT)"
+
+[[script]]
+name = "ARINIT"
+summary = """Writes the attacks at boot (attack_names): element, timing, parameter bonus and animation. The commander's \
+and the troop's attacks of a unit are ids into it. Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Troops and battle; ARINIT)"
+
+[[script]]
+name = "FOINIT"
+summary = """Writes the formations at boot (formation_names): where each of ten soldiers stands, the percent each \
+parameter changes by, how many squads the formation needs and whether the unit moves while it attacks. Nothing of it \
+is saved; a unit keeps its formation id."""
+source = "docs/koukaku-data-tables.md (Troops and battle; FOINIT)"
+
+[[script]]
+name = "COINIT"
+summary = """Writes the costumes of the 魔導巧殻 at boot, by costume id (a part id): the attacks and formations each gives \
+the unit its wearer leads, and the parts, level and stats it starts with. Nothing of it is saved: ADDPART copies the \
+starting values into costume_parts, costume_levels and costume_stats the first time it adds the costume."""
+source = "docs/koukaku-data-tables.md (Troops and battle; COINIT)"
+
+[[script]]
+name = "ANINIT"
+summary = """Writes the battle's animations at boot: the file, whether it is drawn as a model or a texture, its size, \
+scale and offsets. ALLMAP and FIELD draw the one in animation_arg_id. Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Troops and battle; ANINIT and ANINIT2)"
+
+[[script]]
+name = "ANINIT2"
+summary = """Writes the animation sequences at boot: rows of animation ids a skill plays in turn, one row for each \
+facing (skill_animation_rows). Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Troops and battle; ANINIT and ANINIT2)"
+
+[[script]]
+name = "RTINIT"
+summary = """Writes the routines at boot, by routine and step, in four blocks of 16 arrays; ALLMAP reads one block and \
+MVRTN another. Not decoded further. Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Troops and battle; RTINIT)"
+
+[[script]]
+name = "RFINIT"
+summary = """Writes the battle's reference lists at boot: the names of the troop kinds, elements, attributes and passive \
+effects, which troop kinds a commander's kind may lead (commander_troop_kind_matrix), the damage percent of each \
+element against each attribute (element_damage_percents) and the waits of the skill types. Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Troops and battle; RFINIT)"
+
+[[script]]
+name = "ADDCORP"
+summary = """Sets up the unit at nation_arg_id and unit_arg_slot: it reads the saved item, troop type and soldiers, \
+fills the work cells from the commander's class or, for a 魔導巧殻, from COINIT (attacks, formations, the parts' passive \
+skills), adds the troop's attacks and passive skill, and saves the unit's two attacks and its formation. It sets the \
+troop's passive skill's flag in the shared profile."""
+source = "docs/koukaku-data-tables.md (Troops and battle; COINIT, FOINIT, What is saved)"
+
+[[script]]
+name = "SUPPLE"
+summary = """Copies a saved unit's commander, class, item, troop type, soldiers, formation and attacks into the work \
+cells, upgrades the troop type when the commander's command reaches the target's minimum, and checks the soldiers \
+against the command cost and the nation's funds."""
+source = "docs/koukaku-data-tables.md (Troops and battle; TRINIT, What is saved)"
+
+[[script]]
+name = "SELTR"
+summary = """Lists the troop types a commander may hire, in troop_sort_keys' order: a type is offered when the \
+commander's kind may lead its kind and its conditions hold (the turn, a region, a character, story flags, the nation's \
+levels)."""
+source = "docs/koukaku-data-tables.md (Troops and battle; TRINIT, RFINIT)"
+
+[[script]]
+name = "SETUN"
+summary = """Sets up a unit for battle: it chooses the formation from the unit's choices and sums the levels of the \
+unit's passive skills by effect, at most 5 each."""
+source = "docs/koukaku-data-tables.md (Troops and battle; SKINIT, FOINIT)"
+
+[[script]]
+name = "SETUNABI"
+summary = """Scales the unit's parameters by its formation's percents (formation_parameter_percents)."""
+source = "docs/koukaku-data-tables.md (Troops and battle; FOINIT)"
+
+[[script]]
+name = "ADDUN"
+summary = """Places a unit's soldiers on the battlefield, from its formation's slot offsets and centre, turned by the \
+unit's facing."""
+source = "docs/koukaku-data-tables.md (Troops and battle; FOINIT)"
+
+[[script]]
+name = "CHANGEFORM"
+summary = """Drops a unit's formation to 無陣 when it has fewer squads than the formation needs \
+(formation_required_squads)."""
+source = "docs/koukaku-data-tables.md (Troops and battle; FOINIT)"
+
+[[script]]
+name = "EXECSKILL"
+summary = """Runs the active skill in skill_arg_id in battle: it takes the cost from the side's pool, starts the \
+skill type's wait, applies the damage by element and attribute (element_damage_percents) or the effect for its \
+duration, calls the skill's script (SKILLACT for the base skills) and plays its animation sequence for the unit's \
+facing."""
+source = "docs/koukaku-data-tables.md (Troops and battle; SKINIT, ANINIT and ANINIT2, RFINIT)"
+
+# ------------------------------------------------------------------- items, parts and facilities
+
+[[script]]
+name = "ITINIT"
+summary = """Writes the items: their names, descriptions, kinds (key items, materials, equipment), ranks, prices, \
+bonuses (stats, 射程, 対地/対空/対潜, element) and skills, and who may equip them. INIT2 runs it on every boot and \
+load; nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ITINIT)"
+
+[[script]]
+name = "PTINIT"
+summary = """Writes the 魔導巧殻's costumes and parts: names, descriptions, kinds, ranks, the characters and costumes \
+each part fits, its bonuses and its skill. INIT2 runs it on every boot and load; nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; PTINIT)"
+
+[[script]]
+name = "ALINIT"
+summary = """Writes the alchemy recipes: the product (an item or a part), the four ingredients and their counts, the \
+price, which facility makes it, and the facility level, character, technology and story flags it needs. INIT2 runs \
+it on every boot and load."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ALINIT)"
+
+[[script]]
+name = "BRINIT"
+summary = """Writes the breeding and development combinations: the facility type, the two parents, the result, the \
+story flags needed and set, the experience given and the messages shown. INIT2 runs it on every boot and load."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; BRINIT)"
+
+[[script]]
+name = "SHINIT"
+summary = """Fills shop_offers for SHOP (shop_mode 1, item ids) or EMPLOY (shop_mode 2, character ids), each offer \
+guarded by facility_level, the region's type and story flags. SHOP and EMPLOY run it through shinit_chain_script_ids each \
+time they open."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; SHINIT)"
+[script.arguments]
+shop_mode = "1 for the shop's items, 2 for the employment office's characters"
+
+[[script]]
+name = "ADDITEM"
+summary = """Gives or takes an item from a nation: it adds item_count_change to the nation's item_counts, never below \
+0, and sells what goes above 999 at the selling price into the nation's money. For the player's nation it sets \
+item_obtained_flags, item_seen_flags (in the shared profile) and the item's skill flag, and for a key item its story \
+flag, 9001 + item. It waits for nothing. 40 scripts call it, among them SHOP, ALCHEMY, SELARM, BROTHEL and RECEIPT."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; The item helpers and the inventory)"
+[script.arguments]
+current_item = "the item, an ITINIT id"
+item_count_change = "the count to add, negative to take"
+# The nation is G[0x8df3bf] (a name of the strategic map's group): callers copy the player's nation into it.
+
+[[script]]
+name = "ADDPART"
+summary = """Gives or takes a part: it adds part_count_change to part_counts, at most 999, and sets \
+part_obtained_flags, part_seen_flags (in the shared profile) and the part's skill flag. A costume is added once: the \
+first time, it marks the costume's default parts obtained and, if the costume has no level yet, sets its level, \
+experience, parts and stats from COINIT. 19 scripts call it, among them ALCHEMY, DOLL and RECEIPT."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ADDPART, the costumes and DOLL)"
+[script.arguments]
+current_part = "the part or costume, a PTINIT id"
+part_count_change = "the count to add, negative to take (ignored for a costume)"
+
+[[script]]
+name = "CALCCOS"
+summary = """Adds a 魔導巧殻's costume to the ability calculation: the character's stats plus costume_stats, then the \
+four costume_parts' stats, 対地/対空/対潜, 射程 and movement type, and COINIT's 射程 and movement type for the \
+costume; it clamps the results. CALCABI calls it for a character in a costume."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ADDPART, the costumes and DOLL)"
+[script.arguments]
+current_part = "the costume, a PTINIT id"
+
+[[script]]
+name = "SHOP"
+summary = """The shop facility (kind 16): to buy it lists SHINIT's offers, to sell every item held, at the item's \
+buying or selling price, and moves the item through ADDITEM and the money of the player's nation."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; The item helpers and the inventory; SHINIT)"
+
+[[script]]
+name = "EMPLOY"
+summary = """The employment facility (kind 17): it lists the characters SHINIT offers in shop_mode 2."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; SHINIT)"
+
+[[script]]
+name = "ALCHEMY"
+summary = """The alchemy facility (kinds 12 and 13): it offers the ALINIT recipes the facility, its level, the \
+nation's technology, characters and story flags allow, marks them seen, and makes the chosen count, taking the \
+ingredients and the price; the first making of a recipe raises the nation's technology."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ALINIT and ALCHEMY)"
+
+[[script]]
+name = "BREED"
+summary = """The breeding facility (kind 19) and the development facility (kind 20): for the pair the player \
+chooses it finds the BRINIT combination, then breeds the result, gives the sacrificed unit's experience, or \
+develops the weapon; a done combination sets breed_done_flags, breed_seen_flags and its story flag."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; BRINIT and BREED)"
+
+[[script]]
+name = "DOLL"
+summary = """The costume facility (kind 18): it puts on a 魔導巧殻's costume and swaps parts in its four slots, \
+taking the new part from part_counts and returning the old one, and shows the costume's level and experience."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; ADDPART, the costumes and DOLL)"
+
+[[script]]
+name = "SELARM"
+summary = """Equips an item on a troop's slot: it accepts only an obtained item of the slot's kind, or of kind 35, \
+that the character may wear (exclusive user, gender), returns the old item and takes the new one through ADDITEM."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; Equipment)"
+
+[[script]]
+name = "DEAL"
+summary = """Runs the facility the player opened: the script facility_scripts gives for the kind of facility_object."""
+source = "docs/koukaku-data-tables.md (Items, parts and facilities; The facilities)"
+
+# ----------------------------------------------------------------------------- the strategic map
+
+[[script]]
+name = "CNINIT"
+summary = """Writes the nations, keyed by nation id (0 is 無所属): name, colour, starting funds, provisions, items, \
+capital, leader and pictures, and the flags that make a nation playable. INIT2 runs it at every boot and load; ADDCN \
+copies the starting values into the saved nation state."""
+source = "docs/koukaku-data-tables.md (The strategic map; CNINIT)"
+
+[[script]]
+name = "RGINIT"
+summary = """Writes the regions, keyed by region id: name, description lines, kind, field map, starting owner and \
+population, production sets, world-map position, pictures, the flags and conditions that open a region, and the \
+battle fought there. INIT2 runs it at every boot and load."""
+source = "docs/koukaku-data-tables.md (The strategic map; RGINIT)"
+
+[[script]]
+name = "ROINIT"
+summary = """Writes the routes between regions, keyed by route id: the two end regions, the kind that says which \
+corps may take it, the path's points, pictures and the flags that open and close it."""
+source = "docs/koukaku-data-tables.md (The strategic map; ROINIT)"
+
+[[script]]
+name = "CRINIT"
+summary = """Writes the production sets, keyed by 200 × kind + set: the items each of a set's seven slots yields and \
+its rate. A region names its set of each of five kinds in region_production_sets."""
+source = "docs/koukaku-data-tables.md (The strategic map; CRINIT)"
+
+[[script]]
+name = "USINIT"
+summary = """Writes the corps records: nation, leader, troop kind and count, item and region. INITGAME makes a corps of \
+each record with a nation and a region; scenes and quest rewards add one by its id (starting_unit_arg_id)."""
+source = "docs/koukaku-data-tables.md (The strategic map; USINIT)"
+
+[[script]]
+name = "RUINIT"
+summary = """Writes the ruses (策略), keyed by ruse id: category, funds and provisions cost ranges, what the ruse \
+targets and the relations its target may have, the friendship change, the animation, and the description and result \
+texts."""
+source = "docs/koukaku-data-tables.md (The strategic map; RUINIT)"
+
+[[script]]
+name = "QUINIT"
+summary = """Writes the quests, keyed by quest id: kind, battle, the conditions for offering one (week, prerequisite \
+quest, characters, region, story flags), the delivery it asks for, the rewards, and the texts."""
+source = "docs/koukaku-data-tables.md (The strategic map; QUINIT)"
+
+[[script]]
+name = "DUINIT"
+summary = """Sets up a battle by battle_id: the place's name, three end conditions for each side, and the battle's \
+starting cells. FIELD runs it through the chain duinit_chain_script_ids before each battle; it is not a boot table."""
+source = "docs/koukaku-data-tables.md (The strategic map; DUINIT)"
+
+[[script]]
+name = "INITGAME"
+summary = """Builds a new game's map: ADDCN for nations 1 to 12 and for the playable ones above, CHECKREG, a corps \
+for each USINIT record with a nation and a region, CHANGELEADER for each nation, the START hooks, war on every \
+other nation when the player is not nation 1, CALCFORT and CALCCN, then the READY hooks."""
+source = "docs/koukaku-data-tables.md (The strategic map; The game start (INITGAME) and the turn)"
+
+[[script]]
+name = "ADDCN"
+summary = """Adds the nation nation_arg_id from CNINIT: copies its capital, leader and picture into the saved nation \
+state, adds its funds, provisions and items, copies DPINIT's friendship and relation matrices, and marks the nation \
+active."""
+source = "docs/koukaku-data-tables.md (The strategic map; CNINIT; What is saved)"
+
+[[script]]
+name = "CHECKREG"
+summary = """Opens each region whose conditions hold (kind, an active owner, character, item and the story flags), \
+setting bit 0 of region_flags, and runs the MPINIT chain for its field map."""
+source = "docs/koukaku-data-tables.md (The strategic map; RGINIT)"
+
+[[script]]
+name = "OCCUPY"
+summary = """Gives the region region_arg_id to the nation nation_arg_id: runs the MPINIT chain and SETFORT, then \
+writes the new owner, the owner's capital and an empty corps slot into the saved region state."""
+source = "docs/koukaku-data-tables.md (The strategic map; What is saved)"
+
+[[script]]
+name = "MARCHSEEK"
+summary = """Finds the routes a marching corps may take: a route's ends, its kind against the corps, and the story \
+flags that open and close it."""
+source = "docs/koukaku-data-tables.md (The strategic map; ROINIT)"
+
+[[script]]
+name = "EXECRUSE"
+summary = """Carries out the ruse ruse_arg_id for turn_nation: finds where it acts, sets its animation (G[0xa3e165]), changes the \
+two nations' friendship by ruse_friendship_changes and shows its result."""
+source = "docs/koukaku-data-tables.md (The strategic map; RUINIT)"
+
+[[script]]
+name = "QUEST"
+summary = """The quest list: shows the quests whose conditions hold, accepts one (bit 0 of quest_states), and \
+completes one by its flags or its delivery (bits 1 and 2)."""
+source = "docs/koukaku-data-tables.md (The strategic map; QUINIT; What is saved)"
+
+[[script]]
+name = "CONQUEST"
+summary = """Starts an accepted battle quest: makes its quest_battles the battle_id, sets quest_in_battle and counts \
+the battle in quest_battle_counts."""
+source = "docs/koukaku-data-tables.md (The strategic map; QUINIT; What is saved)"
+
+[[script]]
+name = "RECEIPT"
+summary = """Reports a done quest and pays it: its rewards (a corps, an item or a part), its money into nation_funds \
+and its reward flag, then bit 3 of quest_states."""
+source = "docs/koukaku-data-tables.md (The strategic map; QUINIT; What is saved)"
+
+# ---------------------------------------------------------------------------------- battlefields
+
+[[script]]
+name = "LAINIT"
+summary = """The land types, at every boot: 14 of them (地面, 不可, 道, 沼地, 川・湖, 深水, 氷, 溶岩, 堀, 湿地, 谷（崖）, 空, \
+砂地), each with a passability for each of the three movement types (地上, 飛行, 潜水) and the speed percent a slowed \
+type moves at (land_passability, land_speed_percents). FIELD and the movement scripts read them live."""
+source = "docs/koukaku-data-tables.md (Battlefields; LAINIT)"
+
+[[script]]
+name = "OBINIT"
+summary = """The map objects, at every boot: 280 buildings, natural objects, bridges, barriers, walls, fences, traps and \
+pieces of scenery, keyed by object id. Each has a kind, a footprint of up to 3 × 3 cells, and per level its \
+passability, speed, durability and defences, its build cost, weeks and materials, its picture and its effects on the \
+region. The build list's conditions are here too: required flags, the region it must stand in and regions the player \
+must hold. Nothing of it is saved."""
+source = "docs/koukaku-data-tables.md (Battlefields; OBINIT)"
+
+[[script]]
+name = "DPINIT"
+summary = """The 20 map object kinds, at every boot: each kind's name, the command a facility offers, its icon, its \
+tab in the facility book and its class (城壁, 結界, 橋, 拠点, 施設, ...). It also writes the nation relation matrices, \
+CALCFORT's thresholds and tables by nation."""
+source = "docs/koukaku-data-tables.md (Battlefields; DPINIT)"
+
+[[script]]
+name = "MPINIT"
+summary = """The battlefield maps, on demand: it writes the map battlefield_map_id names, one of 114, into the same \
+cells each time. It writes the map's land, its preset objects and their levels (up to 20 × 20), its size, bounds and \
+ground picture, and its deploy entries: each with a side, a region and a rectangle. FIELD, CHECKREG and DELCN run it \
+through the hook chain G[0xa6b899], whose slot 0 INIT2 fills."""
+source = "docs/koukaku-data-tables.md (Battlefields; MPINIT)"
+
+[[script]]
+name = "$1$MPINIT"
+summary = """The append's seven battlefield maps (0x5e..0x61, 0x63, 0x64 and 0xdd), written like MPINIT's. $1$AUTORUN \
+puts it in slot 1 of the MPINIT chain, so a walk runs it after MPINIT."""
+source = "docs/koukaku-data-tables.md (Battlefields; MPINIT)"
+
+[[script]]
+name = "SETFIELD"
+summary = """Builds the battlefield in play from the map MPINIT wrote and the region's saved map layers. It copies the \
+size, bounds and picture, builds the 24 × 24 land grid, and runs SETFORT for a region not yet set up. Then it places \
+each object's footprint into the object, level and anchor grids. It hides objects still being built outside the reign \
+mode, and in a battle it clears the bases inside unused deploy areas. For the facility book it records in the shared \
+profile the highest level of each object seen."""
+source = "docs/koukaku-data-tables.md (Battlefields; Setting up a battlefield)"
+
+[[script]]
+name = "SETFORT"
+summary = """A region's first setup, which SETFIELD runs once per region. It clears the region's five saved map layers, \
+places the map's preset objects and levels with their durability, copies two RGINIT values into the region's saved \
+state, and marks the region set up (bit 1 of G[0x3ed38 + region])."""
+source = "docs/koukaku-data-tables.md (Battlefields; Setting up a battlefield)"
+
+[[script]]
+name = "READFIELD"
+summary = """Loads the battlefield's pictures: the ground picture, then each placed object's picture for its level. A \
+bridge, barrier or wall loads once per kind; every other object loads once per anchor cell."""
+source = "docs/koukaku-data-tables.md (Battlefields; Drawing and building)"
+
+[[script]]
+name = "DRAWOBJ"
+summary = """Draws the battlefield's objects at their anchor cells. A level marked for the ground layer is drawn under \
+the units; any other object is drawn in depth order. A bridge picks its frame from its neighbours."""
+source = "docs/koukaku-data-tables.md (Battlefields; Drawing and building)"
+
+[[script]]
+name = "SELOBJ"
+summary = """The reign mode's build list. It lists the objects whose kind has a facility-book tab, and hides those \
+whose required flags, held regions or nation levels are not met. It marks the rest that cannot be built: wrong region \
+type, wrong region, funds short, materials short."""
+source = "docs/koukaku-data-tables.md (Battlefields; Drawing and building)"
+
+[[script]]
+name = "CALCFORT"
+summary = """A region's totals from what stands on its map. It sums each built object's per-level effects into the \
+region's values, counts each object and keeps its highest level, and sums the walls' durability into a percent."""
+source = "docs/koukaku-data-tables.md (Battlefields; CALCFORT)"
+
+[[script]]
+name = "INFO25"
+summary = """The facility book. It lists the objects the book marks, by tab (公共, 自然, 仕掛, 施設, その他) and sort \
+key. For each it shows the name, the kind, width × depth, a grade, the region effects it adds, and which movement \
+types can pass it."""
+source = "docs/koukaku-data-tables.md (Battlefields; OBINIT)"

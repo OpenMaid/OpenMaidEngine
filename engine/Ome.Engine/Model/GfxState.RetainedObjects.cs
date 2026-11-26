@@ -310,15 +310,17 @@ public sealed partial class GfxState
         bool removedTransition = _scene.RadialBlurTransitions.Remove(handle)
                                  | _scene.DirectionalBlurTransitions.Remove(handle)
                                  | _scene.PatternedSurfaceTransitions.Remove(handle);
-        // AGE 4.38D's erase workers (0x4942a0, 0x494440) take the handle out of the polygon map too.
+        // AGE 4.38D's erase workers (0x4942a0, 0x494440) take the handle out of the polygon map too, and 4.43B's
+        // (0x49a6d0, 0x49a8a0) out of the model map as well.
         bool removedPolygon = RemovePolygon(handle);
+        bool removedModel = _scene.Models.Remove(handle);
         if (_scene.Objects.Remove(handle))
         {
             int index = _scene.OrderedObjectHandles.BinarySearch(handle);
             if (index >= 0) _scene.OrderedObjectHandles.RemoveAt(index);
             MarkRetainedMutation();
         }
-        else if (removedTransition || removedPolygon) MarkRetainedMutation();
+        else if (removedTransition || removedPolygon || removedModel) MarkRetainedMutation();
     }
 
     /// <summary>Op 0x1f7 semantics (native gfx_object_erase_range @0x47d8b0): erase handles in
@@ -339,6 +341,7 @@ public sealed partial class GfxState
         _scene.OrderedObjectHandles.Clear();
         _scene.Polygons.Clear();            // AGE 4.38D's worker (0x494100) releases and clears the polygon map too
         _scene.OrderedPolygonHandles.Clear();
+        _scene.Models.Clear();              // and 4.43B's (0x49a530) the model map (gfx_model_map_clear@0x498c80)
         _scene.RadialBlurTransitions.Clear();
         _scene.DirectionalBlurTransitions.Clear();
         _scene.PatternedSurfaceTransitions.Clear();

@@ -185,6 +185,30 @@ it; git history keeps the record.
   keeps the variant (`Audio.VoicePlaybackVariant`; `engine-re.md`, "Retained History record model and lifetime",
   calls its meaning unproven). Done when native is driven past the end of a History replay, with channel 12's state
   read while it runs, and the port plays variant 1 as native does, with `engine-re.md`'s passage saying which.
+- **The models are not drawn (AGE 4.43B).** 魔導巧殻's FIELD and DEBUG make 3D models with ops `0x330` to `0x33e`: a
+  mesh slot of op `0x329` with a colour, a blend mode and world matrices. The port keeps the records
+  (`GfxState.Models.cs`; `engine-re.md`, "The models") but draws none, where native's frame walk (`gfx_render_frame`,
+  `0x4a1c80`) and range present (`gfx_present_object_range`, `0x4a2060`) draw each made model at its handle, and trace
+  `DrawModel エラー：描画元メッシュモデルが作成されていません． Mesh=%d` for one whose slot holds no mesh. Also left out: the
+  model one-shots of ops `0x331`, `0x333` and `0x338` to `0x33a` and ops `0x336` and `0x33c`, which no 魔導巧殻 script
+  runs, with op `0x242`'s write to the model (`+0x1f8`) and op `0x244`'s restart of a model's one-shots. Done when the
+  model draw is read (its world matrix's order, the `+0x8` floats, the lights and the blend), lowered into a frame item as
+  the title's leaves are (`superpowers/specs/2026-11-20-title-leaves-design.md`), and FIELD's models match native's
+  pixels.
+- **History's padded glyphs differ at the cell seams (AGE 4.43B).** 魔導巧殻's HISTORY sets the paddings 2, 2, 2, 2
+  (op `0x260`; the page has 2, 0, 2, 2), so neighbouring glyphs' padded rectangles overlap. In its rows, at the seams
+  between glyph cells, native's pixels are darker than the port's: by up to 30 levels on 4 pixels and less than 12 on
+  about 4,000, on a wheel up from SC0000's page 4 (`koukaku-opening.steps`, then `wheel up 1`). Positions agree, and
+  the page, whose right padding is 0, is the same pixels. The likely cause is what a grown source rectangle reads from
+  the glyph cache beside the glyph (native's cache layout is not read). Done when the cache's layout and the publisher's
+  growth into it are read and History's shot matches native's.
+- **GDI's 64-bit curve flattener.** AGE 4.43B's region tests (ops `0x2f0` to `0x2f2`) take an ellipse from
+  `CreateEllipticRgnIndirect`, which flattens it with GDI's 32-bit forward-differencing flattener; the port has that
+  one exactly (`engine-re.md`, "The region tests"). A quarter whose bounds reach `0x4000` in 28.4, an ellipse 2048
+  pixels or more across, goes to GDI's 64-bit flattener instead (win32kbase.sys 10.0.19041, setup RVA `0x1414d0`, step
+  RVA `0x140f20`), which the port does not have: it runs the 32-bit steps in 64 bits and marks the region
+  `Approximate`. No script of 魔導巧殻 is known to make one; a search radius of 1024 or more would. Done when
+  `GdiCurveFlattener` has the 64-bit flattener and matches gdi32 on ellipses past 2048 pixels.
 
 ## Robustness
 
@@ -641,6 +665,117 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     pairs (the window procedure, the main tick, import call sites) would reach them.
 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
+- **Onboard 魔導巧殻 (koukaku, AGE 4.43B, catalog `S4IC443`, scripts `SYS4443`).** The user, 2026-11-26: "Add support
+  for the next game, koukaku, aiming for P3 / M3". The id is `koukaku`, the install `games/koukaku/`
+  (`PROJECT-STRUCTURE.md`). It is the newest build taken in: every supported build is 4.38D or older. Work is on
+  `feature/koukaku`. It stands at **P3** and **M3** since 2026-11-26 (its manifest's `support`).
+  - **Step 1, the intake, is done (2026-11-26):** every check passes (`build/games/koukaku/intake.json`). 453 scripts
+    (401 base, 52 in the one append, `APPEND01.AAI`, selector 1, 426 entries), 1,928,527 instructions, 321 distinct
+    opcodes. Catalog: 19,822 entries in six archives, 511 of them placeholders; it ships the font AGE Extend
+    (`AGE-EXTEND.TTF`, file 46). Saved prefix `[2169864, 88241, 433, 1, 1, 1]`, full banks
+    `[10926781, 88272, 107732, 2, 2, 2]`. 50 settings pairs, with one key the other games lack,
+    `TRANSFERMUSICVOLUME`, and no new file type.
+    - **24 opcodes have no handler, at 1,256 sites:** `0x74` (350 sites in 175 scripts), `0x261` (327), `0xc3`
+      (322), `0x260` (130), the `0x330` group (`0x330`, `0x332`, `0x335`, `0x33b`, 19 each; `0x337`, 14; `0x33e`, 6;
+      `0x33d`, 2; `0x334`, 1; `0x33f`, 1, in TITLE), the `0x2ee` group (`0x2f0`, 9; `0x2ef`, 5; `0x2f1`, 3; `0x2f2`,
+      2; `0x2ee`, 1), `0x2ce` (2), and one site each for `0x244` and `0x25c` to `0x25f`.
+    - **Opcodes it uses that a supported game never does:** 創刻のアテリアル 34, Kamidori 71, Verita 79, Himegari 86,
+      戦女神ZERO 92. 31 are used by no supported game; 7 of those have a port handler that no game's run has
+      exercised (`0x254`, `0x2cf`, `0x2df`, `0x2e0`, `0x2e2`, `0x2e4`, `0x32f`).
+  - **Step 2, the dump, is done (2026-11-26):** the engine is dumped from a scratch copy, the install unchanged. Its
+    build is pinned in `operand_access.py` `ENGINES` with 4.38D's 15 accessors, aligned against Arterial and Kamidori
+    alike. The Ghidra image `/koukaku/4.43B` has 783 names, ported from `/arterial/4.38D` and the registry. The
+    revision diff against Arterial, the nearest build, has 25 rows that differ (`engine-re.md`, "Arterial against
+    魔導巧殻"). 28 opcodes are only 4.43B's, none only 4.38D's, and op `0x191` works on floats.
+  - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for the
+    other games.
+  - **Step 3, the profile, is done (2026-11-26):** `Profiles/koukaku.json` (P1, writes off, save version 320, its
+    banks), the engine build `Age443B` declared from 4.38D with its own save stamp, the registry's observation and
+    `SYS4443` snapshot, and operand access for all 313 opcodes its scripts use (938 operands, 74 scoped to the build;
+    `0x2ef` and `0x2f1` hand-read in `LOOP_INDEXED`). Its installed-data tests and corpus decode pass in
+    `validate.py --level workspace`.
+  - **Step 4, the triage, is done (2026-11-26):** every differing row has a disposition (`engine-re.md`, "Arterial
+    against 魔導巧殻, triaged"), and the 24 opcodes without a handler are read there. The real ones go to: the graphics
+    native's model map and its frame item, with the projection of op `0x33d` (step 7; the field's 3D models, ops
+    `0x330` to `0x33e`); the text native's paddings, glyph fade and per-line images, and ruby shift mode 2 (step 6:
+    `SYSTEM4` and nearly every scene use them); the BGM fade's `set:TransferMusicVolume`; the leaves' blend and colour
+    (op `0x33f`, in TITLE); `0x191` on floats; and the integer fetch of a float pointer, for every build (step 6).
+  - **Step 5, native AGE is driven (2026-11-26):** `tools/drive/koukaku.toml` and
+    `tools/drive/scenarios/koukaku-opening.steps`: the title, Game Start's 初期設定 page and SC0000's first four pages,
+    which native passes (`engine-re.md`, "Driving native AGE", 魔導巧殻).
+  - **Step 6, the boot, is done (2026-11-26): it stands at P2.** The port's own boot reaches SC0000's first page with
+    no opcode skipped. The natural boot test (`KoukakuSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage`)
+    is the terminal gate of `validate.py --level full --game koukaku`, which passes. The opening scenario passes on
+    both targets at the same VM positions; its shots are the same pixels, the title's falling leaves aside
+    (`engine-re.md`, "Arterial against 魔導巧殻, triaged", "Checked against native AGE"). For it the port gained ops
+    `0x74`, `0x2ee` and `0x25c` to `0x261`, op `0x33f`'s blend and leaf colour, the integer read of a float
+    pointer for every build, the rules `RubyRule.ShiftModesRaisedByTopPadding` with its ink raise and
+    `LayoutPublishersGrowOnce`, and the aspect raise's glyph top from `GGO_METRICS`.
+  - **Step 7 is done (2026-11-26): it stands at P3.** Every opcode has a handler (`catalog-scan`: `unsupported=0`):
+    op `0xc3` with the BGM fade's restarts and `set:TransferMusicVolume`; the region tests `0x2ef` to `0x2f2`, GDI's
+    regions pixel for pixel (`engine-re.md`, "The region tests"); `0x2ce`; `0x191` on floats; the models `0x330` to
+    `0x33e`, kept but not drawn, the projection `0x33d` and `0x244` (`engine-re.md`, "The models"), with the camera's
+    rule `GfxRules.CameraHandsEffectsTheView`. The build binds `message:MessageFade` after `MessageSpeed`; its shell is
+    4.38D's but for AGERC's dialog 10, the save comment, which the profile's `textEntry` now gives per game (this
+    fixed 創刻のアテリアル's deck names too). The options scenario leaves the same `SYS4REG.INI` on both targets, and
+    saves load both ways with `save-diff` showing only the time (`engine-re.md`, "Arterial against 魔導巧殻, triaged",
+    "Checked against native AGE (step 7)"). On the way History's ruby gained the build's ink raise, and two faults
+    common to the builds were fixed: the wait indicator erased whatever a script drew at its handle, and the catalog's
+    font was not marked seen in SAVE.DAT.
+  - **Step 10's M1 is done (2026-11-26): it stands at M1.** The scripts round-trip through Open Maid Script at both
+    levels and as fixed points (453 of 453), the 165 scenes rebuild equivalent at both levels, and the patch probe gives
+    every script back from an empty plan. `mods/koukaku-base` carries the toolchain alone: `koukaku.adv` has the header's
+    handlers and window coroutines, 34 library subs under 創刻のアテリアル's names, the page template and 59 speakers
+    from CHINIT's names (lift coverage 32.0%: most pages span two `show_text` calls and stay core). The rebuild check
+    compared a runaway-line halt with its string's offset, which a canonical data layout moves; it no longer does. The
+    example `example.koukaku-prologue-line` boots into its line in a workspace test and shows it on both targets, the
+    same pixels (`koukaku-prologue-line.steps`); an English package of four lines and two names ran in the port;
+    `docs/modding/games/koukaku.md`; the launcher's art (`eu14/`).
+  - **Step 9 is done, and it stands at M2 (2026-11-26):** the data document `koukaku-data-tables.md` (the 37 boot
+    tables, INIT2's hook chains, the append's `$1$AUTORUN` and the on-demand DUINIT, SHINIT and MPINIT), the registry
+    `vm-map/globals-koukaku.toml` with 552 names, 38 record tables and the scope `battlefield` (a battlefield map, 1 to
+    221), the script index (453 scripts), 104 script notes (`vm-map/scripts-koukaku.toml`) and the entity declarations
+    (19 kinds; none of the export's 1,322 pictures is explicit). The layout tool gained declared arrays
+    (`Leader.arrays`, for arrays written through local pointers or at another stride), the strides 11, 22 and 48, and
+    an empty `--leader` group. What M2 leaves open:
+    - **The data document's "What is not decoded":** arrays with no reader or no writer, fields read but not
+      understood, RUSEACT's effects, the battle's AI and routing, and whether INFO2 means `tutorial_seen_flags` where it
+      loads it by a tip's unlocking scene. Each is done when that document and the registry say it.
+    - **The layout tool's limits, older than the branch:** it lays out one id space a table, so SKINIT's passive
+      skills need `--leader GS:0x9296:1000`; RTINIT's blocks B to D have no layout; and MPINIT, one map's cells chosen
+      by a selector, has none. `scjump_decode.py` reads only Himegari's `SCJUMP`. Done when the tool or a game's
+      extractor covers them, or never.
+    - **What the export leaves out:** the alchemy recipes, whose product is an item or a part by its type, which a
+      reference naming one table cannot say, and the production sets, whose five kinds are not decoded; and the
+      project site has no database page for the game yet (`site.config.mjs` in `ome-site` lists the other games).
+  - **The base mod level, M3, is reached (2026-11-26).** `mods/koukaku-base/` declares five events at ten named points
+    (`vm-map/patch-points-koukaku.toml`): the boot's data layered and ready, a battlefield map loaded by any of the six
+    scripts that walk the MPINIT chain (FIELD, REIGN, PALACE, CHECKREG, OCCUPY, DELCN), the end of a week (ALLMAP), and
+    one commander's experience award (RESULT), whose amount is the add's third operand. It accepts `koukaku.tables`
+    (boot tables at `koukaku.data.layered`, a battlefield map's part at `koukaku.battlefield.loaded`) and gives
+    `give_item` and `give_part`. `ModLuaLinkTests` binds every event on the install, runs INIT2 with the boot events,
+    PALACE with a battlefield part, and both helpers. In the port, `example.koukaku-speaker-name` renames
+    ヴァイスハイト's name plate (`tools/drive/scenarios/port/koukaku-speaker-name.steps`), and through the title's
+    debug menu the battlefield event, a battlefield part and the week's end ran from 全体マップ
+    (`koukaku-debug-events.steps`), and FIELD's event and RESULT's awards from 戦闘 (`koukaku-battle-award.steps`).
+    What M3 leaves open:
+    - **Loaders without an event:** DUINIT's battle setups and SHINIT's offers. Done when a mod needs one and it is
+      added, or never.
+    - **REIGN's, OCCUPY's and DELCN's loads** bind in the tests but were not raised in a played game (PALACE's runs in
+      a test). Done when a run raises each.
+    - **A failed picture load shows no box (older than the branch, every build).** Op `0x1f9` throws
+      「画像ファイル %s の読み込みに失敗しました」 with flags `0x10007` when `gfx_surface_load_asset` fails
+      (`op_0x1f9_set_texture@0x421e90` in `/koukaku/4.43B`), %s the entry's name. The debug menu's 戦闘 shows it on
+      native AGE at `READFIELD@0x7` (「画像ファイル SYSTEM4.BIN …」: map 999 is not MPINIT's, and its picture is 0); after
+      無視 native and the port take the same route to the same RESULT screen, pixel for pixel. The port's
+      `Graphics.LoadSurface` traces `[NO AGF]` and goes on. What native does with a placeholder entry or a format the
+      port cannot decode is not read, so making the port raise the box could stop a run that native passes. Done when
+      native's failing cases are read and the port raises the box for those alone, as ops `0xb4` and `0x329` do. To
+      settle on the branch before its merge.
+  - **Next, by the plan:** the sweep (P4, step 8).
+
+  The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-26. The item stays for the open points
+  above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
 - **Onboard 戦女神VERITA (Verita, AGE 4.24N, catalog `S4IC424`, scripts `SYS4424`).** The user, 2026-11-24:
   "we're gonna start working on compatibility on a new game, so we can get it to the same P3/M3 as the others". It
   stands at **P3** since 2026-11-25 (its manifest's `support`), on `feature/verita`: every opcode has a handler, its

@@ -116,6 +116,11 @@ public sealed class Sys4StartupSettings
     /// none. Missing or non-numeric means 0.</summary>
     public int AutoFreeTex => ReadInt("AUTOFREETEX", 0);
 
+    /// <summary>TRANSFERMUSICVOLUME (set:TransferMusicVolume, registered default 0; AGE 4.43B, whose SYS4INI reader
+    /// 0x4847e0 stores it through atoi): where a BGM fade starts while another runs, 1 starts it from the level mixed so
+    /// far and 2 from the old target (<c>Audio.FadeBgm</c>). 魔導巧殻 sets 1. Missing or non-numeric means 0.</summary>
+    public int TransferMusicVolume => ReadInt("TRANSFERMUSICVOLUME", 0);
+
     /// <summary>BLANKEXTENTMODE (set:BlankExtentMode; SYS4433). With 1, a blank in aspect-mode text (a space or 0x8140)
     /// advances by its own extent in the reference ＭＳ ゴシック (text_measure_blank_extent@0x404da0) rather than by the
     /// reference cell, halved for one byte (<see cref="Text.ImmediateSurfaceTextRenderer"/>). Kamidori sets 1. Missing

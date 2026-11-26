@@ -329,6 +329,33 @@ public class Scene3DLeavesTests
         Assert.All(corners, corner => Assert.Equal(alpha, corner.Argb >> 24));
     }
 
+    [Fact]
+    public void AGE443BsEffectBlendAndColourDrawTheLeavesInThatBlendTinted()
+    {
+        // Op 0x33f: display_scene_effects_at_handle@0x450ec0 draws the effects in +0x4ec's blend (1: SRCALPHA, ONE),
+        // and the leaf draw multiplies each leaf's lit colour by +0x4f0 over 255, its alpha with the fade (0x4747d0):
+        // (96, 192, 48) times (1, 128/255, 0), alpha 255 times 128/255.
+        Graphics graphics = Scene(Triangle(), 0xff404040, (0f, 0f, 1f));
+        graphics.SetEffectBlendAndColor(1, 0x80ff8000);
+
+        FramePolygonGeometry leaf = Assert.Single(graphics.LowerFrame(0).Items,
+                                                  item => item.Kind == FrameItemKind.Polygon).Polygon!;
+        Assert.Equal(FramePolygonBlend.Additive, leaf.Blend);
+        Assert.All(leaf.Vertices, corner => Assert.Equal(0x80606000u, corner.Argb));
+    }
+
+    [Fact]
+    public void UntilOp33fTheEffectsAreAlphaBlendedAndTheLeavesUntinted()
+    {
+        // display_construct@0x450980 makes +0x4ec 0 and +0x4f0 0xffffffff, 4.38D's drawing.
+        Graphics graphics = Scene(Triangle(), 0xff404040, (0f, 0f, 1f));
+        Assert.Equal((0, 0xffffffffu), (graphics.Scene3D.EffectBlendMode, graphics.Scene3D.LeafColorArgb));
+        FramePolygonGeometry leaf = Assert.Single(graphics.LowerFrame(0).Items,
+                                                  item => item.Kind == FrameItemKind.Polygon).Polygon!;
+        Assert.Equal(FramePolygonBlend.Alpha, leaf.Blend);
+        Assert.All(leaf.Vertices, corner => Assert.Equal(0xff60c030u, corner.Argb));
+    }
+
     private static GfxState.PolygonVertex[] Square(uint argb) =>
     [
         new(0, 0, 0, argb, 0, 0), new(4, 0, 0, argb, 1, 0), new(0, 4, 0, argb, 0, 1), new(4, 4, 0, argb, 1, 1),

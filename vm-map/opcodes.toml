@@ -11,7 +11,7 @@
 # converted (docs/engine-re.md, "Kamidori engine builds").
 [meta]
 instruction_model = "code = seq of <opcode:u32> then argc*(<argtype:u32><value:u32>); len_dwords = 1 + 2*argc"
-profile_ids = ["himegari", "kamidori", "arterial", "verita", "bg0"]
+profile_ids = ["himegari", "kamidori", "arterial", "verita", "bg0", "koukaku"]
 inline_array_opcode = 0x64
 
 # Compact defaults resolve the existing semantic evidence text into structured records. They state
@@ -233,6 +233,45 @@ opcodes = [
 # Exact snapshots resolve directly today. Future evidence-backed revision layers may name parents and
 # add members, replace full operand contracts/handler ids, or remove inherited entries. An empty
 # `composes` list deliberately makes no base-SYS4 or revision-ancestry claim.
+[[observation]]
+profile_id = "koukaku"
+catalog_revision = "S4IC443"
+script_revision = "SYS4443"
+engine_abi_id = "SYS4443"
+method = "catalog-corpus"
+artifact = "build/games/koukaku/catalog-opcode-coverage.json"
+script_count = 453
+instruction_count = 1928527
+opcodes = [
+  0x1, 0x2, 0x3, 0x5, 0x6, 0x8, 0x9, 0x25, 0x26, 0x28, 0x32, 0x36,
+  0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b,
+  0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x63, 0x64, 0x6c, 0x6e, 0x6f, 0x70,
+  0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c,
+  0x7f, 0x80, 0x82, 0x83, 0x85, 0x86, 0x87, 0x88, 0x8b, 0x8c, 0x8f, 0x90,
+  0x93, 0x94, 0x97, 0xa0, 0xa1, 0xa2, 0xa3, 0xae, 0xb4, 0xb5, 0xb6, 0xb7,
+  0xb8, 0xb9, 0xba, 0xbf, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+  0xc8, 0xcc, 0xcd, 0xd3, 0xd4, 0xd5, 0xd9, 0xfa, 0xfb, 0xfe, 0xff, 0x100,
+  0x101, 0x107, 0x108, 0x109, 0x10a, 0x10b, 0x10c, 0x10d, 0x10e, 0x10f, 0x12c, 0x12e,
+  0x12f, 0x130, 0x131, 0x132, 0x133, 0x134, 0x135, 0x136, 0x137, 0x13f, 0x140, 0x141,
+  0x142, 0x143, 0x144, 0x147, 0x149, 0x191, 0x192, 0x193, 0x194, 0x195, 0x196, 0x197,
+  0x198, 0x199, 0x19a, 0x19b, 0x19c, 0x19d, 0x19e, 0x1a0, 0x1a1, 0x1a2, 0x1a3, 0x1a4,
+  0x1a5, 0x1a6, 0x1a7, 0x1a8, 0x1a9, 0x1aa, 0x1ab, 0x1ac, 0x1ad, 0x1ae, 0x1af, 0x1b0,
+  0x1b1, 0x1b2, 0x1b3, 0x1b4, 0x1b5, 0x1b6, 0x1b7, 0x1b8, 0x1b9, 0x1ba, 0x1bb, 0x1bc,
+  0x1bf, 0x1c1, 0x1c4, 0x1c7, 0x1c8, 0x1ca, 0x1cb, 0x1cc, 0x1cd, 0x1ce, 0x1cf, 0x1d0,
+  0x1d1, 0x1d2, 0x1d3, 0x1d5, 0x1f4, 0x1f5, 0x1f6, 0x1f7, 0x1f8, 0x1f9, 0x1fa, 0x1fb,
+  0x1fd, 0x1fe, 0x1ff, 0x202, 0x203, 0x204, 0x205, 0x207, 0x208, 0x20a, 0x20b, 0x20c,
+  0x20d, 0x20e, 0x20f, 0x212, 0x213, 0x214, 0x215, 0x216, 0x217, 0x218, 0x219, 0x21a,
+  0x21b, 0x21c, 0x21d, 0x21e, 0x21f, 0x220, 0x222, 0x223, 0x224, 0x228, 0x229, 0x22c,
+  0x22f, 0x230, 0x231, 0x232, 0x233, 0x234, 0x235, 0x236, 0x238, 0x239, 0x23b, 0x23c,
+  0x23d, 0x23f, 0x241, 0x242, 0x243, 0x244, 0x248, 0x24d, 0x24e, 0x24f, 0x250, 0x251,
+  0x252, 0x254, 0x256, 0x258, 0x259, 0x25a, 0x25c, 0x25d, 0x25e, 0x25f, 0x260, 0x261,
+  0x2bd, 0x2bf, 0x2c5, 0x2c7, 0x2ce, 0x2cf, 0x2d0, 0x2d1, 0x2d2, 0x2d3, 0x2d5, 0x2d8,
+  0x2da, 0x2db, 0x2dc, 0x2dd, 0x2de, 0x2df, 0x2e0, 0x2e1, 0x2e2, 0x2e3, 0x2e4, 0x2e5,
+  0x2e6, 0x2e7, 0x2e8, 0x2e9, 0x2ea, 0x2eb, 0x2ec, 0x2ee, 0x2ef, 0x2f0, 0x2f1, 0x2f2,
+  0x320, 0x322, 0x323, 0x324, 0x325, 0x328, 0x329, 0x32b, 0x32c, 0x32d, 0x32e, 0x32f,
+  0x330, 0x332, 0x334, 0x335, 0x337, 0x33b, 0x33d, 0x33e, 0x33f,
+]
+
 [[abi_layer]]
 id = "SYS4422"
 kind = "complete-observed-snapshot"
@@ -289,6 +328,18 @@ observation_profile_id = "bg0"
 evidence_method = "catalog-corpus"
 evidence_artifact = "build/games/bg0/catalog-opcode-coverage.json"
 evidence_scope = "S4IC415 / SYS4415 complete decoded corpus snapshot"
+members = []
+contracts = []
+removes = []
+
+[[abi_layer]]
+id = "SYS4443"
+kind = "complete-observed-snapshot"
+composes = []
+observation_profile_id = "koukaku"
+evidence_method = "catalog-corpus"
+evidence_artifact = "build/games/koukaku/catalog-opcode-coverage.json"
+evidence_scope = "S4IC443 / SYS4443 complete decoded corpus snapshot"
 members = []
 contracts = []
 removes = []
@@ -3901,26 +3952,30 @@ abi_source = "kelebek+decode-validated"
 [opcode.semantics]
 name = "absolute-value"
 category = "compute"
-summary = "Write the signed 32-bit absolute value of operand 2 to operand 1."
+summary = "Write the signed 32-bit absolute value of operand 2 to operand 1. AGE 4.43B (SYS4443) works on floats: the float read rounded to a float, its fabs written through the float accessor."
+details = "Port: VirtualMachine.OpAbsoluteValue, which takes the float form where the ABI's operand contract says read-float (SYS4443)."
 noop_headless = false
 waits = "never"
 leaves = ["falls"]
 source = "investigation"
 confidence = "high"
 depends_on = []
-evidence = "Ghidra /v2: op_0x191_handler@0x426de0 computes (value ^ (value >> 31)) - (value >> 31) and writes it through vm_operand_write. All five Himegari calls are in SELACT, where it normalizes a signed preview delta before drawing it."
+evidence = [
+  { method = "native-re", artifact = "Himegari SYS4422 Ghidra /v2", scope = "handler", profile_ids = ["himegari"], engine_revisions = ["SYS4422"], confidence = "high", text = "op_0x191_handler@0x426de0 computes (value ^ (value >> 31)) - (value >> 31) and writes it through vm_operand_write. All five Himegari calls are in SELACT, where it normalizes a signed preview delta before drawing it." },
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x191_absolute_value@0x42b140 reads operand 2 with vm_operand_fetch_float, rounds it to a float and writes ABS of it with vm_operand_write_float to operand 1." },
+]
 
 [[opcode.semantics.args]]
 i = 1
 role = "out_absolute_value"
 observed_types = ["l-int"]
-access = ["write"]
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write"], SYS4438 = ["write"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "value"
 observed_types = ["g-int"]
-access = ["read"]
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read"], SYS4438 = ["read"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x192
@@ -5756,7 +5811,7 @@ abi_source = "kelebek+decode-validated"
 [opcode.semantics]
 name = "set-texture"
 category = "draw"
-summary = "Load a texture by universal packed SYS4INI/AAI id into a mode-0 surface slot: (resource_id, slot, colorkey). A zero high byte directly indexes the flat base catalog; a nonzero high byte selects an AAI mount and uses the low 24 bits. This is the same addressing contract as 0x249; only the native surface mode differs."
+summary = "Load a texture by universal packed SYS4INI/AAI id into a mode-0 surface slot: (resource_id, slot, colorkey). A zero high byte directly indexes the flat base catalog; a nonzero high byte selects an AAI mount and uses the low 24 bits. This is the same addressing contract as 0x249; only the native surface mode differs. A load that fails (gfx_surface_load_asset != 1) throws 「画像ファイル %s の読み込みに失敗しました」 with flags 0x10007, %s the entry's name: 魔導巧殻's READFIELD@0x7 on a picture 0 shows 「画像ファイル SYSTEM4.BIN …」 (2026-11-26). The port loads nothing and raises no box (backlog, 魔導巧殻's item)."
 noop_headless = false
 waits = "never"
 leaves = ["falls"]
@@ -5905,19 +5960,19 @@ access = ["read"]
 i = 2
 role = "current X scale percent"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "current Y scale percent"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "current Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x1fe
@@ -5947,25 +6002,25 @@ access = ["read"]
 i = 2
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x1ff
@@ -5995,19 +6050,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x202
@@ -6649,19 +6704,19 @@ access = ["read"]
 i = 2
 role = "a"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "b"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "c"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x218
@@ -6691,19 +6746,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode]]
 op = 0x219
@@ -6733,19 +6788,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x21a
@@ -6775,19 +6830,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode]]
 op = 0x21b
@@ -6903,19 +6958,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x21f
@@ -6957,25 +7012,25 @@ access = ["read"]
 i = 4
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 7
 role = "target angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x220
@@ -7017,19 +7072,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x222
@@ -7181,19 +7236,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode]]
 op = 0x229
@@ -7229,19 +7284,19 @@ access = ["read"]
 i = 3
 role = "range-transform anchor X"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "range-transform anchor Y"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "range-transform anchor Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x22a
@@ -7265,19 +7320,19 @@ evidence = "Ghidra /v2: op_0x22a_set_gfx_range_scale_current@0x4237b0 divides al
 i = 1
 role = "X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x22c
@@ -7301,19 +7356,19 @@ evidence = "Ghidra /v2: op_0x22c_set_gfx_range_translation_current@0x423900 pass
 i = 1
 role = "translation X"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "translation Y"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x22d
@@ -7349,19 +7404,19 @@ access = ["read"]
 i = 3
 role = "target X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x22f
@@ -7397,19 +7452,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x230
@@ -7555,19 +7610,19 @@ access = ["read"]
 i = 3
 role = "target scale X percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target scale Y percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target scale Z percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x234
@@ -7603,19 +7658,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x236
@@ -9496,14 +9551,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0041AC00"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-glyph-delay"
+category = "adv"
+summary = "(milliseconds) - set the per-glyph ADV text reveal delay without the setting message:MessageSpeed, which op 0x1b5 also writes; op 0x7f reads it back."
+details = "The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the setting, which the 設定 dialog shows and the quit writes (Natives/TextManager.cs). 魔導巧殻's scripts make it 0 for a screen of instant text (175 uses) and give it back the setting's value, global 0x211c14, after (174)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler, and the 4.33G and 4.38D handlers it matches byte for byte", profile_ids = ["koukaku"], engine_revisions = ["SYS4433", "SYS4438", "SYS4443"], confidence = "high", text = "op_0x74_set_message_glyph_delay@0x41e5c0 stores operand 1 at ctx+0x14e9c, the text manager's +0x560, the delay the reveal (ops 0x6e, 0x196, 0x7d) and op 0x7f read; unlike op_0x1b5_handler@0x41f100 it does not call the settings' setter (IAGEService +0xc) with message:MessageSpeed. The same handler is 4.33G's op_0x74_handler@0x41caf0 and 4.38D's @0x41e240, which no script of those games uses." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "per-glyph reveal delay in milliseconds"
+observed_types = ["imm", "g-int", "l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x7d
@@ -10064,14 +10130,26 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0041D390"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-bgm-track"
+category = "audio"
+summary = "(track) - end a running op 0xc2 fade, then set the BGM's retained track without starting it. The next fade's arm starts the track from silence when the channel is not playing, so a script sets a track and fades it in; op 0xc0 reads it and a numbered save keeps it."
+details = "Implemented in the audio native (Audio.SetBgmTrack). The fade arm's restarts are Audio.RestartRetainedTrackForFade, for every build: bgm_fade_arm plays the retained track again, silent, when the committed level is 0 and when channel 11 is not playing (released, run out, or held by op 0xc1), the second also making the committed level 0. 魔導巧殻 is the first supported game to use the op (322 sites), mostly as stop-bgm, restart-bgm-loop 0, set-bgm-track N, fade-bgm 10000 over 5000 ms (SC0000@0x50ae)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B", scope = "SYS4443 handler, op 0xc0 and the BGM fade's arm", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0xc3_complete_fade_set_bgm_track@0x420140: when run-state 0x200 is set it clears it and calls bgm_fade_tick(100), then stores operand 1 at ctx+0xaa51c, the BGM object's (ctx+0xaa110) retained track +0x40c, which op_0xc0_get_current_bgm_track@0x42c790 reads and context_state_serialize saves. bgm_fade_arm@0x47a0d0 (4.24J 0x464830 and 4.38D 0x4764d0 alike): when +0x420 is 0 and +0x40c is set, and again when the route backend's is-playing (+0x28; DirectSound 0x47de00, sound_channel_is_playing(11), the buffer's +0x2460, which sound_buffer_stop clears) is 0, it reads channel 11's volume (+0x18), sets it to 0 (+0x14, 0x4a42b0), plays +0x40c in start mode +0x414 (+8, 0x47df60) and stores the volume back unapplied (+0x24); the second also zeroes +0x420." },
+  { method = "native-re", artifact = "Himegari /v2 and Kamidori /kamidori/4.33G Ghidra", scope = "the same handler in older builds", profile_ids = ["himegari", "kamidori"], engine_revisions = ["SYS4422", "SYS4433"], confidence = "med", text = "Himegari's op 0xc3 handler @0x4205b0 and 4.33G's op_0xc3_set_current_bgm_track@0x41e670 have the same shape (ported names at similarity 1.00); neither game's scripts use the op." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "BGM track id (direct file-name number: BGM{id:03d}.OGG)"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0xc9
@@ -11106,13 +11184,13 @@ evidence = [
 i = 1
 role = "result"
 observed_types = ["l-float"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "x"
 observed_types = ["l-float"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x1d6
@@ -11418,19 +11496,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode]]
 op = 0x227
@@ -11469,25 +11547,25 @@ access = ["read"]
 i = 3
 role = "out: current rotation axis X"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "out: current rotation axis Y"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "out: current rotation axis Z"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "out: current rotation angle in degrees"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
 
 [[opcode]]
 op = 0x22b
@@ -11542,25 +11620,25 @@ access = ["read"]
 i = 3
 role = "target rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "target rotation angle in degrees"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x235
@@ -11599,19 +11677,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
 
 [[opcode]]
 op = 0x237
@@ -11668,14 +11746,19 @@ argc = 0
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00416360"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "restart-armed-color-fades"
+category = "draw"
+summary = "- every retained object whose colour fade op 0x202 armed (flags bit 1) gets its one-shot start zeroed, so the fade and the transform channels sharing that start begin again; 4.43B also zeroes the start of each model with bit 1."
+details = "Port: VirtualMachine.OpRestartArmedColorFades, GfxState.RestartArmedColorFades (OneShotStartMs = -1, seeded at the next frame as native seeds a zero). Only the model one-shots of ops 0x331, 0x333 and 0x338 to 0x33a set a model's bit 1, and the port has none of them. 魔導巧殻's CALLBACK_LOAD runs it after a load."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x244_clear_fade_state@0x419910 calls gfx_clear_fade_state_by_flag@0x49c630 with 2: each object (map +0x40c) whose flags word has the bit gets +0x34 = 0, and each model (map +0x43c) whose flags have it gets +0x18 = 0. gfx_op_0x202_worker_set_color_anim@0x49bd00 sets bit 1 with +0x34 = 0 on a draw-bound object. Kamidori's 4.33G handler (0x417f30) and Arterial's 4.38D one (0x419590) are the same function by tools/ghidra_port_names.py (similarity 1.00); no script of theirs uses the op." },
+]
 
 [[opcode]]
 op = 0x245
@@ -12266,14 +12349,67 @@ argc = 8
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423122"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-text-line-images"
+category = "adv"
+summary = "(layout)(x offset)(y offset)(surface)(source x)(source y)(width)(height) - give an ADV layout line images: while set, the publishers bind one object per text row the published glyphs reach, showing the surface rectangle at the layout's origin plus the offsets, one row pitch lower per row, in opaque white with no animation. Layout 0 is the current one."
+details = "The port keeps the images with the layout (Model/AdvTextHistory.cs, AdvTextLineImages) and binds them in Natives/TextManager.LineImages.cs after each timed publication and op 0x20a, and erases them at op 0x71. 魔導巧殻's SYSTEM4 gives layout 1 a 911x1 dotted line from surface 17 at (0, 249), 46 rows under each of its rows. History's flag 0x20 and op 0x82's flags 0x20 and 0x30, which bind or erase them too, are not modelled: no supported script passes them."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and its worker, the timed and layout publishers and the layout reset", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x25c_set_text_window_line_images@0x424f00 reads eight values for text_window_set_line_images@0x454380, which maps window 0 to the current one (+0x4cc) and writes 13 dwords from the window record's +0xe0: 1, the surface, the source left, top, left + width and top + height, the two offsets, 0 (delay), 0 (duration), 0 (blend), -1 (colour) and -1 (animation target). adv_text_publish_next_glyph@0x459440, after each tick, takes the count from the sixth dword of the record after the last one published (the window's +0x11c, its row count since adv_text_layout_reset@0x45c1d0 set it to 1, when the record was pushed; 0x455010), caps it at +0x118, and for each image whose handle +0x114 + i has no object (map find 0x4575d0) binds it at window x + the x offset and window y + (font size +0x313d4 + line spacing +0x564) * i + the y offset, then gfx_object_set_blend_and_color@0x49bba0 with +0x108 and +0x10c, and op 0x202's animation with +0x100, +0x104, +0x110 when +0x104 is set. adv_text_publish_layout@0x4583e0 erases the glyphs and the images and binds them again, with +0x110 for a set animation and no animation; adv_text_layout_reset erases [+0x114, +0x118). SYSTEM4.BIN@0xb7 sets layout 1's." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "layout slot (0: the current one)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "x offset from the layout's origin"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "y offset from the layout's origin"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "source surface slot"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "source x"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "source y"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "width"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 8
+role = "height"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x25d
@@ -12282,14 +12418,37 @@ argc = 3
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423123"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-text-line-image-handles"
+category = "adv"
+summary = "(layout)(first handle)(count) - the retained-object handles an ADV layout's line images bind: count of them from the first. The op indexes the layout table itself, so layout 0 is layout object 0."
+details = "The port keeps them with the layout's line images (Model/AdvTextHistory.cs)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x25d_set_text_window_line_image_handles@0x424f80 reads the window pointer at ctx+0x14d50 + operand 1 * 4 (the text manager's +0x414 table, no current-window mapping) and, when it is not null, stores operand 2 at the window's +0x114 and operand 3 at +0x118. SYSTEM4 gives layout 1 handles 0xd3b8 to 0xd3ba." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "layout slot (layout object 0 for 0)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "first line-image handle"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "line-image count"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x25e
@@ -12298,14 +12457,49 @@ argc = 5
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423124"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-text-line-images-fade"
+category = "adv"
+summary = "(layout)(delay)(duration)(alpha)(rgb) - the colour animation an ADV layout's line image starts when the timed publisher binds it: after the delay, over the duration, to the colour; a duration of 0 turns it off. The alpha is capped at 0xff. Layout 0 is the current one."
+details = "The layout publisher binds a line image in the animation's end colour instead (Natives/TextManager.LineImages.cs)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and its worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x25e_set_text_window_line_images_fade@0x424fe0 caps operand 4 at 0xff (a negative value stays), packs it over operand 5's RGB and calls text_window_set_line_images_fade@0x454400, which maps window 0 to the current one and stores the delay, the duration and the colour at the window's +0x100, +0x104 and +0x110. SYSTEM4 sets layout 1's to 0, 300 ms and 0x80ffffff." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "layout slot (0: the current one)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "animation delay in milliseconds"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "animation duration in milliseconds"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "target alpha"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "target RGB"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x25f
@@ -12314,14 +12508,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423125"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-text-line-images-color"
+category = "adv"
+summary = "(layout)(blend)(alpha)(rgb) - the blend mode and colour an ADV layout's line images are bound with (as op 0x203 sets an object's); the alpha is capped at 0xff. Layout 0 is the current one."
+details = "SYSTEM4 binds layout 1's at alpha 0, so its op 0x25e animation fades them in to half."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and its worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x25f_set_text_window_line_images_color@0x425080 caps operand 3 at 0xff, packs it over operand 4's RGB and calls text_window_set_line_images_color@0x454440, which maps window 0 to the current one and stores the blend at the window's +0x108 and the colour at +0x10c; the publishers pass both to gfx_object_set_blend_and_color@0x49bba0, op 0x203's worker." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "layout slot (0: the current one)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "blend mode"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "alpha"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "RGB"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x260
@@ -12330,14 +12553,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423126"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-glyph-paddings"
+category = "adv"
+summary = "(left)(right)(top)(bottom) - the paddings the ADV publishers add round a glyph's cell while op 0x261's bit 0 is set: the source rectangle grows by all four, and the object moves back by the left and top ones, in place of the effect offset under the cell."
+details = "The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication) and Model/AdvRetainedTextContract.cs (GlyphPublication's GrowLeft, GrowTop, GrowRight). The paddings outlast op 0x9, as native's do. 魔導巧殻's scenes set 2, 0, 2, 2 (127 uses) or 2, 2, 2, 2 (3)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and the publishers that read the paddings", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x260_set_glyph_padding@0x425110 stores operands 1 to 4 at the text manager's +0x39668 (left), +0x3966c (right), +0x39670 (top) and +0x39674 (bottom). With +0x39664 bit 0, adv_text_publish_next_glyph@0x459440, adv_text_publish_layout@0x4583e0, text_redraw_retained_group@0x463310 and text_history_render_records@0x4646d0 bind a record that is not ruby with left - L, top - T, right + R, bottom + B (and not the effect's bottom offset) and the destination moved by -(L, T) over the text scale; the move by the effect offsets in mode 3 with UseAntiFont 0 follows as without paddings (History at 0x465a1a to 0x465a87). The constructor zeroes the fields; text_manager_initialize@0x4626e0 and op 0x9 leave them." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "left padding"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "right padding"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "top padding"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "bottom padding"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x261
@@ -12346,14 +12598,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00423127"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-glyph-padding-flags"
+category = "adv"
+summary = "(flags) - the glyph padding flags: bit 0 turns op 0x260's paddings on in the ADV publishers."
+details = "魔導巧殻's scripts turn it on (130 uses) and off (197)."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x261_set_glyph_padding_flags@0x425180 stores operand 1 at the text manager's +0x39664; the publishers test its bit 0 (adv_text_publish_next_glyph@0x459440 and the others named at op 0x260). No other bit is read in the functions read." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "padding flags (bit 0: paddings on)"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x262
@@ -12672,14 +12935,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042B616"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "get-windowed"
+category = "control"
+summary = "(out) - 1 while the game runs in a window, 0 fullscreen: display_windowed, which the startup sets from display:ScreenMode and every switch changes."
+details = "Port: VirtualMachine.OpGetWindowed reads ShellServices.Windowed. 魔導巧殻's CONFIG1 asks for 1 minus it with op 0x2cf only when the player's choice differs."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and its field's writer", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2ce_get_windowed@0x42ece0 writes ctx+0xa3c14 != 0. engine_initialize_graphics_from_settings@0x406460 stores (display:ScreenMode != 0) there at 0x40698b, the field the IAGEService windowed getter and the screen-mode switch use. 4.33G's (0x42b660) and 4.38D's (0x42dc90) handlers are the same function by tools/ghidra_port_names.py (similarity 1.00). Two sites, both in CONFIG1." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 in a window"
+observed_types = ["l-int"]
+access = ["write"]
 
 [[opcode]]
 op = 0x2cf
@@ -12707,6 +12981,7 @@ evidence_records = [
 i = 1
 role = "target screen mode (1 window, 0 fullscreen; other values ignored)"
 observed_types = []
+access = ["read"]
 
 [[opcode]]
 op = 0x2d0
@@ -13657,14 +13932,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042CEC2"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-message-fade"
+category = "adv"
+summary = "(percent) - MessageFade and the setting message:MessageFade: the timed ADV publisher fades each glyph it binds in over this percent of the glyph delay, from white at alpha 0 to opaque white, when both are above 0."
+details = "The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from Natives/TextManager.Reveal.cs. engine_initialize@0x4174f2 seeds MessageFade from the setting (registered 0 by 0x481ef0); 魔導巧殻's CHECKCONFIG.BIN sets 250 at every start."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and the timed publisher", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2ee_set_message_fade@0x4256e0 stores operand 1 at the text manager's +0x39678 and calls the settings' setter (IAGEService +0xc) with message:MessageFade. adv_text_publish_next_glyph@0x459440, after binding a glyph, when +0x560 (the glyph delay) and +0x39678 are both above 0, calls gfx_object_set_blend_and_color@0x49bba0 (handle, 0, 0x00ffffff), then gfx_op_0x202_worker_set_color_anim (handle, 0, +0x39678 * +0x560 / 100, 0xffffffff). op_0x2ed@0x42f51a reads the setting back into a cell; no script uses it." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "fade time in percent of the glyph delay"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2ef
@@ -13673,14 +13959,86 @@ argc = 11
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042CEC3"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "polygons-intersect"
+category = "compute"
+summary = "(out)(xs)(ys)(count)(dx)(dy)(xs2)(ys2)(count2)(dx2)(dy2) - 1 when the two polygons share a pixel, else 0. Each polygon is count points (xs[i] + dx, ys[i] + dy) from two integer cell arrays, a winding region; fewer than two points traces 多角形リージョン作成に失敗しました． and writes 0."
+details = "Port: VirtualMachine.OpPolygonsIntersect. The regions are GDI's, pixel for pixel: GdiRegion and GdiCurveFlattener (Model/GdiRegion.cs), checked against gdi32 on 3500 polygons and ellipses; docs/engine-re.md, 'The region tests'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2ef_polygons_intersect@0x42f530 reads every operand, then for each polygon allocates count points, fills them from the decoded cells plus the offsets and calls CreatePolygonRgn (IAT 0x614048, mode 2); a failure traces 0x6173e8 and writes 0. CombineRgn(AND) (0x614044) of the two: 1 unless ERROR or NULLREGION. The IAT slots resolved against 32-bit gdi32. No 魔導巧殻 script uses the op." },
+  { method = "native-re", artifact = "Windows 10 19045 gdi32 and win32kbase.sys", scope = "the regions GDI builds", confidence = "high", text = "CreatePolygonRgn (winding) and CreateEllipticRgnIndirect measured with ctypes (GetRegionData) on 2026-11-26: the fill rule on 708 integer and 120 fixed-point polygons; an elliptic region is the region of an ellipse path with the 28.4 box (16 l - 4, 16 t - 4) to (16 r - 28, 16 b - 28) on 1420 sizes; its Bezier offsets on every width to 2059; its flattening read from win32kbase.sys (setup RVA 0x83060, step RVA 0x82dd0) and matched on 716 sizes; the C# port matched on 3500 cases. A quarter 1024 pixels or more across takes the 64-bit flattener of GDI, which the port does not have (docs/backlog.md)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when they share a pixel"
+observed_types = ["l-int", "l-ptr"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "x cells of polygon 1"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "y cells of polygon 1"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "point count of polygon 1"
+observed_types = ["l-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "x offset of polygon 1"
+observed_types = ["l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "y offset of polygon 1"
+observed_types = ["l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "x cells of polygon 2"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 8
+role = "y cells of polygon 2"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 9
+role = "point count of polygon 2"
+observed_types = ["imm", "l-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 10
+role = "x offset of polygon 2"
+observed_types = ["imm", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 11
+role = "y offset of polygon 2"
+observed_types = ["imm", "l-float-ptr"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f0
@@ -13689,14 +14047,74 @@ argc = 9
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042CEC4"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "ellipse-polygon-intersect"
+category = "compute"
+summary = "(out)(rectangle cells)(dx)(dy)(xs)(ys)(count)(px)(py) - 1 when the ellipse and the polygon share a pixel, else 0. The ellipse fills the rectangle (c0 + dx, c2 + dy) to (c1 + dx, c3 + dy) from four cells read left, right, top, bottom; the polygon is count points (xs[i] + px, ys[i] + py), a winding region. A region GDI refuses traces an error and writes 0."
+details = "Port: VirtualMachine.OpEllipsePolygonIntersect. The ellipse is made first; a coordinate outside ±2^27 makes GDI refuse it (楕円形リージョン作成に失敗しました．), fewer than two points the polygon (多角形リージョン作成に失敗しました．). The regions are GDI's, pixel for pixel: GdiRegion and GdiCurveFlattener (Model/GdiRegion.cs), checked against gdi32 on 3500 polygons and ellipses; docs/engine-re.md, 'The region tests'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2f0_ellipse_polygon_intersect@0x42f720 reads every operand, calls CreateEllipticRgnIndirect (IAT 0x614040) on {c0+dx, c2+dy, c1+dx, c3+dy} (failure: trace 0x617410, write 0), builds the polygon as op 0x2ef does (failure: delete the ellipse, trace 0x6173e8, write 0) and writes CombineRgn(AND) != ERROR and != NULLREGION. Used by CRAFTACT, FIELD, RTN_M053 and SEARCHSKILL." },
+  { method = "native-re", artifact = "Windows 10 19045 gdi32 and win32kbase.sys", scope = "the regions GDI builds", confidence = "high", text = "CreatePolygonRgn (winding) and CreateEllipticRgnIndirect measured with ctypes (GetRegionData) on 2026-11-26: the fill rule on 708 integer and 120 fixed-point polygons; an elliptic region is the region of an ellipse path with the 28.4 box (16 l - 4, 16 t - 4) to (16 r - 28, 16 b - 28) on 1420 sizes; its Bezier offsets on every width to 2059; its flattening read from win32kbase.sys (setup RVA 0x83060, step RVA 0x82dd0) and matched on 716 sizes; the C# port matched on 3500 cases. A quarter 1024 pixels or more across takes the 64-bit flattener of GDI, which the port does not have (docs/backlog.md)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when they share a pixel"
+observed_types = ["l-int", "l-ptr"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "ellipse rectangle cells: left, right, top, bottom"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "x offset of the ellipse"
+observed_types = ["l-int", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "y offset of the ellipse"
+observed_types = ["l-int", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "x cells of the polygon"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "y cells of the polygon"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "point count"
+observed_types = ["imm", "l-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 8
+role = "x offset of the polygon"
+observed_types = ["imm", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 9
+role = "y offset of the polygon"
+observed_types = ["imm", "l-float-ptr"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f1
@@ -13705,14 +14123,62 @@ argc = 7
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042CEC5"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "ellipses-intersect"
+category = "compute"
+summary = "(out)(rectangle cells)(dx)(dy)(rectangle cells 2)(dx2)(dy2) - 1 when the two ellipses share a pixel, else 0. Each fills the rectangle (c0 + dx, c2 + dy) to (c1 + dx, c3 + dy) from four cells read left, right, top, bottom; one GDI refuses traces 楕円形リージョン作成に失敗しました． and writes 0."
+details = "Port: VirtualMachine.OpEllipsesIntersect. The regions are GDI's, pixel for pixel: GdiRegion and GdiCurveFlattener (Model/GdiRegion.cs), checked against gdi32 on 3500 polygons and ellipses; docs/engine-re.md, 'The region tests'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2f1_ellipses_intersect@0x42f9a0 reads every operand, calls CreateEllipticRgnIndirect (IAT 0x614040) on {c0+dx, c2+dy, c1+dx, c3+dy} for each (failure: trace 0x617410, delete the first if the second failed, write 0) and writes CombineRgn(AND) != ERROR and != NULLREGION. Used by CRAFTACT, FIELD and SEARCHSKILL (the search range, a circle of the radius the skill table gives)." },
+  { method = "native-re", artifact = "Windows 10 19045 gdi32 and win32kbase.sys", scope = "the regions GDI builds", confidence = "high", text = "CreatePolygonRgn (winding) and CreateEllipticRgnIndirect measured with ctypes (GetRegionData) on 2026-11-26: the fill rule on 708 integer and 120 fixed-point polygons; an elliptic region is the region of an ellipse path with the 28.4 box (16 l - 4, 16 t - 4) to (16 r - 28, 16 b - 28) on 1420 sizes; its Bezier offsets on every width to 2059; its flattening read from win32kbase.sys (setup RVA 0x83060, step RVA 0x82dd0) and matched on 716 sizes; the C# port matched on 3500 cases. A quarter 1024 pixels or more across takes the 64-bit flattener of GDI, which the port does not have (docs/backlog.md)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when they share a pixel"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "rectangle cells of ellipse 1: left, right, top, bottom"
+observed_types = ["l-int", "l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "x offset of ellipse 1"
+observed_types = ["l-int", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "y offset of ellipse 1"
+observed_types = ["l-int", "l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "rectangle cells of ellipse 2"
+observed_types = ["l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "x offset of ellipse 2"
+observed_types = ["l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "y offset of ellipse 2"
+observed_types = ["l-float-ptr"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f2
@@ -13721,14 +14187,56 @@ argc = 6
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0042CEC6"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "point-in-ellipse"
+category = "compute"
+summary = "(out)(x)(y)(rectangle cells)(dx)(dy) - 1 when the ellipse holds the pixel (x, y), else 0 (PtInRegion). The ellipse fills the rectangle (c0 + dx, c2 + dy) to (c1 + dx, c3 + dy) from four cells read left, right, top, bottom; one GDI refuses traces 楕円形リージョン作成に失敗しました． and writes 0."
+details = "Port: VirtualMachine.OpPointInEllipse. The regions are GDI's, pixel for pixel: GdiRegion and GdiCurveFlattener (Model/GdiRegion.cs), checked against gdi32 on 3500 polygons and ellipses; docs/engine-re.md, 'The region tests'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x2f2_point_in_ellipse@0x42fb60 reads every operand, calls CreateEllipticRgnIndirect (IAT 0x614040) on {c0+dx, c2+dy, c1+dx, c3+dy} (failure: trace 0x617410, write 0) and writes PtInRegion (0x61404c) != 0. Used by DISPOSE and FIELD." },
+  { method = "native-re", artifact = "Windows 10 19045 gdi32 and win32kbase.sys", scope = "the regions GDI builds", confidence = "high", text = "CreatePolygonRgn (winding) and CreateEllipticRgnIndirect measured with ctypes (GetRegionData) on 2026-11-26: the fill rule on 708 integer and 120 fixed-point polygons; an elliptic region is the region of an ellipse path with the 28.4 box (16 l - 4, 16 t - 4) to (16 r - 28, 16 b - 28) on 1420 sizes; its Bezier offsets on every width to 2059; its flattening read from win32kbase.sys (setup RVA 0x83060, step RVA 0x82dd0) and matched on 716 sizes; the C# port matched on 3500 cases. A quarter 1024 pixels or more across takes the 64-bit flattener of GDI, which the port does not have (docs/backlog.md)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when the point is inside"
+observed_types = ["l-int", "l-ptr"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "x"
+observed_types = ["l-float"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "y"
+observed_types = ["l-float"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "rectangle cells: left, right, top, bottom"
+observed_types = ["l-ptr"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "x offset"
+observed_types = ["l-float-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "y offset"
+observed_types = ["l-float-ptr"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f3
@@ -14784,6 +15292,7 @@ i = 1
 role = "light index"
 observed_types = []
 unchecked_index = { table = "light", count = 10 }
+access = ["read"]
 
 [[opcode]]
 op = 0x330
@@ -14792,14 +15301,31 @@ argc = 2
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB12"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-model-mesh"
+category = "draw"
+summary = "(handle)(mesh slot) - the handle's model draws the mesh op 0x329 loaded into the slot (flags bit 0 set). The slot is not checked."
+details = "Port: VirtualMachine.OpSetModelMesh, GfxState.SetModelMesh. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x330_set_model_mesh@0x425e50 reads operands 2 then 1 and calls gfx_model_set_mesh@0x49cfa0: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then flags |= 1, +0x4 = the slot, dirty +0xb59c. FIELD and DEBUG use it." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "mesh slot"
+observed_types = ["imm", "l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x332
@@ -14808,14 +15334,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB14"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-model-color"
+category = "draw"
+summary = "(handle)(blend mode)(alpha)(rgb) - the model's blend mode and colour. An alpha of 0x100 or more is 0xff; a negative alpha or RGB takes the colour of the handle's retained object, white for a handle with no object (the read creates none)."
+details = "Port: VirtualMachine.OpSetModelColor, GfxState.SetModelColor. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x332_set_model_color@0x425ee0 caps operand 3 at 0xff, takes a negative alpha (>> 24) or RGB from gfx_object_get_color@0x49c8f0 (the object's +0x60, -1 with no object), packs alpha << 24 | RGB and calls gfx_model_set_color@0x49cff0: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then +0x14 = operand 2, +0x44 = the colour." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "blend mode"
+observed_types = ["imm", "l-ptr"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "alpha (negative: the object's)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "RGB (negative: the object's)"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x334
@@ -14824,14 +15379,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB16"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "reset-model-transform"
+category = "draw"
+summary = "(handle) - the model's matrices back to the identity, and its transform flag (+0x4c) cleared."
+details = "Port: VirtualMachine.OpResetModelTransform, GfxState.ResetModelTransform. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x334_reset_model_transform@0x426080 calls gfx_model_reset_transform@0x49d130: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then +0x4c = 0 and the matrices at +0x50 (scale), +0xd0 (rotation), +0x150 (translation) and +0x1fc (the axis rotations) the identity." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x335
@@ -14840,14 +15406,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB17"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-model-scale"
+category = "draw"
+summary = "(handle)(x)(y)(z) - the model's scaling, each factor in percent (float reads divided by 100)."
+details = "Port: VirtualMachine.OpSetModelScale, GfxState.SetModelScale. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x335_set_model_scale@0x4260c0 reads operands 2 to 4 as floats, divides each by 100.0 (0x616e68) and calls gfx_model_set_scale@0x49d310: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then +0x4c = 1 and +0x50 = D3DXMatrixScaling (0x4ab56a)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "x scale, percent"
+observed_types = ["l-ptr"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "y scale, percent"
+observed_types = ["l-ptr"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "z scale, percent"
+observed_types = ["imm"]
+access = ["read-float"]
 
 [[opcode]]
 op = 0x337
@@ -14856,14 +15451,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB19"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-model-translation"
+category = "draw"
+summary = "(handle)(x)(y)(z) - the model's translation (float reads)."
+details = "Port: VirtualMachine.OpSetModelTranslation, GfxState.SetModelTranslation. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x337_set_model_translation@0x4261e0 reads operands 2 to 4 as floats and calls gfx_model_set_translation@0x49d470: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then +0x4c = 1 and +0x150 = D3DXMatrixTranslation (0x4ab5fe)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "x"
+observed_types = ["g-float", "l-float"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "y"
+observed_types = ["g-float", "l-float"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "z"
+observed_types = ["imm"]
+access = ["read-float"]
 
 [[opcode]]
 op = 0x33b
@@ -14872,14 +15496,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB1D"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-model-vector-8"
+category = "draw"
+summary = "(handle)(a)(b)(c) - three floats at the model's +0x8, which only the frame walk's model draw reads (not read yet)."
+details = "Port: VirtualMachine.OpSetModelVector8, GfxState.SetModelVector8. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x33b_set_model_vector_8@0x426430 reads operands 2 to 4 as floats and calls gfx_model_set_vector_8@0x49d0f0: gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, then +0x8, +0xc, +0x10 as given." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "a"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "b"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "c"
+observed_types = ["imm"]
+access = ["read-float"]
 
 [[opcode]]
 op = 0x33d
@@ -14888,14 +15541,37 @@ argc = 3
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB1E"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-projection"
+category = "draw"
+summary = "(field of view in degrees)(near)(far) - the 3D scene's projection, D3DXMatrixPerspectiveFovLH of the field of view times pi/180, the viewport's aspect and the two planes. The display's effects take it at once. Until it runs the projection is 45, 1, 1000."
+details = "Port: VirtualMachine.OpSetProjection, Graphics.SetProjection (Scene3DState.Projection and EffectProjection); the rain and the leaves are drawn with the device's projection, the snow with the one handed to the effects. 魔導巧殻's FIELD sets 45, 1, 2000."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x33d_set_projection@0x426510 reads operands 3, 2, 1 as floats and calls gfx_set_projection_fov_near_far@0x48a5a0, which stores them at manager +0xd9e4, +0xd9e8, +0xd9ec, rebuilds the projection (gfx_build_projection@0x48a4f0: D3DXMatrixPerspectiveFovLH(fov * 0.01745329238 (0x6202f0), width / height, near, far)), sets it (SetTransform 3) and, when the display exists (+0xc600), passes the projection, view and world to display_scene_effects_set_transforms@0x450a80. The manager's constructor (0x499e60, from engine_ctx_construct) stores 45, 1 and 1000." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "field of view, degrees"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "near plane"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "far plane"
+observed_types = ["imm"]
+access = ["read-float"]
 
 [[opcode]]
 op = 0x33e
@@ -14904,14 +15580,49 @@ argc = 5
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB1F"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "rotate-model-axis"
+category = "draw"
+summary = "(handle)(axis x)(axis y)(axis z)(degrees) - multiplies the model's rotation on the right by a rotation about the axis, so rotations add up until op 0x334."
+details = "Port: VirtualMachine.OpRotateModelAxis, GfxState.RotateModelAxis. The port keeps the model in the graphics native's model map (Model/GfxState.Models.cs) and does not draw it (docs/backlog.md, 'The models are not drawn (AGE 4.43B)'). docs/engine-re.md, 'The models'."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler and worker", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x33e_rotate_model_axis@0x426560 reads operands 2 to 5 as floats and calls gfx_model_rotate_axis@0x49d960, which builds D3DXMatrixRotationAxis(axis, degrees * pi / 180) (0x4ab862; pi as a float at 0x61d818, 180 at 0x61cfa8), then gfx_model_get_or_create@0x499b70 makes the handle's 143-dword record (gfx_model_record_init@0x48cd50) in the manager's model map (+0x43c) when it has none, sets +0x4c = 1 and +0x1fc = +0x1fc * the rotation (matrix4_multiply)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "handle"
+observed_types = ["l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "axis x"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "axis y"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "axis z"
+observed_types = ["imm"]
+access = ["read-float"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "degrees"
+observed_types = ["l-int", "l-float"]
+access = ["read-float"]
 
 [[opcode]]
 op = 0x33f
@@ -14920,14 +15631,37 @@ argc = 3
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0043AB20"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-3d-effect-blend-color"
+category = "draw"
+summary = "(blend mode)(alpha)(rgb) - the blend the display's three 3D effects are drawn with (1 additive, 2 one and zero, 3 reverse subtract, any other value alpha), and the colour the leaves are multiplied by. A negative alpha or RGB takes it from the colour of the retained object whose handle is the first operand."
+details = "The port keeps both in Scene3DState (EffectBlendMode, LeafColorArgb) and lowers the effects with them (Natives/Graphics.Scene3DLowering.cs). 魔導巧殻's TITLE.BIN draws its leaves additive in white."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "魔導巧殻 SYS4443 Ghidra /koukaku/4.43B and the complete 魔導巧殻 catalog", scope = "SYS4443 handler, the effects' draw and the display's constructor", profile_ids = ["koukaku"], engine_revisions = ["SYS4443"], confidence = "high", text = "op_0x33f_set_scene_effect_blend_color@0x4265f0 caps operand 2 at 0xff, takes a negative alpha or RGB from gfx_object_get_color@0x49c8f0 (operand 1's object colour, -1 for a handle with no object), and stores operand 1 at the display's (ctx+0x5af1c) +0x4ec and the packed colour at +0x4f0. display_scene_effects_at_handle@0x450ec0 sets D3DRS_SRCBLEND and DESTBLEND by +0x4ec (1: SRCALPHA, ONE; 2: ONE, ZERO; 3: BLENDOP 3, then SRCALPHA, ONE; else SRCALPHA, INVSRCALPHA) for the rain, the snow and the leaves, and passes +0x4f0 to the leaf effect's draw (vtable +0x14, 0x474970), which multiplies each leaf's colour by it over 255, alpha times the leaf's fade (0x4747d0). The constructor 0x450980 sets 0 and 0xffffffff. TITLE.BIN runs it once with (1, 0xff, 0xffffff)." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "blend mode, and the handle a negative colour is taken from"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "alpha"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "RGB"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x340

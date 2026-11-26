@@ -173,6 +173,30 @@ public sealed class EngineBuildTests
         Assert.Equal("display:VirtualFullScreenType=0", names[names.IndexOf("display:LimitAero=0") + 1]);
     }
 
+    /// <summary>4.43B's changes are the real rows of its triage (docs/engine-re.md, "Arterial against 魔導巧殻,
+    /// triaged") that are ported: the ruby's raise in RubyShiftMode 2, the layout publishers' single growth in effect
+    /// mode 3, the camera handing the 3D effects its view at once, and the settings key MessageFade.</summary>
+    [Fact]
+    public void FourFortyThreeBIsFourThirtyEightDPlusItsChanges()
+    {
+        EngineRules parent = EngineBuilds.Age438D.Rules, child = EngineBuilds.Age443B.Rules;
+        Assert.Equal(parent.Text with
+        {
+            Ruby = RubyRule.ShiftModesRaisedByTopPadding,
+            LayoutPublishersGrowOnce = true,
+        }, child.Text);
+        Assert.Equal(parent.Gfx with { CameraHandsEffectsTheView = true }, child.Gfx);
+        Assert.Equal(parent.Audio, child.Audio);
+        Assert.Equal(parent.Shell, child.Shell);
+        // engine_settings_load@0x480c50 binds message:MessageFade, registered 0, after MessageSpeed.
+        IReadOnlyList<Sys4RegIniKey> keys = child.Settings.BoundKeys;
+        Assert.Equal(parent.Settings.BoundKeys, keys.Where(key => key.Key != "MessageFade"));
+        List<string> names = keys.Select(key => $"{key.Section}:{key.Key}={key.Default}").ToList();
+        Assert.Equal(["message:MessageSpeed=5", "message:MessageFade=0", "message:MesWinAlpha=8"],
+            names.Skip(names.IndexOf("message:MessageSpeed=5")).Take(3));
+        Assert.Equal("443B", child.Saves.VersionStamp);
+    }
+
     [Fact]
     public void AVmGivenNoBuildRunsTheBuildOfItsTablesAbi()
     {
