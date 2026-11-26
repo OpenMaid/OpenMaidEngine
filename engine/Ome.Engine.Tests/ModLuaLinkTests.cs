@@ -1733,6 +1733,8 @@ public sealed class ModLuaLinkTests : IDisposable
         new("arterial", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4438"), EngineBuilds.Age438D);
     private static readonly InstalledGame Verita =
         new("verita", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4424"), EngineBuilds.Age424N);
+    private static readonly InstalledGame Zero =
+        new("bg0", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4415"), EngineBuilds.Age415D);
 
     /// <summary>The game's install, the one docs/modding/games/&lt;game&gt;.md lists, with the script provider its
     /// scripts' calls resolve through.</summary>
@@ -1894,5 +1896,143 @@ public sealed class ModLuaLinkTests : IDisposable
         var (session, log) = RunInit2(Verita, linked, scripts);
         Assert.Contains("counts 600 999 0", log);
         Assert.Equal(1, session.Globals[0x10f227 + 1001]);   // item_obtained_flags: the item is marked obtained
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "bg0")]
+    public void ZerosBaseModRaisesEachOfItsEventsAtTheInstalledScripts()
+    {
+        // The M3 gate (docs/adding-a-game.md): each event binds on the install the guide lists.
+        var (linkBase, scripts) = InstallBase(Zero);
+        string[] events = ["data.layered", "data.ready", "world.loaded", "town.loaded", "map.loaded", "experience.award"];
+        // Item 1011, 断罪の投石紐, is one only $1$ITINIT writes, which the append's AUTORUN runs after the base tables.
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(Zero, events,
+            "maid.log.info(e.event .. \" \" .. tostring(game.table(\"item_names\")[1011]))"), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        Assert.DoesNotContain(linked.Report.Lines, line => line.Message.Contains("not raised in this install", StringComparison.Ordinal));
+        Assert.Equal([0x4c, 0xf1], Offsets(linked, "INIT2"));
+        Assert.Equal([0x6a], Offsets(linked, "ALLMAP"));
+        Assert.Equal([0x1c], Offsets(linked, "SHOWALLMAP"));
+        Assert.Equal([0x6d], Offsets(linked, "TOWN"));
+        Assert.Equal([0x8b], Offsets(linked, "FIELD"));
+        Assert.Equal([0x16], Offsets(linked, "ADDEXP"));
+
+        // The award's amount is the argument cell ADDEXP reads, which its caller sets.
+        GameEvent award = linked.Lua.Stack.Event("bg0.experience.award")!;
+        Assert.Equal(["amount", "character", "level"], award.Fields.Select(field => field.Name));
+        Assert.Equal(new FieldLocation.Global(CellKind.Integer, 0x91865, "script_arg_1"), award.Field("amount")!.Location);
+        var level = Assert.IsType<FieldLocation.Element>(award.Field("level")!.Location);
+        Assert.Equal(("character_levels", 0x8b2fe), (level.Table.Name, level.Table.Address));
+        GameEvent world = linked.Lua.Stack.Event("bg0.world.loaded")!;
+        Assert.Equal(["bg0.world.after_area_loaders", "bg0.world.after_shown_area_loaders"], world.Points);
+        Assert.Equal(["world"], world.Fields.Select(field => field.Name));
+        Assert.Equal(["town"], linked.Lua.Stack.Event("bg0.town.loaded")!.Fields.Select(field => field.Name));
+        Assert.Equal(["map"], linked.Lua.Stack.Event("bg0.map.loaded")!.Fields.Select(field => field.Name));
+
+        // At boot each data event comes once, after the append's AUTORUN.
+        var (_, log) = RunInit2(Zero, linked, scripts);
+        Assert.Equal(["bg0.data.layered 断罪の投石紐", "bg0.data.ready 断罪の投石紐"],
+                     log.Where(text => text.StartsWith("bg0.", StringComparison.Ordinal)));
+    }
+
+    /// <summary>A data file of the game's kind, <c>data/edit.toml</c> holding <paramref name="document"/>, in a package
+    /// that requires the base mod.</summary>
+    private ModPackage DataFile(InstalledGame game, string document)
+    {
+        string folder = Path.Combine(_root, $"{game.Id}-data-" + Guid.NewGuid().ToString("N")[..6]);
+        Directory.CreateDirectory(Path.Combine(folder, "data"));
+        File.WriteAllText(Path.Combine(folder, "manifest.toml"),
+            $"omp = 4\nid = \"{game.Id}-data\"\nname = \"{game.Id}-data\"\nversion = \"1.0.0\"\n\n"
+            + $"[game]\nprofile = \"{game.Id}\"\ntarget = \"extended\"\n\n"
+            + $"[[requires]]\nid = \"{game.Id}-base\"\nversion = \">=1.0, <2\"\n\n"
+            + $"[[data]]\nkind = \"{game.Id}.tables\"\nfile = \"edit.toml\"\n");
+        File.WriteAllText(Path.Combine(folder, "data", "edit.toml"), document);
+        ModPackage mod = ModPackage.Open(folder);
+        _opened.Add(mod);
+        return mod;
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "bg0")]
+    public void ZerosWorldAndTownPartsAreWrittenAfterTheirLoaders()
+    {
+        // A data file's world map and town parts. Area 1 of the first world, 廃都ノヒア (AMINIT@0x1e3), and site 1 of
+        // town 50, 街を出る (SIINIT@0x3b), are records the loaders write, so the edit holds only if it comes after them.
+        // ALLMAP and TOWN run SCJUMP first, which plays the first scene whose story flag is not set: after the boot every
+        // flag is set, so no scene is due, and each script runs its loader and stops in its menu at the step budget.
+        // SHOWALLMAP, which a scene calls to show a world map, runs AMINIT for the world in script_arg_1 and raises
+        // world.loaded too; it ends at once, the headless waits answering its click.
+        var (linkBase, scripts) = InstallBase(Zero);
+        ModPackage file = DataFile(Zero, "[world.1.area.1]\nname = \"[MOD] area\"\n\n[town.50.site.1]\nname = \"[MOD] site\"\n");
+        ModLinkResult linked = ModLinker.Link(linkBase, [file, .. Subscriber(Zero, ["world.loaded", "town.loaded"],
+            "maid.log.info(e.event .. \" \" .. tostring(e.event == \"bg0.world.loaded\" and e.world or e.town))")], []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+
+        var session = new GameSession();
+        List<string> log = [];
+        void Run(string name, int maxSteps)
+        {
+            using var scripting = new Scripting(new ScriptMemory(), new ScriptingSetup
+            {
+                Runtime = _runtime, Stack = linked.Lua.Stack, Plan = linked.Lua.Plan, Errors = LuaErrorPolicy.Halt,
+            });
+            session.RunScene(scripts.RequireByName(name), Zero.Table, new HeadlessWaits(), new VmOptions(MaxSteps: maxSteps),
+                             provider: scripts, build: Zero.Build, scripting: scripting);
+            Assert.DoesNotContain(scripting.RecentLog, line => line.Contains(" error ", StringComparison.Ordinal));
+            log.AddRange(scripting.RecentLog.Select(line => line[(line.LastIndexOf(": ", StringComparison.Ordinal) + 2)..])
+                                            .Where(text => text.StartsWith("bg0.", StringComparison.Ordinal)));
+        }
+
+        Run("INIT2.BIN", 5_000_000);
+        for (int flag = 0; flag < 10000; flag++) session.Globals[0x470 + flag] = 1;   // story_flags
+        session.Globals[0x30b0] = 1;                                                    // story_part: the first world
+        session.Globals[0x0] = 2;                                                       // system_mode: the world map
+        Run("ALLMAP.BIN", 2_000_000);
+        Assert.Equal("[MOD] area", session.GlobalStrings[0x199e + 1]);                  // area_names[1]
+        Assert.Equal("マクルの街", session.GlobalStrings[0x199e + 50]);                  // AMINIT's own, unchanged
+
+        session.Globals[0x30b2] = 50;                                                   // current_place_id
+        session.Globals[0x0] = 5;                                                       // system_mode: a town
+        Run("TOWN.BIN", 2_000_000);
+        Assert.Equal("[MOD] site", session.GlobalStrings[0x1a02 + 1]);                  // town_site_names[1]
+        Assert.Equal("大聖堂", session.GlobalStrings[0x1a02 + 2]);                       // SIINIT's own, unchanged
+
+        session.GlobalStrings[0x199e + 1] = "";
+        session.Globals[0x91865] = 1;                                                   // script_arg_1: the world
+        session.Globals[0x91866] = 1;                                                   // script_arg_2: the area
+        Run("SHOWALLMAP.BIN", 2_000_000);
+        Assert.Equal("[MOD] area", session.GlobalStrings[0x199e + 1]);
+        Assert.Equal(50, session.Globals[0x30b2]);                                      // put back as it was
+        Assert.Equal(["bg0.world.loaded 1", "bg0.town.loaded 50", "bg0.world.loaded 1"], log);
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "bg0")]
+    public void ZerosHelperRunsTheGamesAddItemAndPutsItsCellsBack()
+    {
+        // Item 101, 治癒の水・小: two gifts of 600 keep 999, and taking 999 leaves none. Item 14, 攻撃陣形の書, is a key
+        // item (item_classes 1): holding it sets its story flag, story_flags[1900 + 14], and teaches formation 2, bit 2
+        // of formation_learned_mask (INIT2 sets formation 1's itself, at a game with none).
+        var (linkBase, scripts) = InstallBase(Zero);
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(Zero, ["data.ready"], """
+            local names = { "current_item", "item_count_change" }
+            local before = {}
+            for i, name in ipairs(names) do before[i] = game.g[name] end
+            local first, second = game.give_item(101, 600), game.give_item(101, 600)
+            local taken = game.give_item(101, -999)
+            maid.log.info("counts " .. first .. " " .. second .. " " .. taken .. " key " .. game.give_item(14))
+            for i, name in ipairs(names) do
+                if game.g[name] ~= before[i] then error(name .. " changed") end
+            end
+            """), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        var (session, log) = RunInit2(Zero, linked, scripts);
+        Assert.Contains("counts 600 999 0 key 1", log);
+        Assert.Equal(1, session.Globals[0x88a3a + 101]);     // item_obtained_flags: the item is marked obtained
+        Assert.Equal(1, session.Globals[0x470 + 1900 + 14]); // item_key_held_flags[14]
+        Assert.Equal(0b110, session.Globals[0x8b226]);       // formation_learned_mask: formations 1 and 2
     }
 }

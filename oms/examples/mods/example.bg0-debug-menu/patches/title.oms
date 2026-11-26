@@ -1,0 +1,14 @@
+oms 1
+// 戦女神ZERO's title builds a debug menu (デバッグメニュー) right after its Quit ends the game (throw-exit-request at
+// 0x3de), so no run reaches it. Deleting that instruction makes Quit open the menu instead. Its entries: ＡＤＶパート and
+// ＡＤＶパート（回想登録） pick a scene by file; ＡＤＶデバッグ and ＡＤＶデバッグ（ＰＧ１用） play DEBUGADV and DEBUGADV2;
+// 迷宮マップ runs DEBUGMAP, which sets the story part to 4 and starts the field on map 23; 迷宮マップ（ＰＧ１用） runs
+// DEBUGMAP2, which joins the party, gives character 53 experience through ADDEXP and starts the field on map 1;
+// 迷宮マップ（ＰＧ２用） runs DEBUGMAP3; 戦闘 runs DEBUGBTL, then a battle; 戦闘アニメ runs DEBUGANIME; ショップ runs
+// DEBUGMAP2, adds 1,000 money and plays scene 2000; キャンセル goes back. Each entry that starts a mode sets it
+// (system_mode: 1 a scene, 3 a field map, 4 a battle) and leaves the title through its common exit, so SYSTEM4 starts
+// that mode.
+patch "TITLE.BIN" fingerprint "sha256:133ae626e46643eefdd838ebeebfaf851c5be779e5adc6a16ab9b7ff5707e27c"
+
+replace site 0x3de {
+}

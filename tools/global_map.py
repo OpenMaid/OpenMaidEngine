@@ -41,6 +41,9 @@ def from_init_tables():
     """Label name/desc/field base addresses from the extracted *INIT JSONs."""
     labels = {}                              # addr -> (label, table, confidence, kind)
     for jf in sorted(DATA.glob("*.json")):
+        # init_layout.py --write puts its <TABLE>.layout.json beside them: layouts, with no records to label.
+        if jf.name.endswith(".layout.json"):
+            continue
         try:
             d = json.loads(jf.read_text(encoding="utf-8"))
         except Exception:

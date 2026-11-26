@@ -1,0 +1,4626 @@
+# vm-map/globals-bg0.toml -- CANONICAL living global-variable registry for 戦女神ZERO
+# (bg0, SYS4415; hand-edited). Global addresses are per game, so this is separate from the
+# other games' registries; the schema is identical (the type implies the bank: `string...` entries are
+# string-bank cells, everything else integer cells).
+# Generated artifacts (build/games/bg0/globals.json, docs/global-reference-bg0.md) come from
+# this file via `tools/globals_build.py --game bg0 --build`. Do not edit those.
+# Layouts and evidence: docs/bg0-data-tables.md. Only what is understood has a name here.
+[meta]
+note = "Curated bg0 global addresses. Names started 2026-11-25 from the ADV prelude (mods/bg0-base/oms/adv.oms) and the table layouts of tools/init_layout.py."
+
+
+[[global]]
+address = "0x2fd0"
+name = "adv_speaker_id"
+category = "index-pointer"
+type = "int"
+usage = "The page's speaker: an index into CNINIT's names (speaker_names), or -1 for narration. Every spoken page sets it, draws the name plate from it (SC0470@0x00b81) and mutes the voice when it is below 0 or its voice setting's switch is set (SC0470@0x00bb8..0x00bdf); a page without a speaker sets -1 (`$1$MPEV49F0101@0x00194`)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2fd1"
+name = "adv_page_has_text"
+category = "ui-toggle"
+type = "int"
+usage = "1 once a page has text: every dialogue page sets it first (142 scripts, SC0470@0x00460), and the special mode's event scripts clear it (`$1$MPEV49F0101@0x005ee`)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x2be7"
+name = "voice_mute_switches"
+category = "ui-toggle"
+type = "int[16]"
+usage = "Saved, and kept in the shared profile: a switch per voice setting (CVINIT's 0 to 15), 1 to mute it. INITCONFIG@0x3b clears them and stores them (@0x5d); the Option screen sets one and stores it (CONFIG@0xeb0..0xeea). A scene mutes the next voice when the speaker's is set, G[0x2be7 + unit_voice_settings[speaker_voice_units[adv_speaker_id]]] (SC0470@0xbd8, SC0000@0xeaa); BTL (@0x19aa), HISTORY and ANIME read it by a unit's setting."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8fd3d"
+name = "speaker_heard_flags"
+category = "data-table"
+type = "int[1000]"
+usage = "Kept in the shared profile: 1 once the speaker (a CNINIT id, the same number as its unit) has talked. Every spoken page sets it and stores it (SC0470@0x00b62..0x00b75); the 設定 voice page shows a setting's row once its unit is heard (CONFIG@0x010e7), and the 人物 book names a profile so (INFO2@0x00876)."
+source = "investigation"
+confidence = "high"
+
+
+# ---- Shared script arguments ----
+
+[[global]]
+address = "0x8b158"
+name = "character_arg_id"
+category = "index-pointer"
+type = "int"
+usage = "The character the shared character scripts work on: ADDEXP, ADDSKILL, BTLMENU, CALCLVUP, CALCNEXTEXP, CALCREVISE, LEAVECH, RETIRECH, SETCH and USESKILL read it and never set it. A caller sets it before running them (83 scripts do), and INIT2@0xb9..0xeb loops it over characters 1 to 99 for CALCREVISE. It lies below the saved prefix, so a save holds its last value."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91865"
+name = "script_arg_1"
+category = "index-pointer"
+type = "int"
+usage = "The first argument a script passes to the one it calls, set before call-script. ADDHP, ADDMP and ADDTP (@0x1), GETMAPEVF (@0x5), GETMONEYMES (@0x378) and ADDEXP (@0x16) read their input from it; SHOWALLMAP takes it as the story part whose world map it shows (SHOWALLMAP@0xf), restoring the old part at @0x375; ADDEXP passes CALCLVUP a character's new level in it (ADDEXP@0x114, CALCLVUP@0x13)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91866"
+name = "script_arg_2"
+category = "index-pointer"
+type = "int"
+usage = "The second argument, set beside script_arg_1. GETMAPEVF reads it (@0xa); ADDEXP passes CALCLVUP the level before in it (ADDEXP@0x119), and CALCLVUP takes script_arg_1 - script_arg_2 (@0x18); SHOWALLMAP takes it as the area to highlight with its area_pictures column 1 (SHOWALLMAP@0x14, @0xb2), standing in current_place_id until @0x375."
+source = "investigation"
+confidence = "high"
+
+
+# ==== Units, characters and speakers: EBINIT, CBINIT, CHINIT, CNINIT, CVINIT, CIINIT (docs/bg0-data-tables.md) ====
+
+[[global]]
+address = "0x9fe"
+name = "unit_names"
+category = "string-table"
+type = "string[1000]"
+usage = "EBINIT: the name the game shows (331 scripts; INFO3@0x01011)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x616"
+name = "unit_full_names"
+category = "string-table"
+type = "string[1000]"
+usage = "EBINIT: the full name (セリカ・シルフィル). No bg0 script reads it."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xde6"
+name = "unit_epithets"
+category = "string-table"
+type = "string[1000]"
+usage = "EBINIT: the epithet shown with the name (バリハルト魔法剣士; CHANGECH, CHMODE1 to CHMODE4, DRAWCHP)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x11ce"
+name = "unit_description_lines"
+category = "string-table"
+type = "string[1000][2]"
+usage = "EBINIT: two lines on how the unit fights, drawn by the bestiary (INFO3@0x01185, @0x01199) and DRAWENP."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9540d"
+name = "unit_voice_clips"
+category = "data-table"
+type = "int[1000][30]"
+columns = { "18" = "fall" }
+usage = "EBINIT: the unit's voice clips, columns 0 to 26 written. BTL@0x019d2 plays column 17, BTL@0x03bf0 column 21, CHANGECH@0x00b80 column 20; BTL@0x03863 plays column 18 when a slot leaves the battle (BTL@0x036ef). BTL@0x019aa mutes a clip when G[0x2be7 + unit_voice_settings[speaker_voice_units[unit]]] is set. The init_layout row G[0x95402] stride 30 is this array seen 11 cells early."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9c93d"
+name = "unit_pictures"
+category = "data-table"
+type = "int[1000][3]"
+columns = { "0" = "portrait" }
+usage = "EBINIT: three pictures. Column 0 is the bestiary portrait (INFO3@0x00bfb, surface 0x7f) and a battle picture (BTL@0x06069, surface 0x30); column 1 BTL@0x05f6b (surface 0x2f). Columns 1 and 2 not decoded."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9d4f5"
+name = "unit_battle_sprites"
+category = "data-table"
+type = "int[1000][10]"
+usage = "EBINIT: battle sprite sheets. BTL@0x01cda loads column 0 into surface 0x34 + slot; BTL@0x01610, @0x016e4, @0x01723 read columns 3, 5, 7; DRAWCHP@0x00177 draws column 9 instead of 0 when the character's G[0x8c42e + 40 x character + 3] is set. Only the 26 party units fill columns 1 to 9."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9fc05"
+name = "unit_status_portraits"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the status screen's portrait of a party unit (DRAWCHP@0x00150, surface 0x85)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9ffed"
+name = "unit_book_sort_keys"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the bestiary's order; INFO3@0x00706 sorts by it and INFO3@0x00738 lists only units above 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa03d5"
+name = "unit_fs_temperaments"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: how the unit's FS (戦意) moves. CALCDAMAGE@0x009a6: 1 gives an FS change G[0x952aa] of -2, 2 gives -1, others +1; BTL@0x0250b to 0x0266a scales other FS changes by it. Every unit has 3."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xa07bd"
+name = "unit_kinds"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 2 for a party human, 3 for a summoned partner, 1 for the rest. CHANGECHAPTER@0x00466 and LEAVECH@0x00142 run UNSUMMON for 3; UNITECH@0x002b7 sets character_flags bit 2 for 3; CHMODE1, CHMODE2, CHMODE3 and CHANGECH@0x00c9c pick a picture at (kind - 2) x 45."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xa0ba5"
+name = "unit_boss_classes"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 1 to 5 for a boss. BTL@0x00100 to 0x0017b plays battle music 0x17 + the highest class among the enemy slots; CALCILL@0x0030b makes actions with G[0x23baad] = 1 skip a target with a class."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xa0f8d"
+name = "unit_sizes"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the unit's size, 1 to 5. SETENP@0x004ca places it on a 5-wide grid; SELTARGET@0x00b33 and TACTICS@0x00c9a scale its sprite by it; INFO3@0x00bce moves the bestiary sprite 24 down per size."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xa175d"
+name = "unit_defense_elements"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the defense element, shown as GS[0x8028 + element] (INFO3@0x01156); SETEN@0x0082b copies it into the slot's G[0x389701] when the armor gives none."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa1b45"
+name = "unit_initial_weapons"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the starting weapon, an item id. SETEN@0x0049b puts it in the slot's G[0x38962f]; UNITECH@0x0026f copies it into character_weapons."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa1f2d"
+name = "unit_initial_shields"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the starting shield, an item id (2801 小さな円形の盾). SETEN@0x004b3 puts it in G[0x38964d]; UNITECH@0x00282 copies it into character_shields."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa2315"
+name = "unit_initial_armors"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the starting armor, an item id. SETEN@0x004a7 puts it in G[0x38966b]; UNITECH@0x00295 copies it into character_armors."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa26fd"
+name = "unit_initial_accessories"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the starting accessory, an item id. SETEN@0x004bf puts it in G[0x389689]; UNITECH@0x002a8 copies it into character_accessories."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa2ae5"
+name = "unit_equip_kind_flags"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the item kinds the unit may equip, bit G[0x12cabd + item] (CHMODE1@0x018ce, SHOP@0x03a1c)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xa2ecd"
+name = "unit_skill_categories"
+category = "data-table"
+type = "int[1000][9]"
+usage = "EBINIT: the unit's skill categories, item category ids named by GS[0x803c + id] (小型武器, 魔術・電撃, 必殺・飛燕). ADDSKILL@0x00031, CHECKACT@0x00069, CHMODE2@0x014d1 and BTL@0x02b77 match a skill's category G[0x12f1cd] against them."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa51f5"
+name = "unit_skill_category_open_flags"
+category = "data-table"
+type = "int[1000][9]"
+usage = "EBINIT: 1 when the category is open as the character joins; UNITECH@0x001cc then copies unit_skill_start_ranks, and UNITECH@0x0022c clears the rank of a category with 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa751d"
+name = "unit_skill_start_ranks"
+category = "data-table"
+type = "int[1000][9]"
+usage = "EBINIT: the category's starting rank; UNITECH@0x001de copies it into character_skill_ranks."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xa9845"
+name = "unit_skill_max_ranks"
+category = "data-table"
+type = "int[1000][9]"
+usage = "EBINIT: the category's highest rank; BTL@0x06e25 raises character_skill_ranks only below it, with a 12/10 threshold while it is below 7 (BTL@0x06e87)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xabb6d"
+name = "unit_support_effects"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the support effect (支援効果) the unit gives, named by GS[0x7ee8 + id] (CHMODE2@0x01205, @0x02651); BTL@0x04bed counts the party's effects in G[0x95311 + id]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xad2dd"
+name = "unit_base_levels"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the level of the base stats (SETEN@0x00178, @0x001c0); UNITECH@0x0008d makes it a joining character's level."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xad6c5"
+name = "unit_max_levels"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the highest level SETEN gives the unit as an enemy (SETEN@0x00157)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xadaad"
+name = "unit_level_catchup_divisors"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the divisor of an enemy's level catch-up toward the party (SETEN@0x00068 to 0x00107)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xade95"
+name = "unit_starting_fs"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: an enemy slot's starting FS (SETEN@0x00a49, into G[0x3893f5]); the bestiary shows it (INFO3@0x00d06)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xae27d"
+name = "unit_max_fs"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the maximum FS, at least 2. SETEN@0x001da (into G[0x389413]), SETCH@0x00047 and CALCREVISE@0x00337 read it live."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xae665"
+name = "unit_max_hp"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max HP x100 at unit_base_levels. SETEN@0x001e6 sets the slot's G[0x38944f] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b48e]. CALCREVISE adds the items' bonus."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb1d15"
+name = "unit_max_hp_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max HP growth x100 per level; SETEN@0x001e6 uses it, and CALCLVUP@0x0001f adds it to the saved G[0x8b48e] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xaea4d"
+name = "unit_max_mp"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max MP x100 at unit_base_levels. SETEN@0x00210 sets the slot's G[0x38948b] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b556]. CALCREVISE adds the items' bonus."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb20fd"
+name = "unit_max_mp_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max MP growth x100 per level; SETEN@0x00210 uses it, and CALCLVUP@0x00042 adds it to the saved G[0x8b556] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xaee35"
+name = "unit_max_tp"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max TP x100 at unit_base_levels. SETEN@0x0023a sets the slot's G[0x3894c7] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b61e]. CALCREVISE adds the items' bonus."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb24e5"
+name = "unit_max_tp_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: max TP growth x100 per level; SETEN@0x0023a uses it, and CALCLVUP@0x00065 adds it to the saved G[0x8b61e] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xaf21d"
+name = "unit_attacks"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 攻撃力 x100 at unit_base_levels. SETEN@0x00264 sets the slot's G[0x3894e5] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b682]. 攻撃力 on INFO3@0x0108a."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb28cd"
+name = "unit_attack_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 攻撃力 growth x100 per level; SETEN@0x00264 uses it, and CALCLVUP@0x00088 adds it to the saved G[0x8b682] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xaf605"
+name = "unit_defenses"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 防御力 x100 at unit_base_levels. SETEN@0x0028e sets the slot's G[0x389503] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b6e6]. 防御力 on INFO3@0x010c0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb2cb5"
+name = "unit_defense_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 防御力 growth x100 per level; SETEN@0x0028e uses it, and CALCLVUP@0x000ab adds it to the saved G[0x8b6e6] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xaf9ed"
+name = "unit_magic_attacks"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 魔法攻撃 x100 at unit_base_levels. SETEN@0x0030c sets the slot's G[0x389521] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b74a]. 魔法攻撃 on INFO3@0x010f6."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb309d"
+name = "unit_magic_attack_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 魔法攻撃 growth x100 per level; SETEN@0x0030c uses it, and CALCLVUP@0x000ce adds it to the saved G[0x8b74a] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xafdd5"
+name = "unit_magic_defenses"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 魔法防御 x100 at unit_base_levels. SETEN@0x00336 sets the slot's G[0x38953f] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b7ae]. 魔法防御 on INFO3@0x01111."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb3485"
+name = "unit_magic_defense_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 魔法防御 growth x100 per level; SETEN@0x00336 uses it, and CALCLVUP@0x000f1 adds it to the saved G[0x8b7ae] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb01bd"
+name = "unit_attack_counts"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 攻撃回数 x100 at unit_base_levels. SETEN@0x002b8 sets the slot's G[0x38955d] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b812]. 攻撃回数 on INFO3@0x010a5."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb386d"
+name = "unit_attack_count_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 攻撃回数 growth x100 per level; SETEN@0x002b8 uses it, and CALCLVUP@0x00114 adds it to the saved G[0x8b812] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb05a5"
+name = "unit_defense_counts"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 防御回数 x100 at unit_base_levels. SETEN@0x002e2 sets the slot's G[0x38957b] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b876]. 防御回数 on INFO3@0x010db."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb3c55"
+name = "unit_defense_count_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 防御回数 growth x100 per level; SETEN@0x002e2 uses it, and CALCLVUP@0x00137 adds it to the saved G[0x8b876] for each level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb098d"
+name = "unit_physical_resistances"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 肉体抵抗 x100 at unit_base_levels. SETEN@0x00360 sets the slot's G[0x389599] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b8da]. 地脈の衣 '肉体抵抗が高い' raises it (G[0x3260ad]); CALCILL@0x0038d."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb403d"
+name = "unit_physical_resistance_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 肉体抵抗 growth x100 per level; SETEN@0x00360 uses it, and CALCLVUP@0x0015a adds it to the saved G[0x8b8da] for each level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb0d75"
+name = "unit_mental_resistances"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 精神抵抗 x100 at unit_base_levels. SETEN@0x0038a sets the slot's G[0x3895b7] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b93e]. 魔術師のローブ '精神抵抗+2' raises it (G[0x3287bd]); CALCILL@0x0034b."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb4425"
+name = "unit_mental_resistance_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 精神抵抗 growth x100 per level; SETEN@0x0038a uses it, and CALCLVUP@0x0017d adds it to the saved G[0x8b93e] for each level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb115d"
+name = "unit_physical_speeds"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 肉体戦速 x100 at unit_base_levels. SETEN@0x003b4 sets the slot's G[0x3895d5] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8b9a2]. 剣の耳飾り '肉体戦速+1' raises it (G[0x32aecd]); BTL@0x017dd."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb480d"
+name = "unit_physical_speed_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 肉体戦速 growth x100 per level; SETEN@0x003b4 uses it, and CALCLVUP@0x001a0 adds it to the saved G[0x8b9a2] for each level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb1545"
+name = "unit_mental_speeds"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 精神戦速 x100 at unit_base_levels. SETEN@0x003de sets the slot's G[0x3895f3] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8ba06]. 杖の耳飾り '精神戦速+1' raises it (G[0x32d5dd]); BTL@0x017c7."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb4bf5"
+name = "unit_mental_speed_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 精神戦速 growth x100 per level; SETEN@0x003de uses it, and CALCLVUP@0x001c3 adds it to the saved G[0x8ba06] for each level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb192d"
+name = "unit_luck"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 運 x100 at unit_base_levels. SETEN@0x00408 sets the slot's G[0x389611] to (base + growth x (level - base level)) / 100; UNITECH copies it into G[0x8ba6a]. a hit-chance term in CALCDAMAGE@0x002b6; 神刀フォルトゥナ gives 20."
+source = "investigation"
+confidence = "low"
+
+[[global]]
+address = "0xb4fdd"
+name = "unit_luck_growth"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: 運 growth x100 per level; SETEN@0x00408 uses it, and CALCLVUP@0x001e6 adds it to the saved G[0x8ba6a] for each level gained."
+source = "investigation"
+confidence = "low"
+
+[[global]]
+address = "0xb53c5"
+name = "unit_tactic_routines"
+category = "data-table"
+type = "int[1000][9]"
+usage = "EBINIT: the AI routine for each tactic (作戦), column k for tactic k named GS[0x812f + k + 1] (通常攻撃型 to ランダム型). CHMODE2@0x011d8 lists the set ones; BTL@0x01401 runs RTN with the column of character_tactics (BTL@0x013e6). Enemies fill column 0 only."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb76ed"
+name = "unit_action_ids"
+category = "data-table"
+type = "int[1000][6]"
+usage = "EBINIT: the unit's six actions (item and skill ids); RTN@0x0008b copies them into G[0x3866a7], putting the slot's weapon (or 9999) first when the first is 0."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb8e5d"
+name = "unit_exp_curves"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the experience curve; CALCNEXTEXP@0x0002b gives 200, 215, 225, 235, 250 per level for 1 to 5 and no next level otherwise."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb9245"
+name = "unit_exp_rates"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: a percentage on the next level's experience, 0 for 100 (CALCNEXTEXP@0x000d9). The next level costs curve x level x 124 / 1000 x rate / 100, at least 1."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xb962d"
+name = "unit_exp_rewards"
+category = "data-table"
+type = "int[1000][2]"
+columns = { "0" = "defeated", "1" = "not_defeated" }
+usage = "EBINIT: the experience the battle's pool G[0x952ac] gets from the unit as it leaves the battle: column 0 when its HP G[0x389431] is 0, column 1 otherwise (BTL@0x0374c, @0x0379e, @0x03835). RESULT@0x0068a passes each character's pool to ADDEXP."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xb9dfd"
+name = "unit_money"
+category = "data-table"
+type = "int[1000]"
+usage = "EBINIT: the money the unit gives; RESULT@0x00433 sums it over the defeated slots and RESULT@0x011cf adds it to 所持金 G[0x8b159]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xba1e5"
+name = "unit_drop_chances"
+category = "data-table"
+type = "int[1000][5]"
+usage = "EBINIT: each drop's chance in percent; RESULT@0x0049b takes the first drop whose chance beats a draw of 0 to 99."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xbb56d"
+name = "unit_drop_items"
+category = "data-table"
+type = "int[1000][5]"
+usage = "EBINIT: the drop items (item ids); RESULT@0x00489, @0x00509, given by ADDITEM at RESULT@0x011c9."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91441"
+name = "unit_voice_settings"
+category = "data-table"
+type = "int[1000]"
+usage = "CVINIT, by unit: the voice setting of a voice unit (a speaker_voice_units value). SC0470@0x00bca mutes a line when G[0x2be7 + this] is set; BTL@0x019aa likewise."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xe0"
+name = "speaker_names"
+category = "string-table"
+type = "string[1000]"
+usage = "CNINIT: the speaker's name plate (SC0470@0x00b81, HISTORY@0x0105f); the table's leader."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91059"
+name = "speaker_voice_units"
+category = "data-table"
+type = "int[1000]"
+usage = "CNINIT: the unit whose voice setting the speaker uses (SC0470@0x00bca to 0x00bdf); battle reads it by unit (BTL@0x019aa, ANIME@0x00cf0, CHANGECH@0x00b58, RESULT@0x01134)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91847"
+name = "voice_setting_samples"
+category = "data-table"
+type = "int[30]"
+usage = "CVINIT: the sample voice clip the 設定 voice page plays (CONFIG@0x00e90); the table's leader."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x91829"
+name = "voice_setting_units"
+category = "data-table"
+type = "int[30]"
+usage = "CVINIT: the unit whose heard flag G[0x8fd3d + unit] shows the row (CONFIG@0x010e7); setting 0 has none."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd41"
+name = "profile_unit_ids"
+category = "data-table"
+type = "int[100]"
+usage = "CIINIT: the profile's unit; INFO2@0x00844 lists profiles with one, and INFO2@0x00876 shows the name only once the unit's heard flag G[0x8fd3d + unit] is set; the table's leader."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8177"
+name = "profile_names"
+category = "string-table"
+type = "string[100]"
+usage = "CIINIT: the profile's name (INFO2@0x00c45, @0x00c8b)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acda5"
+name = "profile_pictures"
+category = "data-table"
+type = "int[100]"
+usage = "CIINIT: the profile's picture (INFO2@0x00e0f)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3ace09"
+name = "profile_picture_x"
+category = "data-table"
+type = "int[100]"
+usage = "CIINIT: the picture's x offset (INFO2@0x00e40)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3ace6d"
+name = "profile_picture_y"
+category = "data-table"
+type = "int[100]"
+usage = "CIINIT: the picture's y offset (INFO2@0x00e53)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd40"
+name = "profile_shown"
+category = "index-pointer"
+type = "int"
+usage = "The CIINIT profile the 人物 book shows (INFO2@0x00de7); CIMES@0x00006 branches on it and writes its text, which INFO2@0x00eae runs. Not saved."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x95376"
+name = "lead_strength_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 筋力; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 0 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x95380"
+name = "lead_strength_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 筋力 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9538a"
+name = "lead_vitality_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 体力; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 1 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x95394"
+name = "lead_vitality_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 体力 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9539e"
+name = "lead_agility_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 敏捷性; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 2 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x953a8"
+name = "lead_agility_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 敏捷性 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x953b2"
+name = "lead_dexterity_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 器用度; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 3 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x953bc"
+name = "lead_dexterity_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 器用度 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x953c6"
+name = "lead_intelligence_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 知性; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 4 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x953d0"
+name = "lead_intelligence_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 知性 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x953da"
+name = "lead_spirit_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 精神力; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 5 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x953e4"
+name = "lead_spirit_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 精神力 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x953ee"
+name = "lead_charm_minimums"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by セリカ's unit lead_unit_id: the lowest 魅力; CHANGECHAPTER@0x00045 to 0x00127 raises lead_parameters column 6 to it at a chapter change."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x953f8"
+name = "lead_charm_cost_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on the cost of raising 魅力 (CHMODE2@0x00298 to 0x002e0, used at CHMODE2@0x01758)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x95402"
+name = "lead_pool_rates"
+category = "data-table"
+type = "int[10]"
+usage = "CBINIT, by form: a percentage on セリカ's HP, MP and TP (CALCCHP@0x00244, @0x00298, @0x002d7); CHANGECHAPTER@0x0012c copies it into lead_saved_pool_rate."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b228"
+name = "lead_parameters"
+category = "data-table"
+type = "int[7]"
+columns = { "0" = "strength", "1" = "vitality", "2" = "agility", "3" = "dexterity", "4" = "intelligence", "5" = "spirit", "6" = "charm" }
+usage = "Saved: セリカ's seven parameters (labels on CHMODE2@0x01adf to 0x01b39). CALCCHP computes his level G[0x8b2ff] = (sum - 1) / 14 + 1 and his HP, MP and TP from them."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b227"
+name = "lead_saved_pool_rate"
+category = "data-table"
+type = "int"
+usage = "Saved: the copy of lead_pool_rates for the current form (CHANGECHAPTER@0x0012c)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8b236"
+name = "character_unit_ids"
+category = "data-table"
+type = "int[100]"
+usage = "Saved. CHINIT (at every boot, INIT@0x00000): the character's EBINIT unit (UNITECH@0x00001, CALCREVISE@0x00330, DRAWCHP@0x0012f and 339 more). CHANGECHAPTER@0x00040 sets セリカ's (character 1) to his form G[0x30b1]; a load overwrites CHINIT's values, so a change reaches only new games."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b1c1"
+name = "character_flags"
+category = "data-table"
+type = "int[100]"
+usage = "Saved. Bit 0: has joined (UNITECH@0x00057; INIT2@0x000b9 runs CALCREVISE for these). Bit 1: in the party (UNITECH@0x0031e sets it, LEAVECH@0x000a8 clears it, ADDEXP@0x00008 tests it). Bit 2: set for a kind-3 unit (UNITECH@0x002d3, UNSUMMON@0x00007), not decoded."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b2fe"
+name = "character_levels"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the level; UNITECH@0x0008d sets it to unit_base_levels; CALCLVUP and CALCNEXTEXP@0x0000c read it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b362"
+name = "character_experience"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the experience; UNITECH@0x00099 zeroes it, ADDEXP@0x00027 adds to it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b42a"
+name = "character_hp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: current HP in points, capped by the derived max (CALCREVISE@0x0013d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b48e"
+name = "character_max_hp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: max HP x100 before item bonuses (CALCREVISE)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b4f2"
+name = "character_mp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: current MP in points (CALCREVISE)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8b556"
+name = "character_max_mp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: max MP x100 before item bonuses (CALCREVISE)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b5ba"
+name = "character_tp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: current TP in points (CALCREVISE)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8b61e"
+name = "character_max_tp"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: max TP x100 before item bonuses (CALCREVISE)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b682"
+name = "character_attacks"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 攻撃力 x100; UNITECH copies unit_attacks, CALCLVUP@0x00088 adds unit_attack_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b6e6"
+name = "character_defenses"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 防御力 x100; UNITECH copies unit_defenses, CALCLVUP@0x000ab adds unit_defense_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b74a"
+name = "character_magic_attacks"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 魔法攻撃 x100; UNITECH copies unit_magic_attacks, CALCLVUP@0x000ce adds unit_magic_attack_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b7ae"
+name = "character_magic_defenses"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 魔法防御 x100; UNITECH copies unit_magic_defenses, CALCLVUP@0x000f1 adds unit_magic_defense_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b812"
+name = "character_attack_counts"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 攻撃回数 x100; UNITECH copies unit_attack_counts, CALCLVUP@0x00114 adds unit_attack_count_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b876"
+name = "character_defense_counts"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 防御回数 x100; UNITECH copies unit_defense_counts, CALCLVUP@0x00137 adds unit_defense_count_growth per level gained."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b8da"
+name = "character_physical_resistances"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 肉体抵抗 x100; UNITECH copies unit_physical_resistances, CALCLVUP@0x0015a adds unit_physical_resistance_growth per level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8b93e"
+name = "character_mental_resistances"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 精神抵抗 x100; UNITECH copies unit_mental_resistances, CALCLVUP@0x0017d adds unit_mental_resistance_growth per level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8b9a2"
+name = "character_physical_speeds"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 肉体戦速 x100; UNITECH copies unit_physical_speeds, CALCLVUP@0x001a0 adds unit_physical_speed_growth per level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8ba06"
+name = "character_mental_speeds"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 精神戦速 x100; UNITECH copies unit_mental_speeds, CALCLVUP@0x001c3 adds unit_mental_speed_growth per level gained."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8ba6a"
+name = "character_luck"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: 運 x100; UNITECH copies unit_luck, CALCLVUP@0x001e6 adds unit_luck_growth per level gained."
+source = "investigation"
+confidence = "low"
+
+[[global]]
+address = "0x8bace"
+name = "character_skill_ranks"
+category = "data-table"
+type = "int[100][9]"
+usage = "Saved: the rank in each of the unit's skill categories (unit_skill_categories); UNITECH@0x001e9 sets it, BTL@0x06ebc raises it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8be52"
+name = "character_skill_experience"
+category = "data-table"
+type = "int[100][9]"
+usage = "Saved: the experience toward the next rank in each category; BTL@0x02bee adds to it, BTL@0x06ee4 zeroes it on a rank-up."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x8c1d6"
+name = "character_weapons"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the equipped weapon; SETCH@0x001f1 puts it in the slot's G[0x38962f]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8c302"
+name = "character_shields"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the equipped shield; SETCH@0x00227 puts it in G[0x38964d]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8c366"
+name = "character_armors"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the equipped armor; SETCH@0x0020c puts it in G[0x38966b]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8c3ca"
+name = "character_accessories"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the equipped accessory; SETCH@0x00242 puts it in G[0x389689]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8e36e"
+name = "character_tactics"
+category = "data-table"
+type = "int[100]"
+usage = "Saved: the chosen tactic, a column of unit_tactic_routines (BTL@0x013e6; CHMODE2@0x0225f marks it)."
+source = "investigation"
+confidence = "med"
+
+[[table]]
+name = "unit"
+records = 1000
+built_by = "boot"
+usage = "EBINIT units keyed by unit id: every enemy, and the body a party character fights with (character_unit_ids), with CVINIT's voice setting by unit. Nothing of it is saved; UNITECH copies the base level, base stats, starting ranks and equipment into the character when it joins."
+
+[table.fields]
+name = "unit_names"
+full_name = "unit_full_names"
+epithet = "unit_epithets"
+description = "unit_description_lines"
+voice_clips = "unit_voice_clips"
+pictures = "unit_pictures"
+battle_sprites = "unit_battle_sprites"
+status_portrait = "unit_status_portraits"
+book_sort_key = "unit_book_sort_keys"
+fs_temperament = "unit_fs_temperaments"
+kind = "unit_kinds"
+boss_class = "unit_boss_classes"
+size = "unit_sizes"
+defense_element = "unit_defense_elements"
+weapon = "unit_initial_weapons"
+shield = "unit_initial_shields"
+armor = "unit_initial_armors"
+accessory = "unit_initial_accessories"
+equip_kinds = "unit_equip_kind_flags"
+skill_categories = "unit_skill_categories"
+skill_category_open = "unit_skill_category_open_flags"
+skill_start_ranks = "unit_skill_start_ranks"
+skill_max_ranks = "unit_skill_max_ranks"
+support_effect = "unit_support_effects"
+base_level = "unit_base_levels"
+max_level = "unit_max_levels"
+level_catchup_divisor = "unit_level_catchup_divisors"
+starting_fs = "unit_starting_fs"
+max_fs = "unit_max_fs"
+max_hp = "unit_max_hp"
+max_mp = "unit_max_mp"
+max_tp = "unit_max_tp"
+attacks = "unit_attacks"
+defenses = "unit_defenses"
+magic_attacks = "unit_magic_attacks"
+magic_defenses = "unit_magic_defenses"
+attack_counts = "unit_attack_counts"
+defense_counts = "unit_defense_counts"
+physical_resistances = "unit_physical_resistances"
+mental_resistances = "unit_mental_resistances"
+physical_speeds = "unit_physical_speeds"
+mental_speeds = "unit_mental_speeds"
+luck = "unit_luck"
+max_hp_growth = "unit_max_hp_growth"
+max_mp_growth = "unit_max_mp_growth"
+max_tp_growth = "unit_max_tp_growth"
+attack_growth = "unit_attack_growth"
+defense_growth = "unit_defense_growth"
+magic_attack_growth = "unit_magic_attack_growth"
+magic_defense_growth = "unit_magic_defense_growth"
+attack_count_growth = "unit_attack_count_growth"
+defense_count_growth = "unit_defense_count_growth"
+physical_resistance_growth = "unit_physical_resistance_growth"
+mental_resistance_growth = "unit_mental_resistance_growth"
+physical_speed_growth = "unit_physical_speed_growth"
+mental_speed_growth = "unit_mental_speed_growth"
+luck_growth = "unit_luck_growth"
+tactic_routines = "unit_tactic_routines"
+action_ids = "unit_action_ids"
+exp_curve = "unit_exp_curves"
+exp_rate = "unit_exp_rates"
+exp_rewards = "unit_exp_rewards"
+money = "unit_money"
+drop_chances = "unit_drop_chances"
+drop_items = "unit_drop_items"
+voice_setting_id = "unit_voice_settings"
+
+[table.refs]
+voice_setting_id = "voice_setting"
+defense_element = "element"
+weapon = "item"
+shield = "item"
+armor = "item"
+accessory = "item"
+action_ids = "item"
+drop_items = "item"
+support_effect = "skill_support"
+skill_categories = "item_class"
+pictures = "picture"
+battle_sprites = "picture"
+status_portrait = "picture"
+
+[[table]]
+name = "lead_form"
+records = 10
+built_by = "boot"
+usage = "CBINIT rows keyed by セリカ's unit lead_unit_id (1 to 4, set from the world map by CHANGECHAPTER@0x00006): the lowest value and the raising cost of each of his seven parameters, and his HP, MP and TP percentage. Not saved; CHANGECHAPTER raises the saved lead_parameters to the minimums at a chapter change."
+
+[table.fields]
+strength_minimum = "lead_strength_minimums"
+vitality_minimum = "lead_vitality_minimums"
+agility_minimum = "lead_agility_minimums"
+dexterity_minimum = "lead_dexterity_minimums"
+intelligence_minimum = "lead_intelligence_minimums"
+spirit_minimum = "lead_spirit_minimums"
+charm_minimum = "lead_charm_minimums"
+strength_cost_rate = "lead_strength_cost_rates"
+vitality_cost_rate = "lead_vitality_cost_rates"
+agility_cost_rate = "lead_agility_cost_rates"
+dexterity_cost_rate = "lead_dexterity_cost_rates"
+intelligence_cost_rate = "lead_intelligence_cost_rates"
+spirit_cost_rate = "lead_spirit_cost_rates"
+charm_cost_rate = "lead_charm_cost_rates"
+pool_rate = "lead_pool_rates"
+
+[[table]]
+name = "character"
+records = 100
+built_by = "boot"
+usage = "Characters keyed by character id, all saved: CHINIT's unit (written at every boot by INIT, so a change reaches only new games) and the state the game keeps for the character."
+
+[table.fields]
+unit_id = "character_unit_ids"
+flags = "character_flags"
+level = "character_levels"
+experience = "character_experience"
+hp = "character_hp"
+max_hp = "character_max_hp"
+mp = "character_mp"
+max_mp = "character_max_mp"
+tp = "character_tp"
+max_tp = "character_max_tp"
+attacks = "character_attacks"
+defenses = "character_defenses"
+magic_attacks = "character_magic_attacks"
+magic_defenses = "character_magic_defenses"
+attack_counts = "character_attack_counts"
+defense_counts = "character_defense_counts"
+physical_resistances = "character_physical_resistances"
+mental_resistances = "character_mental_resistances"
+physical_speeds = "character_physical_speeds"
+mental_speeds = "character_mental_speeds"
+luck = "character_luck"
+skill_ranks = "character_skill_ranks"
+skill_experience = "character_skill_experience"
+weapon = "character_weapons"
+shield = "character_shields"
+armor = "character_armors"
+accessory = "character_accessories"
+tactic = "character_tactics"
+
+[table.refs]
+unit_id = "unit"
+
+[[table]]
+name = "speaker_entry"
+records = 1000
+built_by = "boot"
+usage = "CNINIT speakers keyed by the speaker id, the same number as the speaker's unit."
+
+[table.fields]
+name = "speaker_names"
+voice_unit = "speaker_voice_units"
+
+[table.refs]
+voice_unit = "unit"
+
+[[table]]
+name = "voice_setting"
+records = 30
+built_by = "boot"
+usage = "CVINIT voice settings keyed by setting id (0 to 15), the rows of the 設定 voice page."
+
+[table.fields]
+sample = "voice_setting_samples"
+unit_id = "voice_setting_units"
+
+[table.refs]
+unit_id = "unit"
+
+[[table]]
+name = "profile"
+records = 100
+built_by = "boot"
+usage = "CIINIT profiles keyed by profile id: the entries of the 人物 book (INFO2)."
+
+[table.fields]
+unit_id = "profile_unit_ids"
+name = "profile_names"
+picture = "profile_pictures"
+picture_x = "profile_picture_x"
+picture_y = "profile_picture_y"
+
+[table.refs]
+unit_id = "unit"
+picture = "picture"
+
+
+# ==== Items, conditions, elements and treasure: ITINIT, ILINIT, SSINIT, AFINIT, TRINIT, SHINIT (docs/bg0-data-tables.md) ====
+
+# ---- ITINIT: items, equipment, magic and arts (boot, leader GS[0x2e70], 10000) ----
+
+[[global]]
+address = "0x2e70"
+name = "item_names"
+category = "string-table"
+type = "string[10000]"
+usage = "ITINIT: the item's name (742 written, 嵐神の鍵 …, 9999 素手); ARENA, BTL, CHMODE1, CHMODE3, DRAWCHP, DRAWENLIST, GETITEMMES, INFO4, RESULT and SHOP draw it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x5580"
+name = "item_notes"
+category = "string-table"
+type = "string[10000]"
+usage = "ITINIT: an author's note on where 13 key items come from (13 基本陣形の書 最初から, 14 ダルノスと二人で鉄屑の谷に行くところ); no reader found."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x12558d"
+name = "item_sort_keys"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the list order key (10..29404); sort-indices-by-key-sum at CHMODE1@0x17bb, INFO4@0x8b7 and SHOP@0x1e26."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12a3ad"
+name = "item_ranks"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the rank 1..7 needed to use it. CHMODE1@0x1a5c..0x1ab1 refuses it (bit 0x11) when the character's rank at the item's class, G[0x8bace + 9*char + k], is lower; CHECKACT@0x8d, CHMODE3@0x18f. The \"Cランク\" descriptions hold 3."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12cabd"
+name = "item_categories"
+category = "data-table"
+type = "int[10000]"
+values = { "1" = "重要", "2" = "消費", "3" = "非戦闘", "4" = "杖", "5" = "投石", "6" = "短剣", "7" = "剣", "8" = "拳", "9" = "双剣", "10" = "連接", "11" = "槍", "12" = "弓", "13" = "衣服", "14" = "鎧", "15" = "盾", "16" = "装飾" }
+usage = "ITINIT: the category, 1..46 (21..34 the magic schools, 41..46 the art schools; 8 also the enemies' actions and 9999 素手). ITMES@0x6 dispatches on it; CHMODE1@0x18c0 tests it against the character's mask G[0xa2ae5 + kind]; SHOP@0x27b0 draws its icon; CHECKACT@0x130 and CHMODE3@0x15f7 test the weapon an art needs."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12f1cd"
+name = "item_classes"
+category = "data-table"
+type = "int[10000]"
+values_from = { global = "item_class_names", first = 0 }
+usage = "ITINIT: the class, an AFINIT class: 1 重要, 2 通常, 3 非戦闘時, 4..6 weapon sizes, 7 軽装, 8 中装, 9 盾, 10 装飾, 21..35 magic, 40 enemy magic, 41..46 arts, 50 enemy arts. ADDITEM@0x78 treats class 1 as a key item; CHMODE1@0x1896 lists classes 1..20; CALCDAMAGE@0x672 uses the charge level above 20."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1318dd"
+name = "item_damage_kinds"
+category = "data-table"
+type = "int[10000]"
+values = { "1" = "physical", "2" = "magic", "3" = "mind_check", "4" = "special", "5" = "fs_attack" }
+usage = "ITINIT: how the action deals damage. CALCDAMAGE@0x15d (3 and 4 take their own path), @0x352 (5, 戦意打撃), @0x49d (2), @0x731 (1); BTL@0x1788 charges kinds 2, 3 and 5 by 精速, the others by 肉速; SETCH@0x3e0 skips magic attack for 5."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x133fed"
+name = "item_attack_elements"
+category = "data-table"
+type = "int[10000]"
+values_from = { global = "element_attack_names", first = 0 }
+usage = "ITINIT: the attack element, 1..13. CALCDAMAGE@0x1b7 takes the action's, else the attacker's weapon's G[0x3896e3]; SETCH@0x548 sets the unit's from its weapon, else 1 物理 (SETCH@0x557)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1366fd"
+name = "item_defense_elements"
+category = "data-table"
+type = "int[10000]"
+values_from = { global = "element_defense_names", first = 0 }
+usage = "ITINIT: the defense element an armour gives, 1..14. SETCH@0x56a takes it, else G[0xa175d + kind] (SETCH@0x595), into the unit's G[0x389701]; SETEN@0x7f9 alike; CALCDAMAGE@0x1e0 reads the unit's."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x138e0d"
+name = "item_exclusive_users"
+category = "data-table"
+type = "int[10000][100]"
+usage = "ITINIT: the characters the item is exclusive to (145 items, up to 13 each). CHMODE1@0x19ea..0x1a45 refuses it (bit 0x10) unless G[0x8b158] is listed; SHOP@0x3a2a. 253 天王石【セリカ専用】 lists only 1."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x22d04d"
+name = "item_required_items"
+category = "data-table"
+type = "int[10000][5]"
+usage = "ITINIT: the item that must be held (count above 0) to use the action, in column 0: the summons' 喚石 (6..12) and the 招聘 stones (21..27), on actions 3121..3137. CHECKACT@0xda, CHMODE3@0x1595."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x23939d"
+name = "item_cursed_flags"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: 1 on the 8 cursed items, which cannot be taken off (CHMODE1@0x1c23); ADDILL@0x1bf..0x2c0 and CALCILL@0x69..0x139 unequip them when 呪い is cured. SHOP, SETCHSEL, DRAWCHP read it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x23baad"
+name = "item_target_kinds"
+category = "data-table"
+type = "int[10000]"
+values = { "1" = "enemies", "2" = "allies", "3" = "self", "4" = "summon" }
+usage = "ITINIT: whom the action targets. CALCDAMAGE@0x19 (any but 1 takes the recovery path); CALCILL@0x2ef (1 goes through the boss check); USESKILL@0x10d (4). Self is inferred from the 自分の… descriptions."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x23e1bd"
+name = "item_area_widths"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the width of the area hit, 1..5; all 24 \"範囲W×H\" descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2408cd"
+name = "item_area_heights"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the height of the area hit, 1..5; all 24 \"範囲W×H\" descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x242fdd"
+name = "item_charge_times"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the charge time before the action, less the unit's speed (BTL@0x177c); CHMODE3@0x1160 shows it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2456ed"
+name = "item_min_charge_times"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the least charge time speed can bring it to (BTL@0x17f0)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x247dfd"
+name = "item_recovery_times"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the recovery time after the action (BTL@0x2da9); CHMODE3 shows it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x24a50d"
+name = "item_min_recovery_times"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the least recovery time (BTL@0x2e1d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x24cc1d"
+name = "item_condition_levels"
+category = "data-table"
+type = "int[10000][40]"
+columns_ref = "condition"
+usage = "ITINIT: condition levels by ILINIT condition id, positive inflicts and negative cures (129 女神の滴・大 −5 on 8..12, 14, 17, 19). CALCILL@0x51 loops 40 conditions, the level its absolute value (CALCILL@0x256); BTL, CHECKACT, the RTN scripts, USESKILLSUB read it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2ae69d"
+name = "item_equip_condition_levels"
+category = "data-table"
+type = "int[10000][40]"
+columns_ref = "condition"
+usage = "ITINIT: the lasting condition levels an equipped item gives, by ILINIT id. SETCH@0x5fc..0x61d adds them into the unit's G[0x389cbf + 40*unit + cond]; SETEN, CALCREVISE. 2927 メチュカの微笑み \"命中+30 痛打+10\" holds {20: 5, 34: 5}."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x31011d"
+name = "item_accuracy_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: 命中; SETCH adds it into the unit's G[0x38971f] (CALCDAMAGE@0x290). 77 of 80 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x31282d"
+name = "item_evasion_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: 回避, into the unit's G[0x38973d] (SETCH). 34 of 37 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x314f3d"
+name = "item_physical_attack_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: physical attack (\"攻撃+\"), into the unit's G[0x3894e5] (SETCH; CALCDAMAGE@0x5e9). 71 of 71 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x31764d"
+name = "item_physical_defense_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: physical defense, into the unit's G[0x389503] (SETCH). 54 of 54 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x319d5d"
+name = "item_attack_count_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: attack count, into the unit's G[0x38955d] (SETCH; CALCDAMAGE@0x560). 69 of 72 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x31c46d"
+name = "item_defense_count_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: defense count, into the unit's G[0x38957b] (SETCH). 44 of 50 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x31eb7d"
+name = "item_magic_attack_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: magic attack, into the unit's G[0x389521] (SETCH; CALCDAMAGE@0x520). For a damage kind 5 action it is the 戦意 attack instead: SETCH@0x3e0 skips it and CALCDAMAGE@0x367 uses it. 71 of 73 and 11 of 11 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32128d"
+name = "item_magic_defense_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: magic defense, into the unit's G[0x38953f] (SETCH). 67 of 67 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32399d"
+name = "item_magic_power_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: magic power, into the unit's G[0x389779] (SETCH; CALCDAMAGE@0x4f6). 50 of 51 descriptions agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3260ad"
+name = "item_physical_resistance_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: physical resistance (肉抵), into the unit's G[0x389599] (SETCH); an action's value adds to the physical roll (CALCILL@0x37a). SETILLREVISE's 肉抵 writes the same unit cell."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3287bd"
+name = "item_mental_resistance_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: mental resistance (精抵), into the unit's G[0x3895b7] (SETCH; CALCILL@0x338, CALCDAMAGE@0x373)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32aecd"
+name = "item_physical_speed_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: physical battle speed (肉速), into the unit's G[0x3895d5] (SETCH), which BTL@0x1788 subtracts from the charge time."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32d5dd"
+name = "item_mental_speed_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: mental battle speed (精速), into the unit's G[0x3895f3] (SETCH), used for damage kinds 2, 3 and 5 (BTL@0x1788)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x32fced"
+name = "item_luck_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: luck (運), into the unit's G[0x389611] (SETCH); SETILLREVISE's 運 writes the same cell."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3323fd"
+name = "item_critical_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: critical (痛打), into the unit's G[0x38975b] (SETCH); CALCDAMAGE@0x3f1..0x412 rolls the critical hit with it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x334b0d"
+name = "item_hp_amounts"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: HP restored (positive) or spent (negative). CALCDAMAGE@0x33..0x8a adds item_random_amounts and caps at 99999; USESKILLSUB@0x23. 101 治癒の水・小 holds 497 for \"HP+500\"."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x33721d"
+name = "item_mp_amounts"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: MP restored, or spent when negative (the spells' costs; 90 of 90 \"/MPn】\" agree). CALCDAMAGE@0x8f; USESKILLSUB@0xb2."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x33992d"
+name = "item_tp_amounts"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: TP restored, or spent when negative (43 of 43 \"TPn】\" agree). CALCDAMAGE@0xeb; USESKILLSUB@0x141."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x33c03d"
+name = "item_fs_amounts"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: 戦意 restored (6 of 6 descriptions agree). CALCDAMAGE@0x147 sets G[0x952aa] to its negative; USESKILLSUB@0x1d0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x33e74d"
+name = "item_control_rate_changes"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: 迷宮支配力 gained, 5, 10 or 15 (3 of 3 descriptions agree); USESKILL@0xd9..0x108 adds it to the saved G[0x3178], at most 15. SETCHSEL reads it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x34356d"
+name = "item_max_hp_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: max HP, into the unit's G[0x38944f] (SETCH@0x30e; 7 of 7 descriptions agree). Negative on summons: CALCREVISE@0x0..0x91 adds action 3121 + b's for each bit b of G[0x8e3d2 + char]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x345c7d"
+name = "item_max_mp_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: max MP, into the unit's G[0x38948b] (SETCH@0x338). The summons' −30..−60 are their \"MP&TP n低下\" (3121 パズモ召喚 −30); CALCREVISE."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x34838d"
+name = "item_max_tp_bonuses"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: max TP, into the unit's G[0x3894c7] where the unit has TP (SETCH@0x362); the summons' negatives as for MP; CALCREVISE."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x34d1ad"
+name = "item_random_amounts"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the random part added to an amount, 5..100 (CALCDAMAGE@0x5b, @0xb7, @0x113, @0x5fc; USESKILLSUB)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x34f8bd"
+name = "item_animations"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the battle animation; BTL@0x1ca9 and @0x2127 put it in G[0x38a9f8] and call ANIME."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x351fcd"
+name = "item_buy_prices"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: the shop's price (267 items); SHOP@0x10db, @0x11ff, @0x28e7."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3546dd"
+name = "item_sell_prices"
+category = "data-table"
+type = "int[10000]"
+usage = "ITINIT: what the shop pays, a quarter of the buy price on 259 of 267; SHOP@0x1143, @0x1252, @0x1642."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x356ded"
+name = "item_menu_use_masks"
+category = "data-table"
+type = "int[10000]"
+values = { "1" = "in_dungeon", "3" = "anywhere" }
+usage = "ITINIT: where the item can be used from the menu. CHMODE1@0x19c9 ANDs it with 1 while G[0x317c] is set (in the dungeon, FIELD@0x99) and with 2 otherwise (CHMODE1@0x206..0x215); in battle CHMODE1@0x1997 tests class 2 instead. CHMODE3 reads it."
+source = "investigation"
+confidence = "high"
+
+# ---- Item helpers and the inventory (saved cells) ----
+
+[[global]]
+address = "0x12558b"
+name = "current_item"
+category = "index-pointer"
+type = "int"
+usage = "The item ADDITEM, LOSTITEM and ITMES work on: a caller sets it with item_count_change before calling ADDITEM (GETITEM@0x109, SHOP@0x17fc, SC0060@0x1df2); ITMES compares it with each id."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x12558c"
+name = "item_count_change"
+category = "index-pointer"
+type = "int"
+usage = "How many of current_item ADDITEM adds, negative to remove (ADDITEM@0x8)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8632a"
+name = "item_counts"
+category = "counter"
+type = "int[10000]"
+usage = "Saved: how many of each item the party holds, 0 to 999 (ADDITEM@0x8..0x5d); SHOP@0x10a3 and CHECKACT read it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x88a3a"
+name = "item_obtained_flags"
+category = "story-flag"
+type = "int[10000]"
+usage = "Saved: 1 once the item was obtained; ADDITEM@0x62..0x75 sets it and stores it in the shared profile."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xbdc"
+name = "item_key_held_flags"
+category = "story-flag"
+type = "int[36]"
+usage = "Saved: for a key item (item_classes 1, ids 1..35), 1 while it is held and 0 when not; ADDITEM@0x78..0xe7 computes the cell as 0x470 + 0x76c + item."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b159"
+name = "money"
+category = "counter"
+type = "int"
+usage = "Saved: the party's money, kept within 0 and 9,999,999 (GETITEM@0x12f..0x15a, GAMESTART@0x62a); SHOP@0x1813 takes a purchase and SHOP@0x186d adds a sale. Outside this step's prefixes; another part may own it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b226"
+name = "formation_learned_mask"
+category = "story-flag"
+type = "int"
+usage = "Saved: bit f set once formation f is learned. ADDITEM@0xae..0xd1 sets bit (item − 12) for the 陣形の書, items 13..20; GAMESTART@0x687 starts with bit 1; CHMODE4@0x1541 tests it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8b225"
+name = "formation_current"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the party's formation, 1..8; CHMODE4@0x1639 sets it, CHMODE4@0x1c42 draws formation_names[f]; GAMESTART@0x68c starts with 1. SETCH and SETFORM read it."
+source = "investigation"
+confidence = "high"
+
+# ---- ILINIT: conditions (boot, leader GS[0x7c90], 40, stride 5) ----
+
+[[global]]
+address = "0x3594fd"
+name = "condition_argument_id"
+category = "index-pointer"
+type = "int"
+usage = "The condition ADDILL and CALCILL apply (CALCILL@0x34, ADDILL@0x55); a map event sets it before calling ADDILL (MPEV01F0120@0x7b5: 7). The cell before ILINIT's arrays."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3594fe"
+name = "condition_argument_levels"
+category = "index-pointer"
+type = "int"
+usage = "The levels ADDILL and CALCILL add to condition_argument_id, negative to take them away (MPEV01F0120@0x7ba: 5)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x7c90"
+name = "condition_names"
+category = "string-table"
+type = "string[40][5]"
+usage = "ILINIT: the name of each level, GS[0x7c90 + 5*cond + level − 1] (呪い1 to 呪い5; 即死, 喪意, 石化 one level); BTL, CHANGECH, DRAWCHP, DRAWENP draw it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x7d58"
+name = "condition_descriptions"
+category = "string-table"
+type = "string[40][10]"
+usage = "ILINIT: up to 10 description lines a condition (猛毒 \"戦闘中は、効果時間中1フレーム毎に…\"); no reader found by this base."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3594ff"
+name = "condition_resistances"
+category = "data-table"
+type = "int[40][5]"
+values = { "3" = "mental", "4" = "physical" }
+usage = "ILINIT: which resistance each level is rolled against (CALCILL@0x262..0x28d, @0x31f..0x39b)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3595c7"
+name = "condition_affinity_columns"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: the column of element_affinities, 11..17 (抵抗1..7), that scales the condition's chance (CALCILL@0x3b3, the matrix at CALCILL@0x3c3)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35968f"
+name = "condition_cure_bits"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: which recoveries clear the condition, 2 or 3. RECOVER@0x8f sets the level to its floor when the bits meet 1 (while G[0x317c] is set, in the dungeon) or 2 (outside) (RECOVER@0x3a..0x49); BTL@0x367a resets a unit's level to its lasting level for bit 2."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x359757"
+name = "condition_durations"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: how long each level lasts, −1 for 呪い (until cured). ADDILL@0x16d..0x1ba copies it into the character's G[0x8d3ce + 40*char + cond]; CALCILL, DRAWENLIST read it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35981f"
+name = "condition_hit_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: 命中 added (SETILLREVISE@0x13e into the unit's G[0x38971f]); 呪い, 酔い, 命中."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3598e7"
+name = "condition_evasion_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: 回避 added (SETILLREVISE@0x155 into G[0x38973d]); 呪い, 麻痺, 酔い, 回避."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3599af"
+name = "condition_physical_attack_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: physical attack, in percent (SETILLREVISE@0x41, scaled at SETILLREVISE@0x1e2..0x267, into G[0x3894e5]); 高揚, 物攻."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359a77"
+name = "condition_physical_defense_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: physical defense, in percent (SETILLREVISE@0x58); 高揚, 物防."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359b3f"
+name = "condition_attack_count_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: attack count added (SETILLREVISE@0x9d); 攻回."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359c07"
+name = "condition_defense_count_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: defense count added (SETILLREVISE@0xb4); 防回."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359ccf"
+name = "condition_magic_attack_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: magic attack, in percent (SETILLREVISE@0x6f); 高揚, 魔攻."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359d97"
+name = "condition_magic_defense_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: magic defense, in percent (SETILLREVISE@0x86); 高揚, 魔防."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359e5f"
+name = "condition_magic_power_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: magic power added (SETILLREVISE@0x183 into G[0x389779]); 魔威."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359f27"
+name = "condition_physical_resistance_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: physical resistance added (SETILLREVISE@0xcb into G[0x389599]); 肉抵."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x359fef"
+name = "condition_mental_resistance_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: mental resistance added (SETILLREVISE@0xe2 into G[0x3895b7]); 精抵."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a0b7"
+name = "condition_physical_speed_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: physical speed added (SETILLREVISE@0xf9 into G[0x3895d5]); 呪い, 束縛, 肉速."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a17f"
+name = "condition_mental_speed_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: mental speed added (SETILLREVISE@0x110 into G[0x3895f3]); 呪い, 束縛, 精速."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a247"
+name = "condition_luck_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: luck added (SETILLREVISE@0x127 into G[0x389611]); 運."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a30f"
+name = "condition_critical_modifiers"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: critical added (SETILLREVISE@0x16c into G[0x38975b]); 呪い, 高揚, 痛打."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a3d7"
+name = "condition_hp_changes"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: HP change each frame in battle and each step in the dungeon (猛毒 −1..−5, 再生 +): SETILLREVISE@0x19a into the unit's G[0x389797]; FIELD@0x11f1 adds it to the character's HP G[0x8b42a]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a49f"
+name = "condition_mp_changes"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: MP change each frame and step, read (SETILLREVISE@0x1b1, FIELD@0x1211) but written by no condition."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x35a567"
+name = "condition_tp_changes"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: TP change each frame and step, read (SETILLREVISE@0x1c8, FIELD@0x1231) but written by no condition."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x35a62f"
+name = "condition_fs_changes"
+category = "data-table"
+type = "int[40][5]"
+usage = "ILINIT: 戦意 change each 10 frames in battle (強酸, 恐怖: −5..−10): BTL@0x5b7..0x625 adds it to the unit's G[0x3893f5] when its timer mod 10 is 1, at least 1. 恐怖 \"戦闘中は10フレーム毎に入力値がそのまま引かれる\"."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a6f7"
+name = "condition_listed_flags"
+category = "data-table"
+type = "int[40]"
+usage = "ILINIT: 1 on 石化 and 7..19, written before each name: DRAWENLIST@0x71 lists each such condition a unit has as its own entry; any other condition above its lasting level adds one shared entry, 0x1d (DRAWENLIST@0xb5..0xf4)."
+source = "investigation"
+confidence = "med"
+
+# ---- SSINIT: support effects (boot, leader GS[0x7ee8], 100) ----
+
+[[global]]
+address = "0x7ee8"
+name = "skill_support_names"
+category = "string-table"
+type = "string[100]"
+usage = "SSINIT: the names of the 12 support effects (支援効果・祈り …); CHMODE2@0x2651 draws the current character's, their ids from G[0xabb6d + kind] and G[0xabf55 + 5*kind + k] (CHMODE2@0x1205, @0x124a)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x7f4c"
+name = "skill_support_descriptions"
+category = "string-table"
+type = "string[100][2]"
+usage = "SSINIT: two description lines a support effect (10フレーム毎にHPが回復 …); CHMODE2@0x2661..0x2677 joins them."
+source = "investigation"
+confidence = "high"
+
+# ---- AFINIT: elements, classes and formations (boot, no leader) ----
+
+[[global]]
+address = "0x8014"
+name = "element_attack_names"
+category = "string-table"
+type = "string[20]"
+usage = "AFINIT: the attack element names 1..17 (物理, 万能, 火炎, 冷却, 電撃, 地脈, 神聖, 暗黒, 戦意, 10 blank, 抵抗1..7); CHMODE3 and DRAWCHP draw them. No 無属, unlike Verita."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8028"
+name = "element_defense_names"
+category = "string-table"
+type = "string[20]"
+usage = "AFINIT: the defense element names 1..14 (1..8 as the attack elements, 神格位, 魔神, 反万能, 霊体, 不死, 創造物); DRAWCHP, DRAWENP, INFO3 draw them."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3866ad"
+name = "element_affinities"
+category = "data-table"
+type = "int[20][20]"
+zero = true
+columns_from = { global = "element_attack_names", first = 0 }
+usage = "AFINIT: the damage percentage by defense element (row 0..14) and attack element (column 0..17). Row 0 and column 0 are 100, column 10 is 0; 火炎 takes −100 of 火炎 and 150 of 冷却. CALCDAMAGE@0x909 and @0x3ac; a negative value gives negative damage (CALCDAMAGE@0x930..0x953). CALCILL@0x3c3 reads columns 11..17 for conditions."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x803c"
+name = "item_class_names"
+category = "string-table"
+type = "string[60]"
+usage = "AFINIT: the class names (1 重要アイテム … 10 装飾品, 21 魔術・治癒 … 35 魔術・招聘, 40 敵魔術, 41 必殺・飛燕 … 46 必殺・盗賊, 50 敵必殺); CHMODE2 draws them."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8078"
+name = "item_class_short_names"
+category = "string-table"
+type = "string[60]"
+usage = "AFINIT: the short class names (重要, 物品, 非戦, 小型 …, 召喚Ａ, 召喚Ｂ, 招聘 …)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x80b4"
+name = "item_class_equipment_notes"
+category = "string-table"
+type = "string[60]"
+usage = "AFINIT: the equipment note of a class: 6 「盾」装備不可, 41..43 the weapons the art school needs; CHMODE2 draws them."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x38683d"
+name = "item_class_icons"
+category = "data-table"
+type = "int[60]"
+usage = "AFINIT: the class's icon, a cell of the 10-wide sheet of 12x14 icons the categories also use (CHMODE2@0x23c2, RESULT@0xf4c)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x386879"
+name = "item_class_required_weapon_masks"
+category = "data-table"
+type = "int[60]"
+usage = "AFINIT: the weapon categories an art school needs, bit k for item_categories k: 41 = 704 (短剣, 剣, 双剣), 42 = 3968, 43 = 4096 (弓). CHECKACT@0x114, CHMODE3@0x15db; the notes agree."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3868b5"
+name = "item_class_rank_exps"
+category = "data-table"
+type = "int[60][6]"
+usage = "AFINIT: the most class exp a rank holds, by rank − 1 (weapons 10000 … 150000): BTL@0x2c32..0x2c8d caps the character's G[0x8be52 + 9*char + k] at it; CHMODE2@0x1569, CHMODE3@0xf9f."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x386a1d"
+name = "item_category_weapon_flags"
+category = "data-table"
+type = "int[60]"
+usage = "AFINIT, by item_categories 4..12: bit 1 (杖, 短剣, 剣, 拳, 双剣) halves damage past a unit in between (CALCDAMAGE@0x776); bit 0 (双剣, 連接, 槍, 弓) clears or blocks the slot G[0x8c302] (CHMODE1@0x12b9, @0x1409, @0x15ee; inferred two-handed)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x80f0"
+name = "formation_names"
+category = "string-table"
+type = "string[9]"
+usage = "AFINIT: the formation names 1..8 (基本陣形 … 魔術陣形); CHMODE4@0x1c42 draws the party's."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x80f9"
+name = "formation_effect_lines"
+category = "string-table"
+type = "string[9][6]"
+columns = { "0" = "front_up", "1" = "front_down", "2" = "rear_up", "3" = "rear_down", "4" = "description_1", "5" = "description_2" }
+usage = "AFINIT: a formation's six effect lines (攻撃陣形: 物理攻撃up, 物理防御down, 物理防御up, 物理攻撃down, then two description lines); CHMODE4@0x1ca1."
+source = "investigation"
+confidence = "med"
+
+# ---- TRINIT: treasure (boot, leader G[0x10cc93], 10000, stride 5) ----
+
+[[global]]
+address = "0x10cc92"
+name = "treasure_current_id"
+category = "index-pointer"
+type = "int"
+usage = "The treasure GETITEM gives: GETTREASURE sets it from the map object in play (GETTREASURE@0x0), GAMESTART@0x5a5 and @0x691 to the starting kits 9998 and 9999; GETITEM@0x15f clears it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x10cc93"
+name = "treasure_items"
+category = "data-table"
+type = "int[10000][5]"
+usage = "TRINIT: the item in each of five slots, 0 or unwritten for a money slot; GETITEM@0x109..0x129 calls ADDITEM for each slot with a count."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x118fe3"
+name = "treasure_counts"
+category = "data-table"
+type = "int[10000][5]"
+usage = "TRINIT: how many of the slot's item, or the money for a money slot (10..36000; GETITEM@0x12f adds it to money). GETITEM@0x1d..0x7c skips a slot whose count is 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x83c1a"
+name = "treasure_opened"
+category = "story-flag"
+type = "int[10000]"
+usage = "Saved: 1 once a treasure is opened, keyed by treasure id; GETTREASURE gives nothing for an opened one and sets it before calling GETITEM (GETTREASURE@0x48)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd4d3d"
+name = "treasure_object_ids"
+category = "data-table"
+type = "int[100]"
+usage = "The treasure of each object of the map in play: about 370 map scripts write it (MP03F0101@0x1f4: 121), FIELD clears it, and GETTREASURE@0x0 reads it at G[0xc57ac]."
+source = "investigation"
+confidence = "high"
+
+# ---- SHINIT: the shop in play (on demand, run by SHOP@0x8c) ----
+
+[[global]]
+address = "0xc1e5b"
+name = "shop_id"
+category = "index-pointer"
+type = "int"
+usage = "The shop SHOP opens, 1..12: a scene sets it before calling SHOP (SC1500@0x9be), SHINIT branches on it, and SHOP@0x3b1d clears it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e5c"
+name = "shop_sign"
+category = "data-table"
+type = "int"
+usage = "SHINIT: which of four 140x40 cells of the sign sheet (texture 0x7c) SHOP draws, 0..3 (SHOP@0x23b2..0x2434); item shops write 0, equipment shops 1."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc1e5d"
+name = "shop_items"
+category = "data-table"
+type = "int[20]"
+usage = "SHINIT: the item sold in slot 10 * page + slot (pages 0 and 1, slots 0..6), 0 for none, negated while its story flag is unset (SHINIT@0x51..0x66); SHOP@0x634 reads it, SHOP@0x27ab takes the absolute value. SHINIT@0x0 zeroes the 20 cells first."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e71"
+name = "shop_keeper_picture"
+category = "data-table"
+type = "int"
+usage = "SHINIT: the shopkeeper's picture, a resource id (11884 CS136AA and others), loaded at SHOP@0x2316; SHOP@0x87 clears it before SHINIT."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e72"
+name = "shop_background"
+category = "data-table"
+type = "int"
+usage = "SHINIT: the shop's background picture (11883 BG018A and others), loaded at SHOP@0x2308; 0 for shop 11. SHOP@0x82 clears it before SHINIT."
+source = "investigation"
+confidence = "high"
+
+# ---- Tables ----
+
+[[table]]
+name = "item"
+records = 10000
+built_by = "boot"
+usage = "ITINIT records keyed by item id (742 written): key items 1..35, consumables 101..303, weapons 1001..1711, armour 2001..2942, magic 3001..3137, arts 4001..4057, enemy actions 5001..7207, special 9992..9999 (9999 素手). `item[101].name` is item_names[101]."
+
+[table.fields]
+name = "item_names"
+note = "item_notes"
+sort_key = "item_sort_keys"
+rank = "item_ranks"
+category = "item_categories"
+class = "item_classes"
+damage_kind = "item_damage_kinds"
+attack_element = "item_attack_elements"
+defense_element = "item_defense_elements"
+exclusive_users = "item_exclusive_users"
+required_item = "item_required_items"
+cursed = "item_cursed_flags"
+target_kind = "item_target_kinds"
+area_width = "item_area_widths"
+area_height = "item_area_heights"
+charge_time = "item_charge_times"
+min_charge_time = "item_min_charge_times"
+recovery_time = "item_recovery_times"
+min_recovery_time = "item_min_recovery_times"
+condition_levels = "item_condition_levels"
+equip_condition_levels = "item_equip_condition_levels"
+accuracy = "item_accuracy_bonuses"
+evasion = "item_evasion_bonuses"
+physical_attack = "item_physical_attack_bonuses"
+physical_defense = "item_physical_defense_bonuses"
+attack_count = "item_attack_count_bonuses"
+defense_count = "item_defense_count_bonuses"
+magic_attack = "item_magic_attack_bonuses"
+magic_defense = "item_magic_defense_bonuses"
+magic_power = "item_magic_power_bonuses"
+physical_resistance = "item_physical_resistance_bonuses"
+mental_resistance = "item_mental_resistance_bonuses"
+physical_speed = "item_physical_speed_bonuses"
+mental_speed = "item_mental_speed_bonuses"
+luck = "item_luck_bonuses"
+critical = "item_critical_bonuses"
+max_hp = "item_max_hp_bonuses"
+max_mp = "item_max_mp_bonuses"
+max_tp = "item_max_tp_bonuses"
+hp = "item_hp_amounts"
+mp = "item_mp_amounts"
+tp = "item_tp_amounts"
+fs = "item_fs_amounts"
+control_rate_change = "item_control_rate_changes"
+random_amount = "item_random_amounts"
+animation = "item_animations"
+buy_price = "item_buy_prices"
+sell_price = "item_sell_prices"
+menu_use = "item_menu_use_masks"
+count = "item_counts"
+obtained = "item_obtained_flags"
+
+[table.refs]
+animation = "battle_animation"
+class = "item_class"
+# Attack elements 1..8 are elements 1..8; 9 戦意 and 11..13 (抵抗1..3) are no element.
+attack_element = { table = "element", last = 8 }
+defense_element = "element"
+exclusive_users = "character"
+required_item = "item"
+
+[[table]]
+name = "condition"
+records = 40
+built_by = "boot"
+usage = "ILINIT conditions keyed by condition id (1 to 36), five levels each. `condition[7].names` are 呪い1 to 呪い5."
+
+[table.fields]
+names = "condition_names"
+descriptions = "condition_descriptions"
+resistance = "condition_resistances"
+affinity_columns = "condition_affinity_columns"
+cure_bits = "condition_cure_bits"
+durations = "condition_durations"
+hit_modifiers = "condition_hit_modifiers"
+evasion_modifiers = "condition_evasion_modifiers"
+physical_attack_modifiers = "condition_physical_attack_modifiers"
+physical_defense_modifiers = "condition_physical_defense_modifiers"
+attack_count_modifiers = "condition_attack_count_modifiers"
+defense_count_modifiers = "condition_defense_count_modifiers"
+magic_attack_modifiers = "condition_magic_attack_modifiers"
+magic_defense_modifiers = "condition_magic_defense_modifiers"
+magic_power_modifiers = "condition_magic_power_modifiers"
+physical_resistance_modifiers = "condition_physical_resistance_modifiers"
+mental_resistance_modifiers = "condition_mental_resistance_modifiers"
+physical_speed_modifiers = "condition_physical_speed_modifiers"
+mental_speed_modifiers = "condition_mental_speed_modifiers"
+luck_modifiers = "condition_luck_modifiers"
+critical_modifiers = "condition_critical_modifiers"
+hp_changes = "condition_hp_changes"
+mp_changes = "condition_mp_changes"
+tp_changes = "condition_tp_changes"
+fs_changes = "condition_fs_changes"
+listed = "condition_listed_flags"
+
+[[table]]
+name = "skill_support"
+records = 100
+built_by = "boot"
+usage = "SSINIT support effects keyed by id (1 to 12): names and two description lines only."
+
+[table.fields]
+name = "skill_support_names"
+description = "skill_support_descriptions"
+
+[[table]]
+name = "element"
+records = 20
+built_by = "boot"
+usage = "AFINIT elements keyed by defense element id, 1 to 14 named; row 0, 100 throughout, has no name. Each row is how the element takes each attack element (element_affinities, its columns named by element_attack_names). Attack element n is element n up to 8."
+
+[table.fields]
+name = "element_defense_names"
+affinities = "element_affinities"
+
+[[table]]
+name = "item_class"
+records = 60
+built_by = "boot"
+usage = "AFINIT classes keyed by class id (ITINIT's item_classes): item kinds, equipment kinds, magic schools and art schools."
+
+[table.fields]
+name = "item_class_names"
+short_name = "item_class_short_names"
+equipment_note = "item_class_equipment_notes"
+icon = "item_class_icons"
+required_weapons = "item_class_required_weapon_masks"
+rank_exps = "item_class_rank_exps"
+
+[[table]]
+name = "formation"
+records = 9
+built_by = "boot"
+usage = "AFINIT formations keyed by formation id 1..8 (the party's is formation_current; formation_learned_mask has a bit for each learned); names and effect text only."
+
+[table.fields]
+name = "formation_names"
+effect_lines = "formation_effect_lines"
+
+[[table]]
+name = "treasure"
+records = 10000
+built_by = "boot"
+usage = "TRINIT treasures keyed by treasure id (532 written: 1..1207, 2000..2082, and the starting kits 9998 and 9999): five slots of an item and a count, or money. A map object names its treasure; GETTREASURE opens it."
+
+[table.fields]
+items = "treasure_items"
+counts = "treasure_counts"
+opened = "treasure_opened"
+
+[table.refs]
+items = "item"
+
+[[table]]
+name = "shop_slot"
+records = 20
+built_by = "shop"
+usage = "SHINIT goods of the shop in play, keyed by 10 * page + slot; SHINIT refills them for shop_id each time SHOP opens."
+
+[table.fields]
+item = "shop_items"
+
+[table.refs]
+item = "item"
+
+
+# ==== Battle, enemies, routines and the arena: RTINIT, BTANINIT2, BTANINIT, EEINIT, ENINIT, ESINIT, ARINIT (docs/bg0-data-tables.md) ====
+
+# RTINIT: battle routines, 1000 routines of 20 steps (leader G[0x35a787], capacity 20000, 20 slots a row).
+
+[[global]]
+address = "0x35a787"
+name = "routine_step_kinds"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: each step's rule, 1 to 12, 101 to 103, 201 and 301 to 306 for RTN001 to RTN306 (RTN@0x0..0x6e maps rule r to the script in local 5 + r); 0, or a rule with no script, ends the routine (RTN@0xef..0x122)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35f5a7"
+name = "routine_step_chances"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: the percent chance the step runs (RTN@0x1a1 draws 0 to 99 and goes on when the draw is below it)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3643c7"
+name = "routine_step_actions"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: the step's action: below 6 a slot of the unit's six actions G[0x3866a7], otherwise an ITINIT id (RTN003@0x0..0x2d); an item for rules 301 to 306, which a party battler must hold (RTN301@0x25, RTN304@0x45)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3691e7"
+name = "routine_step_args"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: the step's first argument: the gauge (1 HP, 2 MP, 3 TP, 4 FS (戦意), G[0x3893f5], whose start SETEN@0xa49 takes from the enemy slot) for rules 4 to 6, 10, 11, 101 to 103 and 304 to 306 (RTN304@0x66..0x148); the unit for rule 7; how many targets must be in reach for 9 and 302; the battle time 100 * G[0x9529f] + G[0x9529e] for 12 and 303 (RTN012@0x20)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x36e007"
+name = "routine_step_percents"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: the percent of the gauge's maximum the gauge test compares with, rules 5, 6, 10, 11, 101 to 103 and 304 to 306 (RTN304@0x20, @0x14f)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x372e27"
+name = "routine_step_target_counts"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: how many battlers must pass the gauge test, rules 103 and 306 (RTN103@0x30, @0x215)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x37ca67"
+name = "routine_step_flags"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: when set, the step runs only while G[0x470 + value - 1000] is set (RTN@0x12f..0x15a); no routine sets one."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x381887"
+name = "routine_step_limits"
+category = "data-table"
+type = "int[1000][20]"
+usage = "RTINIT: how many times the step may run in a battle, against routine_step_run_counts (RTN@0x15f..0x195)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a784"
+name = "routine_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The routine RTN follows: EBINIT's G[0xb53c5 + 9 * unit + column], the column the character's tactic G[0x8e36e] for a party battler and 0 for an enemy (BTL@0x13b0..0x1411)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a785"
+name = "routine_step_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The routine step whose rule script runs (RTN@0x1bf)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x35a786"
+name = "routine_acted"
+category = "index-pointer"
+type = "int"
+usage = "Set by a rule script that acts; it ends RTN's walk (RTN@0x1ce), and RTN000 runs when it stays 0 (RTN@0x1fa)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x38a787"
+name = "routine_step_run_counts"
+category = "counter"
+type = "int[30][20]"
+usage = "Battle work: how many times each step has acted for the battler (row) in this battle; RTN@0x1d5..0x1eb adds one, SETENP@0x38 clears them."
+source = "investigation"
+confidence = "high"
+
+# BTANINIT2: battle animations, 10000 ids (leader G[0x38a9fa], six cells an id).
+
+[[global]]
+address = "0x38a9fa"
+name = "battle_animation_effects"
+category = "data-table"
+type = "int[10000][6]"
+usage = "BTANINIT2: each of the six slots' effect, a BTANINIT id; slot 5 plays only on a hit, G[0x952a4] (ANIME@0x4c1..0x4fb), and slots 0 and 1 only while bit 0 of G[0x38a9f9] is set (ANIME@0x243)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x39945a"
+name = "battle_animation_effect_starts"
+category = "data-table"
+type = "int[10000][6]"
+usage = "BTANINIT2: when each slot's effect starts, in ms (ANIME@0xbca, @0xc2d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3a7eba"
+name = "battle_animation_lengths"
+category = "data-table"
+type = "int[10000]"
+usage = "BTANINIT2: the animation's length in ms (ANIME@0x2b2); a voice is scheduled at it (ANIME@0x1022) and an end fade runs at it plus 300 to 400 (ANIME@0x12ab..0x1330)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3aa5ca"
+name = "battle_animation_split_styles"
+category = "data-table"
+type = "int[10000]"
+usage = "BTANINIT2: how the battle picture splits as it slides away after the animation, 250 ms (BTL@0x6352..0x6701): 1 and 2 two-pixel strips, 3 left and right halves, 4 top and bottom halves, 5 three bands, 6 eight bands; skipped while G[0x8f566] or G[0x90510] is set (BTL@0x6328)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x38a9f8"
+name = "battle_animation_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The BTANINIT2 animation ANIME plays, from ITINIT's G[0x34f8bd] for the action G[0x952a3] (BTL@0x1cb0, @0x212e, @0x4a32); 0 while the option G[0x9050f] is set (ANIME@0x7)."
+source = "investigation"
+confidence = "high"
+
+# BTANINIT: the effects of the animation in play, six slots of work arrays that BTANINIT clears and fills per effect id.
+
+[[global]]
+address = "0x3accda"
+name = "battle_effect_pictures"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the slot's picture, an MVB...A.AGF movie (106 effects) or an AM... sheet (27); 0 for an empty slot (ANIME@0xa6c; the movie at @0xc3f, the texture at @0xb9d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acce0"
+name = "battle_effect_still_kinds"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: 0 for a movie; 1 a texture with colour key 0xff00, 2 a texture with key -1 (ANIME@0xb5e..0xbbc); textures are set only while bit 0 of G[0x38a9f9] is set."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acce6"
+name = "battle_effect_blend_modes"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: when set, ANIME draws the effect with gfx-draw-color mode 1, 0xff, 0xffffff (ANIME@0xc5b..0xc70); 115 effects have 1."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x3accec"
+name = "battle_effect_widths"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the effect's width; it is drawn centred on its point (ANIME@0xae1, @0xc16)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3accf2"
+name = "battle_effect_heights"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the effect's height (ANIME@0xaf6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3accf8"
+name = "battle_effect_sheet_columns"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: a sheet's columns, for animate-gfx-srcrect-target (ANIME@0xbf1); 27 effects."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3accfe"
+name = "battle_effect_sheet_rows"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: a sheet's rows, inferred: ANIME does not read it, but columns * rows is the frame count in all 27 sheets."
+source = "investigation"
+confidence = "low"
+
+[[global]]
+address = "0x3acd04"
+name = "battle_effect_frame_counts"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: a sheet's frame count (ANIME@0xbe3)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd0a"
+name = "battle_effect_lengths"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the effect's length in ms; for a movie ANIME writes the movie's own length into it (ANIME@0xc56) and keeps the latest end (ANIME@0xc85..0xccc)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd10"
+name = "battle_effect_placed_flags"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: 1 to place the effect at the target's side (x 0x76 or 0x2aa, y 0xdc), 0 at the screen's centre, 400 by 300 (ANIME@0xa7a..0xadc)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd16"
+name = "battle_effect_x_offsets"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: added to the effect's x (ANIME@0xb0b); 0 in every effect."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd1c"
+name = "battle_effect_y_offsets"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: added to the effect's y (ANIME@0xb1e); 0 in every effect."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd22"
+name = "battle_effect_sounds"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the effect's sound (A0120.WAV ...), played on channel 3 + slot (ANIME@0x1055..0x1071)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd28"
+name = "battle_effect_sound_delays"
+category = "data-table"
+type = "int[6]"
+usage = "BTANINIT: the sound's delay in ms after the effect starts (ANIME@0x1088..0x109d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3acd2e"
+name = "battle_effect_cue_times"
+category = "data-table"
+type = "int[6][3]"
+usage = "BTANINIT: up to three moments, in ms, at which the picture object 0x4651 shakes by 4 pixels for 100 ms, only on a hit G[0x952a4] (ANIME@0x11b7..0x1287, the shake at @0x1129..0x114c); 8 effects."
+source = "investigation"
+confidence = "med"
+
+# EEINIT: the encounter chances, one inline block.
+
+[[global]]
+address = "0x125559"
+name = "encounter_chances"
+category = "data-table"
+type = "int[5][10]"
+usage = "EEINIT: the percent chance of a battle at a field roll, by distance band (row: G[0x317a] / 20 below 10, 20, 40, 70, or more) and encounter level 0 to 9 (column: LAINIT's G[0xd9fae] or RMINIT's G[0xc5285], plus G[0x3181]) (FIELD@0x14b1..0x1589)."
+source = "investigation"
+confidence = "high"
+
+# ENINIT: the encounter set in play, 100 entries, run by FIELD and 25 map scripts.
+
+[[global]]
+address = "0x125333"
+name = "encounter_set_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The encounter set in play, ENINIT's selector, from RMINIT's G[0xc4b7d + 60 * row + 2 * block + G[0x3180]] (FIELD@0x5e0) or a map script (MP02B0207@0x276)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125334"
+name = "encounter_entry_weights"
+category = "data-table"
+type = "int[100]"
+usage = "ENINIT: the entry's weight in SETENP's draw over entries 1 to 99 (SETENP@0x1ec..0x2e3); entry 0 is never drawn but is the fallback when none fits, and FIELD@0x5ef runs the base ENINIT only while its weight is 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125398"
+name = "encounter_entry_gauge_lows"
+category = "data-table"
+type = "int[100]"
+usage = "ENINIT: the low end of the entry's window, plus 16: it may be drawn when the field gauge G[0x3178] >= value - 16; 0 for always (SETENP@0x217..0x233)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1253fc"
+name = "encounter_entry_gauge_highs"
+category = "data-table"
+type = "int[100]"
+usage = "ENINIT: the high end of the entry's window, plus 16: G[0x3178] <= value - 16 (SETENP@0x23a..0x248)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125460"
+name = "encounter_entry_formations"
+category = "data-table"
+type = "int[100][2]"
+columns = { "0" = "first", "1" = "second" }
+usage = "ENINIT: the entry's two formations (ESINIT ids), into G[0x9529b] and G[0x9529c] (SETENP@0x2eb..0x306); the second's enemies stand five rows further (SETENP@0x6b7)."
+source = "investigation"
+confidence = "high"
+
+# ESINIT: the formation in play, 8 slots, run by SETENP for each of the battle's two formations.
+
+[[global]]
+address = "0x125528"
+name = "formation_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The formation ESINIT loads, G[0x9529b] or G[0x9529c] (SETENP@0x342)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125529"
+name = "formation_slot_units"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the slot's enemy, an EBINIT unit (into G[0x9540c], SETENP@0x38a); 0 for an empty slot. SETENP@0x351 runs the base ESINIT only while slot 0's is 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125531"
+name = "formation_slot_first_columns"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the first column the enemy may stand in, from 1; 0 for any (SETENP@0x3d6..0x441)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125539"
+name = "formation_slot_last_columns"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the last column; when not above the first, the first only (SETENP@0x3d6..0x441)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125541"
+name = "formation_slot_first_rows"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the first row the enemy may stand in, from 1; 0 for any (SETENP@0x446..0x4b1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125549"
+name = "formation_slot_last_rows"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the last row (SETENP@0x446..0x4b1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x125551"
+name = "formation_slot_chances"
+category = "data-table"
+type = "int[8]"
+usage = "ESINIT: the percent chance the slot is used; 0 for always; a draw at or above it drops the slot (SETENP@0x396..0x3be)."
+source = "investigation"
+confidence = "high"
+
+# ---- ARINIT: the arena, four ranks of seven rounds (boot, leader GS[0x1a20], 40; id = 10 * rank + round) ----
+
+[[global]]
+address = "0xc1e73"
+name = "arena_rank_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The arena rank ARENA shows, 0 to 3 (ARENA@0x96b); the first index of ARINIT's round arrays (ARENA@0x691, SETEN@0x45, RESULT@0x307)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e74"
+name = "arena_round_in_play"
+category = "index-pointer"
+type = "int"
+usage = "The round chosen in ARENA, 0 to 6; it starts at arena_rounds_won (ARENA@0xbb) and moves on after a first win (ARENA@0x7de)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e75"
+name = "arena_rank_pictures"
+category = "data-table"
+type = "int[4]"
+usage = "ARINIT: the picture ARENA draws at the bottom, centred at x 670 (ARENA@0x98c..0x9a1, @0xc81..0xcb2); CS480AA.AGF for every rank."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e79"
+name = "arena_rank_backdrops"
+category = "data-table"
+type = "int[4]"
+usage = "ARINIT: the full-screen backdrop of ARENA (ARENA@0x970..0x985, @0xc5b..0xc70) and of CHMODE opened from it (CHMODE@0x15e); BG048A.AGF for every rank."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1e7d"
+name = "arena_round_marks"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: nonzero lists the round (ARENA@0xe21, @0x1243); the value picks a 12 by 14 glyph of SO016.AGF beside it (ARENA@0xe59..0xe72). It is the round number plus one in every record."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc1ea5"
+name = "arena_round_enemy_levels"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: the enemies' level, which SETEN@0x45 takes while ARENA runs (G[0x91054])."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1ecd"
+name = "arena_round_formations"
+category = "data-table"
+type = "int[40][2]"
+columns = { "0" = "first", "1" = "second" }
+usage = "ARINIT: the round's two formations (ESINIT ids), into G[0x9529b] and G[0x9529c] (ARENA@0x708..0x756); column 1 is never written."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1f1d"
+name = "arena_round_fees"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: the fee (掛金), drawn at ARENA@0xf99; the round is refused when the money G[0x8b159] does not cover it, and it comes off the money (ARENA@0x691..0x6e5)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1f45"
+name = "arena_round_prizes"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: the prize money (賞金), drawn at ARENA@0x1316; RESULT pays it only on the round's first win (RESULT@0x2ef..0x312, added at @0x11cf)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1f6d"
+name = "arena_round_reward_items"
+category = "data-table"
+type = "int[40][2]"
+usage = "ARINIT: two reward items (賞品), ITINIT ids, given through ADDITEM on the first win (RESULT@0x342..0x3cc, @0x11a3..0x11c9; drawn at ARENA@0x1373)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1fbd"
+name = "arena_round_reward_counts"
+category = "data-table"
+type = "int[40][2]"
+usage = "ARINIT: how many of each reward item; an item with count 0 is not given (RESULT@0x362, ARENA@0x1353)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc200d"
+name = "arena_round_required_levels"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: the round is closed while the party's average of G[0x8b2fe] is below it; 0 for none (ARENA@0x9a9..0xa1c, @0xa6c..0xa97). The condition text matches: 35 reads 必要平均LV35."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc2035"
+name = "arena_round_party_limits"
+category = "data-table"
+type = "int[40]"
+usage = "ARINIT: the round is closed while the party has more members; 0 for any (ARENA@0xa9f..0xaca). Only round 26 has one, 1 (１人専用)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc205d"
+name = "arena_round_characters"
+category = "data-table"
+type = "int[40][5]"
+usage = "ARINIT: five characters who must be in the party G[0x8b14c] (ARENA@0xad2..0xb29). Only round 26 names one, character 1 (セリカ, セリカ一人での限定バトル)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1a20"
+name = "arena_round_names"
+category = "string-table"
+type = "string[40]"
+usage = "ARINIT: the round's title (タイトル), drawn in ARENA's list (ARENA@0xef0)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1a48"
+name = "arena_round_texts"
+category = "string-table"
+type = "string[40][4]"
+columns = { "0" = "condition", "1" = "description_1", "2" = "description_2", "3" = "description_3" }
+usage = "ARINIT: column 0 the condition (条件) in the list, red while the round is closed (ARENA@0xf04..0xf2d); columns 1 to 3 the description lines of the round under the cursor (ARENA@0x1288..0x12cc); column 3 is never written."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8f568"
+name = "arena_rounds_won"
+category = "counter"
+type = "int[4]"
+usage = "Saved: how many rounds of the rank are won. ARENA starts the round there (ARENA@0xbb), refuses a round above it (ARENA@0x5e3) and adds one on a first win (ARENA@0x7b4..0x7d7); RESULT pays the prize only for that round (RESULT@0x2ef)."
+source = "investigation"
+confidence = "high"
+
+# ---- Tables ----
+
+[[table]]
+name = "routine"
+records = 1000
+built_by = "boot"
+usage = "RTINIT battle routines keyed by routine id (EBINIT's G[0xb53c5] names a unit's, one a tactic); each field holds 20 steps."
+
+[table.fields]
+step_kind = "routine_step_kinds"
+step_chance = "routine_step_chances"
+step_action = "routine_step_actions"
+step_arg = "routine_step_args"
+step_percent = "routine_step_percents"
+step_target_count = "routine_step_target_counts"
+step_flag = "routine_step_flags"
+step_limit = "routine_step_limits"
+
+[[table]]
+name = "battle_animation"
+records = 10000
+built_by = "boot"
+usage = "BTANINIT2 battle animations keyed by animation id (ITINIT's G[0x34f8bd] names an action's)."
+
+[table.fields]
+effects = "battle_animation_effects"
+effect_starts = "battle_animation_effect_starts"
+length = "battle_animation_lengths"
+split_style = "battle_animation_split_styles"
+
+[[table]]
+name = "battle_effect"
+records = 6
+built_by = "battle"
+usage = "BTANINIT's effects of the animation in play, keyed by the animation's effect slot, 0 to 5."
+
+[table.fields]
+picture = "battle_effect_pictures"
+still_kind = "battle_effect_still_kinds"
+blend_mode = "battle_effect_blend_modes"
+width = "battle_effect_widths"
+height = "battle_effect_heights"
+sheet_columns = "battle_effect_sheet_columns"
+sheet_rows = "battle_effect_sheet_rows"
+frame_count = "battle_effect_frame_counts"
+length = "battle_effect_lengths"
+placed = "battle_effect_placed_flags"
+x_offset = "battle_effect_x_offsets"
+y_offset = "battle_effect_y_offsets"
+sound = "battle_effect_sounds"
+sound_delay = "battle_effect_sound_delays"
+cue_times = "battle_effect_cue_times"
+
+[table.refs]
+picture = "picture"
+
+[[table]]
+name = "encounter_entry"
+records = 100
+built_by = "encounter"
+usage = "ENINIT's entries of the encounter set in play, keyed by entry number; entry 0 is the fallback."
+
+[table.fields]
+weight = "encounter_entry_weights"
+gauge_low = "encounter_entry_gauge_lows"
+gauge_high = "encounter_entry_gauge_highs"
+formations = "encounter_entry_formations"
+
+[[table]]
+name = "formation_slot"
+records = 8
+built_by = "battle"
+usage = "ESINIT's slots of the formation in play, keyed by slot number."
+
+[table.fields]
+unit = "formation_slot_units"
+first_column = "formation_slot_first_columns"
+last_column = "formation_slot_last_columns"
+first_row = "formation_slot_first_rows"
+last_row = "formation_slot_last_rows"
+chance = "formation_slot_chances"
+
+[[table]]
+name = "arena_round"
+records = 40
+built_by = "boot"
+usage = "ARINIT arena rounds keyed by 10 * rank + round (ranks 0 to 3, rounds 0 to 6; arena_rank_in_play, arena_round_in_play)."
+
+[table.fields]
+name = "arena_round_names"
+texts = "arena_round_texts"
+mark = "arena_round_marks"
+enemy_level = "arena_round_enemy_levels"
+formations = "arena_round_formations"
+fee = "arena_round_fees"
+prize = "arena_round_prizes"
+reward_items = "arena_round_reward_items"
+reward_counts = "arena_round_reward_counts"
+required_level = "arena_round_required_levels"
+party_limit = "arena_round_party_limits"
+characters = "arena_round_characters"
+
+[table.refs]
+reward_items = "item"
+characters = "character"
+
+[[table]]
+name = "arena_rank"
+records = 4
+built_by = "boot"
+usage = "ARINIT's cells of each arena rank, keyed by rank (arena_rank_in_play)."
+
+[table.fields]
+picture = "arena_rank_pictures"
+backdrop = "arena_rank_backdrops"
+
+[table.refs]
+picture = "picture"
+backdrop = "picture"
+
+
+# ==== The world: AMINIT, SIINIT, MPINIT, RMINIT, LAINIT, OBINIT, OBINIT2, CPINIT (docs/bg0-data-tables.md) ====
+
+# ---- Selectors and field state ----
+
+[[global]]
+address = "0x30b0"
+name = "story_part"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the story's part, 1 to 4, and with it the world map in play. GAMESTART@0x665 (通常) and TITLE@0x633 set 1, SC0180@0x11ae0 2, SC0500@0x129a8 3 and SC0390@0x1b880 4, as GAMESTART@0x423 does for 特別編. AMINIT dispatches on it (AMINIT@0x32), world_map_pictures is indexed by it, SCJUMP's rules test it, and CHANGECHAPTER@0x1b..0x40 turns it into lead_unit_id. Not the chapter: the chapter's name is GS[0xdc], which each scene sets (SC0000@0x7be)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x30b1"
+name = "lead_unit_id"
+category = "index-pointer"
+type = "int"
+usage = "Saved: セリカ's unit for the world map in play, 1 to 4. CHANGECHAPTER@0x1b..0x3d sets it from story_part, @0x40 makes it his unit (character_unit_ids[1]), and @0x45, @0x18a and @0x37f read CBINIT's row and that unit's EBINIT fields by it. CPINIT's field sheets are read by it too (FIELD@0x1806, DRAWJUMP@0xe8)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x30b2"
+name = "current_place_id"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the place in play, an area id: a map 1 to 49 (FIELD) or a town from 50 (TOWN). ALLMAP@0x78d sets it on entering an area; MPINIT, RMINIT and SIINIT are read by it (FIELD@0xba, FIELD@0x88, TOWN@0x6a) and RMINIT and SIINIT branch on it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3149"
+name = "town_site_id"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the town site TOWN is about to offer: TOWN@0x518 sets it for each site, and TOWN@0x51d runs SCJUMP's context 3, every rule of which tests it (SCJUMP@0x1480)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3169"
+name = "map_block_row"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the floor, the row of the block in play; RMINIT's arrays are read at 30 * row + column (FIELD@0x5c7, FIELD@0x606) and MPINIT's floor names at 100 * map + row (FIELD@0x170). MPINIT's start floor is written here (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x316a"
+name = "map_block_column"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the section, the block in play within its row (FIELD@0x5c7, FIELD@0x606); MPINIT's start section is written here."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x316c"
+name = "map_section_slot"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the slot of map_section_codes the section in play holds, found or taken at FIELD@0x1a7..0x230; the map object arrays are read by it (DRAWMAP@0x3c6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x316d"
+name = "map_continue"
+category = "ui-toggle"
+type = "int"
+usage = "Saved: 'MapContinue' by the debug text at FIELD@0x235..0x25c. When it is 0, FIELD@0x18e..0x198 copies the target position into the position; EVOLVEOBJ plays an object's change sound only when it is not 0. Its full role is not established."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x3170"
+name = "map_player_x"
+category = "counter"
+type = "int"
+usage = "Saved: the player's x on the map; DRAWWALK@0x0 walks it toward map_player_target_x."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3171"
+name = "map_player_target_x"
+category = "counter"
+type = "int"
+usage = "Saved: the x the player walks to (DRAWWALK@0xa); MPINIT's start x is written here on entry (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3172"
+name = "map_player_y"
+category = "counter"
+type = "int"
+usage = "Saved: the player's y on the map; DRAWWALK@0x5 walks it toward map_player_target_y."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3173"
+name = "map_player_target_y"
+category = "counter"
+type = "int"
+usage = "Saved: the y the player walks to (DRAWWALK@0x11); MPINIT's start y is written here on entry."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3174"
+name = "map_player_facing"
+category = "index-pointer"
+type = "int"
+usage = "Saved: the player's facing, set from the walking direction (DRAWWALK@0x0..0x130, screen y downward): 0 down-left, 1 left, 2 up-left, 3 up, 4 up-right, 5 right, 6 down-right, 7 down."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3175"
+name = "map_player_target_facing"
+category = "index-pointer"
+type = "int"
+usage = "Saved: MPINIT's start facing is written here on entry, and FIELD@0x18e..0x198 copies it into map_player_facing when map_continue is 0."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x3176"
+name = "field_land_id"
+category = "index-pointer"
+type = "int"
+usage = "The land type under the player: FIELD@0x1734 writes AGERC _GetLand's (slot 2) answer here. LAINIT's arrays are read by it; 0 is no land entry."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x317c"
+name = "map_entered"
+category = "ui-toggle"
+type = "int"
+usage = "Saved: 1 once FIELD has started on this map entry (FIELD@0x99); ALLMAP@0xe and TOWN@0x11 clear it. FIELD reads MPINIT's start only while it is 0 (FIELD@0xba), and CALLBACK_LOAD@0xbc..0xde reruns RMINIT for a save made with it set."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x317f"
+name = "map_music_variant"
+category = "index-pointer"
+type = "int"
+usage = "Saved: which of the block's three musics plays (FIELD@0x606..0x64c); map scripts set it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3180"
+name = "map_encounter_variant"
+category = "index-pointer"
+type = "int"
+usage = "Saved: which of the block's two encounter sets is in play (FIELD@0x5c7..0x5e0); map scripts set it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xde"
+name = "current_place_name"
+category = "string-table"
+type = "string"
+usage = "Saved: the place name. ALLMAP@0x50 sets 全体マップ, TOWN@0x28 and FIELD@0x159 copy area_names[current_place_id], FIELD@0x170 copies the floor's name from map_floor_names. What reads it was not traced."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x386a59"
+name = "world_map_pictures"
+category = "data-table"
+type = "int[5]"
+usage = "INIT2@0x74..0x83: the world map's picture for each story part, [1] to [4] AL001A.AGF to AL004A.AGF ([0] is not written). ALLMAP@0x967, SHOWALLMAP@0x8f and TOWN@0x5cb set [story_part] as texture 0x3b."
+source = "investigation"
+confidence = "high"
+
+# ---- Saved section state (per section slot) ----
+
+[[global]]
+address = "0x3182"
+name = "map_section_codes"
+category = "data-table"
+type = "int[500]"
+usage = "Saved: the section each slot holds, map * 10000 + floor * 100 + section, found or taken at FIELD@0x1a7..0x230. CHANGECHAPTER@0x4a4..0x576 clears every slot unless map_keeps_section_states of the slot in play's map is 1."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2cb86"
+name = "map_object_flags"
+category = "data-table"
+type = "int[500][100]"
+usage = "Saved: each section slot's object flags; DRAWMAP@0x3c6 draws object k when bit 16 is set and bit 0 is clear. Other bits are not decoded."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x38ed6"
+name = "map_object_kinds"
+category = "data-table"
+type = "int[500][100]"
+usage = "Saved: each section slot's object kinds, OBINIT ids (DRAWMAP@0x3e6); EVOLVEOBJ@0x1d..0xe3 replaces a kind with object_kind_next_kinds, 0 removing the object."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x45226"
+name = "map_object_x"
+category = "data-table"
+type = "int[500][100]"
+usage = "Saved: each section slot's object x on the map; DRAWMAP@0x428 draws the sprite there, minus the scroll G[0xc57b3]. FIELD@0xefa adds it to the kind's wall points."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x51576"
+name = "map_object_y"
+category = "data-table"
+type = "int[500][100]"
+usage = "Saved: each section slot's object y on the map (DRAWMAP@0x43a, minus the scroll G[0xc57b4]); y + object_kind_depth_offsets is the sort key (DRAWMAP@0x7f..0xc0)."
+source = "investigation"
+confidence = "high"
+
+# ---- AMINIT: world-map areas (rebuilt for story_part on each opening) ----
+
+[[global]]
+address = "0x30b3"
+name = "area_states"
+category = "data-table"
+type = "int[100]"
+usage = "Saved; AMINIT clears it and sets bit 0 (bit-set) under story-flag tests: bit 0 shows the area (ALLMAP@0x90, SHOWALLMAP@0x3e). Bit 1 would refuse entry with SE016.WAV (ALLMAP@0x734..0x751), but no script sets it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x199e"
+name = "area_names"
+category = "string-table"
+type = "string[100]"
+usage = "AMINIT: the area's name (廃都ノヒア, マクルの街 ...), copied into current_place_name by TOWN@0x28 and FIELD@0x159. AMINIT overwrites it but does not clear it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1716"
+name = "area_pictures"
+category = "data-table"
+type = "int[100][3]"
+columns = { "0" = "icon", "1" = "panel", "2" = "town_backdrop" }
+usage = "AMINIT: 0 the icon ALT0nnA.AGF, texture 0x3e + n, drawn 120x120 centred on the point (ALLMAP@0x9b3, 0xa30; SHOWALLMAP@0xf4); 1 the 200x200 panel ALS0nnA.AGF for the area under the cursor, texture 0x3d (ALLMAP@0xb1e..0xb8e), and the highlight of SHOWALLMAP@0xb2; 2 a town's full-screen backdrop MT0nnA.AGF, texture 0x3d (TOWN@0x5ee, 0x691), written for towns only."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1842"
+name = "area_town_music"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: a town's BGM number, 2 to 18, played by TOWN@0x188. AMINIT writes it for towns but never clears it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1a36"
+name = "area_kinds"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: what entering does: 1 FIELD (system mode 3), 2 TOWN (system mode 5), 0 nothing, the junction 90 中継点 (ALLMAP@0x752..0x78c)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1a9a"
+name = "area_x"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the x of the area's point on the world map; the hot rectangle is 40 to each side (ALLMAP@0x118, SHOWALLMAP@0x5a)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1afe"
+name = "area_y"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the y of the area's point; the hot rectangle is 40 above and below (ALLMAP@0x12b, SHOWALLMAP@0x6d)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1b62"
+name = "area_up_neighbors"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the area the cursor moves to on up (joy 0), passing through areas whose state is 0 (ALLMAP@0x84f, 0x5db..0x6f7)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1bc6"
+name = "area_down_neighbors"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the area the cursor moves to on down (joy 2), passing through hidden areas (ALLMAP@0x895)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1c2a"
+name = "area_left_neighbors"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the area the cursor moves to on left (joy 3), passing through hidden areas (ALLMAP@0x8db)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1c8e"
+name = "area_right_neighbors"
+category = "data-table"
+type = "int[100]"
+usage = "AMINIT: the area the cursor moves to on right (joy 1), passing through hidden areas (ALLMAP@0x921)."
+source = "investigation"
+confidence = "high"
+
+# ---- SIINIT: town sites (rebuilt for current_place_id on each visit) ----
+
+[[global]]
+address = "0x314a"
+name = "town_site_states"
+category = "data-table"
+type = "int[30]"
+usage = "Saved; SIINIT clears it and sets bit 0 (bit-set) under story-flag tests: an open site, which TOWN draws and lets the cursor reach (TOWN@0x8f, 0x5b5)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1a02"
+name = "town_site_names"
+category = "string-table"
+type = "string[30]"
+usage = "SIINIT: the site's name (街を出る, 大聖堂, ラギールの店 ...); site 1 is always the exit. No script indexes it."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc1cf2"
+name = "town_site_pictures"
+category = "data-table"
+type = "int[30][2]"
+columns = { "1" = "picture" }
+usage = "SIINIT: column 1 is the site's picture MTS0nnX.AGF on texture 0x3e + n (TOWN@0x630): its top half drawn normally, its bottom half when selected (TOWN@0x6f0, 0x7ae). Column 0 is never written."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1d2e"
+name = "town_site_x"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the x where the site's picture is drawn (TOWN@0x141, 0x6e2)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1d4c"
+name = "town_site_y"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the y where the site's picture is drawn (TOWN@0x154, 0x6e2)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1d6a"
+name = "town_site_hot_lefts"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the hot area's left, relative to the site's x (TOWN@0xb9..0x133; find-hit-rectangle at TOWN@0x268 subtracts it)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1d88"
+name = "town_site_hot_tops"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the hot area's top, relative to the site's y (TOWN@0xb9..0x133)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1da6"
+name = "town_site_hot_widths"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the hot area's width (TOWN@0xb9..0x133)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1dc4"
+name = "town_site_hot_heights"
+category = "data-table"
+type = "int[30]"
+usage = "SIINIT: the hot area's height (TOWN@0xb9..0x133)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc1de2"
+name = "town_site_neighbors"
+category = "data-table"
+type = "int[30][4]"
+columns = { "0" = "up", "1" = "down", "2" = "left", "3" = "right" }
+usage = "SIINIT: the site the cursor moves to on up (joy 0, TOWN@0x395), down (joy 2, @0x3e8), left (joy 3, @0x43b) and right (joy 1, @0x48e), passing through closed sites (TOWN@0x56c..0x5c3)."
+source = "investigation"
+confidence = "high"
+
+# ---- MPINIT: field maps (boot) ----
+
+[[global]]
+address = "0xc214d"
+name = "map_object_sheets"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the map's object sheet MO01.AGF (MO18.AGF for map 18), set on texture 0x66 (FIELD@0x21f2); DRAWMAP@0x44c cuts every object sprite from it."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc217f"
+name = "map_start_floors"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the floor the map starts on, written to map_block_row on entry (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc21b1"
+name = "map_start_sections"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the section the map starts on, written to map_block_column on entry (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc21e3"
+name = "map_start_x"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the start x, written to map_player_target_x on entry (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc2215"
+name = "map_start_y"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the start y, written to map_player_target_y on entry (FIELD@0xba..0xf1)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc2247"
+name = "map_start_facings"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: the start facing (0 to 7, as map_player_facing), written to map_player_target_facing on entry (FIELD@0xba..0xf1); four maps leave it 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc2279"
+name = "map_encounter_decay_distances"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: while the field gauge G[0x3178] is above -15, it falls by 1 each time the distance G[0x3179] reaches ten times this value, which restarts the distance (FIELD@0x10ad..0x10ec)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc22ab"
+name = "map_keeps_section_states"
+category = "data-table"
+type = "int[50]"
+usage = "MPINIT: 1 on 13 maps. CHANGECHAPTER@0x4a4..0x576 clears all 500 saved section slots (map_section_codes and the per-slot object arrays) unless this cell is 1 for the map of the slot in play (map_section_codes[map_section_slot] / 10000)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc22dd"
+name = "map_floor_numbers"
+category = "data-table"
+type = "int[50][100]"
+usage = "MPINIT: each floor's number as its name shows it, columns 1 to 9, negative below ground. No script reads it. The array ends at 0xc3665, where RMINIT's begin."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x1ae8"
+name = "map_floor_names"
+category = "string-table"
+type = "string[50][100]"
+usage = "MPINIT: each floor's name, columns 1 to 9; FIELD@0x170 copies it into current_place_name, and BTL@0x559a reads it."
+source = "investigation"
+confidence = "high"
+
+# ---- RMINIT: map blocks (rebuilt for current_place_id each time FIELD starts) ----
+
+[[global]]
+address = "0xc3665"
+name = "map_block_scripts"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the section's map script MPmmFrrss.BIN, called at FIELD@0x2c0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc3827"
+name = "map_block_event_scripts"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the section's event script MPEVmmFrrss.BIN, called at FIELD@0xd2a."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc39e9"
+name = "map_block_pictures"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the section's picture A (MP01F0101A.AGF ...), loaded on raw surface 0x3b; its size becomes the map size G[0xc57b5], G[0xc57b6] (FIELD@0x2132)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc3bab"
+name = "map_block_pictures_2"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the section's picture B, loaded on surface 0x3c (FIELD@0x2152), 0 for none; DRAWMAP@0x46f..0x484 draws an 800x600 window of it at the scroll as element 0x9c4."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc3d6d"
+name = "map_block_overlay_pictures"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: SO026A.AGF (a 200x200 picture) or once SO026B.AGF, set on texture 0x3d (FIELD@0x217d); DRAWMAP@0x495..0x4fc draws it as element 0x1387 at the negative scroll, scaled to cover the map size. What it shows in play is not checked."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc3f2f"
+name = "map_block_minimap_pictures"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the section's minimap MPS...A.AGF, on texture 0x8e in the 200x200 surface 0x70 (FIELD@0x24a8..0x24d3)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc40f1"
+name = "map_block_battle_backdrops"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the battle backdrop MPBnnnX.AGF on texture 0x2e; 0 uses MPB001A.AGF (BTL@0x556c..0x5593)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc4475"
+name = "map_block_music"
+category = "data-table"
+type = "int[450][3]"
+usage = "RMINIT: the section's BGM number (3 to 35) for each of three variants map_music_variant, read at 90 * floor + 3 * section + variant; 0 fades the music out (FIELD@0x606..0x64c)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc4b7d"
+name = "map_block_encounter_sets"
+category = "data-table"
+type = "int[450][2]"
+usage = "RMINIT: the section's encounter set (an ENINIT id) for each of two variants map_encounter_variant, read at 60 * floor + 2 * section + variant and written to G[0x125333] (FIELD@0x5c7..0x5e0); map scripts read it too (MP02B0207@0x26b)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc4f01"
+name = "map_block_enemy_levels"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the enemies' base level; SETEN@0x58 adds part of the party's average-level lead (EBINIT's G[0xadaad]) and clamps it by G[0xad6c5] and G[0xad2dd]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc50c3"
+name = "map_block_enemy_level_spreads"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the level spread v, 1 to 10; SETEN draws 0 to 2v and subtracts v (SETEN@0x10e..0x150)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc5285"
+name = "map_block_encounter_levels"
+category = "data-table"
+type = "int[450]"
+usage = "RMINIT: the encounter level, 2 to 9, unless land_encounter_levels replaces it; G[0x3181] is added and the result, clamped to 0 to 9, is the column of EEINIT's G[0x125559 + 10 * band + level] (FIELD@0x1515..0x1577)."
+source = "investigation"
+confidence = "high"
+
+# ---- LAINIT: land types (boot) ----
+
+[[global]]
+address = "0xd9c8e"
+name = "land_footstep_sounds"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: the footstep loop on this land (WALKB.WAV, WALKC.WAV, B0208.WAV, B0016.WAV), looped on channel 3; 0 plays WALKA.WAV (FIELD@0x181f..0x1841, DRAWWALK@0x1a6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9cf2"
+name = "land_sprite_columns"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: the column of field_sprite_walk_sheets (1 to 5, B to F) loaded on texture 0x67 when the land changes (FIELD@0x17d2..0x1811, DRAWCH@0xe, DRAWJUMP@0xdc); 0 is column A."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9d56"
+name = "land_speed_changes"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: the speed change in percent, -50 or -30: the step is max(1, 60 * (100 + v) / 1000) (FIELD@0x1795..0x17cb, DRAWWALK@0x135)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9dba"
+name = "land_drift_x"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: a current's x: each frame adds v * local 0x28b / 100 to the step (FIELD@0x1a4d..0x1a62, 0x1ec2). Lands 7 to 14 and 20 are currents."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9e1e"
+name = "land_drift_y"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: a current's y, added in the same way (FIELD@0x1a69..0x1a7e, 0x1ede)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9e82"
+name = "land_drift_walkable"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: 1 lets the player walk against the drift; with 0, FIELD drops the part of the step that opposes it (FIELD@0x19f6..0x1a48, 0x1e6b). Every land with a drift has 1."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xd9fae"
+name = "land_encounter_levels"
+category = "data-table"
+type = "int[100]"
+usage = "LAINIT: an encounter level that replaces map_block_encounter_levels on this land (FIELD@0x1515); 9 on lands 19 and 21."
+source = "investigation"
+confidence = "high"
+
+# ---- OBINIT and OBINIT2: map object kinds (boot) ----
+
+[[global]]
+address = "0xda012"
+name = "object_kind_sprite_x"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the sprite's x on the map's object sheet, texture 0x66 (DRAWMAP@0x40c)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xda3fa"
+name = "object_kind_sprite_y"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the sprite's y on the object sheet (DRAWMAP@0x413)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xda7e2"
+name = "object_kind_widths"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the sprite's width (DRAWMAP@0x41a)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xdabca"
+name = "object_kind_heights"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the sprite's height (DRAWMAP@0x421)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xdafb2"
+name = "object_kind_depth_offsets"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT2: added to the object's y to give its sort key (DRAWMAP@0x7f..0xc0); -9999 and 9999 put it at an end of the order."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xdb39a"
+name = "object_kind_wall_point_counts"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT2: the number of points of the kind's wall polygon (5 or 7), written to G[0xc597d + poly] before AGERC's _SetMapWall* calls (FIELD@0xefa..0xfe6)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xdb782"
+name = "object_kind_wall_point_x"
+category = "data-table"
+type = "int[1000][100]"
+usage = "OBINIT2: the wall points' x, relative to the object; FIELD@0xefa..0xfe6 adds the object's x and writes it to G[0xc5a45 + 100 * poly + i]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xf3e22"
+name = "object_kind_wall_point_y"
+category = "data-table"
+type = "int[1000][100]"
+usage = "OBINIT2: the wall points' y, relative to the object; written in the same way to G[0xca865 + 100 * poly + i]."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x10c4c2"
+name = "object_kind_next_kinds"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the kind the object turns into when its switch G[0xd4829 + k] is above 0 and G[0x83c1a + switch] is set; -1 removes the object (EVOLVEOBJ@0x1d..0xe3). Map scripts read it too (67 scripts)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x10c8aa"
+name = "object_kind_change_sounds"
+category = "data-table"
+type = "int[1000]"
+usage = "OBINIT: the sound played when the object turns (SE001.WAV, B0401.WAV, B0302.WAV), when map_continue is not 0 (EVOLVEOBJ@0x1d..0xe3)."
+source = "investigation"
+confidence = "high"
+
+# ---- CPINIT: the field character's sheets (boot) ----
+
+[[global]]
+address = "0xc5447"
+name = "field_sprite_walk_sheets"
+category = "data-table"
+type = "int[10][30]"
+usage = "CPINIT: the walking sheet CPM00nX.AGF of chapter n, by land_sprite_columns (0 to 5, A to F), loaded on texture 0x67 (FIELD@0x1806, 0x2207; DRAWCH@0x36; DRAWJUMP@0x221). Chapters 1 to 4."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xc5573"
+name = "field_sprite_jump_sheets"
+category = "data-table"
+type = "int[10][30]"
+usage = "CPINIT: the jumping sheet CPJ00nX.AGF of chapter n, by land sprite column (DRAWJUMP@0xe8). Chapters 1 to 4."
+source = "investigation"
+confidence = "high"
+
+# ---- Tables ----
+
+[[table]]
+name = "area"
+records = 100
+built_by = "world_map"
+usage = "AMINIT's areas of the world map in play (story_part), keyed by place id (current_place_id): a map 1 to 49 (kind 1), a town from 50 (kind 2) or the junction 90. AMINIT clears and refills them each time ALLMAP or SHOWALLMAP opens, except area_town_music and area_names, which it only overwrites."
+
+[table.fields]
+state = "area_states"
+name = "area_names"
+pictures = "area_pictures"
+town_music = "area_town_music"
+kind = "area_kinds"
+x = "area_x"
+y = "area_y"
+up = "area_up_neighbors"
+down = "area_down_neighbors"
+left = "area_left_neighbors"
+right = "area_right_neighbors"
+
+[table.refs]
+pictures = "picture"
+up = "area"
+down = "area"
+left = "area"
+right = "area"
+
+[[table]]
+name = "town_site"
+records = 30
+built_by = "town"
+usage = "SIINIT's sites of the town in play (current_place_id), keyed by site number from 1; site 1 is the exit."
+
+[table.fields]
+state = "town_site_states"
+name = "town_site_names"
+pictures = "town_site_pictures"
+x = "town_site_x"
+y = "town_site_y"
+hot_left = "town_site_hot_lefts"
+hot_top = "town_site_hot_tops"
+hot_width = "town_site_hot_widths"
+hot_height = "town_site_hot_heights"
+neighbors = "town_site_neighbors"
+
+[table.refs]
+pictures = "picture"
+neighbors = "town_site"
+
+[[table]]
+name = "map"
+records = 50
+built_by = "boot"
+usage = "MPINIT field maps keyed by place id: the object sheet, the start, the encounter decay, the chapter-change keep and the floors (columns 1 to 9). The sections' scripts and pictures are RMINIT's."
+
+[table.fields]
+object_sheet = "map_object_sheets"
+start_floor = "map_start_floors"
+start_section = "map_start_sections"
+start_x = "map_start_x"
+start_y = "map_start_y"
+start_facing = "map_start_facings"
+encounter_decay_distance = "map_encounter_decay_distances"
+keeps_section_states = "map_keeps_section_states"
+floor_numbers = "map_floor_numbers"
+floor_names = "map_floor_names"
+
+[table.refs]
+object_sheet = "picture"
+
+[[table]]
+name = "map_block"
+records = 450
+built_by = "map"
+usage = "RMINIT's blocks of the map in play, keyed by 30 * floor + section (map_block_row, map_block_column)."
+
+[table.fields]
+script = "map_block_scripts"
+event_script = "map_block_event_scripts"
+picture = "map_block_pictures"
+picture_2 = "map_block_pictures_2"
+overlay_picture = "map_block_overlay_pictures"
+minimap_picture = "map_block_minimap_pictures"
+battle_backdrop = "map_block_battle_backdrops"
+music = "map_block_music"
+encounter_sets = "map_block_encounter_sets"
+enemy_level = "map_block_enemy_levels"
+enemy_level_spread = "map_block_enemy_level_spreads"
+encounter_level = "map_block_encounter_levels"
+
+[table.refs]
+picture = "picture"
+picture_2 = "picture"
+overlay_picture = "picture"
+minimap_picture = "picture"
+battle_backdrop = "picture"
+
+[[table]]
+name = "land"
+records = 100
+built_by = "boot"
+usage = "LAINIT land types keyed by the land under the player (field_land_id); 0 is no entry."
+
+[table.fields]
+footstep_sound = "land_footstep_sounds"
+sprite_column = "land_sprite_columns"
+speed_change = "land_speed_changes"
+drift_x = "land_drift_x"
+drift_y = "land_drift_y"
+drift_walkable = "land_drift_walkable"
+encounter_level = "land_encounter_levels"
+
+[[table]]
+name = "object_kind"
+records = 1000
+built_by = "boot"
+usage = "OBINIT and OBINIT2 map object kinds, one id in both (map_object_kinds): the sprite rectangle, the depth, the wall polygon and what the object turns into."
+
+[table.fields]
+sprite_x = "object_kind_sprite_x"
+sprite_y = "object_kind_sprite_y"
+width = "object_kind_widths"
+height = "object_kind_heights"
+depth_offset = "object_kind_depth_offsets"
+wall_point_count = "object_kind_wall_point_counts"
+wall_point_x = "object_kind_wall_point_x"
+wall_point_y = "object_kind_wall_point_y"
+next_kind = "object_kind_next_kinds"
+change_sound = "object_kind_change_sounds"
+
+[[table]]
+name = "field_sprite"
+records = 10
+built_by = "boot"
+usage = "CPINIT's field sheets of the player's character, keyed by セリカ's unit (lead_unit_id, 1 to 4), each a row of 30 by land sprite column."
+
+[table.fields]
+walk_sheets = "field_sprite_walk_sheets"
+jump_sheets = "field_sprite_jump_sheets"
+
+[table.refs]
+walk_sheets = "picture"
+jump_sheets = "picture"
+
+# ---- Scopes ----
+
+[[scope]]
+name = "world"
+first = 1
+last = 4
+usage = "A world map, by story_part. AMINIT clears these tables and fills them from the branch for the world in play each time ALLMAP or SHOWALLMAP opens; at boot (world 0) it only clears."
+
+[scope.tables]
+area = "area"
+
+[[scope]]
+name = "town"
+first = 50
+last = 99
+usage = "A town, by current_place_id (an area id from 50; the area arrays hold 100, and the game's towns are 50 to 82, with 90 a junction whose SIINIT branch is empty). SIINIT clears these tables and fills them from the branch for the town in play on each TOWN visit."
+
+[scope.tables]
+site = "town_site"
+
+[[scope]]
+name = "dungeon"
+first = 1
+last = 49
+usage = "A field map, by current_place_id (an MPINIT id; the game's are 1 to 41 and 49 in the special mode, and the per-map arrays hold 50). RMINIT clears these tables and fills them from the branch for the map in play each time FIELD starts and when a save made on a map is loaded."
+
+[scope.tables]
+block = "map_block"
+
+
+# ==== Boot, scenes and galleries: INITCONFIG, INIT2, SCINIT, SCJUMP, VIINIT, CGINIT, SPINIT (docs/bg0-data-tables.md) ====
+
+# ---- Boot: SYSTEM4's mode, INITCONFIG's options, INIT2's constants, the game mode ----
+
+[[global]]
+address = "0x0"
+name = "system_mode"
+category = "index-pointer"
+type = "int"
+values = { "1" = "scene", "2" = "ALLMAP", "3" = "FIELD", "4" = "BTL", "5" = "TOWN" }
+usage = "Saved. The mode SYSTEM4 runs each pass (SYSTEM4@0x2ea..0x5d6): 1 a scene, 2 ALLMAP, 3 FIELD, 4 BTL, 5 TOWN; any other value shows 不正な実行モード and asks to exit (SYSTEM4@0x5dc). A SCJUMP rule that plays a scene sets 1 (SCJUMP@0x65); a scene's end sets 3, 2 or 5 (SC0000@0x4810, SC0000@0xf986..0xf9c3)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3"
+name = "config_initialized"
+category = "ui-toggle"
+type = "int"
+usage = "A shared-profile cell. SYSTEM4@0x1c3 loads it; while it is 0, SYSTEM4@0x1d3 runs INITCONFIG, then sets it and stores it. Otherwise LOADCONFIG reads the options back (SYSTEM4@0x1cd)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2fec"
+name = "menu_cursor_auto_move_enabled"
+category = "ui-toggle"
+type = "int"
+usage = "An option, 1 by INITCONFIG@0x10 and kept in the shared profile. While it is set, BUNKI@0x2a1 (and SBUNKI, BUNKIMOVE) put the cursor on a choice menu's first row; otherwise the cursor stays where it is (BUNKI@0x2e6). Himegari's option of the same name."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9050e"
+name = "confirm_escape"
+category = "ui-toggle"
+type = "int"
+usage = "An option, 1 by INITCONFIG@0x8 and kept in the shared profile. While it is set, MENU@0x50d asks 脱出する / 脱出しない (SBUNKI) before the escape command runs SCJUMP's context 6."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x30ae"
+name = "skip_read_messages_only"
+category = "ui-toggle"
+type = "int"
+usage = "An option, 1 by INITCONFIG@0x33 and kept in the shared profile. With 1, a scene's skip button toggles read-message skip (SC0000@0x201..0x219); otherwise it turns message skip on, which skips every message (SC0000@0x21f)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x30af"
+name = "map_frame_rate"
+category = "ui-toggle"
+type = "int"
+usage = "An option, 60 by INITCONFIG@0x2b and kept in the shared profile; CONFIG@0x91c and @0x935 set 60 or 30. FIELD@0xaab waits 1000 / value ms a frame and FIELD@0x1063 steps 60 / value; DRAWWALK reads it too."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x91027"
+name = "scene_graphic_element_numbers"
+category = "data-table"
+type = "int[17]"
+usage = "INIT2@0x4c..0x6f: [n] = 10000 + 10n for layers 0, 1 and 11 to 16; [2..10] have no writer and no reader. A scene sets the layer in G[0x91022] and transforms element [layer] (SC0000@0xfee1..0xff3c)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc57bb"
+name = "party_name_x"
+category = "data-table"
+type = "int[5]"
+usage = "INIT2's inline array 10, 10, 10, 230, 230: the x of party slot [i]'s name. $1$MPEV49B0102@0x253 draws GS[0x9fe + G[0x8b236 + G[0x8b14c + i]]] at (x + 16, y + 7) for each filled slot; only 特別編's map events ($1$MPEV49B0102, 0103, 0109) read it."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0xc57c0"
+name = "party_name_y"
+category = "data-table"
+type = "int[5]"
+usage = "INIT2's inline array 390, 455, 520, 455, 520: the y of party slot [i]'s name, beside party_name_x. $1$MPEV49B0102@0x1e8 also fills the panel from y = [0]."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x90c1a"
+name = "special_edition_mode"
+category = "choice-output"
+type = "int"
+values = { "0" = "通常", "1" = "特別編" }
+usage = "Saved: the game mode, 0 通常 or 1 特別編. GAMESTART@0x7b stores the BUNKI choice G[0x94f67] (GAMESTART@0x1f..0x78). While it is set, $1$AUTORUN runs $1$AMINIT and $1$SIINIT (@0xf) and $1$SCINIT (@0x3a); ALLMAP@0x5a, TOWN@0x5d, FIELD@0x7b and CALLBACK_LOAD@0xd1 run $1$AMINIT, $1$SIINIT and $1$RMINIT in place of the base scripts; and every SCJUMP caller runs $1$SCJUMP (ALLMAP@0x31, FIELD@0x13b, TOWN@0x39, TOWN@0x522, BTL@0x706a, MENU@0x58a). It is 0 at the boot, so a new 特別編 game runs $1$CHINIT and $1$SCINIT itself (GAMESTART@0x3ab..0x3b5); INIT2 runs on every load after the saved prefix is back, so a 特別編 save loads those tables again. The same base also indexes shared-profile flags: [cg] an append CG's unlock ($1$SC0060@0x4b01, CGMODE@0x9b7), [800 + slot] a save slot's (SAVE@0xd13; not decoded)."
+source = "investigation"
+confidence = "high"
+
+# ---- Scenes: SCINIT, the scene pass, SCJUMP ----
+
+[[global]]
+address = "0xbc8f6"
+name = "scene_script_ids"
+category = "data-table"
+type = "int[10000]"
+usage = "SCINIT: the script that plays scene [id], a packed script id (0x28 SC0000.BIN; an append's scene carries selector 1 in the top byte, 0x1000183 $1$SC0000.BIN). SYSTEM4@0x46d copies it into current_scene_script_id and runs it; MENU@0x733 runs it directly. $1$SCINIT, run in 特別編 only, gives scenes 0, 1, 10..13, 20..23, 30..34, 40..44, 50..54, 60..63 and 100 to append scripts."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0xbf006"
+name = "scene_offer_contexts"
+category = "data-table"
+type = "int[10000]"
+usage = "SCINIT's first pass (SCINIT@0x0..0x776) writes the SCJUMP context that offers the scene, 1, 2, 3, 5 or 6 on 164 scenes; they agree with SCJUMP's rules except 395 and 1510, which no rule names. The second pass (SCINIT@0x77b..) sets -1 on 669 scenes, so 32 keep a context. Each scene's header (SC0000@0x15f) registers the right-click menu unless in_room is set or the value is 4, which no scene has."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x91869"
+name = "current_scene_id"
+category = "choice-output"
+type = "int"
+usage = "The scene to play, an id of SCINIT. A SCJUMP rule (SCJUMP@0x6f), a map event (MPEV01B0102@0x1d5) or TITLE@0xa10 sets it; SYSTEM4@0x46d plays it and a scene script dispatches on it (SC0000@0x729). A scene's end sets 0 (SC0000@0x481a). Above the saved prefix."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x454"
+name = "current_scene_script_id"
+category = "index-pointer"
+type = "int"
+usage = "Saved. SYSTEM4@0x44a..0x474 copies scene_script_ids[current_scene_id] into it when scene_run_mode is 0 or -2 (0 becomes 0x28, SC0000.BIN, @0x479), then runs it (@0x48c). TITLE's debug menu sets it to the chosen script (TITLE@0x685, 0x6aa, 0x6c8)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9186a"
+name = "played_scene_id"
+category = "index-pointer"
+type = "int"
+usage = "The scene a map event's inline scene pass last played. MPEV01B0102@0x21a copies current_scene_id into it and repeats the pass while the two differ (@0x20c), so a scene that sets current_scene_id chains to the next; 283 map events hold this loop."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x91052"
+name = "scene_over_map"
+category = "ui-toggle"
+type = "int"
+usage = "A scene is playing over the map. A map event (MPEV01B0102@0x1d0, 128 MPEV scripts), HOSOKU and MENU@0x5dc set it around their inline scene pass and clear it after (MPEV01B0102@0x49a). While it is set, the scene pass erases only graphic elements 10000..49999 instead of every retained object (SYSTEM4@0x34a), and SYSTEM4@0x435 copies another inline array into G[0x2fd3]."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x386a6d"
+name = "scene_run_mode"
+category = "index-pointer"
+type = "int"
+values = { "0" = "story", "1" = "debug script", "-1" = "debug ADV", "-2" = "特別編" }
+usage = "How SYSTEM4 plays a scene. 0, the story: SYSTEM4@0x2f9 records scene_seen_flags and @0x44a reads scene_script_ids. 1, TITLE@0x678's SC????.BIN pick: SC0000@0x475 takes its debug path. -1, DEBUGADV and DEBUGADV2 (TITLE@0x69e, 0x6bc): neither. -2, 特別編 (GAMESTART@0x3b8, CALLBACK_LOAD@0xc): the table is read, nothing recorded. 100 scripts reset it to 0. Above the saved prefix."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x2fd2"
+name = "scjump_context_id"
+category = "index-pointer"
+type = "int"
+usage = "Saved. Which of SCJUMP's rule lists runs (SCJUMP@0x0). 1 ALLMAP@0x2c each world map pass; 2 FIELD@0x136 and TOWN@0x34 on entry (rules test story_part and the map G[0x30b2]); 3 TOWN@0x51d for each location (rules test town_site_id); 5 BTL@0x7065 after a battle; 6 MENU@0x585, the escape command. 4 is never set and its list is empty. BTL and MENU restore the old value after."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x470"
+name = "story_flags"
+category = "story-flag"
+type = "int[10000]"
+usage = "Saved: the game's flags, by scene. Each scene's own code sets [scene] to 1 at its start (SC0000@0x7b5 for scene 0; 649 of the 701 SCINIT scenes). SCJUMP's rules test them (144 of the 184 ask that their own scene's is not 1), as do $1$SCJUMP@0x57 and AMINIT ([9999], which nothing writes). No scene has an id from 1900 to 1999: [1900 + item] is a key item held, item_key_held_flags (ADDITEM@0x78..0xe7)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x8f56d"
+name = "scene_seen_flags"
+category = "data-table"
+type = "int[2000]"
+usage = "SYSTEM4@0x2f9..0x336 sets [current_scene_id] to 1 when a story scene plays (scene_run_mode 0, ids 0 to 1999) and stores the cell in the shared profile; the map events' inline pass does the same (MPEV01B0102@0x254). INFO1@0x902 loads them to unlock glossary entries; TITLE's inline scene pass sets them the same way (TITLE@0x775)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x386a6f"
+name = "debug_map_mode"
+category = "ui-toggle"
+type = "int"
+usage = "Set by DEBUGMAP@0x8, DEBUGMAP2@0x187 and DEBUGMAP3@0x8a. FIELD@0x128 runs no SCJUMP while it is set; INFO1@0x8ec unlocks every glossary entry; BTL and BTLMENU read it too. Above the saved prefix."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9100e"
+name = "in_room"
+category = "ui-toggle"
+type = "int"
+usage = "ROOM@0x0 sets it when the extras room opens (CGMODE, HMODE, MMODE, INFO, HOSOKU); ROOM ends with exit-script (ROOM@0x627), the soft reset that clears it. While it is set, a scene's header registers no right-click menu (SC0000@0x158)."
+source = "investigation"
+confidence = "med"
+
+# ---- Information screens: VIINIT, INFO1 ----
+
+[[global]]
+address = "0x3aced1"
+name = "glossary_current_entry"
+category = "index-pointer"
+type = "int"
+usage = "The glossary entry INFO1 shows: INFO1@0xe89 sets it, INFO1@0xe9c..0xeee draws its picture, and VIMES@0x6 branches on it to show its text."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3aced2"
+name = "glossary_unlock_scenes"
+category = "data-table"
+type = "int[200][3]"
+usage = "VIINIT: up to three scenes, each + 1, that unlock entry [id] (column 0 on all 90 entries, 1 on 7, 2 on 2). INFO1@0x8ba..0x921 lists the entry when any of them has scene_seen_flags set. One value, 995, names scene 994, which SCINIT does not define."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3ad12a"
+name = "glossary_pictures"
+category = "data-table"
+type = "int[200]"
+usage = "VIINIT: the entry's picture (CI502A.AGF ...). INFO1@0xeaa sets it as a texture and draws it at (590 - width / 2, 600 - height) plus the offsets."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3ad1f2"
+name = "glossary_picture_x_offsets"
+category = "data-table"
+type = "int[200]"
+usage = "VIINIT: the picture's x offset, -23 on all 90 entries (INFO1@0xedb)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x3ad2ba"
+name = "glossary_picture_y_offsets"
+category = "data-table"
+type = "int[200]"
+usage = "VIINIT: the picture's y offset, -203 on all 90 entries (INFO1@0xeee)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x81db"
+name = "glossary_titles"
+category = "string-table"
+type = "string[200]"
+usage = "VIINIT: the entry's title (【用語】二つの回廊の終わり ...), ids 1 to 90. INFO1@0xd2d lists it."
+source = "investigation"
+confidence = "high"
+
+# ---- Galleries: CGINIT and CGMODE, SPINIT and HMODE ----
+
+[[global]]
+address = "0x9186b"
+name = "cg_pictures"
+category = "data-table"
+type = "int[2000][2]"
+columns = { "0" = "picture", "1" = "save_thumbnail" }
+usage = "CGINIT's leader. 0 the CG (CGMODE@0x9a7, @0xb7f; $1$CGINIT adds 712..715). 1, on 338, a 160 x 120 picture (EVM008G.AGF ...) that ALLMAP@0x2aa..0x2fc and SAVE@0xb04..0xb2f draw as a save slot's thumbnail when the screen shows picture 0."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x9280b"
+name = "cg_tabs"
+category = "data-table"
+type = "int[2000]"
+usage = "CGINIT: the CGMODE tab, 1 to 5 (CGMODE@0x959 takes 1 off it)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x92fdb"
+name = "cg_slots"
+category = "data-table"
+type = "int[2000]"
+usage = "CGINIT: the slot on the tab, 1 to 30 (CGMODE@0x967)."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x937ab"
+name = "cg_variants"
+category = "data-table"
+type = "int[2000]"
+usage = "CGINIT: the variant within the slot, 1 to 30. CGMODE@0x94b skips a CG whose variant is 0 (154, 155, 156, 254, 293 and 379 have none) and @0x983..0x9a0 counts each slot's variants."
+source = "investigation"
+confidence = "high"
+
+[[global]]
+address = "0x93f7b"
+name = "cg_scroll_x"
+category = "data-table"
+type = "int[2000]"
+usage = "CGINIT, on 31 CGs: the x scroll of a picture larger than the screen; CGMODE@0xbcc places it at x = -value."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x9474b"
+name = "cg_scroll_y"
+category = "data-table"
+type = "int[2000]"
+usage = "CGINIT, on 77 CGs: the y scroll, the same way (CGMODE@0xbdf)."
+source = "investigation"
+confidence = "med"
+
+[[global]]
+address = "0x94f1b"
+name = "replay_scripts"
+category = "data-table"
+type = "int[75]"
+usage = "SPINIT, by page x 15 + cell: the scene to replay, a script id (SP0003.BIN ... SP0582.BIN, 41 of them). HMODE@0x8b9 walks 5 pages of 15, counts a cell unlocked when its script is catalog-unlocked (HMODE@0x8dd), and HMODE@0xb44 runs the chosen one. HMODE turns pages modulo 3 (HMODE@0x84c)."
+source = "investigation"
+confidence = "high"
+
+# ---- Tables ----
+
+[[table]]
+name = "scene"
+records = 10000
+built_by = "boot"
+usage = "SCINIT scenes keyed by scene id: SCJUMP or a map event names one, SYSTEM4 plays its script. 特別編 lays $1$SCINIT's 30 scenes over the base ones."
+
+[table.fields]
+script = "scene_script_ids"
+offer_context = "scene_offer_contexts"
+
+[[table]]
+name = "glossary_entry"
+records = 200
+built_by = "boot"
+usage = "VIINIT glossary entries, ids 1 to 90, the screen INFO1; the text comes from VIMES."
+
+[table.fields]
+title = "glossary_titles"
+unlock_scenes = "glossary_unlock_scenes"
+picture = "glossary_pictures"
+picture_x_offset = "glossary_picture_x_offsets"
+picture_y_offset = "glossary_picture_y_offsets"
+
+[table.refs]
+unlock_scenes = { table = "scene", offset = -1 }
+picture = "picture"
+
+[[table]]
+name = "cg"
+records = 2000
+built_by = "boot"
+usage = "CGINIT gallery CGs keyed by CG id, 1 to 715; CGMODE places each by tab, slot and variant."
+
+[table.fields]
+picture = "cg_pictures"
+tab = "cg_tabs"
+slot = "cg_slots"
+variant = "cg_variants"
+scroll_x = "cg_scroll_x"
+scroll_y = "cg_scroll_y"
+
+[table.refs]
+picture = "picture"
+
+[[table]]
+name = "replay"
+records = 75
+built_by = "boot"
+usage = "SPINIT scene replays keyed by page * 15 + cell (5 pages of 15; HMODE shows 3)."
+
+[table.fields]
+script = "replay_scripts"
+
+# ---- A characters cell INIT2 writes ----
+
+[[global]]
+address = "0x389318"
+name = "character_sort_keys"
+category = "data-table"
+type = "int[100]"
+usage = "INIT2's inline arrays: [1..9] = 1..9 (INIT2@0x97), [51..57] = 10, 11, 12, 13, 14, 16, 15 (INIT2@0x9c). CHMODE1@0x21a and CHMODE2@0x1c0 sort characters by it (sort-indices-by-key-sum)."
+source = "investigation"
+confidence = "low"

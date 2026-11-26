@@ -1,10 +1,808 @@
-# DO NOT EDIT -- generated from no registry (vm-map/globals-bg0.toml is not written yet) by tools/base_mod_build.py --build
+# DO NOT EDIT -- generated from vm-map/globals-bg0.toml by tools/base_mod_build.py --build
 # The names bg0-base 1 exports (Lua scripting spec §9.1): its globals, then its
 # record tables and their fields (data patches plan §9.1), then its scopes and their tables' short names
 # (data patches spec §6.2), then the names its OMS modules declare, oms/*.oms (modding from a release
 # spec §5.2). Each stays until the major version changes: a renamed global, table or field keeps its old
 # name, listed as OLD = NAME; a scope and a module's names have no old-name form.
 major = 1
+adv_page_has_text
+adv_speaker_id
+area_down_neighbors
+area_kinds
+area_left_neighbors
+area_names
+area_pictures
+area_right_neighbors
+area_states
+area_town_music
+area_up_neighbors
+area_x
+area_y
+arena_rank_backdrops
+arena_rank_in_play
+arena_rank_pictures
+arena_round_characters
+arena_round_enemy_levels
+arena_round_fees
+arena_round_formations
+arena_round_in_play
+arena_round_marks
+arena_round_names
+arena_round_party_limits
+arena_round_prizes
+arena_round_required_levels
+arena_round_reward_counts
+arena_round_reward_items
+arena_round_texts
+arena_rounds_won
+battle_animation_effect_starts
+battle_animation_effects
+battle_animation_in_play
+battle_animation_lengths
+battle_animation_split_styles
+battle_effect_blend_modes
+battle_effect_cue_times
+battle_effect_frame_counts
+battle_effect_heights
+battle_effect_lengths
+battle_effect_pictures
+battle_effect_placed_flags
+battle_effect_sheet_columns
+battle_effect_sheet_rows
+battle_effect_sound_delays
+battle_effect_sounds
+battle_effect_still_kinds
+battle_effect_widths
+battle_effect_x_offsets
+battle_effect_y_offsets
+cg_pictures
+cg_scroll_x
+cg_scroll_y
+cg_slots
+cg_tabs
+cg_variants
+character_accessories
+character_arg_id
+character_armors
+character_attack_counts
+character_attacks
+character_defense_counts
+character_defenses
+character_experience
+character_flags
+character_hp
+character_levels
+character_luck
+character_magic_attacks
+character_magic_defenses
+character_max_hp
+character_max_mp
+character_max_tp
+character_mental_resistances
+character_mental_speeds
+character_mp
+character_physical_resistances
+character_physical_speeds
+character_shields
+character_skill_experience
+character_skill_ranks
+character_sort_keys
+character_tactics
+character_tp
+character_unit_ids
+character_weapons
+condition_affinity_columns
+condition_argument_id
+condition_argument_levels
+condition_attack_count_modifiers
+condition_critical_modifiers
+condition_cure_bits
+condition_defense_count_modifiers
+condition_descriptions
+condition_durations
+condition_evasion_modifiers
+condition_fs_changes
+condition_hit_modifiers
+condition_hp_changes
+condition_listed_flags
+condition_luck_modifiers
+condition_magic_attack_modifiers
+condition_magic_defense_modifiers
+condition_magic_power_modifiers
+condition_mental_resistance_modifiers
+condition_mental_speed_modifiers
+condition_mp_changes
+condition_names
+condition_physical_attack_modifiers
+condition_physical_defense_modifiers
+condition_physical_resistance_modifiers
+condition_physical_speed_modifiers
+condition_resistances
+condition_tp_changes
+config_initialized
+confirm_escape
+current_item
+current_place_id
+current_place_name
+current_scene_id
+current_scene_script_id
+debug_map_mode
+element_affinities
+element_attack_names
+element_defense_names
+encounter_chances
+encounter_entry_formations
+encounter_entry_gauge_highs
+encounter_entry_gauge_lows
+encounter_entry_weights
+encounter_set_in_play
+field_land_id
+field_sprite_jump_sheets
+field_sprite_walk_sheets
+formation_current
+formation_effect_lines
+formation_in_play
+formation_learned_mask
+formation_names
+formation_slot_chances
+formation_slot_first_columns
+formation_slot_first_rows
+formation_slot_last_columns
+formation_slot_last_rows
+formation_slot_units
+glossary_current_entry
+glossary_picture_x_offsets
+glossary_picture_y_offsets
+glossary_pictures
+glossary_titles
+glossary_unlock_scenes
+in_room
+item_accuracy_bonuses
+item_animations
+item_area_heights
+item_area_widths
+item_attack_count_bonuses
+item_attack_elements
+item_buy_prices
+item_categories
+item_category_weapon_flags
+item_charge_times
+item_class_equipment_notes
+item_class_icons
+item_class_names
+item_class_rank_exps
+item_class_required_weapon_masks
+item_class_short_names
+item_classes
+item_condition_levels
+item_control_rate_changes
+item_count_change
+item_counts
+item_critical_bonuses
+item_cursed_flags
+item_damage_kinds
+item_defense_count_bonuses
+item_defense_elements
+item_equip_condition_levels
+item_evasion_bonuses
+item_exclusive_users
+item_fs_amounts
+item_hp_amounts
+item_key_held_flags
+item_luck_bonuses
+item_magic_attack_bonuses
+item_magic_defense_bonuses
+item_magic_power_bonuses
+item_max_hp_bonuses
+item_max_mp_bonuses
+item_max_tp_bonuses
+item_mental_resistance_bonuses
+item_mental_speed_bonuses
+item_menu_use_masks
+item_min_charge_times
+item_min_recovery_times
+item_mp_amounts
+item_names
+item_notes
+item_obtained_flags
+item_physical_attack_bonuses
+item_physical_defense_bonuses
+item_physical_resistance_bonuses
+item_physical_speed_bonuses
+item_random_amounts
+item_ranks
+item_recovery_times
+item_required_items
+item_sell_prices
+item_sort_keys
+item_target_kinds
+item_tp_amounts
+land_drift_walkable
+land_drift_x
+land_drift_y
+land_encounter_levels
+land_footstep_sounds
+land_speed_changes
+land_sprite_columns
+lead_agility_cost_rates
+lead_agility_minimums
+lead_charm_cost_rates
+lead_charm_minimums
+lead_dexterity_cost_rates
+lead_dexterity_minimums
+lead_intelligence_cost_rates
+lead_intelligence_minimums
+lead_parameters
+lead_pool_rates
+lead_saved_pool_rate
+lead_spirit_cost_rates
+lead_spirit_minimums
+lead_strength_cost_rates
+lead_strength_minimums
+lead_unit_id
+lead_vitality_cost_rates
+lead_vitality_minimums
+map_block_battle_backdrops
+map_block_column
+map_block_encounter_levels
+map_block_encounter_sets
+map_block_enemy_level_spreads
+map_block_enemy_levels
+map_block_event_scripts
+map_block_minimap_pictures
+map_block_music
+map_block_overlay_pictures
+map_block_pictures
+map_block_pictures_2
+map_block_row
+map_block_scripts
+map_continue
+map_encounter_decay_distances
+map_encounter_variant
+map_entered
+map_floor_names
+map_floor_numbers
+map_frame_rate
+map_keeps_section_states
+map_music_variant
+map_object_flags
+map_object_kinds
+map_object_sheets
+map_object_x
+map_object_y
+map_player_facing
+map_player_target_facing
+map_player_target_x
+map_player_target_y
+map_player_x
+map_player_y
+map_section_codes
+map_section_slot
+map_start_facings
+map_start_floors
+map_start_sections
+map_start_x
+map_start_y
+menu_cursor_auto_move_enabled
+money
+object_kind_change_sounds
+object_kind_depth_offsets
+object_kind_heights
+object_kind_next_kinds
+object_kind_sprite_x
+object_kind_sprite_y
+object_kind_wall_point_counts
+object_kind_wall_point_x
+object_kind_wall_point_y
+object_kind_widths
+party_name_x
+party_name_y
+played_scene_id
+profile_names
+profile_picture_x
+profile_picture_y
+profile_pictures
+profile_shown
+profile_unit_ids
+replay_scripts
+routine_acted
+routine_in_play
+routine_step_actions
+routine_step_args
+routine_step_chances
+routine_step_flags
+routine_step_in_play
+routine_step_kinds
+routine_step_limits
+routine_step_percents
+routine_step_run_counts
+routine_step_target_counts
+scene_graphic_element_numbers
+scene_offer_contexts
+scene_over_map
+scene_run_mode
+scene_script_ids
+scene_seen_flags
+scjump_context_id
+script_arg_1
+script_arg_2
+shop_background
+shop_id
+shop_items
+shop_keeper_picture
+shop_sign
+skill_support_descriptions
+skill_support_names
+skip_read_messages_only
+speaker_heard_flags
+speaker_names
+speaker_voice_units
+special_edition_mode
+story_flags
+story_part
+system_mode
+town_site_hot_heights
+town_site_hot_lefts
+town_site_hot_tops
+town_site_hot_widths
+town_site_id
+town_site_names
+town_site_neighbors
+town_site_pictures
+town_site_states
+town_site_x
+town_site_y
+treasure_counts
+treasure_current_id
+treasure_items
+treasure_object_ids
+treasure_opened
+unit_action_ids
+unit_attack_count_growth
+unit_attack_counts
+unit_attack_growth
+unit_attacks
+unit_base_levels
+unit_battle_sprites
+unit_book_sort_keys
+unit_boss_classes
+unit_defense_count_growth
+unit_defense_counts
+unit_defense_elements
+unit_defense_growth
+unit_defenses
+unit_description_lines
+unit_drop_chances
+unit_drop_items
+unit_epithets
+unit_equip_kind_flags
+unit_exp_curves
+unit_exp_rates
+unit_exp_rewards
+unit_fs_temperaments
+unit_full_names
+unit_initial_accessories
+unit_initial_armors
+unit_initial_shields
+unit_initial_weapons
+unit_kinds
+unit_level_catchup_divisors
+unit_luck
+unit_luck_growth
+unit_magic_attack_growth
+unit_magic_attacks
+unit_magic_defense_growth
+unit_magic_defenses
+unit_max_fs
+unit_max_hp
+unit_max_hp_growth
+unit_max_levels
+unit_max_mp
+unit_max_mp_growth
+unit_max_tp
+unit_max_tp_growth
+unit_mental_resistance_growth
+unit_mental_resistances
+unit_mental_speed_growth
+unit_mental_speeds
+unit_money
+unit_names
+unit_physical_resistance_growth
+unit_physical_resistances
+unit_physical_speed_growth
+unit_physical_speeds
+unit_pictures
+unit_sizes
+unit_skill_categories
+unit_skill_category_open_flags
+unit_skill_max_ranks
+unit_skill_start_ranks
+unit_starting_fs
+unit_status_portraits
+unit_support_effects
+unit_tactic_routines
+unit_voice_clips
+unit_voice_settings
+voice_mute_switches
+voice_setting_samples
+voice_setting_units
+world_map_pictures
+table area
+table arena_rank
+table arena_round
+table battle_animation
+table battle_effect
+table cg
+table character
+table condition
+table element
+table encounter_entry
+table field_sprite
+table formation
+table formation_slot
+table glossary_entry
+table item
+table item_class
+table land
+table lead_form
+table map
+table map_block
+table object_kind
+table profile
+table replay
+table routine
+table scene
+table shop_slot
+table skill_support
+table speaker_entry
+table town_site
+table treasure
+table unit
+table voice_setting
+field area.down
+field area.kind
+field area.left
+field area.name
+field area.pictures
+field area.right
+field area.state
+field area.town_music
+field area.up
+field area.x
+field area.y
+field arena_rank.backdrop
+field arena_rank.picture
+field arena_round.characters
+field arena_round.enemy_level
+field arena_round.fee
+field arena_round.formations
+field arena_round.mark
+field arena_round.name
+field arena_round.party_limit
+field arena_round.prize
+field arena_round.required_level
+field arena_round.reward_counts
+field arena_round.reward_items
+field arena_round.texts
+field battle_animation.effect_starts
+field battle_animation.effects
+field battle_animation.length
+field battle_animation.split_style
+field battle_effect.blend_mode
+field battle_effect.cue_times
+field battle_effect.frame_count
+field battle_effect.height
+field battle_effect.length
+field battle_effect.picture
+field battle_effect.placed
+field battle_effect.sheet_columns
+field battle_effect.sheet_rows
+field battle_effect.sound
+field battle_effect.sound_delay
+field battle_effect.still_kind
+field battle_effect.width
+field battle_effect.x_offset
+field battle_effect.y_offset
+field cg.picture
+field cg.scroll_x
+field cg.scroll_y
+field cg.slot
+field cg.tab
+field cg.variant
+field character.accessory
+field character.armor
+field character.attack_counts
+field character.attacks
+field character.defense_counts
+field character.defenses
+field character.experience
+field character.flags
+field character.hp
+field character.level
+field character.luck
+field character.magic_attacks
+field character.magic_defenses
+field character.max_hp
+field character.max_mp
+field character.max_tp
+field character.mental_resistances
+field character.mental_speeds
+field character.mp
+field character.physical_resistances
+field character.physical_speeds
+field character.shield
+field character.skill_experience
+field character.skill_ranks
+field character.tactic
+field character.tp
+field character.unit_id
+field character.weapon
+field condition.affinity_columns
+field condition.attack_count_modifiers
+field condition.critical_modifiers
+field condition.cure_bits
+field condition.defense_count_modifiers
+field condition.descriptions
+field condition.durations
+field condition.evasion_modifiers
+field condition.fs_changes
+field condition.hit_modifiers
+field condition.hp_changes
+field condition.listed
+field condition.luck_modifiers
+field condition.magic_attack_modifiers
+field condition.magic_defense_modifiers
+field condition.magic_power_modifiers
+field condition.mental_resistance_modifiers
+field condition.mental_speed_modifiers
+field condition.mp_changes
+field condition.names
+field condition.physical_attack_modifiers
+field condition.physical_defense_modifiers
+field condition.physical_resistance_modifiers
+field condition.physical_speed_modifiers
+field condition.resistance
+field condition.tp_changes
+field element.affinities
+field element.name
+field encounter_entry.formations
+field encounter_entry.gauge_high
+field encounter_entry.gauge_low
+field encounter_entry.weight
+field field_sprite.jump_sheets
+field field_sprite.walk_sheets
+field formation.effect_lines
+field formation.name
+field formation_slot.chance
+field formation_slot.first_column
+field formation_slot.first_row
+field formation_slot.last_column
+field formation_slot.last_row
+field formation_slot.unit
+field glossary_entry.picture
+field glossary_entry.picture_x_offset
+field glossary_entry.picture_y_offset
+field glossary_entry.title
+field glossary_entry.unlock_scenes
+field item.accuracy
+field item.animation
+field item.area_height
+field item.area_width
+field item.attack_count
+field item.attack_element
+field item.buy_price
+field item.category
+field item.charge_time
+field item.class
+field item.condition_levels
+field item.control_rate_change
+field item.count
+field item.critical
+field item.cursed
+field item.damage_kind
+field item.defense_count
+field item.defense_element
+field item.equip_condition_levels
+field item.evasion
+field item.exclusive_users
+field item.fs
+field item.hp
+field item.luck
+field item.magic_attack
+field item.magic_defense
+field item.magic_power
+field item.max_hp
+field item.max_mp
+field item.max_tp
+field item.mental_resistance
+field item.mental_speed
+field item.menu_use
+field item.min_charge_time
+field item.min_recovery_time
+field item.mp
+field item.name
+field item.note
+field item.obtained
+field item.physical_attack
+field item.physical_defense
+field item.physical_resistance
+field item.physical_speed
+field item.random_amount
+field item.rank
+field item.recovery_time
+field item.required_item
+field item.sell_price
+field item.sort_key
+field item.target_kind
+field item.tp
+field item_class.equipment_note
+field item_class.icon
+field item_class.name
+field item_class.rank_exps
+field item_class.required_weapons
+field item_class.short_name
+field land.drift_walkable
+field land.drift_x
+field land.drift_y
+field land.encounter_level
+field land.footstep_sound
+field land.speed_change
+field land.sprite_column
+field lead_form.agility_cost_rate
+field lead_form.agility_minimum
+field lead_form.charm_cost_rate
+field lead_form.charm_minimum
+field lead_form.dexterity_cost_rate
+field lead_form.dexterity_minimum
+field lead_form.intelligence_cost_rate
+field lead_form.intelligence_minimum
+field lead_form.pool_rate
+field lead_form.spirit_cost_rate
+field lead_form.spirit_minimum
+field lead_form.strength_cost_rate
+field lead_form.strength_minimum
+field lead_form.vitality_cost_rate
+field lead_form.vitality_minimum
+field map.encounter_decay_distance
+field map.floor_names
+field map.floor_numbers
+field map.keeps_section_states
+field map.object_sheet
+field map.start_facing
+field map.start_floor
+field map.start_section
+field map.start_x
+field map.start_y
+field map_block.battle_backdrop
+field map_block.encounter_level
+field map_block.encounter_sets
+field map_block.enemy_level
+field map_block.enemy_level_spread
+field map_block.event_script
+field map_block.minimap_picture
+field map_block.music
+field map_block.overlay_picture
+field map_block.picture
+field map_block.picture_2
+field map_block.script
+field object_kind.change_sound
+field object_kind.depth_offset
+field object_kind.height
+field object_kind.next_kind
+field object_kind.sprite_x
+field object_kind.sprite_y
+field object_kind.wall_point_count
+field object_kind.wall_point_x
+field object_kind.wall_point_y
+field object_kind.width
+field profile.name
+field profile.picture
+field profile.picture_x
+field profile.picture_y
+field profile.unit_id
+field replay.script
+field routine.step_action
+field routine.step_arg
+field routine.step_chance
+field routine.step_flag
+field routine.step_kind
+field routine.step_limit
+field routine.step_percent
+field routine.step_target_count
+field scene.offer_context
+field scene.script
+field shop_slot.item
+field skill_support.description
+field skill_support.name
+field speaker_entry.name
+field speaker_entry.voice_unit
+field town_site.hot_height
+field town_site.hot_left
+field town_site.hot_top
+field town_site.hot_width
+field town_site.name
+field town_site.neighbors
+field town_site.pictures
+field town_site.state
+field town_site.x
+field town_site.y
+field treasure.counts
+field treasure.items
+field treasure.opened
+field unit.accessory
+field unit.action_ids
+field unit.armor
+field unit.attack_count_growth
+field unit.attack_counts
+field unit.attack_growth
+field unit.attacks
+field unit.base_level
+field unit.battle_sprites
+field unit.book_sort_key
+field unit.boss_class
+field unit.defense_count_growth
+field unit.defense_counts
+field unit.defense_element
+field unit.defense_growth
+field unit.defenses
+field unit.description
+field unit.drop_chances
+field unit.drop_items
+field unit.epithet
+field unit.equip_kinds
+field unit.exp_curve
+field unit.exp_rate
+field unit.exp_rewards
+field unit.fs_temperament
+field unit.full_name
+field unit.kind
+field unit.level_catchup_divisor
+field unit.luck
+field unit.luck_growth
+field unit.magic_attack_growth
+field unit.magic_attacks
+field unit.magic_defense_growth
+field unit.magic_defenses
+field unit.max_fs
+field unit.max_hp
+field unit.max_hp_growth
+field unit.max_level
+field unit.max_mp
+field unit.max_mp_growth
+field unit.max_tp
+field unit.max_tp_growth
+field unit.mental_resistance_growth
+field unit.mental_resistances
+field unit.mental_speed_growth
+field unit.mental_speeds
+field unit.money
+field unit.name
+field unit.physical_resistance_growth
+field unit.physical_resistances
+field unit.physical_speed_growth
+field unit.physical_speeds
+field unit.pictures
+field unit.shield
+field unit.size
+field unit.skill_categories
+field unit.skill_category_open
+field unit.skill_max_ranks
+field unit.skill_start_ranks
+field unit.starting_fs
+field unit.status_portrait
+field unit.support_effect
+field unit.tactic_routines
+field unit.voice_clips
+field unit.voice_setting_id
+field unit.weapon
+field voice_setting.sample
+field voice_setting.unit_id
+scope dungeon
+scope dungeon.block
+scope town
+scope town.site
+scope world
+scope world.area
 module bg0.adv.adv_hide_window_handler
 module bg0.adv.adv_show_window_handler
 module bg0.adv.auto_button_click

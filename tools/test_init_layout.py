@@ -71,10 +71,22 @@ class InferArraysTests(unittest.TestCase):
         order = [("G", 0x100 + 5 * 1 + 1), ("G", 0x100 + 5 * 1 + 2), ("G", 0x900 + 1), ("G", 0x100 + 5 * 2 + 2),
                  ("G", 0x900 + 2)]
         with mock.patch.object(init_layout, "write_order",
-                               side_effect=lambda table, layer: order if layer == 0 else []):
+                               side_effect=lambda table, layer: order if layer == 0 else []), \
+                mock.patch.object(init_layout, "ran_layers", return_value={"T": {0}}):
             records, before = init_layout.records_of("T", leader)
         self.assertEqual([(0, 1, [("G", 0x901)]), (0, 2, [("G", 0x902)])], records)
         self.assertEqual({}, before)
+
+    def test_a_layer_the_boot_did_not_run_has_no_records(self) -> None:
+        # bg0's $1$AUTORUN skips $1$SCINIT outside the special mode: the image records it as skipped, and its
+        # listing's writes are not the boot's.
+        leader = Leader("G", 0x100, 10)
+        orders = {0: [("G", 0x101), ("G", 0x901)], 1: [("G", 0x105), ("G", 0x905)]}
+        with mock.patch.object(init_layout, "write_order",
+                               side_effect=lambda table, layer: orders.get(layer, [])), \
+                mock.patch.object(init_layout, "ran_layers", return_value={"T": {0}}):
+            records, _ = init_layout.records_of("T", leader)
+        self.assertEqual([(0, 1, [("G", 0x901)])], records)
 
     def test_a_field_written_before_the_leader_belongs_to_the_record_that_follows(self) -> None:
         leader = Leader("GS", 0x1000, 100)
@@ -95,7 +107,8 @@ class InferArraysTests(unittest.TestCase):
         leader = Leader("G", 0x100, 10, also=(0x10a,))
         order = [("G", 0x101), ("G", 0x900 + 1), ("G", 0x10a + 4), ("G", 0x114 + 4), ("G", 0x900 + 4)]
         with mock.patch.object(init_layout, "write_order",
-                               side_effect=lambda table, layer: order if layer == 0 else []):
+                               side_effect=lambda table, layer: order if layer == 0 else []), \
+                mock.patch.object(init_layout, "ran_layers", return_value={"T": {0}}):
             records, _ = init_layout.records_of("T", leader)
         self.assertEqual([(0, 1, [("G", 0x901)]), (0, 4, [("G", 0x118), ("G", 0x904)])], records)
         cells = {address: (0, 1) for address in order}

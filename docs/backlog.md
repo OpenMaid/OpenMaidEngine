@@ -165,7 +165,11 @@ it; git history keeps the record.
   - op `0x21b` stores its value, and op `0x247` reads it back, but there is no draw-mode-1 tick render gate
     (`engine-re.md`, "Statement blocks"); both games use `0x21b`;
   - op `0x140` outside the ADV labelled-yield pattern emits a `Stub` trace and goes on
-    (`VirtualMachine.ControlFlow.cs`);
+    (`VirtualMachine.ControlFlow.cs`). The titles' debug menus use it as a scene picker (`"BIN"`, `"SC????.BIN"`;
+    戦女神ZERO's `TITLE@0x685` and `0x741`, Verita's `TITLE@0x6e3` and `0x86b`), where native opens AGERC's
+    dialog 8. The port picks nothing, so the title plays the scene id the shared profile kept: in 戦女神ZERO that
+    scene stopped the VM at its own yield (`coroutine-yield-terminal@0x4a7`, 2026-11-25). Done when the shell
+    offers the picker, or the port refuses the entry plainly;
   - op `0xd8`'s timer and op `0x1d9` have no handler; neither game's scripts use them.
 
   The registry's markers say what the port does since 2026-11-21: `noop_headless` is set only on ops the port's
@@ -742,7 +746,10 @@ From the user's design pass on the built site (2026-11-22). The export's design 
 - **Onboard 戦女神ZERO (BG0, AGE 4.15D, catalog `S4IC415`, scripts `SYS4415`).** The user, 2026-11-25: "we're going
   to start looking at BG0", toward a 1.0 that supports more of the SYS4 catalog, since more games make modding and
   the site generalize better. The id is `bg0`, the install `games/bg0/` (`PROJECT-STRUCTURE.md`). It is the oldest
-  build taken in: every supported build is 4.24J or later. Work is on `feature/bg0`.
+  build taken in: every supported build is 4.24J or later. Work is on `feature/bg0`. It stands at **P3** and **M3**
+  since 2026-11-25 (its manifest's `support`): every opcode has a handler, its saves load on native AGE and the port
+  alike, and script mods, text packages, Lua mods and data files work through its base mod `bg0-base`
+  (`modding/games/bg0.md`).
   - **Step 1, the intake, is done (2026-11-25):** every check passes (`build/games/bg0/intake.json`). 1,579 scripts
     (1,251 base, 328 in the one append, `APPEND.AAI`, selector 1, 428 entries), 1,771,109 instructions, 246 distinct
     opcodes. Catalog: 17,634 entries in seven archives, 1,238 of them placeholders. Saved prefix
@@ -814,18 +821,47 @@ From the user's design pass on the built site (2026-11-22). The export's design 
         rule where that fits the original better (93 of the game's scripts).
       - Like Arterial, it has no corpus tests in `OmsCoreTests`: its core temporary overrides (20,261, 5.9% of the
         folded instructions) are above the tests' 5% bound (the allocator residue item below).
-    - **The base mod:** `bg0-base` carries only the toolchain, since the game has no registry yet (`base_mod_build.py`
-      writes it an empty layout). Its `bg0.adv` has the header's handlers, the nine library subs, the page template
-      and 135 speakers from CNINIT's names; it lifts 56.8% of the scenes' instructions. Furigana pages stay core
-      statements, as in the other games.
+    - **The base mod:** at M1 `bg0-base` carried only the toolchain, the game having no registry yet
+      (`base_mod_build.py` wrote it an empty layout). Its `bg0.adv` has the header's handlers, the nine library
+      subs, the page template and 135 speakers from CNINIT's names; it lifts 56.8% of the scenes' instructions.
+      Furigana pages stay core statements, as in the other games.
     - **The example:** `example.bg0-prologue-line` links and is SC0000's first page on both targets
       (`bg0-prologue-line.steps`). An English package of three lines and セリカ's name ran in the port.
     - **The rest:** the guide `modding/games/bg0.md` and the launcher's art are added.
-    - **Left for M3:** the registry and the data tables (step 9), then the base mod's survey, events and helpers.
+  - **Step 9 is done, and it stands at M2 (2026-11-25):** the data document `bg0-data-tables.md` (the 25 boot tables
+    and the 6 on demand, the append's driver and its three fragments guarded by the game mode, the scene dispatch,
+    what is saved), the registry `vm-map/globals-bg0.toml` with 422 names, 32 record tables and three scopes (`world`,
+    `town`, `dungeon`), the script index, 63 script notes (`vm-map/scripts-bg0.toml`) and the entity declarations (12
+    kinds; 35 of the export's 528 pictures are explicit, and three groups were close calls: the beastfolk girls
+    CD227A–CD229A, the angel pairs CD350A–CD352A and ヘルテ CD360A, listed). `init_image.py` now records a table call
+    its caller skips (`halt: skipped`, the special edition's fragments at a cold boot), and `init_layout.py` reads only
+    the layers the boot ran. What M2 leaves open is the data document's last section, "What is not decoded", and the
+    export's 104 unnamed cells of two item arrays with no reader. Each is done when that document and the registry
+    say it.
+  - **The base mod level, M3, is reached (2026-11-25).** `mods/bg0-base/` declares six events at seven named points
+    (`vm-map/patch-points-bg0.toml`): the boot's data layered and ready, the world map loaded (at ALLMAP, and at
+    SHOWALLMAP, which a scene uses to show the map), a town loaded, a field map loaded, and one character's experience
+    award, whose amount is `script_arg_1`. It accepts `bg0.tables` (boot tables at `bg0.data.layered`, a place's part
+    at its event, a field map's part after a load in a scene at `bg0.data.ready`) and gives `give_item`.
+    `ModLuaLinkTests` binds every event on the install, runs INIT2 with the boot events, runs the helper, and runs
+    ALLMAP, TOWN and SHOWALLMAP with a world and a town part over records their loaders write.
+    `example.bg0-speaker-name` renames セリカ's name plate (`tools/drive/scenarios/port/bg0-speaker-name.steps`); the
+    experience award, the map event and a map part ran through the title's debug menu
+    (`tools/drive/scenarios/port/bg0-debug-events.steps`), whose menu and 迷宮マップ（ＰＧ１用） native AGE runs alike.
+    What M3 leaves open:
+    - **The world map's and a town's events in play:** no run reached ALLMAP or TOWN yet; a new game starts on the
+      first dungeon, which must be cleared first, and the debug menu reaches neither. Done when a played run raises
+      `bg0.world.loaded` and `bg0.town.loaded` with a part applied.
+    - **A battle's own award** was not reached in a run. Done when a run raises `bg0.experience.award` from `RESULT`
+      (`RESULT@0x696`).
+    - **Loaders without an event:** the shop (`SHINIT`), the battle's tables (`BTANINIT`, `ESINIT`'s formation
+      slots), the encounter entries (`ENINIT`) and `SCJUMP`. Done when a mod needs one and it is added, or never.
+  - **Next, by the plan:** the sweep (P4).
   - **Left out of step 2:** the Ghidra image's packer API sites are not restored and its imports not typed, as for
     Verita and 創刻のアテリアル.
 
-  Done when it stands at P3 and M3, as the other games do.
+  The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-25. The item stays for the open points
+  above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
 - **Onboard 創刻のアテリアル (Arterial, AGE 4.38D, catalog `S4IC438`, scripts `SYS4438`).** It stands at **P3**
   since 2026-11-20 by the user's word (`adding-a-game.md` §1; its manifest's `support`), merged into `develop` the same
   day from `feature/arterial`: the engine names its install, decodes all of it, has a handler for every opcode its scripts

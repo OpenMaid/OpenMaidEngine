@@ -129,12 +129,13 @@ public sealed class GameProfileSelectionTests
         Assert.Same(Ome.Engine.Vm.EngineBuilds.Age424N, build);
     }
 
-    /// <summary>戦女神ZERO is at P3 and M1 (docs/adding-a-game.md): the engine names its install, reads all of it, has a
+    /// <summary>戦女神ZERO is at P3 and M3 (docs/adding-a-game.md): the engine names its install, reads all of it, has a
     /// handler for every opcode its scripts use, boots it by its own route to SC0000's first page, and saves as native
-    /// does; its scripts rebuild from Open Maid Script, and its base mod carries their toolchain. Its build is declared
-    /// from 4.24J.</summary>
+    /// does; its scripts rebuild from Open Maid Script, its data tables are decoded and named (docs/bg0-data-tables.md),
+    /// and its base mod carries their toolchain, its events and its data files' handlers. Its build is declared from
+    /// 4.24J.</summary>
     [Fact]
-    public void ZeroIsBeingAddedFromHimegarisBuild()
+    public void ZeroIsCompleteForPlayAndHasItsBaseMod()
     {
         GameProfileManifest zero = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("bg0"));
 
@@ -142,7 +143,7 @@ public sealed class GameProfileSelectionTests
                      (zero.SysFrontendId, zero.EngineBuildId, zero.EngineAbiId, zero.NaturalBootScript));
         Assert.Equal(["SYS4415"], zero.ScriptRevisions);
         Assert.True(zero.Matches(new GameCatalogIdentity("S4IC415", "戦女神ZERO")));
-        Assert.Equal(("P3", "M1"), (zero.Support.PlayId, zero.Support.ModdingId));
+        Assert.Equal(("P3", "M3"), (zero.Support.PlayId, zero.Support.ModdingId));
         Assert.True(zero.Support.IsPlayable);
         // Each target loads the other's saves, and save-diff shows only the time (tools/drive/scenarios/bg0-save-load.steps).
         Assert.True(zero.PersistenceWritesEnabled);

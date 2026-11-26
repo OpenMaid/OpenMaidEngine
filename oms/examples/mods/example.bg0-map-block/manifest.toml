@@ -1,0 +1,17 @@
+omp = 4
+id = "example.bg0-map-block"
+name = "Map block (戦女神ZERO)"
+version = "1.0.0"
+description = "A data file with a field map's part: map 1's block 50, where the debug menu's 迷宮マップ（ＰＧ１用） starts, takes music 14, most of the map's blocks', for its own 5."
+
+[game]
+profile = "bg0"
+target = "extended"
+
+[[requires]]
+id = "bg0-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "bg0.tables"
+file = "blocks.toml"

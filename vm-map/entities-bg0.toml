@@ -1,0 +1,478 @@
+# 戦女神ZERO's entity declarations: what the project site publishes of the game's data (game data export spec §5).
+# Hand-edited; tools/entities_build.py checks it against vm-map/globals-bg0.toml (its tables, their [table.refs], its
+# globals), vm-map/patch-points-bg0.toml and the profile's saved prefix, and writes build/games/bg0/entities.json for
+# the exporter. The tables are described in docs/bg0-data-tables.md.
+#
+# The conventions are Kamidori's (vm-map/entities-kamidori.toml), as Verita's are: scripts named without the `$n$`
+# prefix and `.BIN`; the story flags and scenes that gate a record left to the modder data; a field published when it
+# means something to a player, so sort keys, routines, voices, animations, sound and sprite machinery stay modder data;
+# what a value means left to the registry's value facets (words, the game's names, scale); and a note only where the
+# label and value leave a reader guessing. A field whose meaning the data document does not state is not published.
+#
+# What is not a kind here, and why:
+# - The characters: every array of the `character` table lies below the saved prefix, and INIT, not INIT2, runs
+#   CHINIT, so at the boot's end the table is empty. An item's exclusive users and an arena round's required
+#   characters name characters, so they stay modder data too.
+# - The world map's areas, the town sites and the field maps' blocks: AMINIT, SIINIT and RMINIT fill them for the
+#   place in play only, and at boot no place is in play (AMINIT and SIINIT only clear). The field maps' floors are
+#   MPINIT's, a boot table, and are the `map` kind.
+# - The scenes, the CG gallery (CGINIT) and the scene replays (SPINIT); the speakers, セリカ's forms (CBINIT), the
+#   battle routines, animations and encounters, the land types, the map objects and the field sheets, which are
+#   machinery.
+
+[export]
+# The tables as the game plays with them: INIT2's exit, after the base tables and the append's `$1$AUTORUN`
+# (docs/bg0-data-tables.md, "How the data gets into memory"). The game mode is 0 at a cold boot, so this is the
+# 通常 game's data: the guarded `$1$AMINIT`, `$1$SIINIT` and `$1$SCINIT` do not run.
+boot = { script = "INIT2", read_at = "bg0.boot.data_ready" }
+# The scripts whose stored values may be published: INIT2 itself, the *INIT and *INIT2 table scripts (BTANINIT2,
+# OBINIT2) and their `$1$` layers, and AUTORUN, which the append runs.
+builders = ["INIT2", "*INIT", "*INIT2", "AUTORUN"]
+# Never builders, whatever matches them: the CG gallery (CGINIT) and the scene replays (SPINIT).
+excluded_builders = ["CGINIT", "SPINIT"]
+# No derived scripts: INIT2's CALCREVISE runs only for a character who has joined (character_flags bit 0, a saved
+# cell, 0 at a cold boot; INIT2@0xb9..0xeb).
+# The information screens whose shown text is data: the item descriptions (ITMES, which branches on the item's
+# category and id, ITMES@0x6) and the glossary (VIMES, which branches on glossary_current_entry, VIMES@0x6), and the
+# 人物 book's text (CIMES, which branches on profile_shown, CIMES@0x6; INFO2@0xeae runs it, and the append has no
+# layer of it).
+# The item screens run ITMES and then the append's `$1$ITMES` with the same current_item (CHMODE1@0x27ac..0x27af,
+# INFO4@0x10d8, SHOP@0x136e; SYSTEM4@0x23e..0x248 preloads them into slots 0x1b and 0x1d). A description runs the base
+# script alone, so the 52 weapons and armour `$1$ITINIT` adds (1011 onward), whose text is in `$1$ITMES` only, have
+# none here, as Verita's appended records have none.
+text_scripts = ["ITMES", "VIMES", "CIMES"]
+# The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
+# declarations publish (2026-11-25, 528 pictures), and listed where a nipple or a bare bottom shows: the topless
+# エカティカ (CD110A, her battle figure CPB110A and status picture CS110AA), リ・クティナ (CD220A, CS220AA, CS220ZZ) and
+# the two naga warriors (CD221A, CD222A), the nagas' battle figures (CPB220A to CPB222A), the nude beastfolk girls
+# (CD227A to CD229A, CPB227A to CPB229A), the nude angels (CD350A to CD352A, CD360A, CD361A and their battle figures
+# CPB350A to CPB352A, CPB360A, CPB361A), the succubi クルージェ, the 睡魔サッキュバス and 人攫いの睡魔 (CD474A, CD481A,
+# CD483A, CPB474A, CPB481A, CPB483A), ファナガル's women (CD680A) and the glossary's 性魔術 (CI502N). Their small figures
+# CPB224A and CPB680A show none of it. Revealing but covered art (the tribe's warriors CD111A, CD112A and CD115A,
+# ペルル in CD240A and $1$CD637A, the succubi CD470A to CD473A and CD480A, CS480AA, CD902A, CD904A, CS001CA, CS003ZZ,
+# CS106AA, the glossary's CI502C) and the featureless bodies of ヴィーヴル and the water spirit (CD236A, CPB236A, CD315A,
+# CPB315A) are not on the list.
+explicit_pictures = [
+    "CD110A", "CPB110A", "CS110AA", "CD220A", "CS220AA", "CS220ZZ", "CD221A", "CD222A", "CPB220A", "CPB221A",
+    "CPB222A", "CD227A", "CD228A", "CD229A", "CPB227A", "CPB228A", "CPB229A", "CD350A", "CD351A", "CD352A", "CD360A",
+    "CD361A", "CPB350A", "CPB351A", "CPB352A", "CPB360A", "CPB361A", "CD474A", "CD481A", "CD483A", "CPB474A",
+    "CPB481A", "CPB483A", "CD680A", "CI502N",
+]
+
+[[kind]]
+id = "unit"
+table = "unit"
+about = "Every enemy, and the body each party character fights with: its stats at its base level and their growth, equipment, classes, actions and rewards."
+exists = "name"
+title = "name"
+text = ["epithet", "description"]
+fields = [
+    "kind", "boss_class", "size", "defense_element", "base_level", "max_level",
+    "max_hp", "max_mp", "max_tp", "attacks", "defenses", "magic_attacks", "magic_defenses",
+    "attack_counts", "defense_counts", "physical_resistances", "mental_resistances", "physical_speeds",
+    "mental_speeds", "luck", "max_hp_growth", "max_mp_growth", "max_tp_growth", "attack_growth", "defense_growth",
+    "magic_attack_growth", "magic_defense_growth", "attack_count_growth", "defense_count_growth",
+    "physical_resistance_growth", "mental_resistance_growth", "physical_speed_growth", "mental_speed_growth",
+    "luck_growth", "starting_fs", "max_fs", "weapon", "shield", "armor", "accessory",
+    "skill_categories", "skill_category_open", "skill_start_ranks", "skill_max_ranks", "support_effect",
+    "action_ids", "exp_curve", "exp_rate", "exp_rewards", "money", "drop_items", "drop_chances",
+]
+filters = ["kind", "boss_class", "defense_element"]
+# Units of one name differ by the level their stats are given at.
+qualifiers = ["base_level"]
+marks = { boss_class = "Boss" }
+pictures = { portrait = "pictures.portrait", sprite = "battle_sprites.0", status = "status_portrait" }
+
+[[kind.group]]
+name = "classes"
+fields = ["skill_categories", "skill_category_open", "skill_start_ranks", "skill_max_ranks"]
+
+[[kind.group]]
+name = "drops"
+fields = ["drop_items", "drop_chances"]
+
+[kind.labels]
+epithet = "Epithet"
+description = "How it fights"
+size = "Size"
+defense_element = "Defense element"
+attacks = "攻撃力"
+defenses = "防御力"
+magic_attacks = "魔法攻撃"
+magic_defenses = "魔法防御"
+attack_counts = "攻撃回数"
+defense_counts = "防御回数"
+physical_resistances = "肉体抵抗"
+mental_resistances = "精神抵抗"
+physical_speeds = "肉体戦速"
+mental_speeds = "精神戦速"
+luck = "運"
+attack_growth = "攻撃力 growth"
+defense_growth = "防御力 growth"
+magic_attack_growth = "魔法攻撃 growth"
+magic_defense_growth = "魔法防御 growth"
+attack_count_growth = "攻撃回数 growth"
+defense_count_growth = "防御回数 growth"
+physical_resistance_growth = "肉体抵抗 growth"
+mental_resistance_growth = "精神抵抗 growth"
+physical_speed_growth = "肉体戦速 growth"
+mental_speed_growth = "精神戦速 growth"
+luck_growth = "運 growth"
+starting_fs = "Starting FS"
+max_fs = "Max FS"
+weapon = "Weapon"
+shield = "Shield"
+armor = "Armour"
+accessory = "Accessory"
+classes = "Classes"
+skill_categories = "Class"
+skill_category_open = "Open on joining"
+skill_start_ranks = "Starting rank"
+skill_max_ranks = "Highest rank"
+support_effect = "Support effect"
+action_ids = "Actions"
+exp_curve = "Experience curve"
+exp_rate = "Experience rate (%)"
+exp_rewards = "Experience given"
+drop_items = "Item"
+drop_chances = "Chance (%)"
+
+[kind.notes]
+kind = "2: a party human; 3: a summoned partner; 1: any other unit."
+boss_class = "The highest boss class among a battle's enemies picks the battle's music."
+size = "Its size in the enemies' five-wide grid, which also scales its sprite; 5 is the giants and 魔神."
+defense_element = "It takes this one where its armour gives none."
+base_level = "The level its stats are given at: each grows by its growth for every level above it. A joining character starts at this level."
+max_level = "An enemy's level rises toward the party's, up to this."
+weapon = "The weapon an enemy fights with, and a character's on joining; so with the shield, armour and accessory."
+classes = "The classes it can rank in, up to nine: whether each is open when it joins, its rank then, and the highest it reaches."
+action_ids = "The actions its routine chooses from; with none, it uses its weapon, or 素手 (bare hands)."
+exp_curve = "A party unit's: 1 to 5 make each level cost 200, 215, 225, 235 or 250 times the level, times 124 / 1000."
+exp_rate = "A party unit's: the percent of the curve each level costs; 0 is 100."
+exp_rewards = "The experience a battle gives for it: the first when it is defeated, the second when it is not."
+money = "Paid for each defeat."
+drops = "Each item a defeat may drop and its chance: the first drop whose chance beats a draw of 0 to 99."
+
+[kind.referenced_as]
+defense_element = "Units of this element"
+weapon = "Initial weapon of"
+shield = "Initial shield of"
+armor = "Initial armour of"
+accessory = "Initial accessory of"
+skill_categories = { heading = "Units in this class", details = ["skill_start_ranks", "skill_max_ranks"] }
+support_effect = "Given by units"
+action_ids = "Used by units"
+drop_items = { heading = "Dropped by", details = ["drop_chances"] }
+
+[[kind]]
+id = "item"
+table = "item"
+about = "Every item, weapon, armour, spell and art, and the enemies' actions: rank and class, elements, area, timing, bonuses, conditions and prices."
+exists = "name"
+title = "name"
+fields = [
+    "category", "class", "rank", "damage_kind", "attack_element", "defense_element", "required_item", "cursed",
+    "target_kind", "area_width", "area_height", "charge_time", "min_charge_time", "recovery_time",
+    "min_recovery_time", "accuracy", "evasion", "physical_attack", "physical_defense", "attack_count",
+    "defense_count", "magic_attack", "magic_defense", "magic_power", "physical_resistance", "mental_resistance",
+    "physical_speed", "mental_speed", "luck", "critical", "max_hp", "max_mp", "max_tp", "hp", "mp", "tp", "fs",
+    "random_amount", "control_rate_change", "condition_levels", "equip_condition_levels", "menu_use", "buy_price",
+    "sell_price",
+]
+filters = ["category", "class", "rank", "damage_kind", "attack_element"]
+# A player's spell and an enemy's action may share a name: the class (敵魔術, 敵必殺) and the rank tell them apart.
+qualifiers = ["class", "rank"]
+
+[kind.labels]
+attack_element = "Attack element"
+defense_element = "Defense element"
+required_item = "Needs item held"
+target_kind = "Targets"
+area_width = "Area width"
+area_height = "Area height"
+charge_time = "Charge time"
+min_charge_time = "Least charge time"
+recovery_time = "Recovery time"
+min_recovery_time = "Least recovery time"
+accuracy = "命中"
+evasion = "回避"
+physical_attack = "攻撃力"
+physical_defense = "防御力"
+attack_count = "攻撃回数"
+defense_count = "防御回数"
+magic_attack = "魔法攻撃"
+magic_defense = "魔法防御"
+magic_power = "魔威"
+physical_resistance = "肉体抵抗"
+mental_resistance = "精神抵抗"
+physical_speed = "肉体戦速"
+mental_speed = "精神戦速"
+luck = "運"
+critical = "痛打"
+max_hp = "Max HP bonus"
+max_mp = "Max MP bonus"
+max_tp = "Max TP bonus"
+fs = "FS restored"
+random_amount = "Random part"
+control_rate_change = "迷宮支配力 gained"
+condition_levels = "Conditions"
+equip_condition_levels = "Conditions while equipped"
+menu_use = "Usable from the menu"
+buy_price = "Price"
+sell_price = "Sells for"
+
+[kind.notes]
+rank = "A character can use or equip it only with at least this rank in its class."
+required_item = "The 喚石 or 招聘 stone that must be held to cast the summons."
+cursed = "It cannot be taken off; curing 呪い takes it off."
+charge_time = "Before the action: the unit's speed is taken off it, down to the least charge time."
+recovery_time = "The wait after the action; with the least recovery time, its floor."
+magic_attack = "For an FS attack (damage kind 5), the attack's power."
+hp = "Restored where positive, spent where negative."
+mp = "Restored where positive, spent where negative."
+tp = "Restored where positive, spent where negative."
+random_amount = "A random part added to the amounts it restores or deals."
+control_rate_change = "What using it adds to the dungeon's field gauge, up to 15."
+condition_levels = "The level of each condition it inflicts; a negative level cures it."
+equip_condition_levels = "The conditions it keeps on its wearer, at these levels."
+max_hp = "A summon's max MP and TP are negative: casting it lowers its caster's."
+
+[kind.referenced_as]
+class = "Items of this class"
+attack_element = "Items that attack with it"
+defense_element = "Items of this element"
+required_item = "Needed for"
+condition_levels = "Inflicted or cured by items"
+equip_condition_levels = "Given while equipped"
+
+[[kind.description]]
+name = "description"
+script = { name = "ITMES" }
+seed = { current_item = "key" }
+
+[[kind]]
+id = "condition"
+table = "condition"
+about = "The conditions a unit can have, each with up to five levels: what each level changes, how long it lasts, and what resists it."
+exists = "names.0"
+# A condition is named by its levels (呪い1 to 呪い5); the first names it.
+title = "names.0"
+text = ["names", "descriptions"]
+fields = [
+    "resistance", "affinity_columns", "cure_bits", "durations", "hit_modifiers", "evasion_modifiers",
+    "physical_attack_modifiers", "physical_defense_modifiers", "attack_count_modifiers", "defense_count_modifiers",
+    "magic_attack_modifiers", "magic_defense_modifiers", "magic_power_modifiers", "physical_resistance_modifiers",
+    "mental_resistance_modifiers", "physical_speed_modifiers", "mental_speed_modifiers", "luck_modifiers",
+    "critical_modifiers", "hp_changes", "fs_changes",
+]
+
+# A row for each level, from the first.
+[[kind.group]]
+name = "levels"
+fields = [
+    "resistance", "affinity_columns", "cure_bits", "durations", "hit_modifiers", "evasion_modifiers",
+    "physical_attack_modifiers", "physical_defense_modifiers", "attack_count_modifiers", "defense_count_modifiers",
+    "magic_attack_modifiers", "magic_defense_modifiers", "magic_power_modifiers", "physical_resistance_modifiers",
+    "mental_resistance_modifiers", "physical_speed_modifiers", "mental_speed_modifiers", "luck_modifiers",
+    "critical_modifiers", "hp_changes", "fs_changes",
+]
+
+[kind.labels]
+names = "Levels"
+descriptions = "Description"
+resistance = "Resisted by"
+affinity_columns = "Resistance column"
+cure_bits = "Cured"
+durations = "Duration"
+hit_modifiers = "命中"
+evasion_modifiers = "回避"
+physical_attack_modifiers = "攻撃力 (%)"
+physical_defense_modifiers = "防御力 (%)"
+attack_count_modifiers = "攻撃回数"
+defense_count_modifiers = "防御回数"
+magic_attack_modifiers = "魔法攻撃 (%)"
+magic_defense_modifiers = "魔法防御 (%)"
+magic_power_modifiers = "魔威"
+physical_resistance_modifiers = "肉体抵抗"
+mental_resistance_modifiers = "精神抵抗"
+physical_speed_modifiers = "肉体戦速"
+mental_speed_modifiers = "精神戦速"
+luck_modifiers = "運"
+critical_modifiers = "痛打"
+hp_changes = "HP change"
+fs_changes = "FS change"
+
+[kind.notes]
+descriptions = "The lines the table holds for each condition; no script was found that reads them."
+levels = "Each level's resistance (肉体 or 精神抵抗, and its element's column 抵抗1 to 7), where it is cured (1 in a dungeon, 2 outside, 3 both), its duration (-1 lasts until cured) and changes: % rows scale the stat, others add; HP each frame or step, FS each 10 frames."
+
+[[kind]]
+id = "element"
+table = "element"
+about = "The defense elements: the units and items of each, and how each takes every attack element's damage and conditions."
+exists = "name"
+title = "name"
+fields = ["affinities"]
+
+[kind.labels]
+affinities = "Damage and condition chance"
+
+[kind.notes]
+affinities = "The percent of each attack element's damage it takes, a negative one making the damage negative. Columns 11 to 17, 抵抗1 to 7, scale the chance of catching the conditions that name them."
+
+[[kind]]
+id = "item_class"
+table = "item_class"
+about = "The classes of items and equipment, the magic schools and the art schools, with the class experience each rank holds."
+exists = "name"
+title = "name"
+text = ["equipment_note"]
+fields = ["rank_exps"]
+
+[kind.labels]
+equipment_note = "Equipment"
+rank_exps = "Class exp a rank holds"
+
+[kind.notes]
+rank_exps = "The most class experience a character holds at each rank, from the first; a battle's class experience stops there."
+
+[[kind]]
+id = "support_effect"
+table = "skill_support"
+about = "The support effects (支援効果) a party unit gives its party."
+exists = "name"
+title = "name"
+text = ["description"]
+
+[[kind]]
+id = "formation"
+table = "formation"
+about = "The party's formations: what each changes in the front and rear rows."
+exists = "name"
+title = "name"
+text = ["effect_lines"]
+
+[kind.labels]
+effect_lines = "Effects"
+
+[kind.text_blocks.effect_lines]
+front = [0, 1]
+rear = [2, 3]
+description = [4, 5]
+
+[[kind]]
+id = "treasure"
+table = "treasure"
+about = "What each treasure on the maps gives, up to five items each with its count, or money; 9998 and 9999 are a new game's starting kits."
+# Every treasure fills its first slot's count. A treasure has no name: the map object that holds it names it by its id.
+exists = "counts.0"
+fields = ["items", "counts"]
+
+[[kind.group]]
+name = "contents"
+fields = ["items", "counts"]
+
+[kind.labels]
+items = "Item"
+counts = "Count"
+
+[kind.notes]
+contents = "Each slot gives an item and its count, or, with no item, that much money."
+
+[kind.referenced_as]
+items = { heading = "Found in treasures", details = ["counts"] }
+
+[[kind]]
+id = "arena_round"
+table = "arena_round"
+about = "The arena's rounds, four ranks of seven: the fee, the enemies' level, what entry needs, and the prize and rewards of a first win."
+exists = "name"
+title = "name"
+text = ["texts"]
+fields = ["enemy_level", "fee", "prize", "reward_items", "reward_counts", "required_level", "party_limit"]
+
+[[kind.group]]
+name = "rewards"
+fields = ["reward_items", "reward_counts"]
+
+[kind.labels]
+texts = "Texts"
+enemy_level = "Enemies' level"
+required_level = "Party's average level needed"
+party_limit = "Largest party"
+reward_items = "Item"
+reward_counts = "Count"
+
+[kind.notes]
+texts = "The round's id is 10 × its rank (0 to 3) + the round (0 to 6). A rank past the first opens with its pass (Ａクラス, Ｓクラス, Ｍクラス挑戦権), which the last round of the rank before gives."
+prize = "Money paid on the first win only, as are the rewards."
+party_limit = "0: any party."
+
+[kind.text_blocks.texts]
+condition = [0, 0]
+description = [1, 2]
+
+[kind.referenced_as]
+reward_items = { heading = "Arena reward", details = ["reward_counts"] }
+
+[[kind]]
+id = "glossary_entry"
+table = "glossary_entry"
+about = "The glossary (【用語】): the world's terms, and what each means."
+exists = "title"
+title = "title"
+pictures = { picture = "picture" }
+
+[[kind.description]]
+name = "description"
+script = { name = "VIMES" }
+seed = { glossary_current_entry = "key" }
+
+[[kind]]
+id = "character_profile"
+table = "profile"
+about = "The profiles of the 人物 book: each one's unit, picture and biography."
+exists = "name"
+title = "name"
+fields = ["unit_id"]
+pictures = { portrait = "picture" }
+
+[kind.labels]
+unit_id = "Unit"
+
+[kind.notes]
+unit_id = "The book shows the profile's name once this unit has spoken."
+
+[kind.referenced_as]
+unit_id = "Character profile"
+
+[[kind.description]]
+name = "biography"
+script = { name = "CIMES" }
+seed = { profile_shown = "key" }
+
+[[kind]]
+id = "map"
+table = "map"
+about = "The field maps, each named here by its first floor: the name of each of its floors."
+# 33 of MPINIT's 34 maps: map 28 names only its floor 2, where it starts (MPINIT@0x598, GS[0x25da], is the only name in its row), and a
+# title is one cell, so it is left out until a kind can name a record by another column.
+exists = "floor_names.1"
+# A map has no name of its own: its id is its area's place id, and the game shows the floor's name.
+title = "floor_names.1"
+text = ["floor_names"]
+
+[kind.labels]
+floor_names = "Floors"
+
+# The script relations (spec §6.7, export plan §4.5): where a script sets a helper's arguments to constants and calls it.
+# ADDITEM gives or takes an item by the sign of its count (docs/bg0-data-tables.md, "The item helpers and the
+# inventory").
+[[script_relation]]
+id = "given_in"
+negative = "taken_in"
+call = "ADDITEM"
+kind = "item"
+key = "current_item"
+count = "item_count_change"
+exclude = ["DEBUG*"]

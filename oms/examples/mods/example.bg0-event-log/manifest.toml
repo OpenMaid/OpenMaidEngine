@@ -1,0 +1,40 @@
+omp = 3
+id = "example.bg0-event-log"
+name = "Event log (戦女神ZERO)"
+version = "1.0.0"
+description = "Logs every event 戦女神ZERO's base mod raises, with its fields, to diagnostics/lua.log and to a list the console reads, and gives the party one 治癒の水・小 (item 101) at each bg0.data.ready through the base mod's helper."
+
+[game]
+profile = "bg0"
+target = "extended"
+
+[lua]
+api = 1
+
+[[requires]]
+id = "bg0-base"
+version = ">=1.0, <2"
+
+[[hooks]]
+event = "bg0.data.layered"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "bg0.data.ready"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "bg0.world.loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "bg0.town.loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "bg0.map.loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "bg0.experience.award"
+handler = "event_log.lua:on_event"

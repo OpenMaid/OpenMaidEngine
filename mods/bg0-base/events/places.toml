@@ -1,0 +1,55 @@
+# The places the party goes (Lua scripting spec §9.2): the world map, a town and a field map, each built when the game
+# opens it. Hand-written: each event names its point and gives each field's cell, by the names layout/globals.json
+# exports.
+
+[[event]]
+name = "bg0.world.loaded"
+point = ["bg0.world.after_area_loaders", "bg0.world.after_shown_area_loaders"]
+description = """
+The world map's loader has run (AMINIT, or $1$AMINIT in 特別編): area holds the areas of the story part's world map, \
+keyed by place id, and the map has not been drawn yet. A handler that rewrites them changes the map shown: an \
+area's name, pictures, position, links and state. ALLMAP runs the loader, and raises this, each time it starts \
+(SYSTEM4 starts it for system_mode 2), and after a load of a save made on it. SHOWALLMAP, which a scene calls to \
+show a world map with one area marked, raises it too, for the world it shows (story_part is that world's while it \
+runs). The loader writes the areas afresh each time, so a handler makes the same change each time. The data files \
+of bg0.tables write their parts for the world map here."""
+
+[[event.field]]
+name = "world"
+at = "story_part"
+type = "int"
+
+[[event]]
+name = "bg0.town.loaded"
+point = "bg0.town.after_site_loaders"
+description = """
+The town's loader has run (SIINIT, or $1$SIINIT in 特別編): town_site holds the sites of the town in play, keyed by \
+site number from 1, and TOWN has not drawn them yet. A handler that rewrites them changes the town TOWN shows: a \
+site's name, pictures, position and neighbours. TOWN runs the loader, and raises this, each time it starts \
+(SYSTEM4 starts it for system_mode 5), and after a load of a save made in it. The loader writes the sites afresh \
+each time, so a handler makes the same change each time. The data files of bg0.tables write their parts for the town \
+here."""
+
+[[event.field]]
+name = "town"
+at = "current_place_id"
+type = "int"
+
+[[event]]
+name = "bg0.map.loaded"
+point = "bg0.map.after_block_loaders"
+description = """
+The block loader of the field map in play has run (RMINIT, or $1$RMINIT in 特別編): map_block holds the map's \
+blocks, keyed by 30 * floor + section, and FIELD has not set the map up from them yet. A handler that rewrites them \
+changes the blocks FIELD sets up: their scripts, pictures, music, encounter sets and enemy levels. FIELD runs the \
+loader, and raises this, each time it starts (SYSTEM4 starts it for system_mode 3): when the party enters the map, \
+when FIELD starts again on it (map_entered is then set), and on a load of a save made on it, while the load restores \
+(maid.session.restoring is true). The loader writes the blocks afresh each time, so a handler makes the same change each time. A load of a save made in a \
+scene after the map does not raise this: the game's load callback runs the loader before bg0.data.ready, so a \
+handler that should hold then subscribes to bg0.data.ready as well and checks system_mode and map_entered. The data \
+files of bg0.tables write their parts for the map here, and at bg0.data.ready after such a load."""
+
+[[event.field]]
+name = "map"
+at = "current_place_id"
+type = "int"

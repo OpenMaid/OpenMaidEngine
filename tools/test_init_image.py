@@ -6,9 +6,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import init_image
+import sys4load
 
 
 IMAGE = {
@@ -84,6 +86,37 @@ class InitImageTests(unittest.TestCase):
         self.assertEqual(["EBINIT.BIN", "$1$EBINIT.BIN", "$2$EBINIT.BIN"], records[1]["layers"])
         self.assertEqual("$1$EBINIT.BIN", records[3]["origin"])
         self.assertEqual({"0xc8": 6}, records[3]["fields"])
+
+    @staticmethod
+    def _script(*instructions: tuple[int, int, list]) -> SimpleNamespace:
+        return SimpleNamespace(instructions=[sys4load.Instruction(offset, opcode, None, args)
+                                             for offset, opcode, args in instructions])
+
+    def test_a_call_behind_a_global_runs_only_while_it_is_set(self) -> None:
+        # bg0's $1$AUTORUN: `jcc (global-int 0x90c1a) 0xffffffff label` skips two fragments while the special mode
+        # is 0; the calls after the label, and calls to scripts that are not tables, carry no guard.
+        names = {1: "$1$EBINIT.BIN", 2: "$1$AMINIT.BIN", 3: "$1$SIINIT.BIN", 4: "$1$MPINIT.BIN", 5: "CALCREVISE.BIN"}
+        script = self._script(
+            (0, init_image.CALL_SCRIPT, [(0, 1)]),
+            (3, init_image.JCC, [(init_image.GLOBAL_INT, 0x90c1a), (0, init_image.FALL_THROUGH), (0, 16)]),
+            (10, init_image.CALL_SCRIPT, [(0, 2)]),
+            (13, init_image.CALL_SCRIPT, [(0, 3)]),
+            (16, init_image.CALL_SCRIPT, [(0, 4)]),
+            (19, init_image.CALL_SCRIPT, [(0, 5)]),
+        )
+        with mock.patch.object(init_image.sys4load, "load", return_value=script):
+            self.assertEqual(["$1$EBINIT.BIN", "$1$AMINIT.BIN?0x90c1a", "$1$SIINIT.BIN?0x90c1a", "$1$MPINIT.BIN"],
+                             init_image._called_tables(Path("$1$AUTORUN.BIN"), names))
+
+    def test_a_call_behind_another_condition_is_refused(self) -> None:
+        local_int = 9
+        script = self._script(
+            (0, init_image.JCC, [(local_int, 0), (0, init_image.FALL_THROUGH), (0, 10)]),
+            (7, init_image.CALL_SCRIPT, [(0, 1)]),
+        )
+        with mock.patch.object(init_image.sys4load, "load", return_value=script), \
+                self.assertRaisesRegex(SystemExit, "not an integer global"):
+            init_image._called_tables(Path("AUTORUN.BIN"), {1: "EBINIT.BIN"})
 
 if __name__ == "__main__":
     unittest.main()

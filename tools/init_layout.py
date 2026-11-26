@@ -166,7 +166,33 @@ VERITA: dict[str, Leader] = {
     "SCINIT": Leader("G", 0x4256a0, 10000),
 }
 
-LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA}.get(paths.CONTEXT.profile_id, {})
+# 戦女神ZERO's boot tables (docs/bg0-data-tables.md). Each base is the one the scripts index (lookup-array operands),
+# and each capacity the distance between a record's arrays.
+BG0: dict[str, Leader] = {
+    "CBINIT": Leader("G", 0x95376, 10),
+    "EBINIT": Leader("GS", 0x616, 1000),
+    "CNINIT": Leader("GS", 0xe0, 1000),
+    "ITINIT": Leader("GS", 0x2e70, 10000),
+    "ILINIT": Leader("GS", 0x7c90, 40, stride=5),   # a condition's five level names (CALCILL loops over 40)
+    "SSINIT": Leader("GS", 0x7ee8, 100),
+    "RTINIT": Leader("G", 0x35a787, 20000, group=20),
+    "MPINIT": Leader("G", 0xc214d, 50),
+    "ARINIT": Leader("GS", 0x1a20, 40),   # a round is 10 x rank + round, from 0
+    "TRINIT": Leader("G", 0x10cc93, 10000, stride=5, also=(0x118fe3,)),   # money-only treasures write no item
+    "LAINIT": Leader("G", 0xd9cf2, 100, also=(0xd9c8e, 0xd9d56, 0xd9dba, 0xd9e1e, 0xd9e82, 0xd9fae)),
+    "OBINIT": Leader("G", 0xda7e2, 1000, also=(0xda012, 0xda3fa)),
+    "CPINIT": Leader("G", 0xc5447, 10, stride=30),   # the field character's sheets, a row of 30 for each lead_unit_id (セリカ's form), by land
+    "CGINIT": Leader("G", 0x9186b, 2000, stride=2),
+    "SPINIT": Leader("G", 0x94f1b, 75, group=15),   # five pages of 15 (HMODE@0x88e)
+    "CIINIT": Leader("G", 0x3acd41, 100),
+    "VIINIT": Leader("GS", 0x81db, 200),
+    "CVINIT": Leader("G", 0x91847, 30),   # 30 apart: ADDEXP reads G[0x91865] as its input
+    "SCINIT": Leader("G", 0xbc8f6, 10000),
+    "BTANINIT2": Leader("G", 0x38a9fa, 10000, stride=6),
+    "OBINIT2": Leader("G", 0xdafb2, 1000),
+}
+
+LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA, "bg0": BG0}.get(paths.CONTEXT.profile_id, {})
 AREA: AreaRule | None = AREAS.get(paths.CONTEXT.profile_id)
 
 
@@ -201,6 +227,18 @@ def image() -> dict[str, dict[tuple[str, int], tuple[int, object]]]:
             for address, value in written.items():
                 cells[table][(bank, int(address))] = (layer, value)
     return cells
+
+
+@cache
+def ran_layers() -> dict[str, set[int]]:
+    """table -> the layers the executed image ran. A fragment its caller skipped (`halt: skipped`, bg0's special
+    mode) or never called has no records: its listing's writes are not the boot's."""
+    ran: dict[str, set[int]] = defaultdict(set)
+    for entry in json.loads(IMAGE.read_text(encoding="utf-8"))["scripts"]:
+        if entry.get("halt") != "skipped":
+            layer, table = table_of(entry["script"])
+            ran[table].add(layer)
+    return ran
 
 
 def boot_tables() -> list[str]:
@@ -252,7 +290,7 @@ def records_of(table: str, leader: Leader) -> tuple[list[tuple[int, int, list[tu
     """([(layer, id, writes)], {layer: the writes before its first record}). A record's writes run from its leader
     to the next record's."""
     records, before = [], {}
-    for layer in range(5):
+    for layer in sorted(ran_layers()[table]):
         current = None
         for bank, address in write_order(table, layer):
             base = next((b for b in leader.bases if bank == leader.bank

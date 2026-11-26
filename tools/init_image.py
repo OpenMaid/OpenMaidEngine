@@ -7,12 +7,17 @@ boot order -- INIT2's base initializer calls, then each mounted append catalog's
 calls in ascending selector order (docs/asset-resolution-re.md) -- through one session and records
 each script's global-bank delta (new or changed int/string cells).
 
+A call that its script jumps past while an integer global is 0 (`jcc (global-int G) 0xffffffff label`, as bg0's
+$1$AUTORUN runs its special mode's fragments) is run only when that global is not 0 at that point of the boot, as
+native AGE runs it; a call behind any other condition stops the tool rather than being run unconditionally.
+
   py -3.11 -X utf8 tools/init_image.py --game kamidori            # build the image
   py -3.11 -X utf8 tools/init_image.py --game kamidori --summary  # per-script cell counts
 
 Writes build/games/<game>/init-image.json:
   {profile, game_root, scripts: [{script, packed_id, halt, steps, ints:{addr: v}, strings:{addr: s}}]}
-Deltas omit writes that store a cell's existing value.
+Deltas omit writes that store a cell's existing value. A guarded call carries `guard` (the global, `0x...`); when
+that global was 0 it did not run, and its `halt` is `skipped` with no cells.
 """
 from __future__ import annotations
 
@@ -28,6 +33,9 @@ import paths
 import sys4load
 
 CALL_SCRIPT = 0x03
+JCC = 0xa0
+GLOBAL_INT = 3
+FALL_THROUGH = 0xFFFFFFFF
 OUTPUT = paths.BUILD / "init-image.json"
 
 
@@ -39,14 +47,27 @@ def _callscript_names() -> dict[int, str]:
 
 
 def _called_tables(script_path: Path, names: dict[int, str]) -> list[str]:
-    """Return the `*INIT*.BIN` targets of a script's immediate call-script instructions, in order."""
+    """Return the `*INIT*.BIN` targets of a script's immediate call-script instructions, in order.
+
+    A call inside the span a `jcc (global-int G) 0xffffffff label` jumps over runs only while G[G] is not 0; it is
+    returned as `NAME.BIN?0xG` (one `?0x...` for each such span it is in), which `Ome.Cli init-image` honours. A call
+    inside the span of a jcc on anything else is refused: the boot order would not be the game's."""
     script = sys4load.load(script_path)
     out = []
+    spans: list[tuple[int, int | None]] = []   # (end, guarding global or None) of each open jcc span
     for ins in script.instructions:
-        if ins.opcode == CALL_SCRIPT and ins.args and ins.args[0][0] == 0:
+        spans = [span for span in spans if ins.offset < span[0]]
+        if ins.opcode == JCC and len(ins.args) == 3:
+            (kind, value), (_, taken), (_, skipped) = ins.args
+            if taken == FALL_THROUGH and skipped > ins.offset:
+                spans.append((skipped, value if kind == GLOBAL_INT else None))
+        elif ins.opcode == CALL_SCRIPT and ins.args and ins.args[0][0] == 0:
             name = names.get(ins.args[0][1], "")
             if "INIT" in name.upper():
-                out.append(name)
+                if any(guard is None for _, guard in spans):
+                    raise SystemExit(f"{script_path.name}@0x{ins.offset:x}: {name} is called behind a condition "
+                                     "that is not an integer global; the boot order cannot follow it")
+                out.append(name + "".join(f"?0x{guard:x}" for _, guard in spans))
     return out
 
 

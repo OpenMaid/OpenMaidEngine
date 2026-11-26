@@ -1,0 +1,23 @@
+# Port only (scenarios/port/): 戦女神ZERO's base mod and its data files (docs/adding-a-game.md, M3).
+# example.bg0-speaker-name renames セリカ's (speaker 1) name plate, speaker_entry[1].name, to [MOD] セリカ at
+# bg0.data.layered. A new game's opening first shows his name plate on SC0000's first page, his
+# 「よし、これでこっちの動きは封じた！」. The route is bg0-opening.steps' up to the game mode. Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port start --mod oms/examples/mods/example.bg0-speaker-name
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port run tools/drive/scenarios/port/bg0-speaker-name.steps
+#   py -3.11 -X utf8 tools/drive.py --game bg0 port stop
+
+rand-seed 13
+wait-state script=OP timeout=120
+wait 3
+click adv.next                           # ends the opening movie
+wait-state script=TITLE timeout=60
+lua local name = maid.vm.gs[0xe0 + 1] assert(name == "[MOD] セリカ", name) return name
+settle timeout=20
+click title.start
+wait-state script=BUNKI timeout=60
+settle timeout=20
+click mode.normal
+wait-state script=SC0000 timeout=60
+settle timeout=30
+state
+shot bg0-speaker-name

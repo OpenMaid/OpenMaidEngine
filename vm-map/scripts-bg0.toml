@@ -1,0 +1,483 @@
+# What 戦女神ZERO's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-bg0.json, into the
+# reference bundle's games/bg0/scripts.json. The format is vm-map/scripts-kamidori.toml's. Every note here
+# comes from docs/bg0-data-tables.md, or from the patch points of vm-map/patch-points-bg0.toml its source names.
+#
+# The install has one append, whose $1$ layers get the base script's note on the site (the bundle's `layer_of`). A
+# layer has its own note below only where it does something else: the ones a script runs in place of the base table
+# while special_edition_mode is set (特別編), and those only that mode runs.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "SYSTEM4"
+summary = """Boots and runs the game. Where the shared profile has config_initialized unset it runs INITCONFIG and \
+sets it; otherwise LOADCONFIG reads the options back. It runs INIT2 on every boot, and a load restores the save \
+after it, so INIT2 runs on every load too. On the first run of the root it plays LOGO and OP; then, on every run, \
+INIT and TITLE. After the title it runs one mode a pass, from system_mode: 1 a scene, 2 ALLMAP, 3 FIELD, 4 BTL and 5 \
+TOWN. A scene pass copies the scene's SCINIT script into current_scene_script_id and runs it; in the story, outside \
+特別編 and the debug runs, it also marks the scene seen in the shared profile (scene_seen_flags)."""
+source = "docs/bg0-data-tables.md (Boot; The boot order; Scenes; The scene pass)"
+
+[[script]]
+name = "INITCONFIG"
+summary = """The first run's options: SYSTEM4 runs it once for each shared profile, and it sets each option and stores \
+it in the profile: among them the escape question (confirm_escape), the map's frame rate, read-message skip and the \
+voice groups' mutes (voice_mute_switches). CONFIG changes them afterwards."""
+source = "docs/bg0-data-tables.md (Boot; INITCONFIG)"
+
+[[script]]
+name = "LOADCONFIG"
+summary = """Reads the options back from the shared profile on a boot whose profile has config_initialized set. \
+SYSTEM4 runs it instead of INITCONFIG."""
+source = "docs/bg0-data-tables.md (Boot; The boot order; INITCONFIG)"
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it calls the 25 base table scripts (CBINIT first, OBINIT2 last), then op 0x143 \
+runs the append's $1$AUTORUN, whose fragments add records and rewrite cells of the base's. It then writes its own \
+constants (scene_graphic_element_numbers, world_map_pictures, the party name positions, character_sort_keys), gives \
+a game with no formation the first one, and runs CALCREVISE for each character who has joined. SYSTEM4 runs it on \
+every boot and on every load, where the save's cells are already back."""
+source = "docs/bg0-data-tables.md (How the data gets into memory; INIT2); the patch points bg0.boot.data_layered and bg0.boot.data_ready"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The append's record zero, which INIT2 runs through op 0x143: it calls the append's $1$ fragment of 19 \
+tables, 9 of them empty stubs. $1$AMINIT, $1$SIINIT and $1$SCINIT it calls only while special_edition_mode is set, \
+which it is not at a cold boot, so the boot's tables are a 通常 game's; on a load of a 特別編 save they run too."""
+source = "docs/bg0-data-tables.md (How the data gets into memory; The append's driver; The game mode)"
+
+[[script]]
+name = "INIT"
+summary = """Calls CHINIT. SYSTEM4 runs it on every run of the root, before the title."""
+source = "docs/bg0-data-tables.md (Boot; The boot order; CHINIT)"
+
+[[script]]
+name = "GAMESTART"
+summary = """Starts a new game. It offers 通常 and 特別編 and stores the choice in special_edition_mode (0 or 1). A new \
+通常 game starts at story part 1 with the starting kit, treasure 9999. A new 特別編 game runs $1$CHINIT and $1$SCINIT, \
+sets scene_run_mode to −2 and story_part to 4, and gets treasure 9998. Both start with formation 1 learned and in \
+use, and keep money within 0 and 9,999,999."""
+source = "docs/bg0-data-tables.md (Boot; The game mode; Items, conditions and constants; The item helpers and the inventory; TRINIT)"
+
+[[script]]
+name = "CHANGECHAPTER"
+summary = """Moves セリカ to the form of the story part in play: it derives lead_unit_id from story_part, makes it his \
+unit (character_unit_ids[1]), raises each of his seven parameters (lead_parameters) to CBINIT's minimum for the \
+form, and copies the form's HP, MP and TP percent into lead_saved_pool_rate. Unless MPINIT's \
+map_keeps_section_states is set for the map of the section slot in play, it clears all 500 saved section slots."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CHINIT; CBINIT; MPINIT)"
+
+# ---------------------------------------------------------------------------------------------- the boot tables
+
+[[script]]
+name = "CBINIT"
+summary = """セリカ's four forms (lead_unit_id 1 to 4): for each of his seven parameters a minimum, which CHANGECHAPTER \
+raises lead_parameters to, and a cost percent, which CHMODE2 adds to the cost of raising it; and the HP, MP and TP \
+percent CALCCHP scales by. $1$CBINIT writes the same cells again."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CBINIT)"
+
+[[script]]
+name = "EBINIT"
+summary = """The units, keyed by unit id (1 to 950): the party characters, who fight as units too, and the enemies, \
+with their names, pictures, voice clips, stats, equipment, routines, actions, rewards and drops. $1$EBINIT adds 73 \
+records. SETEN builds an enemy's battle slot from its unit and reads it live; UNITECH copies a joining character's \
+base level, stats, ranks and equipment from it once."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; EBINIT; What is saved)"
+
+[[script]]
+name = "CNINIT"
+summary = """The speakers, keyed by speaker id, which is the unit id: the name plate a page shows for adv_speaker_id, \
+and the unit whose voice setting the speaker uses (speaker_voice_units). $1$CNINIT adds and rewrites some."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CNINIT and CVINIT)"
+
+[[script]]
+name = "CVINIT"
+summary = """The 16 voice settings, 0 the default and one for each voiced character, and the voice unit map \
+unit_voice_settings. A scene mutes a page's voice where the setting of its speaker's voice unit has its \
+voice_mute_switches cell set."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CNINIT and CVINIT; INITCONFIG)"
+
+[[script]]
+name = "CIINIT"
+summary = """The 51 character profiles of the 人物 book (INFO2). A profile's name shows only once its unit has been \
+heard (speaker_heard_flags)."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CIINIT)"
+
+[[script]]
+name = "ITINIT"
+summary = """The items, keyed by item id: key items, consumables, weapons, armour, shields and accessories, magic, arts \
+and the enemies' actions, with their names, categories, ranks, stats, conditions and animations. $1$ITINIT adds 84 \
+records, ids 1011 to 7207. ITMES holds the descriptions. No field is copied into a saved cell, so a change reaches a \
+loaded game at once."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; ITINIT)"
+
+[[script]]
+name = "ILINIT"
+summary = """The 36 conditions (即死 to 経験), up to five levels each: their names, descriptions and what each level \
+changes in a battle slot, which SETILLREVISE applies."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; ILINIT)"
+
+[[script]]
+name = "SSINIT"
+summary = """The names and two-line descriptions of the 12 support effects, which CHMODE2 draws for a character. It \
+writes no integers."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; SSINIT)"
+
+[[script]]
+name = "AFINIT"
+summary = """Small arrays: the elements and their affinity matrix, the item classes, the formations and the battle AI \
+types' texts."""
+source = "docs/bg0-data-tables.md (Table inventory; AFINIT)"
+
+[[script]]
+name = "TRINIT"
+summary = """The treasure contents, five slots a treasure, each an item and a count or a sum of money: the chests a \
+map script puts in an object and GETTREASURE opens, and the two starting kits GAMESTART gives, 9998 and 9999. \
+$1$TRINIT adds 84 treasures."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; TRINIT)"
+
+[[script]]
+name = "RTINIT"
+summary = """The battle routines, up to 20 steps each: a step names the RTNnnn rule script that runs it, its chance, \
+an action and up to three arguments, and may wait for a story flag or limit its runs. BTL picks a battler's routine \
+from its unit's EBINIT column, and RTN walks it."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; RTINIT)"
+
+[[script]]
+name = "BTANINIT2"
+summary = """The battle animations: six effect slots each, an effect and its start time, and the animation's length. \
+ITINIT names each action's animation, and ANIME plays it."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; BTANINIT2)"
+
+[[script]]
+name = "EEINIT"
+summary = """The encounter chances: five rows of ten, a row for each band of distance walked and a column for the \
+encounter level. FIELD draws against the cell as the party walks."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; EEINIT)"
+
+[[script]]
+name = "ARINIT"
+summary = """The arena's four ranks of seven rounds, keyed 10 × rank + round: each round's title, two formations, \
+required average level, party limit, required characters, fee, prize money and reward items. INIT2 runs it at boot, \
+and ARENA again each time it opens."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ARINIT)"
+
+[[script]]
+name = "MPINIT"
+summary = """The field maps, keyed by map id (1 to 49): the object sheet; the start floor, section, position and \
+facing, which FIELD reads on entry from the world map; the field gauge's decay distance; whether a chapter change \
+keeps the map's section states; and each floor's number and name. $1$MPINIT adds map 49."""
+source = "docs/bg0-data-tables.md (The world; MPINIT)"
+
+[[script]]
+name = "LAINIT"
+summary = """The land types, which FIELD reads by field_land_id: the field character's look (its sheet column), the \
+walking speed, a current's drift, and an encounter level that replaces the block's."""
+source = "docs/bg0-data-tables.md (The world; LAINIT; EEINIT)"
+
+[[script]]
+name = "OBINIT"
+summary = """The map object kinds: each kind's sprite on the map's object sheet, which DRAWMAP cuts, and the kind it \
+turns into with its sound, which EVOLVEOBJ, OPENDOOR and map scripts read."""
+source = "docs/bg0-data-tables.md (The world; OBINIT and OBINIT2)"
+
+[[script]]
+name = "OBINIT2"
+summary = """The map object kinds' depth and walls: FIELD makes one polygon an object from them and sets its walls \
+through AGERC."""
+source = "docs/bg0-data-tables.md (The world; OBINIT and OBINIT2)"
+
+[[script]]
+name = "CPINIT"
+summary = """The field character's walking and jumping sheets: a row for each of セリカ's forms (lead_unit_id), and a \
+column for each look a land picks."""
+source = "docs/bg0-data-tables.md (The world; CPINIT)"
+
+[[script]]
+name = "CGINIT"
+summary = """The CG gallery: each CG's picture and its tab, slot and variant in CGMODE. $1$CGINIT adds CGs 712 to \
+715."""
+source = "docs/bg0-data-tables.md (Galleries; CGINIT)"
+
+[[script]]
+name = "SPINIT"
+summary = """Scene replay: the 41 replays of HMODE, on pages of 15."""
+source = "docs/bg0-data-tables.md (Galleries; SPINIT)"
+
+[[script]]
+name = "VIINIT"
+summary = """The glossary's 90 entries (INFO1): each one's title and what unlocks it. VIMES shows an entry's text."""
+source = "docs/bg0-data-tables.md (Information screens; VIINIT)"
+
+[[script]]
+name = "SCINIT"
+summary = """The scenes, keyed by scene id (0 to 2009): the script that plays each one, which SYSTEM4 copies into \
+current_scene_script_id, and its offer context, which the scene's header reads. The boot's are a 通常 game's; \
+$1$SCINIT gives 特別編's scenes."""
+source = "docs/bg0-data-tables.md (Scenes; SCINIT)"
+
+[[script]]
+name = "AMINIT"
+summary = """The world map's areas for story_part: each area's name, pictures, kind, position and neighbours, a town's \
+music, and its state, set from story flags. It clears them first. INIT2 runs it with story_part 0, so at boot it only \
+clears; ALLMAP runs it each time it opens ($1$AMINIT in 特別編), and so does SHOWALLMAP."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; AMINIT); the patch points bg0.world.after_area_loaders and bg0.world.after_shown_area_loaders"
+
+[[script]]
+name = "SIINIT"
+summary = """The town sites of the town in play, current_place_id: each site's name, picture, position, hot area, \
+neighbours and state, set from story flags; site 1 is the exit. It clears them first. Towns 50, 51, 52, 60, 61, 70, \
+80, 81 and 82 have sites. INIT2 runs it at boot, when it only clears; TOWN runs it on each visit ($1$SIINIT in \
+特別編)."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; SIINIT); the patch point bg0.town.after_site_loaders"
+
+# ---------------------------------------------------------------------------------------------- the tables run on demand
+
+[[script]]
+name = "CHINIT"
+summary = """Sets character_unit_ids, each character's EBINIT unit, for characters 1 to 9 and 51 to 57. INIT runs it \
+on every run of the root, before the title; the array is saved, so a load brings the save's back over it."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CHINIT)"
+
+[[script]]
+name = "BTANINIT"
+summary = """The effects of the battle animation in play, battle_animation_in_play: it clears 15 work arrays of six \
+cells and fills each of the animation's six slots from its effect id. ANIME runs it, or $1$BTANINIT in 特別編, the \
+same script, for each animation."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; BTANINIT)"
+
+[[script]]
+name = "ENINIT"
+summary = """Loads the encounter set encounter_set_in_play: up to 100 entries, each a weight, a window of the field \
+gauge it fits and two formations. FIELD sets the set from the block in play and runs it ($1$ENINIT first in 特別編); \
+25 map scripts set one and run it themselves. SETENP draws an entry from it."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ENINIT)"
+
+[[script]]
+name = "ESINIT"
+summary = """Loads the formation formation_in_play: up to eight enemy slots, each a unit, the columns and rows it may \
+stand in, and the chance it is used. SETENP runs it for each of a battle's two formations ($1$ESINIT first in 特別編) and places the \
+enemies."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ESINIT)"
+
+[[script]]
+name = "RMINIT"
+summary = """Fills map_block with the blocks of the map in play, current_place_id, after clearing them: each block's \
+map and event scripts, pictures, minimap, battle backdrop, three musics, two encounter sets, the enemies' base level \
+and spread, and the encounter level. FIELD runs it each time it starts ($1$RMINIT in 特別編), and CALLBACK_LOAD on a \
+load where system_mode is 1 and map_entered is set."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; RMINIT); the patch points bg0.map.after_block_loaders and bg0.boot.data_ready"
+
+[[script]]
+name = "SHINIT"
+summary = """Fills the slots of the shop in play, shop_id, with its items, some of them waiting for a story flag. SHOP \
+runs it each time a shop opens; there are 12 shops, with no stock limits."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; SHINIT)"
+
+# ---------------------------------------------------------------------------------------------- 特別編's layers
+
+[[script]]
+name = "$1$AMINIT"
+summary = """特別編's world map areas, which ALLMAP runs in place of AMINIT while special_edition_mode is set, and \
+$1$AUTORUN then too: it clears the same arrays and fills only world 4's area 49, 夢幻回廊, shown while story flag \
+9999 is set."""
+source = "docs/bg0-data-tables.md (The game mode; AMINIT); the patch point bg0.world.after_area_loaders"
+
+[[script]]
+name = "$1$SIINIT"
+summary = """特別編's town sites, which TOWN runs in place of SIINIT while special_edition_mode is set, and \
+$1$AUTORUN then too: it only clears them."""
+source = "docs/bg0-data-tables.md (The game mode; SIINIT); the patch point bg0.town.after_site_loaders"
+
+[[script]]
+name = "$1$SCINIT"
+summary = """特別編's scenes: 30 scene ids given to the append's eight scene scripts, $1$SC0000 to $1$SC0060 and \
+$1$SC0100. GAMESTART runs it for a new 特別編 game, and $1$AUTORUN on a load of a 特別編 save."""
+source = "docs/bg0-data-tables.md (Scenes; SCINIT; The game mode)"
+
+[[script]]
+name = "$1$RMINIT"
+summary = """The blocks of map 49, 特別編's map. FIELD and CALLBACK_LOAD run it in place of RMINIT while \
+special_edition_mode is set."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; RMINIT); the patch point bg0.map.after_block_loaders"
+
+[[script]]
+name = "$1$CHINIT"
+summary = """GAMESTART runs it for a new 特別編 game: it gives character 51 unit 638 and character 53 unit 637."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CHINIT; The game mode)"
+
+[[script]]
+name = "$1$ENINIT"
+summary = """特別編's encounter sets, 201 to 302, with formations 1511 to 1923. FIELD runs it while \
+special_edition_mode is set, and runs ENINIT after it only where it loaded nothing (entry 0's weight still 0)."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ENINIT)"
+
+[[script]]
+name = "$1$ESINIT"
+summary = """特別編's formations, 1001 to 1923. SETENP runs it while special_edition_mode is set, and runs ESINIT \
+after it only where it loaded nothing (slot 0's unit still 0)."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ESINIT)"
+
+[[script]]
+name = "$1$SCJUMP"
+summary = """特別編's scene dispatch, which every caller of SCJUMP runs instead while special_edition_mode is set. Its \
+two rules play scene 0 on the world map until that scene's story flag is set, and scene 100 every time context 5 \
+comes after a battle."""
+source = "docs/bg0-data-tables.md (Scenes; SCJUMP; The game mode)"
+
+# ---------------------------------------------------------------------------------------------- the places and scenes
+
+[[script]]
+name = "ALLMAP"
+summary = """The world map, which SYSTEM4 runs for system_mode 2. It clears map_entered, sets scjump_context_id to 1 \
+and runs SCJUMP. Then it runs the area loader, AMINIT ($1$AMINIT in 特別編), plays its music and offers the open \
+areas. Entering one sets current_place_id and the mode the area's kind names: \
+FIELD for a map, TOWN for a town. A load of a save made on the world map restores ALLMAP before the loader, so the \
+loader runs again."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; Selectors and field state; AMINIT; SCJUMP); the patch point bg0.world.after_area_loaders"
+
+[[script]]
+name = "SHOWALLMAP"
+summary = """A scene calls it to show a world map with one area marked: it sets story_part and current_place_id to the \
+world and the area its caller put in script_arg_1 and script_arg_2, runs AMINIT and draws the map, and puts the two \
+back when it ends. The areas stay as AMINIT left them until ALLMAP runs it again."""
+source = "docs/bg0-data-tables.md (The world; Selectors and field state); the patch point bg0.world.after_shown_area_loaders"
+[script.arguments]
+script_arg_1 = "the world map to show, a story part"
+script_arg_2 = "the area to mark"
+
+[[script]]
+name = "TOWN"
+summary = """A town, which SYSTEM4 runs for system_mode 5. It clears map_entered, shows the area's name as \
+current_place_name, sets scjump_context_id to 2 and runs SCJUMP, then runs the site loader, SIINIT ($1$SIINIT in \
+特別編), and draws the open sites over the town's backdrop, with its music. Entering a site sets town_site_id and runs \
+SCJUMP's context 3. A load of a save made in a town restores TOWN before the loader, so the loader runs again."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; Selectors and field state; SIINIT; SCJUMP); the patch point bg0.town.after_site_loaders"
+
+[[script]]
+name = "FIELD"
+summary = """A field map, which SYSTEM4 runs for system_mode 3. It runs the block loader, RMINIT ($1$RMINIT in \
+特別編); when map_entered is 0 the party has just entered, and FIELD sets it and takes the party's start from MPINIT. \
+On entry it also sets scjump_context_id to 2 and runs SCJUMP, unless debug_map_mode is set. For each section it loads the \
+block's encounter set (ENINIT), plays the block's music and runs the map and event scripts; as the party walks it \
+lowers the field gauge and rolls encounters from EEINIT, and for a battle it sets system_mode to 4. A load of a save \
+made on the map restores FIELD after the loader, which has run again by then."""
+source = "docs/bg0-data-tables.md (The world; Who runs what; Selectors and field state; MPINIT; RMINIT; EEINIT; ENINIT; SCJUMP); the patch point bg0.map.after_block_loaders"
+
+[[script]]
+name = "CALLBACK_LOAD"
+summary = """Runs on a load, before the save's frames are restored. For a 特別編 save it sets scene_run_mode to −2 \
+again, a cell above the saved prefix. Where system_mode is 1 and map_entered is set, a save made in a scene after a \
+map, it runs the map's block loader again, RMINIT ($1$RMINIT in 特別編)."""
+source = "docs/bg0-data-tables.md (The game mode; Who runs what); the patch point bg0.boot.data_ready"
+
+[[script]]
+name = "SCJUMP"
+summary = """The scene dispatch. scjump_context_id picks a rule list: 1 the world map, 2 a map or a town on entry, 3 a \
+town site, 5 after some battles, 6 the escape command. The first rule that fires sets system_mode to 1 and \
+current_scene_id to its scene. It holds 184 rules, which test story flags, the story part, the place and the town \
+site; 144 of them require their own scene's story flag not to be set."""
+source = "docs/bg0-data-tables.md (Scenes; SCJUMP)"
+[script.arguments]
+scjump_context_id = "which rule list to walk"
+town_site_id = "the town site entered, which context 3's rules test"
+
+# ---------------------------------------------------------------------------------------------- characters
+
+[[script]]
+name = "UNITECH"
+summary = """A character joins the party: it sets the character's joined and in-party bits in character_flags. The \
+first time, where the level is 0 or bit 0 of G[0x2fe8] is clear, it copies from the character's unit \
+(character_unit_ids) the base level into character_levels, experience 0, the base stats, the open classes' starting \
+ranks and the four starting equipment items."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CHINIT; What is saved)"
+[script.arguments]
+character_arg_id = "the character who joins"
+
+[[script]]
+name = "ADDEXP"
+summary = """Awards experience to one character, who must be in the party (bit 1 of character_flags); otherwise it \
+does nothing. It adds the amount to character_experience. セリカ, character 1, keeps it, capped at 999999. Any other \
+character spends it on levels: while it reaches the next level's need, from CALCNEXTEXP, below level 499, the need is \
+taken off and the level rises, and at level 499's need the level becomes 500. If the level rose, it passes CALCLVUP \
+the new and the old level in script_arg_1 and script_arg_2 and runs CALCREVISE. RESULT calls it for each character \
+of a won battle; FIELD, map events and scenes call it too."""
+source = "the patch point bg0.experience.before_add"
+[script.arguments]
+character_arg_id = "the character who gains the experience"
+script_arg_1 = "the experience to add"
+
+[[script]]
+name = "CALCNEXTEXP"
+summary = """Works out the experience the character needs for the next level, which ADDEXP compares the character's \
+experience with."""
+source = "the patch point bg0.experience.before_add"
+[script.arguments]
+character_arg_id = "the character"
+
+[[script]]
+name = "CALCLVUP"
+summary = """A character's level up: ADDEXP runs it with the new level in script_arg_1 and the old one in \
+script_arg_2. It reads the unit's growth live, so a changed growth reaches every character's later level-ups."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; What is saved); the patch point bg0.experience.before_add"
+[script.arguments]
+character_arg_id = "the character who rose"
+script_arg_1 = "the new level"
+script_arg_2 = "the old level"
+
+[[script]]
+name = "CALCREVISE"
+summary = """Recomputes a character's derived values from the saved state, the unit and the six equipped items: the \
+maximum HP, MP, TP and FS, the current HP, MP and TP capped by them (or filled where map_entered is 0), and the \
+conditions' floors and levels from the items' lasting conditions. INIT2 runs it for each joined character on every \
+boot and load, and ADDEXP after a level up."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; CALCREVISE; INIT2); the patch point bg0.experience.before_add"
+[script.arguments]
+character_arg_id = "the character it recomputes"
+
+# ---------------------------------------------------------------------------------------------- items and treasure
+
+[[script]]
+name = "ADDITEM"
+summary = """Gives or takes an item: it adds item_count_change to item_counts[current_item], keeps the count from 0 to \
+999, marks the item obtained (item_obtained_flags) and stores that mark in the shared profile. For a key item (class \
+1) it sets item_key_held_flags, story flag 1900 + item, to whether one is held, and the eight 陣形の書, items 13 to 20, \
+also teach formation item − 12 (formation_learned_mask). 52 scripts call it, among them GETITEM, SHOP and GAMESTART."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; The item helpers and the inventory)"
+[script.arguments]
+current_item = "the item, an ITINIT id"
+item_count_change = "the count to add, negative to take"
+
+[[script]]
+name = "GETTREASURE"
+summary = """Opens the treasure of the object the party touches (treasure_object_ids): an id of 0, or a treasure \
+already opened (treasure_opened), finds nothing. Otherwise it marks the treasure opened, runs EVOLVEOBJ to change the \
+object, and runs GETITEM."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; TRINIT)"
+
+[[script]]
+name = "GETITEM"
+summary = """Gives the treasure treasure_current_id: ADDITEM for each item slot with a count above 0, and the money \
+slots' sum added to money, kept within 0 and 9,999,999. It clears treasure_current_id after."""
+source = "docs/bg0-data-tables.md (Items, conditions and constants; TRINIT; The item helpers and the inventory)"
+[script.arguments]
+treasure_current_id = "the treasure to give, a TRINIT id"
+
+# ---------------------------------------------------------------------------------------------- battle
+
+[[script]]
+name = "SETENP"
+summary = """Sets up a battle's enemies. Unless a script has set the two formations itself, it draws an entry of the \
+encounter set in play, by weight, among those whose window fits the field gauge. For each formation it runs ESINIT \
+($1$ESINIT in 特別編, and ESINIT where that loaded nothing), places each enemy on a free cell of its range, runs SETEN for it, and sets the bit that \
+puts it under its routine."""
+source = "docs/bg0-data-tables.md (Battle, enemies and routines; ENINIT; ESINIT; RTINIT)"
+
+[[script]]
+name = "SETEN"
+summary = """Builds an enemy's battle slot from its EBINIT unit, which it reads live. The level is the block's base \
+level from RMINIT plus part of the party's average-level lead, held between the unit's base and highest level, then \
+moved by a draw within the block's spread; in the arena it is the round's."""
+source = "docs/bg0-data-tables.md (Units, characters and speakers; EBINIT; The world; RMINIT; Battle, enemies and routines; ARINIT)"

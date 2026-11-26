@@ -80,11 +80,16 @@ public sealed class BaseModTests : IDisposable
             Assert.Equal(ModManifest.ToolchainOmpVersion, shipped.Manifest.OmpVersion);
             Assert.NotNull(shipped.Layout.Toolchain!.Globals);
             Assert.Equal(["adv.oms"], shipped.Layout.Toolchain.Modules.Select(module => module.Name));
-            // A game below M3 has its toolchain alone (docs/adding-a-game.md, step 10): 戦女神ZERO's base mod starts at
-            // M1, before its registry, so its layout names nothing and it accepts no data file yet.
-            if (GameProfileRegistry.BuiltIn.Find(game)!.Support.Modding < ModdingLevel.BaseMod)
+            // A game below M3 has no Lua parts yet (docs/adding-a-game.md, step 10): it requires nothing and accepts no
+            // data file. Below M2 it has its toolchain alone, since its registry waits for step 9, so its layout names
+            // nothing; from M2 the layout names the registry's cells.
+            ModdingLevel modding = GameProfileRegistry.BuiltIn.Find(game)!.Support.Modding;
+            if (modding < ModdingLevel.BaseMod)
             {
-                Assert.Empty(shipped.BaseLayout.Globals);
+                if (modding < ModdingLevel.Data)
+                    Assert.Empty(shipped.BaseLayout.Globals);
+                else
+                    Assert.NotEmpty(shipped.BaseLayout.Globals);
                 Assert.Empty(shipped.Manifest.Requires);
                 Assert.Empty(shipped.Manifest.Accepts);
                 continue;
@@ -95,10 +100,15 @@ public sealed class BaseModTests : IDisposable
             // stage's stage.loaded (data patches spec §6.2), by the same handlers; Kamidori's stage part at its stage
             // list's preview too (plan §12.6). Arterial's scope is an area, whose part comes at area.loaded; Verita's a
             // dungeon map, whose part comes at map.loaded and, after a load of a save made on it, at data.ready.
+            // 戦女神ZERO's scopes are the world map, a town and a field map, each at its own loaded event, and a field
+            // map's part after a load of a save made in a scene after it at data.ready.
             ModKind kind = Assert.Single(shipped.Manifest.Accepts);
             Assert.Equal($"{game}.tables", kind.Kind);
             (string, string)[] at = game switch
             {
+                "bg0" => [("bg0.data.layered", "tables.lua:apply_boot"), ("bg0.world.loaded", "tables.lua:apply_world"),
+                          ("bg0.town.loaded", "tables.lua:apply_town"), ("bg0.map.loaded", "tables.lua:apply_map"),
+                          ("bg0.data.ready", "tables.lua:apply_loaded_map")],
                 "arterial" => [("arterial.data.layered", "tables.lua:apply_boot"), ("arterial.area.loaded", "tables.lua:apply_area")],
                 "verita" => [("verita.data.layered", "tables.lua:apply_boot"), ("verita.map.loaded", "tables.lua:apply_dungeon"),
                              ("verita.data.ready", "tables.lua:apply_loaded_dungeon")],

@@ -573,11 +573,13 @@ if (command == "gfx")
 
 if (command == "init-image")
 {
-    // init-image <out.json> <SCRIPT.BIN...> — run data-table scripts in order through one session and
+    // init-image <out.json> <SCRIPT.BIN[?0xGLOBAL...]...> — run data-table scripts in order through one session and
     // record each script's global-bank delta (new or changed cells). Names match catalog records
-    // exactly, so append fragments are addressed by their literal `$n$NAME.BIN` record names.
+    // exactly, so append fragments are addressed by their literal `$n$NAME.BIN` record names. A `?0xGLOBAL` suffix
+    // runs the script only while that integer global is not 0 at that point, as its caller's jcc does in native
+    // AGE (bg0's $1$AUTORUN); otherwise it is recorded as skipped.
     // tools/init_image.py drives this and projects the deltas through the profile's global registry.
-    if (args.Length < 3) { Console.WriteLine("usage: init-image <out.json> <SCRIPT.BIN...>"); return 1; }
+    if (args.Length < 3) { Console.WriteLine("usage: init-image <out.json> <SCRIPT.BIN[?0xGLOBAL...]...>"); return 1; }
     string output = args[1];
     var byName = provider.Catalog.EnumerateScripts()
         .GroupBy(entry => entry.Asset.Name, StringComparer.OrdinalIgnoreCase)
@@ -585,12 +587,31 @@ if (command == "init-image")
     var session = new GameSession();
     var steps = new List<object>();
     var initOptions = new VmOptions(HaltAtWaitForInput: false);
-    foreach (string name in args.Skip(2).Where(a => a.EndsWith(".BIN", StringComparison.OrdinalIgnoreCase)))
+    foreach (string call in args.Skip(2).Where(a => a.Split('?')[0].EndsWith(".BIN", StringComparison.OrdinalIgnoreCase)))
     {
+        string[] parts = call.Split('?');
+        string name = parts[0];
+        int[] guards = parts.Skip(1).Select(guard => Convert.ToInt32(guard, 16)).ToArray();
         if (!byName.TryGetValue(name, out long packedId))
         {
             Console.Error.WriteLine($"not in catalog: {name}");
             return 2;
+        }
+        string? guard = guards.Length == 0 ? null : string.Join(",", guards.Select(g => $"0x{g:x}"));
+        if (guards.Any(g => !session.Globals.TryGetValue(g, out long value) || value == 0))
+        {
+            steps.Add(new
+            {
+                script = name,
+                packed_id = $"0x{packedId:x}",
+                guard,
+                halt = "skipped",
+                steps = 0,
+                ints = new Dictionary<string, long>(),
+                strings = new Dictionary<string, string>(),
+            });
+            Console.WriteLine($"  {name,-16} 0x{packedId:x8} skipped: G[{guard}] is 0");
+            continue;
         }
         Script script = provider.GetById(packedId)
                         ?? throw new InvalidOperationException($"not a script: {name}");
@@ -609,6 +630,7 @@ if (command == "init-image")
         {
             script = name,
             packed_id = $"0x{packedId:x}",
+            guard,
             halt = result.Halt,
             steps = result.Steps,
             ints = intDelta,
@@ -617,9 +639,14 @@ if (command == "init-image")
         Console.WriteLine($"  {name,-16} 0x{packedId:x8} {result.Steps,8} steps (halt: {result.Halt}) " +
                           $"{intDelta.Count,7} int / {stringDelta.Count,5} string cells");
     }
+    // An unguarded call has no `guard` key, so a game without guarded calls writes the image it always did.
     File.WriteAllText(output, JsonSerializer.Serialize(
         new { profile = selectedProfile.Profile.Id, game_root = gameRoot, scripts = steps },
-        new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+        new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        }));
     Console.WriteLine($"[init-image] {steps.Count} scripts -> {output}");
     return 0;
 }

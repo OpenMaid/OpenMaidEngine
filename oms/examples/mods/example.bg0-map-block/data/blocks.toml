@@ -1,0 +1,6 @@
+# Applied at bg0.map.loaded: each time FIELD starts on map 1, after RMINIT has filled the map's blocks, and at
+# bg0.data.ready after a load of a save made in a scene after the map. A block is 30 * row + column, and a block's music
+# is a row of three variants. The comment gives the game's own value.
+
+[dungeon.1.block.50]                    # row 1, column 20
+music.0 = 14                            # 5, for map_music_variant 0

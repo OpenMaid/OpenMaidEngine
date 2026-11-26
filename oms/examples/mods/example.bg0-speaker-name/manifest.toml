@@ -1,0 +1,17 @@
+omp = 4
+id = "example.bg0-speaker-name"
+name = "Speaker name (戦女神ZERO)"
+version = "1.0.0"
+description = "A data file that renames the name plate the opening scene first shows: セリカ's (speaker 1), on his first line."
+
+[game]
+profile = "bg0"
+target = "extended"
+
+[[requires]]
+id = "bg0-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "bg0.tables"
+file = "speakers.toml"

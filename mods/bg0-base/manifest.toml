@@ -2,7 +2,7 @@ omp = 5
 id = "bg0-base"
 name = "戦女神ZERO base"
 version = "1.0.0"
-description = "Carries the game's OMS toolchain (oms/): its ADV module, the source its scenes decompile to. It names no cell yet: the game's registry comes with its data tables."
+description = "Names the game's cells for Lua mods (the layout the engine builds a mod's game.g and game.table from), gives a helper that changes the game through its own scripts, and carries the game's OMS toolchain (oms/)."
 
 [game]
 profile = "bg0"
@@ -11,3 +11,41 @@ target = "extended"
 [lua]
 api = 1
 capabilities = ["vm"]
+# The game scripts the helpers in lua/init.lua call (spec §10); omp check walks each.
+calls = ["ADDITEM"]
+
+# The library tables.lua applies the record tables with (data patches spec §6.4); the engine ships it too.
+[[requires]]
+id = "ome-records"
+version = ">=1, <2"
+
+# Data files of the game's record tables (data patches spec §6): a mod that requires this base mod ships them under
+# data/, and tables.lua checks and applies each, by the record map lua/generated/tables.lua: the boot's tables at
+# bg0.data.layered, and the places' tables each time their loaders have run: the world map's areas (bg0.world.loaded),
+# a town's sites (bg0.town.loaded) and a field map's blocks (bg0.map.loaded, and bg0.data.ready after a load of a save
+# made in a scene after the map). The link checks each file against shapes/tables.schema.json first, which
+# base_mod_build.py generates from the same record map (spec §7).
+[[accepts]]
+kind = "bg0.tables"
+description = "Edits to the game's record tables: units, characters, items, conditions, routines, the arena and the field's places, which the boot builds, and the world map's areas, a town's sites and a field map's blocks, which their loaders write."
+shape = "tables.schema.json"
+
+[[accepts.at]]
+event = "bg0.data.layered"
+handler = "tables.lua:apply_boot"
+
+[[accepts.at]]
+event = "bg0.world.loaded"
+handler = "tables.lua:apply_world"
+
+[[accepts.at]]
+event = "bg0.town.loaded"
+handler = "tables.lua:apply_town"
+
+[[accepts.at]]
+event = "bg0.map.loaded"
+handler = "tables.lua:apply_map"
+
+[[accepts.at]]
+event = "bg0.data.ready"
+handler = "tables.lua:apply_loaded_map"

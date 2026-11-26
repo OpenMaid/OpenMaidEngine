@@ -75,6 +75,18 @@ ran the same scenarios on native AGE.
   of its opening scene (site 0xdf3, the instruction that resets the text layout), through `bg0.adv`.
   `NaturalBootIntegrationTests.Bg0PrologueFragmentIsTheFirstAdvPage` boots a new game into it, and
   `tools/drive/scenarios/bg0-prologue-line.steps` plays it on both targets, native AGE on the exported `SC0000.BIN`.
+- `example.bg0-speaker-name` is 戦女神ZERO's base mod example (M3): a data file of `bg0.tables` that renames the
+  name plate セリカ (speaker 1) shows, at `bg0.data.layered`. `tools/drive/scenarios/port/bg0-speaker-name.steps`
+  checks the cell at the title and plays a new game to his first line. It targets `extended`, so it runs in the port
+  only.
+- `example.bg0-debug-menu` opens the developers' debug menu, which 戦女神ZERO's title builds but never shows, from
+  the title's Quit (`docs/modding/games/bg0.md`, "The debug menu"). It targets `native`; the exported `TITLE.BIN`
+  opens the same menu on native AGE, and its 迷宮マップ（ＰＧ１用） the same field map.
+- `example.bg0-event-log` logs every event `bg0-base` raises, with its fields, gives one item at `bg0.data.ready`
+  through the base mod's `give_item`, and keeps the list for the driver's `lua` step; `example.bg0-map-block` is a
+  data file whose dungeon part gives map 1's block 50, where the party starts, music 14, most of the map's blocks'.
+  `tools/drive/scenarios/port/bg0-debug-events.steps` runs the three: 迷宮マップ（ＰＧ１用） (the experience award,
+  the map event and the changed block).
 
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs

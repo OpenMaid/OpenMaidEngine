@@ -16,7 +16,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Game | Id | Engine ABI | Play | Modding | Guide |
 |---|---|---|---|---|---|
 | Soukoku no Arterial | `arterial` | `SYS4438` | P3 (complete) | M3 (base mod) | [the guide](arterial.md) |
-| Ikusa Megami ZERO | `bg0` | `SYS4415` | P3 (complete) | M1 (scripts) | [the guide](bg0.md) |
+| Ikusa Megami ZERO | `bg0` | `SYS4415` | P3 (complete) | M3 (base mod) | [the guide](bg0.md) |
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
 | Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | M3 (base mod) | [the guide](verita.md) |
@@ -47,17 +47,17 @@ below P3 is still being added and is not playable. The levels' gates are in
 |---|---|
 | Game id | `bg0` (`--game bg0`) |
 | Title | Ikusa Megami ZERO (戦女神ZERO) |
-| Support | play P3 (complete); modding M1 (scripts) |
+| Support | play P3 (complete); modding M3 (base mod) |
 | Engine build | AGE `4.15D` |
 | Engine ABI | `SYS4415` |
 | Catalog revision | `S4IC415` |
 | Boot script | `SYSTEM4.BIN` |
 | Install | anywhere: a profile made in the launcher names it; from source, `games/bg0/` beside the repository by default |
 | Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/bg0/` of the engine's data folder) |
-| OMS modules | `bg0.globals` (generated, naming nothing yet: the game has no registry), `bg0.scripts` (generated); `bg0.adv` ([its source in `bg0-base`](../../../mods/bg0-base/oms/adv.oms)) |
+| OMS modules | `bg0.globals`, `bg0.scripts` (generated); `bg0.adv` ([its source in `bg0-base`](../../../mods/bg0-base/oms/adv.oms)) |
 | Speakers | 135 in `bg0.adv`'s `enum speaker` |
-| Tables | none yet |
-| Named patch points | none yet (fragments use offsets) |
+| Tables | `unit[1000]` (66 fields), `lead_form[10]` (15 fields), `character[100]` (28 fields), `speaker_entry[1000]` (2 fields), `voice_setting[30]` (2 fields), `profile[100]` (5 fields), `item[10000]` (51 fields), `condition[40]` (26 fields), `skill_support[100]` (2 fields), `element[20]` (2 fields), `item_class[60]` (6 fields), `formation[9]` (2 fields), `treasure[10000]` (3 fields), `shop_slot[20]` (1 fields), `routine[1000]` (8 fields), `battle_animation[10000]` (4 fields), `battle_effect[6]` (15 fields), `encounter_entry[100]` (4 fields), `formation_slot[8]` (6 fields), `arena_round[40]` (12 fields), `arena_rank[4]` (2 fields), `area[100]` (11 fields), `town_site[30]` (10 fields), `map[50]` (10 fields), `map_block[450]` (12 fields), `land[100]` (7 fields), `object_kind[1000]` (10 fields), `field_sprite[10]` (2 fields), `scene[10000]` (2 fields), `glossary_entry[200]` (5 fields), `cg[2000]` (6 fields), `replay[75]` (1 fields) ([reference](../../global-reference-bg0.md)) |
+| Named patch points | `bg0.boot.data_layered`, `bg0.boot.data_ready`, `bg0.world.after_area_loaders`, `bg0.world.after_shown_area_loaders`, `bg0.town.after_site_loaders`, `bg0.map.after_block_loaders`, `bg0.experience.before_add` ([reference](../../patch-point-reference-bg0.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [Ikusa Megami ZERO's guide](bg0.md) |
 
