@@ -164,7 +164,8 @@ public partial class Main
             IReadOnlyList<DriveFrame> frames = DriveFrame.FromVm(main._vm.CaptureFrameLocations());
             WaitsDiagnosticSnapshot waits = main._waits.CaptureDiagnosticSnapshot();
             string? waiting = DriveWaiting.Of(waits, main._vm.IsRawInputCallbackActive);
-            return new DriveState(frames, waiting, waits.IsTextRevealing || waits.IsScreenTransitionActive);
+            return new DriveState(frames, waiting, waits.IsTextRevealing || waits.IsScreenTransitionActive
+                                                   || main._vm.Gfx.HasRunningFiniteAnimation(main._clock.NowMs));
         });
 
         public void Pointer(int x, int y) => main.InjectDrivePointer(x, y);

@@ -398,10 +398,11 @@ public sealed partial class Audio
         _duckReleaseArmed = true;
     }
 
-    // engine_main_tick@0x411e12: with BGM ducked, once the voice has ended, the release is armed, no fade owns the
-    // envelope and op 0x1cf bit 0 is clear. So BGM stays ducked between lines until the next line arms the release.
+    // engine_main_tick@0x411e12: with BGM ducked, once the voice has ended (4.45D: every voice but a background one,
+    // voice_any_playing), the release is armed, no fade owns the envelope and op 0x1cf bit 0 is clear. So BGM stays
+    // ducked between lines until the next line arms the release.
     private bool DuckReleaseDue()
-        => _duckActive && _duckReleaseArmed && _fade == null && (_scene.DuckControl & 1) == 0 && !_playing[VoiceChannel];
+        => _duckActive && _duckReleaseArmed && _fade == null && (_scene.DuckControl & 1) == 0 && !IsVoicePlaying;
 
     // The release swaps run-state 0x4000 for a 0x200 fade to full (10000, not the level saved at the duck), which a
     // new voice does not duck while it runs.

@@ -119,6 +119,14 @@ public sealed record AdvTextHistoryRecord(
     /// <summary>Text record +0x1c, copied from text manager +0x554 (unidentified; zero in every observed
     /// save). Kept so a native save's records round-trip.</summary>
     public int TextManager554 { get; init; }
+
+    /// <summary>A voice record's +0x20: the voice it played on (AGE 4.45D's three voices; 0 before, whose records
+    /// write 0 there). Op 0x1d4 finds voice 0's, op 0x2f3 any voice's.</summary>
+    public int VoiceIndex { get; init; }
+
+    /// <summary>A voice record's +0x1c: the voice's pan when it played (4.45D ctx+0x4e8c[N], which nothing writes, so
+    /// 0). Op 0x2f3 returns it.</summary>
+    public int VoicePan { get; init; }
 }
 
 /// <summary>Rectangle edges (not width/height) of one recorded text row.</summary>
@@ -164,8 +172,14 @@ public sealed record AdvTextHistoryRenderBatch(
 public readonly record struct AdvTextRubyAnnotation(int BaseFirstGlyph, int BaseGlyphCount, string Text);
 
 /// <summary>One retained record that op 0x82 draws again: <see cref="Text"/> from the cell at <see cref="Rect"/>'s
-/// top-left, in <see cref="Style"/>. A ruby record is one ruby character, drawn plain with the ruby font.</summary>
-public readonly record struct AdvTextRedrawRecord(string Text, AdvTextHistoryRect Rect, AdvTextStyle Style, bool IsRuby);
+/// top-left, in <see cref="Style"/>. A ruby record is one ruby character, drawn plain with the ruby font. A line-break
+/// record has no text: it draws nothing, but native binds an object for it as for every text record.</summary>
+public readonly record struct AdvTextRedrawRecord(string Text, AdvTextHistoryRect Rect, AdvTextStyle Style, bool IsRuby)
+{
+    /// <summary>The record's index in <see cref="AdvTextHistory.Records"/>, which op 0x82 writes the drawn right and
+    /// bottom back to (<see cref="AdvTextHistory.SetRedrawnRect"/>); -1 for a record built apart from a history.</summary>
+    public int HistoryIndex { get; init; } = -1;
+}
 
 /// <summary>Op 0x82's redraw of one retained group into its own layout (text_redraw_retained_group@0x451530; SYS4433
 /// @0x4553c0). The host releases the layout's objects, clears its surface, draws <see cref="Records"/> and, unless
@@ -571,9 +585,12 @@ public sealed class AdvTextHistory
         => AppendRecord(CurrentLayoutSlot, AdvTextHistoryRecordKind.Metadata,
                         AdvTextHistoryRecordFlags.TypedMetadata, style, "", value, metadataType, -1);
 
-    public void AppendVoice(long voiceId, long voiceArgument, AdvTextStyle style)
+    /// <summary>A voice record (text_history_append_voice_pair): the voice's id and argument, and in AGE 4.45D the
+    /// voice it played on and its pan.</summary>
+    public void AppendVoice(long voiceId, long voiceArgument, AdvTextStyle style, int voiceIndex = 0, int voicePan = 0)
         => AppendRecord(CurrentLayoutSlot, AdvTextHistoryRecordKind.Voice,
-                        AdvTextHistoryRecordFlags.VoicePair, style, "", voiceId, voiceArgument, -1);
+                        AdvTextHistoryRecordFlags.VoicePair, style, "", voiceId, voiceArgument, -1,
+                        voiceIndex: voiceIndex, voicePan: voicePan);
 
     /// <summary>Clear the retained records and logical index while keeping reusable layout definitions.</summary>
     public void Clear()
@@ -703,15 +720,24 @@ public sealed class AdvTextHistory
     }
 
     public bool TryFindVoicePair(int firstRecordIndex, out long voiceId, out long voiceArgument)
+        => TryFindVoicePair(firstRecordIndex, 0, out voiceId, out voiceArgument, out _);
+
+    /// <summary>The group's last voice record of <paramref name="voiceIndex"/> (text_history_find_pair; AGE 4.45D's
+    /// tests the record's +0x20, and the records of the builds before it all hold 0 there): its id, argument and pan,
+    /// or -1, -1 and 0.</summary>
+    public bool TryFindVoicePair(int firstRecordIndex, int voiceIndex, out long voiceId, out long voiceArgument,
+                                 out int voicePan)
     {
         voiceId = -1;
         voiceArgument = -1;
+        voicePan = 0;
         bool found = false;
         foreach (var record in EnumerateGroup(firstRecordIndex))
         {
-            if (!record.Flags.HasFlag(AdvTextHistoryRecordFlags.VoicePair)) continue;
+            if (!record.Flags.HasFlag(AdvTextHistoryRecordFlags.VoicePair) || record.VoiceIndex != voiceIndex) continue;
             voiceId = record.Value;
             voiceArgument = record.AuxValue;
+            voicePan = record.VoicePan;
             found = true;
         }
         return found;
@@ -785,8 +811,9 @@ public sealed class AdvTextHistory
     /// is set, and draws each text record at its rectangle. A record keeps its colors (flag 2 puts the operands in their
     /// place) and its pixel height. Face, weight, effect offsets and render mode are the text manager's current
     /// (<paramref name="currentStyle"/>), so the redraw a CONFIG setting change runs restyles the page in place. A ruby
-    /// record draws with the current ruby font in render mode 0. Line-break, metadata and voice records draw nothing;
-    /// flag 8's voice replay is not modelled. The op indexes the layout table itself: <paramref name="layoutSlot"/> 0
+    /// record draws with the current ruby font in render mode 0. A line-break record draws nothing but is in the batch,
+    /// since native binds an object for every text record; metadata and voice records are left out, and flag 8's voice
+    /// replay is not modelled. The op indexes the layout table itself: <paramref name="layoutSlot"/> 0
     /// is layout object 0.
     /// </summary>
     public bool TryBuildRedrawBatch(int layoutSlot, int firstRecordIndex, int flags,
@@ -798,11 +825,13 @@ public sealed class AdvTextHistory
 
         int slot = layoutSlot;
         var records = new List<AdvTextRedrawRecord>();
+        int index = firstRecordIndex;
         foreach (var record in EnumerateGroup(firstRecordIndex))
         {
+            int at = index++;
             if (record.Flags.HasFlag(AdvTextHistoryRecordFlags.NavigationFiltered) && (flags & 1) == 0)
                 break;
-            if (record.Kind != AdvTextHistoryRecordKind.Text || record.Text.Length == 0) continue;
+            if (record.Kind != AdvTextHistoryRecordKind.Text) continue;
             bool ruby = record.Flags.HasFlag(AdvTextHistoryRecordFlags.Ruby);
             AdvTextStyle style = currentStyle with
             {
@@ -811,10 +840,18 @@ public sealed class AdvTextHistory
                 PrimaryFontSize = record.Style.PrimaryFontSize,
                 RenderMode = ruby ? 0 : currentStyle.RenderMode,
             };
-            records.Add(new AdvTextRedrawRecord(record.Text, record.Rect, style, ruby));
+            records.Add(new AdvTextRedrawRecord(record.Text, record.Rect, style, ruby) { HistoryIndex = at });
         }
         batch = new AdvTextRedrawBatch(slot, firstRecordIndex, flags, SnapshotLayout(slot), records);
         return true;
+    }
+
+    /// <summary>Op 0x82 writes each text record's drawn right and bottom back (text_redraw_retained_group, 4.45D
+    /// @0x463b40), so a later redraw, History and a save see them.</summary>
+    public void SetRedrawnRect(int index, AdvTextHistoryRect rect)
+    {
+        if ((uint)index >= (uint)_records.Count) return;
+        _records[index] = _records[index] with { Rect = rect };
     }
 
     private int ResolveLayout(int requestedSlot) => requestedSlot == 0 ? CurrentLayoutSlot : requestedSlot;
@@ -862,7 +899,7 @@ public sealed class AdvTextHistory
 
     private void AppendRecord(int slot, AdvTextHistoryRecordKind kind, AdvTextHistoryRecordFlags flags,
                               AdvTextStyle style, string text, long value, long auxValue, int sourceOffset,
-                              AdvTextHistoryRect rect = default)
+                              AdvTextHistoryRect rect = default, int voiceIndex = 0, int voicePan = 0)
     {
         if (RecordingSuppressed) return;
         if (_pendingGroupStarts.Remove(slot)) flags |= AdvTextHistoryRecordFlags.GroupStart;
@@ -874,6 +911,8 @@ public sealed class AdvTextHistory
         _records.Add(new AdvTextHistoryRecord(kind, flags, snapshot, style, text, value, auxValue, sourceOffset)
         {
             Rect = rect,
+            VoiceIndex = voiceIndex,
+            VoicePan = voicePan,
         });
     }
 }

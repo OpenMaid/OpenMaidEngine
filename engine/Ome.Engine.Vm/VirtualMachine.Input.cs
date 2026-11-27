@@ -311,6 +311,39 @@ public sealed partial class VirtualMachine : IInterpreterInput
         Write(a[0], System.Math.Max(0, _waits.JoystickButtonCount)); return StepResult.Next;
     }
 
+    // 0x2f9 (out present)(out x)(out y)(out z)(out r)(out u)(out v): joystick 0's six axes, each its position over
+    // the caps' range (op_0x2f9_read_joystick_axes@0x430500 of AGE 4.45D; InputBindings.ReadJoystickAxes). Without a
+    // joystick native writes 0 and leaves the six as the handler's stack holds them; the port writes 0.
+    private StepResult OpReadJoystickAxes(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        Span<float> axes = stackalloc float[InputBindings.JoystickAxisCount];
+        bool present = _waits.JoystickButtonCount > 0;
+        if (present) InputBindings.ReadJoystickAxes(_waits.InputClockMilliseconds, axes);
+        Write(a[0], present ? 1 : 0);
+        for (int axis = 0; axis < axes.Length; axis++) WriteFloat(a[axis + 1], axes[axis]);
+        return StepResult.Next;
+    }
+
+    // 0x2fa (flags): the input manager's +0x1a74 (op_0x2fa_set_joystick_axes_ignored@0x425e40 of AGE 4.45D). With
+    // bit 0 set the axes make no directions; the POV still does.
+    private StepResult OpSetJoystickAxesIgnored(Instruction ins, int pc)
+    {
+        InputBindings.JoystickAxesFlags = unchecked((int)Read(ins.Args[0]));
+        return StepResult.Next;
+    }
+
+    // 0x2fb (out buttons): joystick 0's held buttons from a fresh poll, else 0 (op_0x2fb_read_joystick_buttons@0x4305c0
+    // of AGE 4.45D; InputBindings.ReadJoystickButtons). Native also gives 0 while the input manager's polling is off
+    // (+0x1a60, which window deactivation and the fullscreen strip clear); the port has no such switch, as input from
+    // the front end stops arriving then.
+    private StepResult OpReadJoystickButtons(Instruction ins, int pc)
+    {
+        uint buttons = _waits.JoystickButtonCount > 0 ? InputBindings.ReadJoystickButtons(_waits.InputClockMilliseconds) : 0;
+        Write(ins.Args[0], unchecked((int)buttons));
+        return StepResult.Next;
+    }
+
     // 0x10d
     private StepResult OpConsumeMouseWheelDelta(Instruction ins, int pc)
     {

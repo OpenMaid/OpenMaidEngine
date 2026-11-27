@@ -1,0 +1,24 @@
+# Port only (scenarios/port/): 天秤のLa DEA。's base mod in play (docs/adding-a-game.md, M3), in the town. Two example
+# mods: example.ladea-debug-menu opens the title's debug menu from Quit, and example.ladea-event-log lists every event
+# of ladea-base. The debug menu's 街 (DEBUGTOWN) runs INITGAME, joins characters, opens every place and opens the town.
+# TOWN builds each opened place's spots while it builds its list of places (TOWN@0x1a48..0x1b0d), through SETORNDATA,
+# so ladea.town.place_loaded comes once for each of the 20 places.
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game ladea port start --mod oms/examples/mods/example.ladea-debug-menu --mod oms/examples/mods/example.ladea-event-log
+#   py -3.11 -X utf8 tools/drive.py --game ladea port run tools/drive/scenarios/port/ladea-debug-town.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.quit                        # the debug menu
+wait 2
+settle timeout=20
+expect script=BUNKI
+click 640 615                           # 街
+wait-state script=TOWN timeout=120
+wait 3
+settle timeout=60
+lua mod=example.ladea-event-log local places = {} for _, line in ipairs(seen) do local p = line:match("^ladea%.town%.place_loaded place=(%d+)$") if p then places[tonumber(p)] = (places[tonumber(p)] or 0) + 1 end end for p = 1, 20 do assert(places[p] == 1, p) end return "20 places"
+lua local mode = maid.names.g.system_mode assert(mode == 2, mode) return mode
+shot ladea-debug-town

@@ -1,0 +1,22 @@
+# Port only (scenarios/port/): 天秤のLa DEA。's base mod example (docs/adding-a-game.md, M3). The data file of
+# example.ladea-speaker-name renames シュリ's name form 1, 荷物を背負った少女, at ladea.data.layered. The scenario checks
+# the cell at the title, then plays a new game to page 19 of the opening scene, her first line, under that form
+# (SC0000@0x31c0; the page waits at SC0000@0x3308).
+# Run on a fresh sandbox:
+#   py -3.11 -X utf8 tools/drive.py --game ladea port start --mod oms/examples/mods/example.ladea-speaker-name
+#   py -3.11 -X utf8 tools/drive.py --game ladea port run tools/drive/scenarios/port/ladea-speaker-name.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+lua local name = maid.vm.gs[0xc4a4 + 4 * 3 + 1] assert(name == "[MOD] 旅する少女", name) return name
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0x103e timeout=120  # page 1
+settle timeout=30
+wait-state top=SC0000@0x330b timeout=180 click=adv.next every=3   # page 19, 「は、はいっ。見たことがない物が沢山あったので、見入ってしま……」
+settle timeout=30
+shot ladea-speaker-name

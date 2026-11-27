@@ -21,6 +21,24 @@ public class AnimInterpolatorTests
     }
 
     [Fact]
+    public void ADetachedOneShotDoesNotHoldPresentationButStillAnimates()
+    {
+        // 天秤のLa DEA。's SC0000 page 3: two pictures scale and fade in over op 0x242's detach, so the page waits on
+        // neither, but the screen changes until they end (the game driver's settle waits for that).
+        var g = new GfxState();
+        g.SetSurface(1, resId: 5, colorKey: -1);
+        g.BindDraw(0x100, 1, 0, 0, 140, 140, 330, 230);
+        g.SetSrcRectOneShot(0x100, delayMs: 0, durationMs: 1000, frameCount: 28, columns: 7, flags: 0);
+        g.SetOneShotAnimationControl(0x100, 1);
+        Assert.False(g.HasActiveTimedPresentation(0));
+        Assert.True(g.HasRunningFiniteAnimation(0));
+
+        g.SnapshotVisibleObjects(1000);                           // seeds start = 1000
+        Assert.True(g.HasRunningFiniteAnimation(1999));
+        Assert.False(g.HasRunningFiniteAnimation(2000));
+    }
+
+    [Fact]
     public void SrcRectOneShot_StepsRowMajorCellsOverDurationThenCollapses()
     {
         // BTL's sword clash: 28 cells in 7 columns over 1000 ms, flags 0.

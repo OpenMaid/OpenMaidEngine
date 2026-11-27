@@ -571,10 +571,12 @@ public sealed partial class TextManager
 
     /// <summary>
     /// Op 0x82 (text_redraw_retained_group@0x451530; SYS4433 @0x4553c0): release the layout's objects, clear its surface
-    /// and draw each record at its rectangle. Unless flag 4 is set, the published glyphs are bound again over the new
-    /// pixels; native binds one object per record instead, which covers the same cells. The glyph list stays, so the
-    /// wait indicator keeps its anchor and later text continues the page. This is not a History presentation, which
-    /// History's exit would erase.
+    /// and draw each record at its rectangle, writing each text record's drawn right and bottom back
+    /// (<see cref="RedrawnRecords"/>). Unless flag 4 is set, it binds one object per text record over its rectangle, as
+    /// native does, handles counting up from the layout's first. A group presented again in the selected language
+    /// (localization spec §8) has no records to its glyphs, so its published glyphs are bound again instead. The glyph
+    /// list and the reveal index stay, so the wait indicator keeps its anchor and later text continues the page. This is
+    /// not a History presentation, which History's exit would erase.
     /// </summary>
     private void RedrawRetainedTextGroup(
         GfxState gfx,
@@ -595,10 +597,13 @@ public sealed partial class TextManager
 
         var updated = new RgbaImage(width, height, new byte[checked(width * height * 4)]);
         TextPipeline text = batch.Presented != null ? _presentedText!.Value : ActiveText;
+        List<int>? penRights = batch.Presented == null ? new List<int>(batch.Records.Count) : null;
         IReadOnlyList<(AdvRetainedGlyphRecord Cell, bool IsRuby)> cells = batch.Presented is { } presented
             ? RedrawPresented(updated, binding, batch, presented, text)
             : text.Layout.RenderRedraw(
-                updated, batch.Records, text.Policy, _textAntialias, LiveRubyRules, text.Realization);
+                updated, batch.Records, text.Policy, _textAntialias, LiveRubyRules, text.Realization, penRights);
+        IReadOnlyList<(AdvRetainedGlyphRecord Record, GlyphPublication Publication)>? redrawnRecords =
+            penRights != null ? RedrawnRecords(batch, penRights) : null;
 
         bool bind = (batch.Flags & 4) == 0;
         RetainedAdvTextLayoutPresentation? presentation;
@@ -621,10 +626,20 @@ public sealed partial class TextManager
         gfx.EraseRange(binding.FirstObjectHandle, binding.ObjectCapacity);
         if (bind && presentation != null)
         {
-            // 4.33G's, 4.38D's and 4.43B's redraw binds each record as the layout publisher does (LayoutPublication),
-            // by its own chain flag; 4.24J's binds the cells as they are, as the glyphs were published.
+            // 4.33G's, 4.38D's, 4.43B's and 4.45D's redraw binds each record as the layout publisher does
+            // (LayoutPublication), by its own ruby bit; 4.24J's binds the cells as they are.
             GlyphPublications? redrawn = LayoutPublication;
-            if (presentation.PublishedGlyphCount == 0)
+            if (redrawnRecords != null)
+            {
+                presentation.RedrawnAsRecords(redrawn);
+                int bound = (int)Math.Min(redrawnRecords.Count, binding.ObjectCapacity);
+                for (int index = 0; index < bound; index++)
+                    RetainedAdvTextLayoutPresentation.BindRecord(
+                        gfx, checked(binding.FirstObjectHandle + index), binding.SourceSurfaceSlot,
+                        redrawnRecords[index].Record, batch.Layout.OriginX, batch.Layout.OriginY,
+                        redrawnRecords[index].Publication);
+            }
+            else if (presentation.PublishedGlyphCount == 0)
                 presentation.PublishThrough(gfx, presentation.Glyphs.Count, redrawn ?? default);
             else if (redrawn is { } publication) presentation.RepublishEach(gfx, publication);
             else presentation.Republish(gfx);
@@ -640,13 +655,58 @@ public sealed partial class TextManager
         });
     }
 
+    /// <summary>
+    /// What op 0x82 leaves in each text record of <paramref name="batch"/> and binds over it (text_redraw_retained_group:
+    /// 4.33G @0x4553c0, 4.38D @0x460cd0, 4.43B @0x463310, 4.45D @0x463b40, all alike). The walk keeps a record's left and
+    /// top and writes back its right, the pen after its last character (<paramref name="penRights"/>), and its bottom:
+    /// the top plus the record's pixel height (+0x24, which the walk makes the primary size +0x313d4), plus the effect's
+    /// y offset (+0x56c) when the text manager's render mode (+0x55c) is not 0 at that character and
+    /// message:UseAntiFont (+0x548) is set. The mode is the one at entry until a ruby character sets it to 0, and a
+    /// character that is not ruby puts it back, each after its bottom is taken; so a ruby record right after text gets
+    /// the offset and the ruby records after it do not. A record with no text, a line break, keeps its bottom, and its
+    /// right becomes its left. The history keeps what is written back (a later redraw, History and a save read it).
+    /// Each record is then bound with what the layout publisher does to a record of its kind in the mode the walk
+    /// left: a ruby record its raise, any other the rows under the cell, the paddings and the move.
+    /// </summary>
+    private List<(AdvRetainedGlyphRecord Record, GlyphPublication Publication)> RedrawnRecords(
+        AdvTextRedrawBatch batch, IReadOnlyList<int> penRights)
+    {
+        int entryMode = Style.RenderMode;
+        int mode = entryMode;
+        var redrawn = new List<(AdvRetainedGlyphRecord, GlyphPublication)>(batch.Records.Count);
+        for (int index = 0; index < batch.Records.Count; index++)
+        {
+            AdvTextRedrawRecord record = batch.Records[index];
+            AdvTextHistoryRect rect = record.Rect;
+            int characters = 0;
+            foreach (System.Text.Rune _ in record.Text.EnumerateRunes()) characters++;
+            if (characters > 0)
+            {
+                int modeAtLast = characters == 1 ? mode : record.IsRuby ? 0 : entryMode;
+                int height = ImmediateSurfaceTextRenderer.NativePixelHeight(record.Style.PrimaryFontSize);
+                int offset = modeAtLast != 0 && _textAntialias ? Style.EffectOffsetY : 0;
+                rect = rect with { Right = penRights[index], Bottom = checked(rect.Top + height + offset) };
+                mode = record.IsRuby ? 0 : entryMode;
+            }
+            else
+                rect = rect with { Right = rect.Left };
+            if (record.HistoryIndex >= 0) History.SetRedrawnRect(record.HistoryIndex, rect);
+            GlyphPublication publication = !_publisherGrowsGlyphCells ? default
+                : record.IsRuby ? RubyPublication
+                : PrimaryPublication(Style with { RenderMode = mode }, extraModeThreeGrowth: !_layoutPublishersGrowOnce);
+            redrawn.Add((new AdvRetainedGlyphRecord(record.IsRuby ? 1 : 0, rect.Left, rect.Top, rect.Right, rect.Bottom),
+                         publication));
+        }
+        return redrawn;
+    }
+
     /// <summary>Op 0x82 for a presented group (localization spec §8): the presented text from the first text record's
     /// top-left in its style, wrapped in the layout as live presented text is.</summary>
     private IReadOnlyList<(AdvRetainedGlyphRecord Cell, bool IsRuby)> RedrawPresented(
         RgbaImage destination, AdvTextLayoutPresentationBinding binding, AdvTextRedrawBatch batch,
         Ome.Engine.Localization.PresentedText presented, TextPipeline text)
     {
-        AdvTextRedrawRecord first = batch.Records.First(record => !record.IsRuby);
+        AdvTextRedrawRecord first = batch.Records.First(record => !record.IsRuby && record.Text.Length > 0);
         AdvTextStyle style = first.Style;
         PresentedTextPlan plan = PresentedTextLayout.Plan(
             presented.Text, Ome.Engine.Localization.PresentedLineBreaks.Opportunities(presented.Text, presented.LineBreak),

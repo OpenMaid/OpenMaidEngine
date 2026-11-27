@@ -1,0 +1,9 @@
+# Applied at ladea.floor.loaded, each time FIELD has walked the FLINIT chain for the floor it enters, before it sets
+# the slots up. A floor's object slots are dungeon_floor.<floor>.object.<slot>; a chest's action is 1, and its first
+# two arguments are the item and the count it gives (OBJACT@0x2ae..0x2e0). The comments give the game's own values.
+# FLINIT writes only the floor in play, so the edit is in the slots while floor 65 is the one entered. A load on the
+# floor runs no walk, so the part comes back at the next entry (docs/modding/games/ladea.md, "Data edits").
+
+[dungeon_floor.65.object.8.action_args]
+0 = 201                                  # 204, 治癒の水・特大; 201 is 治癒の水・小
+1 = 9                                    # 4

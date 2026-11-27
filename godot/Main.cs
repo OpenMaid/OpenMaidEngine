@@ -667,7 +667,7 @@ public partial class Main : Godot.Control
         // mixer settings now and on every change; their Changed event persists them.
         SkipAndAuto skipAndAuto = SkipAndAuto.WithSystemClock(GodotVmOptions.CreateSkipAndAuto(_catalog.StartupSettings));
         _audio = new Audio(this, new ResourceAudioAssets(resources, message => GD.Print(message)), _clock, skipAndAuto,
-                           _audioMixerSettings, SettingsStore, _timeline);
+                           _audioMixerSettings, SettingsStore, _timeline, rules: engineBuild.Rules.Audio);
         var tick = new EngineTick(_audio, _timeline);
         // The graphics native (milestone 7) owns the surfaces and what each frame publishes; the movie native and the
         // host's text part draw into it, and the host's waits block on it. The movie native (milestone 8) plays movies

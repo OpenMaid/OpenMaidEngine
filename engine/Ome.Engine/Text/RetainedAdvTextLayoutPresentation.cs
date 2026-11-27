@@ -318,6 +318,33 @@ public sealed class RetainedAdvTextLayoutPresentation
         return PublishedGlyphCount;
     }
 
+    /// <summary>
+    /// Op 0x82's redraw of the records leaves the glyph vector and the reveal index alone and binds one object per record
+    /// instead (<see cref="BindRecord"/>). Each published glyph only takes what <paramref name="publications"/> does to
+    /// a glyph of its kind, as <see cref="RepublishEach"/> would, for a later republish; with none published yet, the
+    /// drawn glyphs count as published (a layout with no live text takes the redraw's cells as its glyphs).
+    /// </summary>
+    public void RedrawnAsRecords(GlyphPublications? publications)
+    {
+        if (PublishedGlyphCount == 0) PublishedGlyphCount = PublishableGlyphCount;
+        if (publications is not { } applied) return;
+        for (int index = 0; index < PublishedGlyphCount; index++)
+            Grow(index, applied with { FadeMs = 0 }, everyRecord: false);
+    }
+
+    /// <summary>Bind one object over a record op 0x82 drew (text_redraw_retained_group, 4.45D @0x463b40): the record's
+    /// rectangle grown by <paramref name="publication"/>, placed at the layout origin plus its corner less the
+    /// publication's move. Native binds it whatever its size, a line break's empty rectangle included.</summary>
+    public static void BindRecord(GfxState gfx, long handle, int surfaceSlot, AdvRetainedGlyphRecord record,
+                                  int layoutOriginX, int layoutOriginY, GlyphPublication publication)
+    {
+        ArgumentNullException.ThrowIfNull(gfx);
+        AdvRetainedGlyphPlacement placement = WithPublication(
+            new AdvRetainedGlyphPlacement(record, layoutOriginX, layoutOriginY), publication);
+        (int x, int y, int width, int height) = placement.SourceRect;
+        gfx.BindDraw(handle, surfaceSlot, x, y, width, height, placement.ObjectPosition.X, placement.ObjectPosition.Y);
+    }
+
     // Remember what the publisher does to glyph index, and give its run's source glyphs the same.
     private void Grow(int index, GlyphPublications publications, bool everyRecord)
     {

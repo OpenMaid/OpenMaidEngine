@@ -342,7 +342,11 @@ public sealed class RetainedGlyphLayoutEngine
     /// <summary>
     /// Draw op 0x82's records into <paramref name="destination"/> (text_redraw_retained_group@0x451530; SYS4433
     /// @0x4553c0): each text record's text from the cell at its rectangle's top-left, on one row, and each ruby record
-    /// with the ruby font. Returns the drawn cells in record order, each marked as ruby or not.
+    /// with the ruby font. Returns the drawn cells in record order, each marked as ruby or not. Given
+    /// <paramref name="penRights"/>, it adds each record's pen after its last character, the right native writes back
+    /// (4.45D @0x463b40): a text record's pen moves as its glyphs are laid out, a ruby record's by the ruby size for a
+    /// double-byte character and half of it for a single byte (<c>+0x355d8</c>), and a record with no text keeps its
+    /// left.
     /// </summary>
     public IReadOnlyList<(AdvRetainedGlyphRecord Cell, bool IsRuby)> RenderRedraw(
         RgbaImage destination,
@@ -350,18 +354,32 @@ public sealed class RetainedGlyphLayoutEngine
         GlyphRasterPolicy policy,
         bool antialias,
         RubyLayoutRules rules,
-        AspectFontRealization? fontRealization = null)
+        AspectFontRealization? fontRealization = null,
+        IList<int>? penRights = null)
     {
         ArgumentNullException.ThrowIfNull(records);
         var cells = new List<(AdvRetainedGlyphRecord, bool)>();
         foreach (AdvTextRedrawRecord record in records)
         {
+            if (record.Text.Length == 0)
+            {
+                penRights?.Add(record.Rect.Left);
+                continue;
+            }
             if (record.IsRuby)
             {
                 foreach (AdvRetainedGlyphRecord cell in RenderRubyAt(
                              destination, record.Rect.Left, record.Rect.Top, record.Text, record.Style, policy, antialias,
                              rules))
                     cells.Add((cell, true));
+                if (penRights != null)
+                {
+                    int size = record.Style.RubyFontSize > 0 ? record.Style.RubyFontSize : RubyTextLayout.DefaultSize;
+                    int pen = record.Rect.Left;
+                    foreach (System.Text.Rune character in record.Text.EnumerateRunes())
+                        pen = checked(pen + (CharacterCells.HalfCells(character.Value) == 1 ? size / 2 : size));
+                    penRights.Add(pen);
+                }
                 continue;
             }
             GlyphTextLayoutResult drawn = Render(
@@ -372,6 +390,7 @@ public sealed class RetainedGlyphLayoutEngine
                 ImmediateSurfaceTextRenderer.CreateRequests(
                     record.Text, record.Style, policy, antialias, fontRealization));
             foreach (AdvRetainedGlyphRecord cell in drawn.Records) cells.Add((cell, false));
+            penRights?.Add(drawn.CursorX);
         }
         return cells;
     }

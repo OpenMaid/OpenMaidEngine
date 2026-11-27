@@ -10,7 +10,8 @@ namespace Ome.Engine.Persistence;
 /// AGE's 0x48-byte retained record (text_history_serialize@0x451d00): slot, rect left/top/right/bottom,
 /// then for text the BGR primary and effect colors (text manager +0x54c/+0x550), text manager +0x554,
 /// render mode (+0x558) and primary pixel height (text_history_append_text_record@0x456000); metadata and
-/// voice records carry only value/aux at dwords 5/6. Dword 10 is the flags.
+/// voice records carry value/aux at dwords 5/6, and a voice record its pan and voice index at dwords 7/8 (AGE 4.45D's
+/// three voices; 0 before). Dword 10 is the flags.
 /// </summary>
 public static class NativeTextHistoryCodec
 {
@@ -90,8 +91,9 @@ public static class NativeTextHistoryCodec
             {
                 writer.Write(unchecked((int)record.Value));
                 writer.Write(unchecked((int)record.AuxValue));
-                writer.Write(0);
-                writer.Write(0);
+                bool voice = record.Kind == AdvTextHistoryRecordKind.Voice;
+                writer.Write(voice ? record.VoicePan : 0);
+                writer.Write(voice ? record.VoiceIndex : 0);
                 writer.Write(0);
             }
             writer.Write(unchecked((int)record.Flags));
@@ -159,6 +161,8 @@ public static class NativeTextHistoryCodec
             {
                 Rect = rect,
                 TextManager554 = text ? raw[i, 7] : 0,
+                VoicePan = kind == AdvTextHistoryRecordKind.Voice ? raw[i, 7] : 0,
+                VoiceIndex = kind == AdvTextHistoryRecordKind.Voice ? raw[i, 8] : 0,
             };
         }
         return new Decoded(entries, records);

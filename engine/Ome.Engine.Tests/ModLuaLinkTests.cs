@@ -2162,4 +2162,118 @@ public sealed class ModLuaLinkTests : IDisposable
         Assert.Equal(1, session.Globals[0xc71 + 9000 + 34]);           // story flag 9001 + 34
         Assert.Equal(1, session.Globals[0x1a17ba + 101]);              // part_obtained_flags
     }
+
+    // ------------------------------------------------------------------------------------------------- 天秤のLa DEA。
+
+    private static readonly InstalledGame LaDea =
+        new("ladea", OpcodeTableJson.Load(Paths.OpcodesJson, "SYS4445"), EngineBuilds.Age445D);
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    public void LaDeasBaseModRaisesEachOfItsEventsAtTheInstalledScripts()
+    {
+        // The M3 gate (docs/adding-a-game.md): each event binds on the install the guide lists.
+        var (linkBase, scripts) = InstallBase(LaDea);
+        string[] events = ["data.layered", "data.ready", "floor.loaded", "town.place_loaded", "experience.award"];
+        // Item 31, 魂浄の宝珠, is one only $2$ITINIT writes, which the second append's AUTORUN runs after the first's.
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(LaDea, events,
+            "maid.log.info(e.event .. \" \" .. tostring(game.table(\"item_names\")[31]))"), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        Assert.DoesNotContain(linked.Report.Lines, line => line.Message.Contains("not raised in this install", StringComparison.Ordinal));
+        Assert.Equal([0x23e, 0x34b], Offsets(linked, "INIT2"));
+        // After the walks of the FLINIT and ORINIT chains, and at the add every experience award goes through.
+        Assert.Equal([0x3b4], Offsets(linked, "FIELD"));
+        Assert.Equal([0xd2], Offsets(linked, "SETORNDATA"));
+        Assert.Equal([0x96], Offsets(linked, "ADDEXP"));
+
+        Assert.Equal(new FieldLocation.Global(CellKind.Integer, 0xb8463, "current_floor_id"),
+                     linked.Lua.Stack.Event("ladea.floor.loaded")!.Field("floor")!.Location);
+        Assert.Equal(new FieldLocation.Global(CellKind.Integer, 0x4d590, "town_current_place_id"),
+                     linked.Lua.Stack.Event("ladea.town.place_loaded")!.Field("place")!.Location);
+        // The award's amount is the add's third operand, the work cell the caller set; the character is ADDEXP's
+        // argument cell.
+        GameEvent award = linked.Lua.Stack.Event("ladea.experience.award")!;
+        Assert.Equal(["amount", "character", "level"], award.Fields.Select(field => field.Name));
+        Assert.Equal(new FieldLocation.Operand(2), award.Field("amount")!.Location);
+        Assert.Equal(new FieldLocation.Global(CellKind.Integer, 0x158dd1, "character_arg_id"), award.Field("character")!.Location);
+        var level = Assert.IsType<FieldLocation.Element>(award.Field("level")!.Location);
+        Assert.Equal("character_levels", level.Table.Name);
+
+        // At boot each data event comes once, after both appends' AUTORUNs.
+        var (_, log) = RunInit2(LaDea, linked, scripts);
+        Assert.Equal(["ladea.data.layered 魂浄の宝珠", "ladea.data.ready 魂浄の宝珠"],
+                     log.Where(text => text.StartsWith("ladea.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    public void LaDeasBootAndPlacePartsAreWrittenAfterTheirLoaders()
+    {
+        // A data file with a boot part and a town place's part. INIT2 builds the tables, then SETORNDATA builds place 1,
+        // whose first spot ORINIT puts at x 5, y 10 (ORINIT@0x22, @0x27). The place edit holds only if it comes after
+        // ORINIT has written the spot, since SETORNDATA zeroes the spots first.
+        var (linkBase, scripts) = InstallBase(LaDea);
+        ModPackage file = DataFile(LaDea, "[item.201]\nhp_change = 77\n\n[place.1.spot.1]\nx = 7\n");
+        ModLinkResult linked = ModLinker.Link(linkBase, [file, .. Subscriber(LaDea, ["town.place_loaded"],
+            "maid.log.info(e.event .. \" \" .. e.place)")], []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+
+        var session = new GameSession();
+        List<string> log = [];
+        void Run(string name)
+        {
+            using var scripting = new Scripting(new ScriptMemory(), new ScriptingSetup
+            {
+                Runtime = _runtime, Stack = linked.Lua.Stack, Plan = linked.Lua.Plan, Errors = LuaErrorPolicy.Halt,
+            });
+            SceneResult result = session.RunScene(scripts.RequireByName(name), LaDea.Table, new HeadlessWaits(),
+                                                  provider: scripts, build: LaDea.Build, scripting: scripting);
+            Assert.True(result.Halt is null or "exit" or "end", result.Halt);
+            Assert.DoesNotContain(scripting.RecentLog, line => line.Contains(" error ", StringComparison.Ordinal));
+            log.AddRange(scripting.RecentLog.Select(line => line[(line.LastIndexOf(": ", StringComparison.Ordinal) + 2)..])
+                                            .Where(text => text.StartsWith("ladea.", StringComparison.Ordinal)));
+        }
+
+        Run("INIT2.BIN");
+        Assert.Equal(77, session.Globals[LayoutAddress(LaDea, "item_hp_changes") + 201]);
+        session.Globals[0x4d590] = 1;                                   // town_current_place_id
+        Run("SETORNDATA.BIN");
+        Assert.Equal(7, session.Globals[LayoutAddress(LaDea, "town_spot_x") + 1]);
+        Assert.Equal(10, session.Globals[LayoutAddress(LaDea, "town_spot_y") + 1]);   // ORINIT's own, unchanged
+        Assert.Equal(["ladea.town.place_loaded 1"], log);
+    }
+
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    public void LaDeasHelperRunsTheGamesAddItemAndPutsItsCellsBack()
+    {
+        // Item 201, 治癒の水・小, stocks to 999. Item 3, 昇降機の鍵, is a key item (kind 1): ADDITEM sets its story flag,
+        // 9001 + 3. Stone 1001, 睡魔の喚石, comes once: of a first gift of 3 ADDITEM keeps one and adds two of its
+        // crystal, 611, and a second gift comes as the crystal.
+        var (linkBase, scripts) = InstallBase(LaDea);
+        ModLinkResult linked = ModLinker.Link(linkBase, Subscriber(LaDea, ["data.ready"], """
+            local names = { "current_item", "item_count_change" }
+            local before = {}
+            for i, name in ipairs(names) do before[i] = game.g[name] end
+            local first, second = game.give_item(201, 600), game.give_item(201, 600)
+            local taken = game.give_item(201, -999)
+            local stone, added = game.give_item(1001, 3)
+            local again, crystal = game.give_item(1001)
+            maid.log.info("counts " .. first .. " " .. second .. " " .. taken .. " key " .. game.give_item(3)
+                          .. " stone " .. stone .. " " .. added .. " again " .. again .. " " .. crystal)
+            for i, name in ipairs(names) do
+                if game.g[name] ~= before[i] then error(name .. " changed") end
+            end
+            """), []);
+        Assert.True(linked.Succeeded, linked.Report.Render());
+        var (session, log) = RunInit2(LaDea, linked, scripts);
+        Assert.Contains("counts 600 999 0 key 1 stone 1 611 again 1 611", log);
+        int counts = LayoutAddress(LaDea, "item_counts");
+        Assert.Equal(3, session.Globals[counts + 611]);                 // the crystals: two from the first gift, one from the second
+        Assert.Equal(1, session.Globals[0x1134a + 201]);                // item_obtained_flags: the item is marked obtained
+        Assert.Equal(1, session.Globals[0xee7 + 9000 + 3]);             // story flag 9001 + 3
+    }
 }

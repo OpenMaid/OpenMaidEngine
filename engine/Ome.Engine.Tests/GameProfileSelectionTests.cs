@@ -198,6 +198,37 @@ public sealed class GameProfileSelectionTests
                      build.Rules.Text);
     }
 
+    /// <summary>天秤のLa DEA。 is at P3 and M3 (docs/adding-a-game.md): the engine names its install, reads all of it,
+    /// has a handler for every opcode its scripts use, boots it by its own route to SC0000's first page, and saves as
+    /// native does; its scripts rebuild from Open Maid Script, its data tables are decoded and named, and its base mod
+    /// carries their toolchain, its events, a helper and the ladea.tables data kind. Its build is declared from
+    /// 4.43B.</summary>
+    [Fact]
+    public void LaDeaIsAddedFromKoukakusBuild()
+    {
+        GameProfileManifest ladea = Assert.IsType<GameProfileManifest>(GameProfileRegistry.BuiltIn.Find("ladea"));
+
+        Assert.Equal(("SYS4", "4.45D", "SYS4445", "SYSTEM4.BIN"),
+                     (ladea.SysFrontendId, ladea.EngineBuildId, ladea.EngineAbiId, ladea.NaturalBootScript));
+        Assert.Equal(["SYS4445"], ladea.ScriptRevisions);
+        Assert.True(ladea.Matches(new GameCatalogIdentity("S4IC445", "天秤のLa DEA。 ～戦女神MEMORIA～")));
+        Assert.Equal(("P3", "M3"), (ladea.Support.PlayId, ladea.Support.ModdingId));
+        Assert.True(ladea.Support.IsPlayable);
+        // Its saves load on native AGE and the port alike (ladea-save-load.steps, 2026-11-26).
+        Assert.True(ladea.PersistenceWritesEnabled);
+        Assert.Null(ladea.Persistence.ReadOnlyReason);
+        Assert.Equal(320, ladea.Persistence.ExpectedPackedSaveVersion);
+        Assert.Null(ladea.DirectSceneDiagnostics);
+        Assert.Null(ladea.DebugSceneLaunch);
+        // The launcher's art for it comes from the publisher's site, as the other games' does.
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu15/banner/banner_eu15_a.jpg",
+            ladea.Launcher!.Banner!.Url.ToString());
+        Assert.Equal("https://www.eukleia.co.jp/eushully/eu15/image/eu15_package.jpg", ladea.Launcher.Cover!.Url.ToString());
+        Ome.Engine.Vm.EngineBuild build = Ome.Engine.Vm.EngineBuilds.ForProfile(ladea);
+        Assert.Equal(("4.45D", "SYS4445"), (build.Id, build.AbiId));
+        Assert.Same(Ome.Engine.Vm.EngineBuilds.Age445D, build);
+    }
+
     [Fact]
     public void NormalKamidoriProfileInjectsNoHimegariState()
     {
@@ -435,6 +466,16 @@ public sealed class GameProfileSelectionTests
     {
         InstalledCatalogAutoSelectsExpectedProfile("koukaku");
         InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("koukaku");
+    }
+
+    /// <summary>天秤のLa DEA。's workspace gate, likewise.</summary>
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    public void InstalledLaDeaSelectsItsProfileWithItsBankDimensions()
+    {
+        InstalledCatalogAutoSelectsExpectedProfile("ladea");
+        InstalledSys4IniHeaderDeclaresProfileSaveBankDimensions("ladea");
     }
 
     private static GameProfileManifest SyntheticProfile(string id, GameCatalogIdentity identity)

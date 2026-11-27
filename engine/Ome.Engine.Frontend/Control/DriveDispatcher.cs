@@ -523,8 +523,9 @@ public sealed class DriveDispatcher
         }
     }
 
-    /// <summary>Settled = waiting for the player (an input wait or a polled menu) with no text reveal or screen
-    /// transition running, held for quiet_ms. A timeout is not an error: the result says settled=false.</summary>
+    /// <summary>Settled = waiting for the player (an input wait or a polled menu) and not busy (no text reveal, screen
+    /// transition or finite animation running), held for quiet_ms. A timeout is not an error: the result says
+    /// settled=false.</summary>
     private sealed class SettleOperation(DriveRequest request, Action<string> reply, IDriveBackend backend,
                                          long startMs, int timeoutMs, int quietMs) : Operation(request, reply)
     {

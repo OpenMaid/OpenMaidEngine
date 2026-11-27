@@ -148,8 +148,16 @@ public static class NativeGfxPersistenceCodec
         int left = ReadInt(raw, 8), top = ReadInt(raw, 0x0c);
         int right = ReadInt(raw, 0x10), bottom = ReadInt(raw, 0x14);
         int flags = ReadInt(raw, 0);
+        // Native draws a mode-0 object by its packed colour's alpha, whenever +0x60 was written: the sprite draws with
+        // D3DXSPRITE_ALPHABLEND and the colour unchanged (4.45D gfx_surface_draw_through_sprite_mode0@0x47bc50, 4.24J
+        // gfx_object_blit_d3d9@0x4774c0). The port draws a textured mode-0 object opaque unless its live sequence
+        // latched the alpha (GfxObject.PostBindStaticColorBlend); a record has no sequence, so a restored object takes
+        // the latch, as a colour written after its bind does. 天秤のLa DEA。's SAVE screen hides its rings with alpha 0
+        // (objects 0x1d90c and 0x1d95c), which a load showed opaque.
+        bool latchesAlpha = GfxState.GfxObject.IsDefaultColorMode(ReadInt(raw, 0x30)) && (flags & 1) != 0;
         return new GfxState.GfxObject
         {
+            PostBindStaticColorBlend = latchesAlpha,
             NativePersistenceRecord = legacyTightLayout
                 ? CreateDefaultObjectRecord(raw.Length)
                 : raw.ToArray(),

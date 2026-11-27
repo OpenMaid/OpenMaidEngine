@@ -109,6 +109,23 @@ ran the same scenarios on native AGE.
   `tools/drive/scenarios/port/koukaku-battle-award.steps` runs the debug menu and the event log: 戦闘, lost at once on
   a map MPINIT does not have, and the award RESULT gives each commander.
 
+- `example.ladea-prologue-line` is 天秤のLa DEA。's first mod (`docs/modding/games/ladea.md`): a line before the first
+  page of its opening scene (site 0xed5, the instruction that turns the tick presentation off), through `ladea.adv`.
+  `tools/drive/scenarios/ladea-prologue-line.steps` plays it on both targets, native AGE on the exported `SC0000.BIN`.
+- `example.ladea-speaker-name` is 天秤のLa DEA。's base mod example (M3): a data file of `ladea.tables` that renames
+  シュリ's name form 1, the name plate 荷物を背負った少女, at `ladea.data.layered`.
+  `tools/drive/scenarios/port/ladea-speaker-name.steps` checks the cell at the title and plays a new game to her
+  first line under that form. It targets `extended`, so it runs in the port only.
+- `example.ladea-debug-menu` opens the developers' debug menu, which 天秤のLa DEA。's title builds but never shows, from
+  the title's Quit (`docs/modding/games/ladea.md`, "The debug menu"). It targets `native`; the exported `TITLE.BIN`
+  opens the same menu on native AGE.
+- `example.ladea-event-log` logs every event `ladea-base` raises, with its fields, gives one 治癒の水・小 at
+  `ladea.data.ready` through the base mod's `give_item`, and keeps the list for the driver's `lua` step;
+  `example.ladea-floor-chest` is a data file whose floor part makes floor 65's chest in slot 8 give nine 治癒の水・小.
+  `tools/drive/scenarios/port/ladea-debug-field.steps` runs the three: 迷宮マップ２ (an experience award for each
+  party character, then floor 65 with the changed chest). `tools/drive/scenarios/port/ladea-debug-town.steps` runs
+  the debug menu and the event log: 街, and the town event for each of the 20 places.
+
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs
   `ADDEXP.BIN` with it and with the guide's OMS patch, and both leave the same state. It targets `extended`, so it

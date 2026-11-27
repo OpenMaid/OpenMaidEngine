@@ -31,6 +31,84 @@ public sealed partial class VirtualMachine
         _waits.Sleep(Read(a[0])); return StepResult.Next;
     }
 
+    // Op 0xce's own interval timer (sleep_timer_arm on AGE 4.45D's ctx+0x68e00: start +0x14, interval +0x18), apart
+    // from op 0xc8's (+0x68dc8) and op 0xcc's (+0x68de4).
+    private int _timedCatchUpIntervalMs;
+    private long _timedCatchUpArmedAtMs;
+
+    // 0xce (interval ms, on-time target, catch-up target): register the engine's one timed catch-up callback, owned by
+    // the running script, and start its timer (op_0xce_register_timed_catchup_callback; AGE 4.45D 0x421090, the same
+    // code as 4.24J's 0x420fd0). sleep_timer_arm takes an interval of 0 as 1. A registration from any frame replaces
+    // the earlier one.
+    private StepResult OpRegisterTimedCatchUpCallback(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        _scene.TimedCatchUpOnTimeTarget = unchecked((int)Read(a[1]));
+        _scene.TimedCatchUpLateTarget = unchecked((int)Read(a[2]));
+        _scene.TimedCatchUpOwner = _cur.Script;
+        int interval = unchecked((int)Read(a[0]));
+        _timedCatchUpIntervalMs = interval == 0 ? 1 : interval;
+        _timedCatchUpArmedAtMs = _waits.InputClockMilliseconds;
+        return StepResult.Next;
+    }
+
+    /// <summary>The most catch-up runs op 0xcf queues after the first: its loop stops at a count of 128.</summary>
+    private const int MaxQueuedCatchUps = 127;
+
+    // 0xcf (op_0xcf_dispatch_timed_catchup_callback; AGE 4.45D 0x41a830, the same code as 4.24J's 0x417f80). Once the
+    // interval has passed (at once under fast-forward) it restarts the timer and pushes the following pc, as a call
+    // does. Within two intervals it runs the on-time target; a -1 target pops the pc again. Later, it runs the catch-up
+    // target instead, once for each further whole interval (at most 128 runs), then the on-time target, then returns
+    // here: it pushes the on-time target and the further catch-ups as returns. A -1 catch-up target drops those and
+    // runs nothing, but leaves the first pc pushed, so the frame's next ret comes back here. A target registered by
+    // another script raises Depth with the pc still pushed: with the raw script ids on time (「Depth が不正です %d !=
+    // %d」), with their names late.
+    private StepResult OpDispatchTimedCatchUpCallback(Instruction ins, int pc)
+    {
+        long now = _waits.InputClockMilliseconds;
+        int elapsed = unchecked((int)(now - _timedCatchUpArmedAtMs));
+        int interval = _timedCatchUpIntervalMs;
+        if (elapsed < interval && !AdvFastForwardActive) return StepResult.Next;
+        _timedCatchUpArmedAtMs = now;
+        // Native's reset leaves the owner -1, which is no frame's, and keeps the targets; the port's scene starts again
+        // with no registration, so until op 0xce runs only the timer restarts.
+        if (_scene.TimedCatchUpOwner is not { } owner) return StepResult.Next;
+        _cur.CallStack.Add(pc + 1);
+        if (elapsed < unchecked(interval * 2))
+        {
+            int onTime = _scene.TimedCatchUpOnTimeTarget;
+            if (onTime == -1)
+            {
+                _cur.CallStack.RemoveAt(_cur.CallStack.Count - 1);
+                return StepResult.Next;
+            }
+            if (!IsSameScript(owner, _cur.Script))
+                return StepResult.Jump(RaiseInstructionScriptError(DepthIdError(owner), pc));
+            return TryTimedCatchUpTarget(onTime, out int target) ? StepResult.Jump(target) : StepResult.Halt;
+        }
+        if (!IsSameScript(owner, _cur.Script))
+            return StepResult.Jump(RaiseInstructionScriptError(DepthError(owner), pc));
+        int queued = 0;
+        for (int remaining = unchecked(elapsed - interval); interval < remaining && queued < MaxQueuedCatchUps; queued++)
+            remaining = unchecked(remaining - interval);
+        int late = _scene.TimedCatchUpLateTarget;
+        if (late == -1) return StepResult.Next;
+        if (!TryTimedCatchUpTarget(_scene.TimedCatchUpOnTimeTarget, out int onTimeReturn)
+            || !TryTimedCatchUpTarget(late, out int catchUp))
+            return StepResult.Halt;
+        _cur.CallStack.Add(onTimeReturn);
+        for (int run = 0; run < queued; run++) _cur.CallStack.Add(catchUp);
+        return StepResult.Jump(catchUp);
+    }
+
+    // Native moves the frame's pc to the target's dword offset unchecked; the port stops at one that is no instruction's.
+    private bool TryTimedCatchUpTarget(int offset, out int target)
+    {
+        if (_cur.Script.IndexByOffset.TryGetValue(offset, out target)) return true;
+        HaltReason ??= $"timed-catchup-target-not-an-instruction:{offset:#x}";
+        return false;
+    }
+
     // 0xd3: clear the engine-wide relative schedule
     private StepResult OpBeginTimedCallbackSequence(Instruction ins, int pc)
     {

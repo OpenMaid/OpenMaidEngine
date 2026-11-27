@@ -18,7 +18,10 @@ public sealed partial class GfxState
         /// modes 1, 2 and 3 alone and draws every other value as mode 0 (4.24J's gfx_object_blit_d3d9@0x4774c0,
         /// 4.24N's @0x478790, 4.38D's gfx_draw_surface_through_sprite@0x48c6d0). Verita's DRAWMAP hides a map unit
         /// with a post-bind alpha 0 whose mode is another table's value, 15 to 300 (DRAWMAP@0x8c1).</summary>
-        public bool DefaultColorMode => StaticColorMode is not (1 or 2 or 3);
+        public bool DefaultColorMode => IsDefaultColorMode(StaticColorMode);
+
+        /// <summary>Whether colour mode <paramref name="mode"/> (obj+0x30) draws as mode 0.</summary>
+        public static bool IsDefaultColorMode(long mode) => mode is not (1 or 2 or 3);
         // Op 0x202 one-shot packed-color channel: current +0x60, target +0x64, delay +0x38,
         // duration +0x4c. It shares obj+0x34's start timestamp with the one-shot matrix channels.
         public long OneShotColorTarget = -1, ColorDelayMs, ColorDurationMs;

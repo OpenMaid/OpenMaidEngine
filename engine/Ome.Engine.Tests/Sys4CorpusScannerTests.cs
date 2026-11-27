@@ -40,6 +40,12 @@ public class Sys4CorpusScannerTests
     public void InstalledKoukakuCatalogCorpusDecodesThroughRuntimeStore()
         => AssertInstalledCorpus("koukaku", "SYS4443");
 
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    [Fact]
+    public void InstalledLaDeaCatalogCorpusDecodesThroughRuntimeStore()
+        => AssertInstalledCorpus("ladea", "SYS4445");
+
     private static void AssertInstalledCorpus(
         string profileId, string abiId)
     {

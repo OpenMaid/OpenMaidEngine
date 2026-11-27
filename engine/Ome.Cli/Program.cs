@@ -495,7 +495,8 @@ if (command == "audio")
         catalog, assetStore, Console.Error.WriteLine, assetOptions.AllowBmpAsAgf);
     var trace = new AudioTrace(res);
     var skip = SkipAndAuto.WithSystemClock();
-    var audio = new Audio(trace, trace, new FrameClock(), skip, new AudioMixerSettings(), settleFadesAtOnce: true);
+    var audio = new Audio(trace, trace, new FrameClock(), skip, new AudioMixerSettings(), settleFadesAtOnce: true,
+                          rules: engineBuild.Rules.Audio);
     var vm = new VirtualMachine(ScriptByName(sceneName), table, new HeadlessWaits(), build: engineBuild,
                                 skipAndAuto: skip, audio: audio);
     // optional: seed globals, e.g. `audio SC0000.BIN 0xa57=1` to set Lily's form-A flag

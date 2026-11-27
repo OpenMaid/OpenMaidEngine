@@ -555,6 +555,7 @@ def test_scopes_lint():
         "globals-bg0.toml": [("world", 1, 4, {"area": "area"}), ("town", 50, 99, {"site": "town_site"}),
                              ("dungeon", 1, 49, {"block": "map_block"})],
         "globals-koukaku.toml": [("battlefield", 1, 221, {"cell": "battlefield_cell", "entry": "battlefield_entry"})],
+        "globals-ladea.toml": [("dungeon_floor", 1, 86, {"object": "floor_object"}), ("place", 1, 20, {"spot": "town_spot"})],
     }
     for toml in sorted(Path(G.TOML_DEFAULT).parent.glob("globals*.toml")):
         entries, _ = G.load_toml(toml)

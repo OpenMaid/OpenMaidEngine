@@ -31,6 +31,11 @@ public sealed partial class Audio
     /// (master has none).</summary>
     public bool TryGetRouteEnabled(int category, out bool enabled) => _mixer.TryGetRouteEnabled(category, out enabled);
 
+    /// <summary>Whether the Voice route is on (4.24J ctx+0x1491c, 4.45D ctx+0x14c10, which
+    /// sound_set_voice_route_enabled writes): a voice start marks a voice pending for Auto only then.</summary>
+    public bool VoiceRouteEnabled
+        => !_mixer.TryGetRouteEnabled((int)AudioMixerCategory.Voice, out bool enabled) || enabled;
+
     /// <summary>Op 0x1ba and the options panel: turn a category's route on or off. Setting the value it has does
     /// nothing, as native's workers do. False for a category without one.</summary>
     public bool TrySetRouteEnabled(int category, bool enabled)
@@ -72,7 +77,8 @@ public sealed partial class Audio
                 for (int channel = 0; channel < SoundEffectChannelCount; channel++) StopChannel(channel);
                 break;
             case AudioMixerCategory.Voice when !enabled:
-                StopChannel(VoiceChannel);
+                // sound_set_voice_route_enabled pauses every voice's channel (4.45D 0x4086f0).
+                for (int voice = 0; voice < _voices; voice++) StopChannel(VoiceChannel + voice);
                 break;
         }
         if (BusOf(category) is { } bus) _device.SetBusMuted(bus, !enabled);

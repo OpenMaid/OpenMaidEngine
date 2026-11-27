@@ -9,7 +9,7 @@ namespace Ome.Engine.Vm;
 /// <summary>Every rule an engine build gives the natives (docs/superpowers/specs/2026-11-12-engine-layering-design.md
 /// §7.3). The rule types live beside the natives that read them.</summary>
 public sealed record EngineRules(TextRules Text, GfxRules Gfx, AudioRules Audio, SettingsRules Settings,
-                                 SaveRules Saves, ShellRules Shell);
+                                 SaveRules Saves, ShellRules Shell, InputRules Input);
 
 /// <summary>
 /// One build of native AGE whose behaviour the port reproduces (spec §7.1). <see cref="Id"/> is the version the build
@@ -45,7 +45,8 @@ public static class EngineBuilds
             Audio: new AudioRules(PlayComparesStartMode: false),
             Settings: SettingsRules.LoaderKeys,
             Saves: new SaveRules(versionStamp: "424J", numberedGfxRecordSize: NativeGfxSaveLayout.BaseRecordSize),
-            Shell: new ShellRules(AutoMessagePage: false)));
+            Shell: new ShellRules(AutoMessagePage: false),
+            Input: InputRules.AxesOnly));
 
     /// <summary>AGE 4.15D, 戦女神ZERO's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its
     /// changes are the real rows of the revision diff's triage (docs/engine-re.md, "Himegari against 戦女神ZERO,
@@ -219,8 +220,37 @@ public static class EngineBuilds
         },
     };
 
+    /// <summary>AGE 4.45D, 天秤のLa DEA。's (its version resource; docs/engine-re.md, "Comparing engine builds"). Its
+    /// changes are the real rows of the revision diff against 4.43B (docs/engine-re.md, "魔導巧殻 against 天秤のLa DEA。");
+    /// each joins this definition as it is ported, and the ones the port does not have yet are in the game's item in
+    /// docs/backlog.md. The opcodes it adds need no rule: no older build's script runs them.</summary>
+    public static EngineBuild Age445D { get; } = Age443B with
+    {
+        Id = "4.45D",
+        AbiId = "SYS4445",
+        Rules = Age443B.Rules with
+        {
+            // 4.43B's record size and float sections with its own stamp: native's 4.45D save decodes so, and the
+            // port's saves load on native and native's on the port (docs/engine-re.md, "魔導巧殻 against 天秤のLa DEA。,
+            // triaged", step 7).
+            Saves = new SaveRules(versionStamp: "445D", numberedGfxRecordSize: NativeGfxSaveLayout.RotationCacheRecordSize,
+                                  floatSectionsFromMinor: 20),
+            // Three voices on channels 12 to 14, and the background voice of 4.45D's tick (docs/engine-re.md,
+            // "魔導巧殻 against 天秤のLa DEA。, triaged": voice_play_indexed_asset@0x4a9b90 takes a voice index,
+            // voice_any_playing@0x404c70, the facade's tick 0x4a9dc0).
+            Audio = Age443B.Rules.Audio with { Voices = 3, BackgroundVoices = true },
+            // The joystick's POV makes the directions (docs/engine-re.md, the same triage:
+            // input_poll_joystick_action_bits@0x474450 and input_poll_joystick_action_edges@0x474660 read dwPOV).
+            Input = Age443B.Rules.Input with { JoystickPovDirections = true },
+            // 音声終了まで待つ leaves the voice group's 文字単位時間 enabled: AGERC's ｵｰﾄﾒｯｾｰｼﾞ page procedure
+            // (0x6fea4d60 in the running game) handles only WM_INITDIALOG and WM_HSCROLL (docs/engine-re.md, the same
+            // triage, the shell).
+            Shell = Age443B.Rules.Shell with { VoiceEndDisablesVoicePitch = false },
+        },
+    };
+
     /// <summary>Every build, parents first.</summary>
-    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age415D, Age424N, Age433G, Age438D, Age443B];
+    public static IReadOnlyList<EngineBuild> All { get; } = [Age424J, Age415D, Age424N, Age433G, Age438D, Age443B, Age445D];
 
     public static EngineBuild? Find(string id)
         => All.FirstOrDefault(build => string.Equals(build.Id, id, StringComparison.Ordinal));

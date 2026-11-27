@@ -176,6 +176,11 @@ public sealed class InstallIntakeTests : IDisposable
     [Trait("Profile", "koukaku")]
     public void InstalledKoukakuReadsAsItsObservationRecordsIt() => AssertInstalled("koukaku");
 
+    [Fact]
+    [Trait("Category", "Workspace")]
+    [Trait("Profile", "ladea")]
+    public void InstalledLaDeaReadsAsItsObservationRecordsIt() => AssertInstalled("ladea");
+
     /// <summary>A game's install: the intake names its profile, finds nothing new, and counts what the registry's
     /// observation counts (vm-map/opcodes.toml), though it decodes with the whole catalog. A game whose scripts still
     /// use opcodes the port has no handler for passes <paramref name="complete"/> false: the intake must then list

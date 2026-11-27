@@ -1,0 +1,21 @@
+# The objects of a dungeon floor (Lua scripting spec §9.2). Hand-written: the event names its point and gives each
+# field's cell, by the names layout/globals.json exports.
+
+[[event]]
+name = "ladea.floor.loaded"
+point = "ladea.floor.after_object_loaders"
+description = """
+FIELD has entered a map block and walked the FLINIT chain (FLINIT, $1$FLINIT and $2$FLINIT, through \
+flinit_chain_script_ids): floor_object holds the object slots of floor `floor`, each slot's starting kind, action and \
+action arguments, and floor_object_count the slot count. Nothing has read them yet. A handler that rewrites a slot \
+changes what FIELD sets up next: FIELD copies a slot's starting kind into the saved floor_object_kinds unless the \
+slot is used and present, and OBJACT reads the action and its arguments when the player touches the object (a \
+treasure's item and count, money, a lock's key, a gathering point's items). FLINIT clears no slot, and FIELD sets up \
+only the slots below the count. FIELD raises this on every map-block entry, but not after a load: the slots lie \
+above the saved prefix, so a load on a map leaves them empty until the next entry, for the game's own data as for a \
+handler's. The data files of ladea.tables write their parts for the floor here."""
+
+[[event.field]]
+name = "floor"
+at = "current_floor_id"         # the floor FLINIT's branches have just written, from map_block_floors
+type = "int"

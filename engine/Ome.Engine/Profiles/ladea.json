@@ -1,0 +1,37 @@
+{
+  "id": "ladea",
+  "displayTitle": "Tenbin no La DEA",
+  "catalogIdentities": [
+    {
+      "catalogRevision": "S4IC445",
+      "title": "天秤のLa DEA。 ～戦女神MEMORIA～"
+    }
+  ],
+  "scriptRevisions": ["SYS4445"],
+  "sysFrontendId": "SYS4",
+  "engineBuild": "4.45D",
+  "engineAbiId": "SYS4445",
+  "naturalBootScript": "SYSTEM4.BIN",
+  "support": { "play": "P3", "modding": "M3" },
+  "metadataReferences": {},
+  "persistence": {
+    "storageNamespace": "ladea",
+    "writesEnabled": true,
+    "magic": "S4SD",
+    "gameId": "天秤のLa DEA。 ～戦女神MEMORIA～",
+    "expectedPackedSaveVersion": 320,
+    "bankDimensions": {
+      "integerGlobals": 848614,
+      "floatGlobals": 1,
+      "stringGlobals": 847,
+      "pointerGlobals": 1,
+      "floatPointers": 1,
+      "stringPointers": 1
+    }
+  },
+  "launcher": {
+    "site": "https://www.eukleia.co.jp/eushully/",
+    "banner": { "url": "https://www.eukleia.co.jp/eushully/eu15/banner/banner_eu15_a.jpg", "sha256": "4071ffce3fe2d078102f8bd4f2680d2ad7dd4f830780d7f170a83515594e0dbe" },
+    "cover": { "url": "https://www.eukleia.co.jp/eushully/eu15/image/eu15_package.jpg", "sha256": "fade1427ea0a3f4eeab904591e10a28de9c62667f5fed1a0126dc1daf5c9d479" }
+  }
+}

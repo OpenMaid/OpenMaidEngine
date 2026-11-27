@@ -1,0 +1,32 @@
+# One experience award (Lua scripting spec §9.2). Hand-written: the event names its point and gives each field's cell,
+# by the names layout/globals.json exports.
+
+[[event]]
+name = "ladea.experience.award"
+point = "ladea.experience.before_add"
+description = """
+One character's experience, before ADDEXP adds it to character_experience. Every award passes here: a battle's \
+experience as RESULT shares it among the party, the 1 FIELD gives a character under condition 40 (経験) as the party \
+walks, and the amounts scenes give. ADDEXP raises this only for a party member whose level is below the party's \
+cap (セリカ's level cap plus character_level_cap_bonus, or the character's own cap where that is higher, at most \
+250). A handler that changes amount changes what is added; each 100 + 3 × level² of experience then makes a level, up \
+to the cap. The cell amount names is the work cell the caller set just before ADDEXP, which the game sets again \
+before every award."""
+
+[[event.field]]
+name = "amount"
+at = "arg[3]"                   # the add's third operand: G[0xe7a12], the amount the caller set
+type = "int"
+access = "rw"
+
+[[event.field]]
+name = "character"
+at = "character_arg_id"         # the character ADDEXP gives the experience to, a CHINIT id
+type = "int"
+access = "r"
+
+[[event.field]]
+name = "level"
+at = "character_levels[character_arg_id]"
+type = "int"
+access = "r"

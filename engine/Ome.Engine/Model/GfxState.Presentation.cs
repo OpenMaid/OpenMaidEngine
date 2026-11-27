@@ -286,6 +286,13 @@ public sealed partial class GfxState
                _scene.Polygons.Values.Any(polygon => PolygonFadeRunning(polygon, nowMs));
     }
 
+    /// <summary>Whether anything finite still animates at <paramref name="nowMs"/>: what
+    /// <see cref="HasActiveTimedPresentation"/> waits for, or a visible object's one-shot channels that op 0x242 detached
+    /// from it. Those are finite too (native clears the bit once none remains), and the screen changes until they end.
+    /// The game driver's settle waits for this, as it waits on native AGE for the screen to stop changing.</summary>
+    public bool HasRunningFiniteAnimation(long nowMs)
+        => HasActiveTimedPresentation(nowMs) || _scene.Objects.Values.Any(o => o.Visible && HasRunningChannels(o, nowMs));
+
     /// <summary>Whether a finite one-shot channel is still running at <paramref name="nowMs"/>: enabled and either
     /// not yet seeded by a render or short of its end, as the samplers judge it.</summary>
     private static bool HasRunningChannels(GfxObject o, long nowMs)

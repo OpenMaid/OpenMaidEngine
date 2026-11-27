@@ -1,0 +1,968 @@
+# What 天秤のLa DEA。's scripts do, in words (game data export spec §8.2): hand-written notes that
+# tools/reference_bundle.py merges with the committed script index, docs/script-index-ladea.json, into the
+# reference bundle's games/ladea/scripts.json. The format is vm-map/scripts-kamidori.toml's. Every note here
+# comes from docs/ladea-data-tables.md, or from the patch points of vm-map/patch-points-ladea.toml its source names.
+#
+# The install has two appends, whose $1$ and $2$ layers get the base script's note on the site (the bundle's
+# `layer_of`). A layer has its own note below only where it does something else.
+
+# ---------------------------------------------------------------------------------------------- the boot
+
+[[script]]
+name = "SYSTEM4"
+summary = """Boots and runs the game. Where the shared profile has G[0x5] unset it runs INITCONFIG and sets it; \
+otherwise LOADCONFIG reads the options back; then CHECKCONFIG. It sets up the text layouts, the input actions and \
+the joystick buttons, and runs INIT2 on every boot; a load restores the save after it, so INIT2 runs on every load \
+too. On the first run of the root it plays LOGO; then, on every run, INIT and TITLE. After the title it runs one mode \
+a pass, from system_mode: 1 a scene, 2 TOWN, 3 FIELD, 4 BTL and 5 DEAL."""
+source = "docs/ladea-data-tables.md (Boot; The boot order; Scenes and screens; The mode loop and the scene pass)"
+
+[[script]]
+name = "INITCONFIG"
+summary = """The first run's options: SYSTEM4 runs it once for each shared profile, and it runs its five parts, \
+INITCONFIG1 to INITCONFIG5, and stores each option in the profile: the two fonts (message_font_name, ui_font_name), \
+the wheel and autosave switches, the field's frame rate, the save and command questions (confirm_save_load, \
+confirm_commands), the message window's colour, the text colour mode, the stick and the joystick buttons, and the \
+1000 voice settings' mutes and name colours (voice_mute_switches, voice_name_colors). LOADCONFIG reads them back \
+afterwards, and the option pages CONFIG1 to CONFIG3 change them."""
+source = "docs/ladea-data-tables.md (Boot; INITCONFIG)"
+
+[[script]]
+name = "LOADCONFIG"
+summary = """Reads the options INITCONFIG stored back from the shared profile, on every boot after the first."""
+source = "docs/ladea-data-tables.md (Boot; The boot order; INITCONFIG)"
+
+[[script]]
+name = "CHECKCONFIG"
+summary = """Puts ＭＳ 明朝 and ＭＳ ゴシック in place of a saved font that is not installed, and sets the text's \
+effect colour from speaker_text_colour_mode: the speaker's colour, white with no effect, or the default."""
+source = "docs/ladea-data-tables.md (Boot; The boot order; INITCONFIG)"
+
+[[script]]
+name = "INIT"
+summary = """Run on every run of the root before the title: it starts a game's state, the two town_faction_points at \
+10, money at 0, unlock_points at 20, party_leader at 1, goddess_gauge at 300 and goddess_gauge_maximum at 400."""
+source = "docs/ladea-data-tables.md (Boot; The boot order)"
+
+[[script]]
+name = "INIT2"
+summary = """Builds the game's data: it runs the 34 boot tables, puts the base game's scripts in slot 0 of the hook \
+chains, and writes its constants: the attitude and sex names, item_kind_lists, the scene's graphic element numbers, \
+the quad, the sprite anchor and the stat caps. Op 0x143 then runs the appends' $1$AUTORUN and $2$AUTORUN. After \
+them, INIT2 gives the shared profile CVINIT's colour where it has none, on a load inside an event CG or a scene over \
+the field or the town it rebuilds what lies beneath, and it clears the negative item counts. SYSTEM4 runs it on every \
+boot and on every load."""
+source = "docs/ladea-data-tables.md (Boot; INIT2; Hook chains); vm-map/patch-points-ladea.toml (ladea.boot.data_layered, ladea.boot.data_ready)"
+
+[[script]]
+name = "$1$AUTORUN"
+summary = """The first append's boot: op 0x143 at INIT2's end runs it. It calls the append's $1$ layers of the 34 boot \
+tables in INIT2's order, with no test, puts the append's scripts and pictures in slot 1 of the hook chains, and sets \
+bit 1 of installed_appends_mask."""
+source = "docs/ladea-data-tables.md (Boot; The appends' drivers)"
+
+[[script]]
+name = "$2$AUTORUN"
+summary = """The second append's boot: op 0x143 runs it after $1$AUTORUN. It calls the append's $2$ layers of the 34 \
+boot tables in INIT2's order, with no test, puts the append's scripts and pictures in slot 2 of the hook chains, adds \
+$2$ARENA to the town's screens, and sets bit 2 of installed_appends_mask."""
+source = "docs/ladea-data-tables.md (Boot; The appends' drivers; Hook chains)"
+
+# ---------------------------------------------------------------------------- scenes and screens
+
+[[script]]
+name = "SCINIT"
+summary = """The scenes, keyed by scene number (0 to 9031, 787 of them): the script that plays each one, which SYSTEM4 \
+copies into current_scene_script_id; the SCJUMP context whose rules offer it (scene_offer_contexts); whether it plays \
+over the map (scene_on_map_flags); and the mark the town shows where it is on offer (scene_town_marks). One scene \
+script holds ten numbers. $1$SCINIT adds 10 scenes, 5000 to 5018, and $2$SCINIT 21, 5100 to 5120."""
+source = "docs/ladea-data-tables.md (Scenes; SCINIT)"
+
+[[script]]
+name = "SCJUMP"
+summary = """The scene dispatch, slot 0 of a 32-slot chain whose slots 1 and 2 are $1$SCJUMP and $2$SCJUMP. \
+scjump_context_id picks a rule list, 1 to 9: entering the town, a dungeon or a new floor, the town's visits, the \
+飛翔の耳飾り, a battle's setup, start and end, and the map after it. The first rule whose condition holds while \
+scjump_chain_pending is open sets system_mode to 1 and current_scene_id to its scene, and closes the dispatch. Context \
+4 instead fills town_visit_scenes, the scenes TOWN offers by character and place. Its 419 rules test \
+scene_played_flags most; 405 of them ask that the ending has not played, and four epilogues that it has."""
+source = "docs/ladea-data-tables.md (Scenes; SCJUMP)"
+[script.arguments]
+scjump_context_id = "which rule list to walk"
+scjump_chain_pending = "0x7fffffff while no rule of the chain has taken the turn"
+
+[[script]]
+name = "SETADVFLAG"
+summary = """Clears town_visit_scenes to -1 before the town's visits are gathered (scjump_context_id 4). TOWN, FIELD \
+and BTL run it after they set scjump_context_id, before each walk of the SCJUMP chain."""
+source = "docs/ladea-data-tables.md (Scenes; SCJUMP)"
+[script.arguments]
+scjump_context_id = "4 for the town's visits; any other value leaves the slots as they are"
+
+[[script]]
+name = "EVINIT"
+summary = """The event CGs' part sets, slot 0 of a 32-slot chain whose slots 1 and 2 are $1$EVINIT and $2$EVINIT: \
+for the CG and variant on screen, each part set's base picture, up to five pictures drawn over it with their \
+positions, and the picture a save's thumbnail shows instead. The ADV prelude's load_cg_parts clears those arrays and \
+runs the chain whenever a scene shows a new CG; 141 CGs in the base, 3 in $1$EVINIT (500 to 502), 5 in $2$EVINIT (510 \
+to 514)."""
+source = "docs/ladea-data-tables.md (Scenes and screens; EVINIT)"
+[script.arguments]
+current_cg_id = "the CG on screen"
+current_cg_variant = "its variant, 1 to 9"
+
+[[script]]
+name = "CGINIT"
+summary = """The CG gallery, keyed by 200 x page + 10 x thumbnail + k: the CG and variant each thumbnail stands for, \
+up to ten (419 entries on pages 0 to 7, 10 and 11; $1$CGINIT fills page 10, $2$CGINIT page 11)."""
+source = "docs/ladea-data-tables.md (Scenes and screens; CGINIT)"
+
+[[script]]
+name = "CGMODE"
+summary = """The CG gallery: a page per thumbnail sheet, each thumbnail's CG shown part set by part set once the set's \
+bit is in cg_seen_part_sets, and the share of sets seen as a percentage."""
+source = "docs/ladea-data-tables.md (Scenes and screens; CGINIT)"
+
+[[script]]
+name = "ROOM"
+summary = """The title's extras room: it runs one page a pass by extras_room_page, 0 CGMODE, 1 HMODE, 2 MMODE and 3 \
+INFO, and ends with a soft reset back to the title."""
+source = "docs/ladea-data-tables.md (Scenes and screens; The extras room)"
+[script.arguments]
+extras_room_page = "the page chosen; below 0 leaves the room"
+
+[[script]]
+name = "SPINIT"
+summary = """The scene replays, keyed by 12 x page + slot (50 of them, on pages 0 to 3, 10 and 11): the script that \
+replays each scene."""
+source = "docs/ladea-data-tables.md (Scenes and screens; SPINIT)"
+
+[[script]]
+name = "HMODE"
+summary = """The replay room: it offers each SPINIT slot whose script the catalog marks seen and plays it with \
+replay_room_active set, so the replay marks nothing seen."""
+source = "docs/ladea-data-tables.md (Scenes and screens; SPINIT)"
+
+[[script]]
+name = "MUINIT"
+summary = """The music room's tracks, keyed by track id (1 to 36): the title, the BGM number and the resource whose \
+being seen unlocks the track."""
+source = "docs/ladea-data-tables.md (Scenes and screens; MUINIT)"
+
+[[script]]
+name = "MMODE"
+summary = """The music room: it lists the MUINIT tracks the catalog has unlocked, plays the chosen one, and shows the \
+share unlocked as a percentage."""
+source = "docs/ladea-data-tables.md (Scenes and screens; MUINIT)"
+
+[[script]]
+name = "TUINIT"
+summary = """The tutorials, keyed by tutorial id (10 to 910, 73 of them; 910 from $2$TUINIT): the screen each belongs \
+to (the town, a dungeon, or only the information screen's list), the tutorials that rule it out, the scenes it needs \
+played or not played, the layer whose TUMES holds its text, and its title."""
+source = "docs/ladea-data-tables.md (Scenes and screens; TUINIT)"
+
+[[script]]
+name = "TUTORIAL"
+summary = """Shows the tutorials a screen has due: TOWN and FIELD call it with tutorial_screen set. It takes the \
+tutorials of that screen in id order and shows each not yet shown whose conditions hold, with the text of the TUMES \
+chain's slot, then sets tutorial_shown_flags. INFOTU calls it with screen 0 to show one again."""
+source = "docs/ladea-data-tables.md (Scenes and screens; TUINIT)"
+[script.arguments]
+tutorial_screen = "the screen asking: 1 the town, 2 a dungeon, 0 the tutorial in tutorial_current"
+
+[[script]]
+name = "TUMES"
+summary = """The tutorials' text, slot 0 of a 32-slot chain whose slot 2 is $2$TUMES ($1$TUMES is empty): it branches \
+on tutorial_current and shows that tutorial's pages."""
+source = "docs/ladea-data-tables.md (Scenes and screens; TUINIT)"
+[script.arguments]
+tutorial_current = "the tutorial TUTORIAL has chosen"
+
+[[script]]
+name = "INFOTU"
+summary = """The information screen's 説明 page: it lists the tutorials of screen 3 by title and shows the one chosen \
+again through TUTORIAL."""
+source = "docs/ladea-data-tables.md (Scenes and screens; TUINIT)"
+
+# ------------------------------------------------------- characters, voices, fates and the books
+
+[[script]]
+name = "CHINIT"
+summary = """Writes the characters, keyed by character id (1 to about 300 the story and the party, 301 and up enemies): \
+the base character, sort key, sex, race, temperament, sizes, boss and large-unit flags, affinity type, support, \
+follow-up and enemy actions, battle routine, innate skill ranks, starting item kinds, equipment and items, the \
+equippable kinds, base level, level cap, morale, base stats and growth, rewards and drops, habitats, name forms, \
+names and description. INIT2 calls it on every boot and load; $1$CHINIT adds 16 characters, $2$CHINIT 45."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CHINIT)"
+
+[[script]]
+name = "CVINIT"
+summary = """Writes the voice settings, keyed by setting id (0 ナレーション, 1 一般男性, 2 一般女性, 3 and up the voiced \
+characters): the default name colour, the setting's character, the sample voice, two pictures, and the name, \
+epithet and voice actor the 設定 voice page shows. It also writes each character's voice setting, keyed by character \
+id. $2$CVINIT adds setting 50."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CVINIT)"
+
+[[script]]
+name = "FTINIT"
+summary = """Writes the fates (運命) the fate book lists, keyed by fate id: the order, the text, the chapter, and up to \
+three required and three forbidding story flags (G[0xee7]). $1$FTINIT adds 5 fates, $2$FTINIT 7."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; FTINIT)"
+
+[[script]]
+name = "SETFATE"
+summary = """Works out the saved fate states G[0x6282] from FTINIT: for each fate with a text, bit 0 is set while its \
+required flags hold and no forbidding flag does; bits 1 and 2 have conditions of their own, which no record fills in \
+this version. SYSTEM4 runs it, and INFOFT before it draws."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; FTINIT)"
+
+[[script]]
+name = "INFOFT"
+summary = """The fate book: runs SETFATE, then lists the fates with bit 0 of their state in fate_sort_keys order by \
+chapter, greying those with bit 1 or 2."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; FTINIT)"
+
+[[script]]
+name = "CIINIT"
+summary = """Writes the 人物 book's profiles, keyed by character id: the order, the name, the race, six lines, a \
+character per line (only line 0's is read: the profile opens once that character is heard) and three scene-seen \
+conditions per line. $2$CIINIT adds one profile."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CIINIT)"
+
+[[script]]
+name = "CFINIT"
+summary = """Writes the characters' forms the 人物 book shows, keyed by character id with up to nine forms in columns \
+1..9: each form's name, three scene-seen conditions, a picture, a backdrop and up to 25 gallery pictures. $1$CFINIT \
+adds アイドル forms to characters 3, 51 and 66, $2$CFINIT 実体化 to 2, each in an empty column."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CFINIT)"
+
+[[script]]
+name = "INFOCH"
+summary = """The 人物 book: lists the profiles INFO found open, in profile_sort_keys order, and shows one: its name, \
+race, the lines whose conditions hold, and its forms with their pictures, backdrop and gallery."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CIINIT, CFINIT)"
+
+[[script]]
+name = "VIINIT"
+summary = """Writes the 用語 glossary, keyed by entry id: the order, the title, the category, thirteen lines and three \
+scene-seen conditions per line (line 0's open the entry). $1$VIINIT adds entries 240 and 241."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; VIINIT)"
+
+[[script]]
+name = "INFOVO"
+summary = """The 用語 glossary: lists the entries INFO found open, in glossary_sort_keys order, with their category, \
+and shows an entry's lines whose conditions hold."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; VIINIT)"
+
+[[script]]
+name = "INFO"
+summary = """Rebuilds which books' entries are open: the profiles into G[0xc4f8f] (CIINIT's line 0 conditions and the \
+heard flag of the profile's character) and the glossary entries into G[0xc4ba7] (VIINIT's line 0 conditions), and \
+lists the monster book's characters."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CIINIT, VIINIT)"
+
+[[script]]
+name = "UNITECH"
+summary = """Joins current_character to the party. At the first join (bit 0 of character_flags clear) it copies CHINIT's \
+base level, starting item kind ranks, equipment and items into the saved state, then places the character in the \
+formation by its size, runs CALCREVISE and sets the flags."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CHINIT, What is saved)"
+arguments = { current_character = "the character joining" }
+
+[[script]]
+name = "SETCH"
+summary = """Builds the battle unit of character_arg_id from CHINIT and the saved state: sizes, affinity type (the \
+armour's or the character's), skill ranks (innate plus learned, clamped to 0..5), and the stats CALCLVUP computes. \
+It sums the equipment's stat bonuses, their improvement bonuses and the stones' bonuses and skills for the bearer's \
+type, checks the stones' costs against the capacity, and sets the element, the armour's attribute and the weapon's \
+two waits. A slot of equipment_preview_slots that is 0 or more replaces the saved one."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CHINIT; Items, stones, improvement and alchemy; Equipment)"
+[script.arguments]
+character_arg_id = "the character to compute"
+
+[[script]]
+name = "CALCLVUP"
+summary = """Computes the stats of character_arg_id at its level: CHINIT's base stats plus growth × (level − base \
+level) / 100, plus the saved stat bonuses."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CHINIT)"
+arguments = { character_arg_id = "the character to compute" }
+
+[[script]]
+name = "CALCREVISE"
+summary = """Copies the unit SETCH built for character_arg_id into its saved state: the maxima of HP, MP, TP and \
+morale, the attack element, the affinity type, the skill ranks in effect and the conditions' base levels."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; What is saved)"
+arguments = { character_arg_id = "the character to compute" }
+
+[[script]]
+name = "ADDEXP"
+summary = """Adds experience to character_arg_id and levels it up, up to the party's level cap (セリカ's cap plus \
+character_level_cap_bonus, or the character's own if higher, at most 250)."""
+source = "docs/ladea-data-tables.md (Characters, voices, fates and the books; CHINIT)"
+arguments = { character_arg_id = "the character to compute" }
+
+# ----------------------------------------------------------------- skills, conditions and battle
+
+[[script]]
+name = "SSINIT"
+summary = """Writes the special skills at boot (special_skill_names), five levels a family: the kind (【攻撃】 \
+【防御】 【開始】 【常時】 【特殊】), whether it acts only on an attack, the HP, MP and TP cost and the trigger chance \
+of each level, its amount, whether the player may switch it off, the conditions a 【常時】 level gives, and the effect \
+played when it fires. INIT2 runs it on every boot and load; nothing of it is saved. The first append's layer adds \
+seven families (131..133, 216..219)."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT)"
+
+[[script]]
+name = "CHECKSS"
+summary = """Picks the special skills that act on the action in play. For the attacker and the defender it copies \
+the unit's levels into battler_special_skill_active_levels, zeroes the families whose kind or attack-only flag does \
+not fit, rolls each level's trigger chance (unless debug_play_active is set) and drops what the unit \
+cannot pay in HP, MP or TP. Then it runs the CHECKSS1..3 hooks of each of the 32 chain entries, and CHECKSS4 last. \
+CALCDAMAGE calls it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "CHECKSS1"
+summary = """A special skill hook CHECKSS runs: keeps the defender's 身代わり (family 56) only when it is the covering \
+unit, and gives an auto-battle party attacker the best 214 level among the party units on the field."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "CHECKSS2"
+summary = """A special skill hook CHECKSS runs: tests the conditions of about forty families against the battle \
+state (HP, the action's kind, weapons, positions, who is on the field), the 魔剣, 孤高, range-reduction, 必殺無効, \
+魔術無効 and 好き/嫌い families among them, and zeroes those that do not hold. Its tests are not decoded."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "CHECKSS3"
+summary = """A special skill hook CHECKSS runs: the immunities. The defender's オーバーキル無効, 〜殺し無効, 貫通無効 \
+and 即死無効 or 全無効 zero the attacker's オーバーキル, 〜殺し, 貫通 and 即死; the attacker's 反射無効 zeroes the \
+defender's 反射."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "CHECKSS4"
+summary = """The last special skill hook CHECKSS runs: when the defender's 反射, 見切り or カウンター remain, zeroes \
+all the attacker's 【攻撃】 families."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "CALCSS"
+summary = """Runs the SETSSBONUS hook of each of the 32 entries of the special skill damage chain. CALCDAMAGE \
+calls it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "SETSSBONUS"
+summary = """A special skill hook CALCSS runs: sums the amounts of the active families that change the damage \
+calculation (貫通's lowered defence and defence count, 抉り切り上げ's damage and critical hits, 獅子奮迅, 急所狙い, \
+the defender's 身代わり, 孤高 and 軽業師) into the bonus cells CALCDAMAGE applies."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "COMMITSS"
+summary = """Runs the SETSSDAMAGE hook of each chain entry, then takes the fired levels' HP, MP and TP costs and \
+sets the effect a fired defender's family shows (special_skill_effects). CALCDAMAGE calls it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "SETSSDAMAGE"
+summary = """A special skill hook COMMITSS runs: changes the damage for the attacker's 即死, 態勢崩し, 一撃の痺れ and \
+抉り切り上げ and the defender's 見切り, カウンター, 必殺無効, 魔術無効 and 飛行能力, among others."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "$1$CHECKSS1"
+summary = """The first append's CHECKSS1 hook: gives the defender 統率力 (family 132) when another unit of its side \
+on the field holds it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "$1$CHECKSS2"
+summary = """The first append's CHECKSS2 hook: tests the ユニットアイドル families (216, 217) on both sides."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "$1$SETSSBONUS"
+summary = """The first append's SETSSBONUS hook: adds the defender's 統率力 amount to the defence bonus."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "$1$SETSSDAMAGE"
+summary = """The first append's SETSSDAMAGE hook: raises the attacker's damage for 女好き and 男好き by the women or \
+men on the field, and handles the defender's ピンポイントガード."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "$2$SETSSDAMAGE"
+summary = """The second append's SETSSDAMAGE hook: does nothing; its one write is jumped over."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; SSINIT, In battle)"
+
+[[script]]
+name = "AFINIT"
+summary = """Writes the battle's lists at boot: the attack and defence element names and the damage percent by \
+defence and attack element (element_affinities), the race names, the classes (item classes and the 必殺 and magic \
+schools, with the weapon kinds a school needs), the item kind names with their flags and use sounds, the field \
+actions' names and icons, the formation names, and the rarity ratios IMPROVE and BREED use. Nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; AFINIT)"
+
+[[script]]
+name = "ILINIT"
+summary = """Writes the conditions at boot (condition_names), five levels each: beneficial or ailment, whether bosses \
+are immune, the resistance and affinity column it is rolled with, its duration, the 21 modifiers it gives a unit \
+(hit, evasion, attack and defence, counts, magic, 戦攻 and 戦防, resistances, speeds, luck, critical hits, HP, MP and \
+TP each turn, gauge drain), the cures that clear it and its icon. Nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; ILINIT)"
+
+[[script]]
+name = "ADDILL"
+summary = """Adds condition_argument_levels to a character's saved level of condition_argument_id, at most 5 and \
+no lower than its floor, and sets the saved duration: 0 at level 0, -1 at the floor, otherwise the condition's. When \
+呪い is lifted to its floor it takes off the equipped items that carry 呪い and puts them back in the bag. The inn, map events, scenes and USESKILLSUB call it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; ILINIT; What is saved)"
+
+[[script]]
+name = "CALCILL"
+summary = """Applies an action's conditions to the defender in battle. A beneficial condition loses the attacker's \
+破術 level. Each condition the action gives is rolled with the action's figure, the unit's mental or physical \
+resistance and a random 0..99, scaled by the defender's element affinity in the condition's column; it fails on a \
+boss when the condition is boss-proof, and stops at level 5. BTLMAIN calls it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; ILINIT)"
+
+[[script]]
+name = "SETILLREVISE"
+summary = """Sums the condition modifiers over a battle unit's levels into its figures: percents for attack, \
+defence, magic attack and defence and 戦攻 and 戦防, amounts for the rest, and the per-turn HP, MP and TP changes. It \
+marks 石化 and 魅了 in the unit's flags. SETCH and SETEN call it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; ILINIT)"
+
+[[script]]
+name = "COINIT"
+summary = """Loads one character's look in one costume: the status picture, the list faces, the battle pictures \
+for each unit state and their animation rows, the field, jump and carry pictures, and the battle voices. The caller \
+sets the character and costume and walks the COINIT chain; at boot it loads nothing. Battle, field, menus and lists \
+call it, eighteen scripts in all. Both appends add records (costumes 24 and 25 in the first)."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; COINIT)"
+
+[[script]]
+name = "RTINIT"
+summary = """Writes the battle routines at boot (routine_step_kinds), up to 100 steps a routine: each step's rule \
+script, chance, action, arguments, story flag, use limit, the tactics that skip it and a saved bit that skips it. \
+Nothing of it is saved. Both appends add steps (60 and 457)."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; RTINIT)"
+
+[[script]]
+name = "RTN"
+summary = """Chooses a battle unit's action from its routine: walks the steps, skipping those whose story flag is \
+unset, whose use limit is reached, whose skip bit is set or whose tactic mask matches a party unit's tactics, rolls \
+each step's chance and runs its rule script (RTN000..RTN307), taking the first step whose rule holds. BTLMAIN calls \
+it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; RTINIT)"
+
+[[script]]
+name = "BTANINIT2"
+summary = """Writes the battle animations at boot (battle_animation_effects): for each, the BTANINIT effect each of \
+six slots plays, when each starts, and the animation's length. Nothing of it is saved. The second append adds 22."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; BTANINIT2)"
+
+[[script]]
+name = "BTANINIT"
+summary = """Loads one battle effect into an effect slot: its picture (a sheet or a movie), sheet size and frames, \
+length, where it is drawn, offsets, scale, and sound with its delay. SETEFFECT runs it through the BTANINIT chain; \
+it never runs at boot. The second append adds five effects."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; BTANINIT)"
+
+[[script]]
+name = "SETEFFECT"
+summary = """Fills the 46 effect slots of the animation in play: slots 0..5 from the animation's BTANINIT2 effects, \
+slots 6..45 from the units' condition effects, each by walking the BTANINIT chain. ANIME calls it."""
+source = "docs/ladea-data-tables.md (Skills, conditions and battle; BTANINIT)"
+
+# ------------------------------------------------------------------------ encounters and enemies
+
+[[script]]
+name = "EEINIT"
+summary = """Fills encounter_chances, five rows of ten: the percent chance of a battle at each of FIELD's rolls, by the \
+distance walked and the map's encounter level. INIT2 runs it at boot and on every load; its $1$ and $2$ fragments are \
+empty."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; EEINIT)"
+
+[[script]]
+name = "ELINIT"
+summary = """Fills the special encounters, 18 ids of 1 to 27: the 視線を感じる and 異質な気配がする meetings FIELD \
+tries before an encounter set's draw, each with its kind, a special encounter to beat first, flags, the area kinds it \
+appears in, a chance by the gauge's band, and a scene or a battle. INIT2 runs it at boot and on every load; its $1$ \
+and $2$ fragments are empty."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ELINIT)"
+
+[[script]]
+name = "ENINIT"
+summary = """Loads the encounter set encounter_set_in_play after clearing the entries: up to 100 entries, each a \
+weight, a window of goddess_gauge it fits and three formations; set 0 loads nothing. The base has sets 10 to 53. FIELD \
+sets the set from the map and map_encounter_variant on entering a map and runs it through the ENINIT chain, its \
+$1$ and $2$ layers after it; eleven map scripts change the variant and run it themselves."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ENINIT)"
+[script.arguments]
+encounter_set_in_play = "the encounter set, from MPINIT's two sets of the map"
+
+[[script]]
+name = "$1$ENINIT"
+summary = """The first append's encounter sets, 61 to 67. The ENINIT chain runs it after ENINIT, which has cleared the \
+entries."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ENINIT)"
+[script.arguments]
+encounter_set_in_play = "the encounter set"
+
+[[script]]
+name = "$2$ENINIT"
+summary = """The second append's encounter sets, 68 and 69. The ENINIT chain runs it after ENINIT and $1$ENINIT."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ENINIT)"
+[script.arguments]
+encounter_set_in_play = "the encounter set"
+
+[[script]]
+name = "ESINIT"
+summary = """Loads the formation formation_in_play after clearing it: up to eight enemy slots, each a character, the \
+columns and rows it prefers, the chance it appears, a required and a barring flag, the item it carries and a bond to \
+another slot; and the formation's mark. The base has 516 formations, 101 to 9673. SETENP runs it through the ESINIT \
+chain for each of the battle's three formations, its $1$ and $2$ layers after it."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ESINIT)"
+[script.arguments]
+formation_in_play = "the formation, one of the battle's three"
+
+[[script]]
+name = "$1$ESINIT"
+summary = """The first append's 23 formations, 8001 to 8034, 9674 and 9675. The ESINIT chain runs it after ESINIT, \
+which has cleared the slots."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ESINIT)"
+[script.arguments]
+formation_in_play = "the formation"
+
+[[script]]
+name = "$2$ESINIT"
+summary = """The second append's 40 formations, 8101 to 8219 and 9676 to 9684. The ESINIT chain runs it after ESINIT \
+and $1$ESINIT."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ESINIT)"
+[script.arguments]
+formation_in_play = "the formation"
+
+[[script]]
+name = "SETENP"
+summary = """Sets up a battle's sides: it places the party, then loads each of the battle's three formations with the \
+ESINIT chain and places its enemies on the squad's 5 x 5 grid by each slot's preferred columns and rows, dropping a \
+slot by its chance and flags. It runs SETEN for each enemy, gives it the slot's item and bond, and keeps the highest \
+skill levels seen in the shared profile."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; ESINIT)"
+
+[[script]]
+name = "SETEN"
+summary = """Builds one enemy battler from a character: its level from the map's enemy level, a catch-up to the \
+leader's level, a random spread and the character's limits; its stats from the character's base and growth; its \
+equipment and skills. The first time, it sets the character's enemy_book_flags cell in the shared profile."""
+source = "docs/ladea-data-tables.md (Encounters and enemies; SETEN)"
+
+# -------------------------------------------------------- items, stones, improvement and alchemy
+
+[[script]]
+name = "ITINIT"
+summary = """Writes the one id space of items, equipment, stones, spells, skills and enemy actions (ids up to 13428, \
+the ★ variants at id + 10000): names, descriptions, kinds and classes, ranks, icons, prices per shop, the 22-stat \
+vector, the conditions inflicted and granted, the HP, MP and TP amounts and costs, waits, targets, animations, \
+ammunition and the limits on who may use them. INIT2 runs it on every boot and load, and the two appends add records \
+through $1$ITINIT and $2$ITINIT; nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; ITINIT)"
+
+[[script]]
+name = "DPINIT"
+summary = """Writes the stones (ids 1001..1640, keyed by their item id): their two pictures, the character sealed \
+in each, the cost, and by the bearer's type the compatibility, the skill given and its level, and three stat \
+bonuses. INIT2 runs it on every boot and load; nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; DPINIT)"
+
+[[script]]
+name = "IMINIT"
+summary = """Writes what improving an item gives, keyed by item id: the points each level costs, three stat bonuses \
+per level and the story flag the top level sets. INIT2 runs it on every boot and load; nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; IMINIT)"
+
+[[script]]
+name = "ALINIT"
+summary = """Writes the alchemy recipes (ids 1..224): the product, three ingredients and their counts, and the \
+conditions: story flags required and forbidding, a character and level, a building mask. INIT2 runs it on every \
+boot and load; nothing of it is saved."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; ALINIT)"
+
+[[script]]
+name = "SHINIT"
+summary = """Fills the offers of the shop in G[0x4d2d0] (1..4): shop_offers and shop_offer_flags (not offered, or \
+shown but not for sale), shop_price_column and shop_pictures, each offer guarded by story flags and other cells. \
+SHOP runs it through shinit_chain_script_ids each time it opens; $2$SHINIT adds offers to shop 2."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; SHINIT)"
+
+[[script]]
+name = "ADDITEM"
+summary = """Gives or takes an item: it adds item_count_change to item_counts, kept within 0 and 999, turns a stone \
+already obtained into its crystal, sets and clears a key item's story flag (9001 + id) as it is held or not, writes \
+the acquisition log, and sets item_obtained_flags and item_seen_flags (the latter in the shared profile) unless \
+G[0xbeb33d] is set. An item of kind 0 changes nothing."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory)"
+[script.arguments]
+current_item = "the item, an ITINIT id"
+item_count_change = "the count to add, negative to take"
+
+[[script]]
+name = "ITEM"
+summary = """Uses an item outside battle: on one chosen character through USESKILLSUB or on each through USESKILL, \
+moving HP, MP, TP, 戦意 and goddess_gauge, then takes one from item_counts and plays the class's sound."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory)"
+
+[[script]]
+name = "SETITLIST"
+summary = """Builds the item list: it leaves out what is not held and what cannot be used here (kind 3 in battle, \
+item_use_places in the field or in town), and sorts marked items first, then by item_sort_keys."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory)"
+
+[[script]]
+name = "CHECKACT"
+summary = """Decides whether a battle action can be chosen: its HP, MP and TP costs, its ammunition, its uses this \
+battle (item_battle_use_limits), the items it needs held, the characters allowed, the gender and the skill required."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory)"
+[script.arguments]
+current_item = "the action, an ITINIT id"
+
+[[script]]
+name = "SHOP"
+summary = """The town's shop screen: to buy it runs the SHINIT chain and lists shop_offers, sorted by \
+item_sort_keys, at the shop's column of item_buy_prices; to sell it uses item_sell_prices. Key items and stones are \
+listed only while none is held, and an item held 999 times cannot be bought."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory; SHINIT)"
+
+[[script]]
+name = "DRAWITTIP"
+summary = """Draws an item's tooltip at G[0xbdc786], G[0xbdc787]: its description, element or defence attribute, \
+stat bonuses, waits, the skill it adds and, for a stone, the skills and bonuses by bearer type."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; ITINIT; DPINIT)"
+[script.arguments]
+current_item = "the item, an ITINIT id"
+
+[[script]]
+name = "IMPROVE"
+summary = """The town's improvement screen: it adds a material's points (by the two items' ranks, times the \
+quantity) to an improvable item's item_improvement_points, raises item_improvement_levels when they reach IMINIT's \
+cost, and at the top level sets the item's mastery story flag."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; IMINIT, IMPROVE and BREED)"
+
+[[script]]
+name = "BREED"
+summary = """The town's screen that improves the stones as IMPROVE does equipment, showing the stone's character \
+and its large picture from DPINIT."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; IMINIT, IMPROVE and BREED)"
+
+[[script]]
+name = "ALCHEMY"
+summary = """The town's alchemy screen: it offers each ALINIT recipe whose flags, character, level and building \
+allow it, and makes the chosen quantity, taking the ingredients and adding the product through ADDITEM (at most 1 \
+of a key item)."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; ALINIT)"
+
+[[script]]
+name = "SELNUM"
+summary = """Lets the player choose a number, from G[0xbeb33e] up to G[0xbeb33f], into selnum_value; ALCHEMY, \
+IMPROVE and BREED use it for the quantity."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; IMINIT, IMPROVE and BREED; ALINIT)"
+
+[[script]]
+name = "INFOIT2"
+summary = """An item page: it toggles an item's mark (item_marked_flags) and shows its improvement \
+points as a percentage of the cost."""
+source = "docs/ladea-data-tables.md (Items, stones, improvement and alchemy; The item helpers and the inventory)"
+
+# ----------------------------------------------------------------------------------- the dungeon
+
+[[script]]
+name = "MPINIT"
+summary = """The floors and the map blocks, at every boot. 74 floors (ids 1 to 74), each with its name, its dungeon \
+(floor_dungeon_first_floors), its place in the atlas list, its encounter class and, on 20 floors, how fast walking \
+drains the gauge. 234 map blocks, ids 10 × floor + n, each with its floor, its map and event scripts, three musics, \
+two encounter sets, the enemies' level and spread, the encounter level, the battle backdrops, a far backdrop with its \
+parallax, an overlay, its place on the floor and up to nine pieces' pictures and places. Nothing of it is saved."""
+source = "docs/ladea-data-tables.md (The dungeon; MPINIT, the floors; MPINIT, the map blocks)"
+
+[[script]]
+name = "$1$MPINIT"
+summary = """Adds the first append's floors 81 and 82 and their eight map blocks (811 to 813, 821 to 825); it writes \
+no base cell."""
+source = "docs/ladea-data-tables.md (The dungeon; MPINIT, the floors; MPINIT, the map blocks)"
+
+[[script]]
+name = "$2$MPINIT"
+summary = """Adds the second append's floor 86 (アルマの途) and its three map blocks (861 to 863); it writes no base \
+cell."""
+source = "docs/ladea-data-tables.md (The dungeon; MPINIT, the floors; MPINIT, the map blocks)"
+
+[[script]]
+name = "OBINIT"
+summary = """The object kinds of the dungeon maps, at every boot: 130 kinds (ids 51 to 448) with the sprite's frame, \
+its idle animation and blend mode, the kind it turns into when its action runs and the fade, the sound and the effect \
+played then, its picture and its atlas marker. Treasures come in closed and open pairs, and the puzzle blocks are 51 \
+to 55. It also writes the six atlas markers (上り階段, 下り階段, 移動, 回復の羽, 財宝, 採取) with the key that shows each. \
+Nothing of it is saved."""
+source = "docs/ladea-data-tables.md (The dungeon; OBINIT and OBINIT2)"
+
+[[script]]
+name = "$2$OBINIT"
+summary = """Adds the second append's object kinds 501 and 502."""
+source = "docs/ladea-data-tables.md (The dungeon; OBINIT and OBINIT2)"
+
+[[script]]
+name = "OBINIT2"
+summary = """The object kinds' second half, at every boot: the draw-order offset, the wall polygon FIELD hands AGERC \
+as a wall, and the event polygon whose touch runs the object's action, for the same kind ids as OBINIT."""
+source = "docs/ladea-data-tables.md (The dungeon; OBINIT and OBINIT2)"
+
+[[script]]
+name = "LAINIT"
+summary = """The lands under the player, at every boot: 15 lands (ids 1 to 91), each with its footstep sound, the \
+walking sheet the field character switches to, a flag that hides the picture under the player, and the speed change \
+(land_speed_changes). FIELD also reads drift and encounter-level fields here that the game never sets."""
+source = "docs/ladea-data-tables.md (The dungeon; LAINIT)"
+
+[[script]]
+name = "PZINIT"
+summary = """The block puzzles, at every boot: 11 puzzles (ids 3 to 13), each a grid of up to 22 × 22 cells with \
+goals, and up to eight blocks with their starting places, colours and object kinds. Each resets when the player \
+changes map block. CARRY moves the blocks; the save keeps their places."""
+source = "docs/ladea-data-tables.md (The dungeon; PZINIT)"
+
+[[script]]
+name = "ATINIT"
+summary = """The floors' atlases, at every boot: for 71 floors (and 81 and 82 in $1$ATINIT), the scale of the minimap \
+and of the ATLAS screen, the parts hidden until the story reveals them, and each part's two pictures."""
+source = "docs/ladea-data-tables.md (The dungeon; ATINIT)"
+
+[[script]]
+name = "FLINIT"
+summary = """The objects of the floor in play, on demand: FIELD walks its chain on every map-block entry, and the \
+branch for current_floor_id writes each slot's starting object kind, its action (treasure, money, full recovery, \
+lock, gathering, gauge refill) and the action's arguments, and the slot count. FIELD copies the kinds into the saved \
+floor_object_kinds unless the object was used. A load does not rerun it."""
+source = "docs/ladea-data-tables.md (The dungeon; FLINIT)"
+[script.arguments]
+current_floor_id = "the floor whose objects it writes"
+
+[[script]]
+name = "DUINIT"
+summary = """The fixed battles, on demand: FIELD and BTLMAIN walk its chain, and the branch for battle_id (205 \
+battles in the base, 6 in $1$DUINIT and 17 in $2$DUINIT) writes the battle's place name, the enemy party of each of \
+its three waves, its flags, and each wave's music and backdrops. Only the parties lie in saved state."""
+source = "docs/ladea-data-tables.md (The dungeon; DUINIT)"
+[script.arguments]
+battle_id = "the fixed battle to set up"
+
+[[script]]
+name = "FIELD"
+summary = """The dungeon screen. On entering a map block it sets the floor, marks the floor and the block visited \
+(the floor in the shared profile too), copies the floor's hidden atlas parts on its first visit, names the place, runs the FLINIT chain, resets the puzzles, sets up the floor's \
+object slots, hands the block's encounter set to the ENINIT chain and plays its music. It then walks the player over \
+the AGERC polygons of the walls and events, plays footsteps by the land, drains the gauge on some floors, and rolls \
+the random and special encounters by the floor's class and the block's encounter level."""
+source = "docs/ladea-data-tables.md (The dungeon; Entering a map block; MPINIT, the floors; FLINIT; The map in play)"
+
+[[script]]
+name = "SETMAPDATA"
+summary = """Clears the map in play and runs the map block's map script (map_block_scripts), which fills its props, \
+walls, floor-object places, event areas and puzzles; it also takes the backdrop's settings and the overlay's scale. \
+FIELD and INIT2, after a load on a map, run it."""
+source = "docs/ladea-data-tables.md (The dungeon; The map in play)"
+
+[[script]]
+name = "SETMAPTEX"
+summary = """Loads the map block's pictures: its pieces' lower and upper pictures, the far backdrop, the overlay and \
+the walking sheet for the land in play."""
+source = "docs/ladea-data-tables.md (The dungeon; MPINIT, the map blocks; LAINIT)"
+
+[[script]]
+name = "SETFLOORTEX"
+summary = """Loads the sprite sheet of each of the floor's 100 object slots by its saved kind (object_kind_pictures), \
+and releases the slots without one."""
+source = "docs/ladea-data-tables.md (The dungeon; OBINIT and OBINIT2)"
+
+[[script]]
+name = "DRAWFIELD"
+summary = """Draws the map block: the far backdrop with its parallax, the pieces, the props, the floor objects that \
+are present with their frames and idle animations in draw order, and the overlay."""
+source = "docs/ladea-data-tables.md (The dungeon; MPINIT, the map blocks; OBINIT and OBINIT2; The map in play)"
+
+[[script]]
+name = "OBJACT"
+summary = """Runs the action of the floor object the player touched (floor_object_actions): gives an item or シリン, \
+recovers the party, opens a lock with a key item, gathers, or refills the gauge. It then plays the kind's sound and \
+effect and turns the object into its next kind in the saved floor_object_kinds."""
+source = "docs/ladea-data-tables.md (The dungeon; FLINIT; OBINIT and OBINIT2)"
+
+[[script]]
+name = "CARRY"
+summary = """Moves a puzzle block on its puzzle's grid, refusing a move onto a cell that is not \
+floor, and marks the puzzle solved when every goal holds a block of its colour."""
+source = "docs/ladea-data-tables.md (The dungeon; PZINIT)"
+
+[[script]]
+name = "ATLAS"
+summary = """The atlas screen: lists the visited floors by dungeon and sort key, and draws the chosen floor's \
+revealed parts with the markers of its objects, scaled by the floor's atlas scale."""
+source = "docs/ladea-data-tables.md (The dungeon; ATINIT; OBINIT and OBINIT2)"
+
+[[script]]
+name = "DRAWMINIMAP"
+summary = """Draws the minimap of the floor in play: its revealed parts and the atlas markers of its present \
+objects, at the minimap's scale."""
+source = "docs/ladea-data-tables.md (The dungeon; ATINIT; OBINIT and OBINIT2)"
+
+[[script]]
+name = "DRAWCH"
+summary = """Draws the field character at the screen's centre with the picture under it, switches its walking sheet \
+when the land changes, and moves the land just found into field_land_id."""
+source = "docs/ladea-data-tables.md (The dungeon; LAINIT; What is saved)"
+
+# -------------------------------------------------------------------------------------- the town
+
+[[script]]
+name = "BLINIT"
+summary = """Builds the town's buildings (town_building) at boot: names, tiles and sizes, the place each opens, three \
+variants of pictures, the place tabs, and five arrays of 100 by place: the list order, the spot grid's layout, the \
+marker on the town map and the background. Ids 1 to 19 are the places, 101 to 121 fillers and 201 to 240 the houses; \
+$2$BLINIT adds 20, the arena. It writes none of the six variant condition arrays TOWN tests."""
+source = "docs/ladea-data-tables.md (The town; BLINIT)"
+
+[[script]]
+name = "ORINIT"
+summary = """The spots of a place (town_spot), on demand: slot 0 of the chain G[0xf45d8d], which SETORNDATA walks. Each \
+branch is one place, town_current_place_id 1 to 19, and writes its spots: grid position, pictures and their \
+animation, conditions, a character, a voice, and an exit to a field map or a door to a town screen; ids from 100 are \
+hotspots written straight into the click grid. $1$ORINIT adds spots to places 1, 2, 9 and 17, and $2$ORINIT to place \
+3 and to 20, the arena."""
+source = "docs/ladea-data-tables.md (The town; ORINIT)"
+
+[[script]]
+name = "SETORNDATA"
+summary = """Zeroes every ORINIT array, the click grid included, and runs the ORINIT chain G[0xf45d8d] for the place in \
+play. TOWN runs it each time it opens a place."""
+source = "docs/ladea-data-tables.md (The town; ORINIT)"
+
+[[script]]
+name = "SETESTTEX"
+summary = """Loads the place in play's background (town_place_backgrounds) and each spot's picture, as texture \
+0x2bc + spot."""
+source = "docs/ladea-data-tables.md (The town; BLINIT; ORINIT)"
+
+[[script]]
+name = "SETTOWNTEX"
+summary = """Loads the town map's pictures: each shown building's picture for its variant, with houses 201 to 240 \
+shown in faction 1's or faction 2's picture by town_faction_points, and the town's texture, SO007A or SO007B by \
+G[0x4d2cc]."""
+source = "docs/ladea-data-tables.md (The town; BLINIT)"
+
+[[script]]
+name = "TOWN"
+summary = """Game mode 2, the town. On opening it runs column 0 of the chain G[0xf45ced] (CLOSE), sorts the \
+buildings, picks each one's shown variant (town_building_shown_variants) and lists the open places that have a tab. \
+Inside a place it builds the place's spots (SETORNDATA) and lays them on the grid. Choosing a spot leaves for its \
+field map (mode 3), opens its screen through DEAL (mode 5), plays the scene the scene matrix G[0xcf36f] gives its \
+character at the place (mode 1), or plays its voice and sprite. It also opens FACT, the unlock board."""
+source = "docs/ladea-data-tables.md (The town; BLINIT; ORINIT; The town's screens)"
+
+[[script]]
+name = "DEAL"
+summary = """Game mode 5: runs the town screen of town_screen_kind (town_screen_scripts: INN, SHOP, ALCHEMY, IMPROVE, \
+BREED, QUEST, and $2$ARENA), clears the kind, and returns to the town."""
+source = "docs/ladea-data-tables.md (The town; The town's screens)"
+
+[[script]]
+name = "CLOSE"
+summary = """Runs when the town opens, slot 0 of the chain G[0xf45ced]. It turns quests still open (state exactly 1) \
+and some counters into story flags, which the quests' failure conditions name; and once flag 8961 is set it opens \
+place 19 and makes unlocks 46 and 48 available, opening those that cost nothing."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "DEBUGTOWN"
+summary = """A debug start from the title: opens every place (town_place_states)."""
+source = "docs/ladea-data-tables.md (The town; BLINIT)"
+
+[[script]]
+name = "QUINIT"
+summary = """Builds the quests (quest) at boot: titles, faction, client, description, the board's conditions (story \
+flags and an item held), the flags and item that achieve or fail a quest, rewards (item, money, unlock points or \
+faction points) and a flag set on the report. $2$QUINIT adds eleven."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "QUEST"
+summary = """The town's quest board, screen 6. It offers the quests whose conditions pass, sets an accepted quest's \
+bit 0 in quest_states and in the shared profile, marks an open quest failed or achieved by its flags and item, and \
+runs RECEIPT."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "RECEIPT"
+summary = """Reports the achieved quests: pays each reward (money, unlock points, an item through ADDITEM, or faction \
+points, taking the excess from the other faction), sets the quest's report flag and bit 3 of its state."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "INFOQU"
+summary = """The record book's quest page (INFO): the quests ever accepted, from the shared profile, in \
+quest_sort_keys order, with their title, faction, client, description and rewards."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "INFOQU2"
+summary = """The in-game record's quest page (INFO2): this save's quests by quest_states, in quest_sort_keys order."""
+source = "docs/ladea-data-tables.md (The town; QUINIT)"
+
+[[script]]
+name = "NUINIT"
+summary = """Builds the inn's five rites (inn_rite, 精力信仰) at boot: the goddess gauge each sets, the gauge maximum \
+and flags it needs, its event picture, a name and five description lines that nothing reads."""
+source = "docs/ladea-data-tables.md (The town; NUINIT)"
+
+[[script]]
+name = "INN"
+summary = """The inn, screen 1. It offers the rites whose conditions pass while シュリ's fatigue is 0. A rite sets the \
+goddess gauge to its target, capped at the maximum, sets the fatigue by how far the gauge moved, and runs ADDILL."""
+source = "docs/ladea-data-tables.md (The town; NUINIT)"
+
+[[script]]
+name = "FMINIT"
+summary = """Builds the unlock board at boot: which unlock sits in each cell of a 24 by 44 grid, and the links to the \
+right and below. Its $1$ and $2$ layers place the appends' unlocks in empty cells."""
+source = "docs/ladea-data-tables.md (The town; FMINIT)"
+
+[[script]]
+name = "FAINIT"
+summary = """Builds the unlocks (unlock, 解放) at boot: names and texts, prerequisites, kind, targets and amounts, the \
+cost in unlock points, a story flag, and the node's size and picture on the board. $1$FAINIT adds 665 and $2$FAINIT \
+five more."""
+source = "docs/ladea-data-tables.md (The town; FAINIT)"
+
+[[script]]
+name = "FACT"
+summary = """The unlock board, from the town or the field. It makes available each unlock whose prerequisites are \
+all unlocked, opening the free ones, draws the nodes revealed by the shared profile, and lets the player spend unlock \
+points to run OPENFACT on an available unlock."""
+source = "docs/ladea-data-tables.md (The town; FMINIT; FAINIT)"
+
+[[script]]
+name = "OPENFACT"
+summary = """Applies unlock_in_play once: its kind's bonus (a dungeon function, the level cap, the goddess gauge's \
+maximum, a character's special attack, skill or cost, and other counters), its story flag, the shared profile's \
+record, and bit 1 of unlock_states."""
+source = "docs/ladea-data-tables.md (The town; FAINIT)"
+
+[[script]]
+name = "INFOFA"
+summary = """The record book's unlock page (INFO): the unlocks opened in the shared profile, in unlock_sort_keys \
+order, with their texts."""
+source = "docs/ladea-data-tables.md (The town; FAINIT)"

@@ -1,0 +1,18 @@
+# The spots of a town place (Lua scripting spec §9.2). Hand-written: the event names its point and gives each field's
+# cell, by the names layout/globals.json exports.
+
+[[event]]
+name = "ladea.town.place_loaded"
+point = "ladea.town.after_spot_loaders"
+description = """
+SETORNDATA has built the spots of place `place`: it zeroed the spot arrays and walked the ORINIT chain (ORINIT, \
+$1$ORINIT and $2$ORINIT, through orinit_chain_script_ids), so town_spot holds the place's spots, their positions and \
+pictures, the leader, progress and story flags each needs, the character and voice, and the field map or town screen \
+it leads to. Nothing has read them yet. TOWN raises this when it enters a place and then shows the spots whose \
+conditions hold, and INIT2 raises it on a load inside a scene over the town. A handler that rewrites a spot changes \
+the place until SETORNDATA builds it again. The data files of ladea.tables write their parts for the place here."""
+
+[[event.field]]
+name = "place"
+at = "town_current_place_id"    # the place ORINIT's branches have just written, a BLINIT building id
+type = "int"

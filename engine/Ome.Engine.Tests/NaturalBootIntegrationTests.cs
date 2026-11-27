@@ -380,6 +380,63 @@ public class NaturalBootIntegrationTests
         Assert.True(reachedAdv.VisibleObjectCount > 0);
     }
 
+    /// <summary>P2 (docs/adding-a-game.md): 天秤のLa DEA。's own boot reaches SC0000's first page with no opcode
+    /// skipped, through the title and GAMESTART's 初期設定 page. SYSTEM4 stops and levels the three voices as it boots
+    /// (ops 0x2f6 and 0x2f8), and the page plays its voice after stopping them.</summary>
+    [Fact]
+    [Trait("Profile", "ladea")]
+    public void LaDeaSystem4Root_NewGameSelectionNaturallyReachesTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("ladea");
+        // The title's Game Start entry and GAMESTART's ゲーム開始 (tools/drive/ladea.toml, title.start and start.begin).
+        var (reachedAdv, entered) = RunNewGameToFirstAdvPage("ladea", gameRoot, [gameRoot], 160, 620, (1005, 638),
+                                                          maxSteps: 20_000_000);
+        Assert.Contains("TITLE.BIN", entered);
+        Assert.Contains("GAMESTART.BIN", entered);
+        Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+        Assert.Equal("神殺しと呼ばれる男がいる。", reachedAdv.Text);
+        Assert.True(reachedAdv.VisibleObjectCount > 0);
+    }
+
+    /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against
+    /// 天秤のLa DEA。's opening scene through the game's ADV module, and its line is the first ADV page of a natural
+    /// new game.</summary>
+    [Fact]
+    [Trait("Profile", "ladea")]
+    public void LaDeaPrologueFragmentIsTheFirstAdvPage()
+    {
+        string gameRoot = Environment.GetEnvironmentVariable("OME_GAME_ROOT") ?? Paths.GameInstall("ladea");
+        string sys4Ini = Path.Combine(gameRoot, "SYS4INI.BIN");
+        Assert.True(File.Exists(sys4Ini), $"ladea install not found at {gameRoot}");
+        GameProfileManifest profile = GameProfileRegistry.BuiltIn.Find("ladea")!;
+        OpcodeTable table = OpcodeTableJson.Load(Paths.OpcodesJson, profile.EngineAbiId);
+        Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
+        var store = new Sys4AssetStore(catalog, gameRoot, [gameRoot]);
+        Ome.Mods.Linking.ModLinkBase linkBase = Ome.Mods.Linking.ModLinkBase.ForInstall("ladea", sys4Ini, catalog,
+            store, table, Ome.Script.Abi.OpcodeContracts.Load(Paths.OpcodesJson),
+            Ome.Mods.Linking.GameToolchain.Shipped("ladea"));
+        string source = Path.Combine(Paths.Repo, "oms", "examples", "mods", "example.ladea-prologue-line");
+        using var mod = Ome.Mods.Packages.ModPackage.Open(source);
+        var link = Ome.Mods.Linking.ModLinker.Link(linkBase, [mod], []);
+        Assert.True(link.Succeeded, link.Report.Render());
+
+        string layer = Path.Combine(Path.GetTempPath(), "ome-ladea-line-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(layer);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(layer, "SC0000.BIN"), link.Scripts["SC0000.BIN"].Bytes);
+            // The title's Game Start entry and GAMESTART's ゲーム開始, as the boot test above.
+            var (reachedAdv, _) = RunNewGameToFirstAdvPage("ladea", gameRoot, [layer, gameRoot], 160, 620, (1005, 638),
+                                                           maxSteps: 20_000_000);
+            Assert.Equal("SC0000.BIN", reachedAdv.ScriptName);
+            Assert.Equal("[OMS] A mod inserted this line before the opening scene's first page.", reachedAdv.Text);
+        }
+        finally
+        {
+            Directory.Delete(layer, recursive: true);
+        }
+    }
+
     /// <summary>M1's sample package (docs/adding-a-game.md, section 1): the example fragment links against 魔導巧殻's
     /// opening scene through the game's ADV module, and its line is the first ADV page of a natural new game.</summary>
     [Fact]
@@ -637,7 +694,8 @@ public class NaturalBootIntegrationTests
         Sys4AssetCatalog catalog = Sys4AssetCatalog.Load(sys4Ini);
         var scripts = new Sys4ScriptProvider(
             table, catalog, new Sys4AssetStore(catalog, gameRoot, looseRoots));
-        var rig = new AudioRig();
+        EngineBuild build = EngineBuilds.ForProfile(profile);
+        var rig = new AudioRig(rules: build.Rules.Audio);
         var host = new NewGameInputHost(titlePointerX, titlePointerY, gameStartPointer)
         {
             AudioDevice = rig.Device, Clock = rig.Clock,
@@ -646,7 +704,7 @@ public class NaturalBootIntegrationTests
         var vm = new VirtualMachine(
             scripts.RequireByName(profile.NaturalBootScript), table, host,
             new VmOptions(MaxSteps: maxSteps), scripts, sink,
-            build: EngineBuilds.ForProfile(profile), skipAndAuto: rig.Skip, audio: rig.Audio, tick: rig.Tick);
+            build: build, skipAndAuto: rig.Skip, audio: rig.Audio, tick: rig.Tick);
         host.Vm = vm;
         sink.OnEnter = name =>
         {

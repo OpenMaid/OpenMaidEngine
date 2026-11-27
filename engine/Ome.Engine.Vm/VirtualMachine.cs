@@ -71,7 +71,7 @@ public sealed partial class VirtualMachine
     public GfxState Gfx => _graphics.State;
     /// <summary>The graphics native this VM's handlers call (Ome.Engine/Natives/Graphics*.cs).</summary>
     public Graphics Graphics => _graphics;
-    public InputBindings InputBindings { get; } = new();
+    public InputBindings InputBindings { get; }
     /// <summary>The shown text: the text native's (<see cref="TextManager.Emitted"/>).</summary>
     public List<(int Offset, string Text, string Script)> Emitted => _text.Emitted;
     public string? HaltReason { get; private set; }
@@ -173,6 +173,11 @@ public sealed partial class VirtualMachine
         // The op-0xcc mouse callback is engine state, not frame state (op 0xcd checks the registrant).
         public int MouseCallbackTarget = -1;
         public Script? MouseCallbackOwner;
+        // The op-0xce timed catch-up callback is engine state too (AGE 4.45D: on-time target +0x6914c, catch-up target
+        // +0x69150, owner +0x69174; op 0xcf checks the registrant).
+        public int TimedCatchUpOnTimeTarget = -1;
+        public int TimedCatchUpLateTarget = -1;
+        public Script? TimedCatchUpOwner;
         // The op-0xd3..0xd5 timed sequence is engine state (entries +0x5f694, guard +0x5f6b8), shared by every frame.
         public readonly List<TimedCallback> TimedCallbacks = new();
         public int TimedCallbackCursor;
@@ -205,8 +210,16 @@ public sealed partial class VirtualMachine
         // listens to its own skip and auto native, and Listen adds a listener once.
         _skip = skipAndAuto ?? SkipAndAuto.WithSystemClock();
         if (waits is IFastForwardListener listener) _skip.Listen(listener);
-        // The audio native and the tick come from composition too; without them the VM runs with a silent one.
-        _audio = audio ?? Audio.Silent(_skip);
+        _rules = EngineBuilds.ForVm(build, t).Rules;
+        InputBindings = new InputBindings(_rules.Input);
+        // The audio native and the tick come from composition too; without them the VM runs with a silent one. Its
+        // voices are the build's: the voice ops bound their voice by them.
+        if (audio != null && (audio.Voices != _rules.Audio.Voices || audio.BackgroundVoices != _rules.Audio.BackgroundVoices))
+            throw new ArgumentException(
+                $"The audio native plays {audio.Voices} voice(s) (background voices: {audio.BackgroundVoices}); the "
+                + $"engine build plays {_rules.Audio.Voices} (background voices: {_rules.Audio.BackgroundVoices}).",
+                nameof(audio));
+        _audio = audio ?? Audio.Silent(_skip, rules: _rules.Audio);
         _tick = tick ?? new EngineTick(_audio);
         // Without a front end the graphics native has no catalog and no screen (Graphics.Headless).
         _graphics = graphics ?? Graphics.Headless();
@@ -218,7 +231,6 @@ public sealed partial class VirtualMachine
             throw new ArgumentException("A text native keeps its own history.", nameof(textHistory));
         _text = text ?? TextManager.Headless(_graphics, _skip, history: textHistory);
         if (waits is ITextListener textListener) _text.Listen(textListener);
-        _rules = EngineBuilds.ForVm(build, t).Rules;
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         // Without composition the banks start empty in a script memory of the options' code page. The scripting native
         // reaches the banks through the same script memory (Lua scripting spec §8.1).
@@ -449,6 +461,12 @@ public sealed partial class VirtualMachine
     public void UpdateJoystickAxisState(int axis, double value)
     {
         InputBindings.UpdateJoystickAxis(axis, value);
+        _waits.WakeInputCallbackService();
+    }
+
+    public void UpdateJoystickPovState(int hundredthsOfDegree)
+    {
+        InputBindings.UpdateJoystickPov(hundredthsOfDegree);
         _waits.WakeInputCallbackService();
     }
 
@@ -1088,6 +1106,13 @@ public sealed partial class VirtualMachine
     /// another runs (native throws flags 0x10007 from each guard).</summary>
     private AgeBoxMessage DepthError(Script owner)
         => AgeBoxMessage.Keyed(AgeBoxText.DepthMismatch, _cur.Script.Name, owner.Name);
+
+    /// <summary>"Depth が不正です <running> != <owner>" with the two scripts' packed ids in decimal, as op 0xcf's on-time
+    /// guard formats them (AGE 4.45D's format at 0x616a38; its late guard names them).</summary>
+    private AgeBoxMessage DepthIdError(Script owner)
+        => AgeBoxMessage.Keyed(AgeBoxText.DepthMismatch,
+                               unchecked((int)_cur.Script.PackedId).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                               unchecked((int)owner.PackedId).ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>
     /// Native callback guards compare the running frame's packed resource id with the registrant's, so two

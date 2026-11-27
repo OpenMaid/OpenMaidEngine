@@ -132,6 +132,11 @@ name = "sfx_channel_resource_ids"
 type = "int"
 note = "base of ten packed resource ids retained by the sound-effect facade; op 0xb4 loads a channel, op 0xb6 clears it, and numbered-save layouts restore then reopen every positive id"
 [[field]]
+offset = 0x1491c
+name = "voice_route_enabled"
+type = "int"
+note = "whether the Voice route is on: sound_set_voice_route_enabled (op 0x1ba) writes 0 or 1, and the registered settings at start. Op 0xc4, op 0x1bd and the engine tick's delayed voice start mark adv_auto_voice_pending only while it is set (4.45D keeps it at ctx+0x14c10)"
+[[field]]
 offset = 0x1493c
 name = "voice_mute_next_flags"
 type = "uint"

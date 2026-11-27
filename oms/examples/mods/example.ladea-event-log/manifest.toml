@@ -1,0 +1,36 @@
+omp = 3
+id = "example.ladea-event-log"
+name = "Event log (天秤のLa DEA。)"
+version = "1.0.0"
+description = "Logs every event 天秤のLa DEA。's base mod raises, with its fields, to diagnostics/lua.log and to a list the console reads, and gives the party one 治癒の水・小 (item 201) at each ladea.data.ready through the base mod's helper."
+
+[game]
+profile = "ladea"
+target = "extended"
+
+[lua]
+api = 1
+
+[[requires]]
+id = "ladea-base"
+version = ">=1.0, <2"
+
+[[hooks]]
+event = "ladea.data.layered"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "ladea.data.ready"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "ladea.floor.loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "ladea.town.place_loaded"
+handler = "event_log.lua:on_event"
+
+[[hooks]]
+event = "ladea.experience.award"
+handler = "event_log.lua:on_event"

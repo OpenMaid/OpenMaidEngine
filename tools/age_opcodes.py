@@ -589,6 +589,7 @@ CODE_TARGET_ARGS: dict[int, frozenset[int]] = {
     0x00a2: frozenset((2,)),
     0x00a3: frozenset((2,)),
     0x00cc: frozenset((2,)),
+    0x00ce: frozenset((2, 3)),
     0x00d4: frozenset((3, 4)),
     0x00d5: frozenset((1,)),
     0x00fb: frozenset((2,)),

@@ -470,6 +470,7 @@ public class InputAndWaitsTests
         public int UpdateKeyboardVirtualKeyState(int virtualKey, bool pressed) => KeyAction;
         public int UpdateJoystickButtonState(int physicalButton, bool pressed) => 0;
         public void UpdateJoystickAxisState(int axis, double value) { }
+        public void UpdateJoystickPovState(int hundredthsOfDegree) { }
         public MouseWheelOutcome ApplyMouseWheel(int delta, bool advanceMessageOnWheel, bool textRevealing)
         {
             Record($"wheel {delta} advance={advanceMessageOnWheel}");

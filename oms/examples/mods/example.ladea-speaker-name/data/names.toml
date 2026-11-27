@@ -1,0 +1,8 @@
+# Applied at ladea.data.layered, at each boot and each load. A page's name plate is one of the speaker's CHINIT name
+# forms, character[<id>].name_forms, the column the page picks (G[0x3a49]; ？？？？ for none). The game does not save
+# the names, so the edit lasts while the mod is enabled, in a new game and in a loaded one. The comment gives the game's
+# own value. In the opening scene シュリ (speaker 3) first speaks under this form, on page 19 (SC0000@0x31c0). The
+# plate shows 18 half-width characters, the length of the game's own form, and cuts a longer name.
+
+[character.3.name_forms]
+1 = "[MOD] 旅する少女"                  # 荷物を背負った少女

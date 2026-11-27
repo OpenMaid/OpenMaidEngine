@@ -59,6 +59,8 @@ public class SceneReloadTests
             "_lastSteppedInputAction",
             // Read only with a mouse callback target (the scene's), and set when one registers.
             "_mouseCallbackIntervalMs", "_mouseCallbackArmedAtMs",
+            // The same for op 0xce's timer, which only ops 0xce and 0xcf write (AGE 4.45D's ctx+0x68e00).
+            "_timedCatchUpIntervalMs", "_timedCatchUpArmedAtMs",
         ],
         [typeof(ScriptMemory)] =
         [
@@ -79,8 +81,8 @@ public class SceneReloadTests
             // What plays keeps playing (a reset stops no channel and unloads none), with its BGM fade and duck. The BGM's
             // retained track, pause flag and start mode are the scene's: the reset zeroes them. A buffer op 0xc1 held
             // stays held, as the reset zeroes the flag without telling the backend.
-            "_playing", "_playIds", "_lastPlayId", "_soundEffectNames", "_soundEffectResourceIds", "_voicePlaybackVariant",
-            "_voiceLoaded", "_voiceChannelLevel", "_bgmLoaded", "_bgmChannelClip",
+            "_playing", "_playIds", "_lastPlayId", "_soundEffectNames", "_soundEffectResourceIds", "_voicePlaybackVariants",
+            "_voiceLoaded", "_voiceChannelLevels", "_bgmLoaded", "_bgmChannelClip",
             "_bgmChannelLoaded", "_bgmChannelHeld", "_bgmLevel", "_bgmChannelLevel", "_fade", "_duckActive",
             "_duckReleaseArmed", "_duckRestoreLevel",
             // Whether anything is timed: the reset works it out again (UpdateTimedWork).

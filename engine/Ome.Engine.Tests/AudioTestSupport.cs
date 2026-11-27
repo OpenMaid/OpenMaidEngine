@@ -153,11 +153,11 @@ internal sealed class TestAudioAssets(params long[] missing) : IAudioAssets
 internal sealed class AudioRig
 {
     public AudioRig(AudioMixerSettings? mixer = null, Sys4RegIniStore? settings = null, IAudioAssets? assets = null,
-                    SkipAndAuto? skip = null)
+                    SkipAndAuto? skip = null, AudioRules? rules = null)
     {
         Skip = skip ?? SkipAndAuto.WithSystemClock();
         Mixer = mixer ?? new AudioMixerSettings();
-        Audio = new Audio(Device, assets ?? new TestAudioAssets(), Clock, Skip, Mixer, settings);
+        Audio = new Audio(Device, assets ?? new TestAudioAssets(), Clock, Skip, Mixer, settings, rules: rules);
         Tick = new EngineTick(Audio);
         Device.Commands.Clear();   // the mixer the native applied at construction
     }

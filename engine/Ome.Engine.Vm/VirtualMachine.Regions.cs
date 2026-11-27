@@ -32,6 +32,22 @@ public sealed partial class VirtualMachine
         return WriteRegionsShareAPixel(ins, one, two);
     }
 
+    // 0x12d (out)(box cells)(dx)(dy)(box cells 2)(dx2)(dy2): two boxes, each four cells (left, right, top, bottom)
+    // moved by its offset, overlap, edges included (op_0x12d_boxes_overlap@0x42da70 of AGE 4.45D, the same code since
+    // 4.33G). Native ORs the four edge differences in 32-bit arithmetic and tests the sign.
+    private StepResult OpBoxesOverlap(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        VmAddress first = BaseAddr(a[1]), second = BaseAddr(a[4]);
+        int dx = unchecked((int)Read(a[2]) - (int)Read(a[5]));
+        int dy = unchecked((int)Read(a[3]) - (int)Read(a[6]));
+        int Cell(VmAddress box, int index) => unchecked((int)ReadIntCell(box.Offset(index)));
+        int signs = unchecked((Cell(second, 3) - dy - Cell(first, 2)) | (Cell(second, 1) - dx - Cell(first, 0))
+                              | (dy - Cell(second, 2) + Cell(first, 3)) | (dx - Cell(second, 0) + Cell(first, 1)));
+        Write(a[0], signs >= 0 ? 1 : 0);
+        return StepResult.Next;
+    }
+
     // 0x2f0 (out)(rectangle cells)(dx)(dy)(xs)(ys)(count)(px)(py): an ellipse and a polygon share a pixel
     // (op_0x2f0_ellipse_polygon_intersect@0x42f720). The ellipse is made first.
     private StepResult OpEllipsePolygonIntersect(Instruction ins, int pc)

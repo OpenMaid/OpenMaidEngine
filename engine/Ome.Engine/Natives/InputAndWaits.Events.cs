@@ -13,7 +13,7 @@ namespace Ome.Engine.Natives;
 // (IInterpreterInput). While no engine thread runs, an event is routed at once.
 public sealed partial class InputAndWaits
 {
-    private enum InputKind { Pointer, Wheel, HorizontalWheel, Button, Key, JoystickButton, JoystickAxis, HoldKey, Advance }
+    private enum InputKind { Pointer, Wheel, HorizontalWheel, Button, Key, JoystickButton, JoystickAxis, JoystickPov, HoldKey, Advance }
 
     private readonly record struct InputEvent(InputKind Kind, int A, int B = 0, int C = 0, bool Pressed = false,
                                               double Value = 0);
@@ -90,11 +90,16 @@ public sealed partial class InputAndWaits
     public void JoystickButton(int physicalButton, bool pressed)
         => Queue(new(InputKind.JoystickButton, physicalButton, Pressed: pressed));
 
-    /// <summary>A joystick axis moved; AGE reads the x and y axes (0 and 1) only.</summary>
+    /// <summary>A joystick axis moved. AGE reads six (op 0x2f9 of AGE 4.45D), and its directions the x and y axes
+    /// (0 and 1).</summary>
     public void JoystickAxis(int axis, double value)
     {
-        if (axis is 0 or 1) Queue(new(InputKind.JoystickAxis, axis, Value: value));
+        if (axis is >= 0 and < InputBindings.JoystickAxisCount) Queue(new(InputKind.JoystickAxis, axis, Value: value));
     }
+
+    /// <summary>The joystick's POV moved: hundredths of a degree clockwise from up, or
+    /// <see cref="InputBindings.JoystickPovCentered"/> when let go.</summary>
+    public void JoystickPov(int hundredthsOfDegree) => Queue(new(InputKind.JoystickPov, hundredthsOfDegree));
 
     /// <summary>A key held from launch (the --hold-skip Ctrl): the bindings see it held, and no trigger is routed,
     /// since no press arrived.</summary>
@@ -167,6 +172,7 @@ public sealed partial class InputAndWaits
             case InputKind.Key: RouteKey(input.A, input.Pressed); break;
             case InputKind.JoystickButton: RouteJoystickButton(input.A, input.Pressed); break;
             case InputKind.JoystickAxis: _interpreter.UpdateJoystickAxisState(input.A, input.Value); break;
+            case InputKind.JoystickPov: _interpreter.UpdateJoystickPovState(input.A); break;
             case InputKind.HoldKey: _interpreter.UpdateKeyboardVirtualKeyState(input.A, true); break;
             case InputKind.Advance:
                 Volatile.Write(ref _advanceQueued, 0);
@@ -351,6 +357,7 @@ public sealed partial class InputAndWaits
         public int UpdateKeyboardVirtualKeyState(int virtualKey, bool pressed) => -1;
         public int UpdateJoystickButtonState(int physicalButton, bool pressed) => 0;
         public void UpdateJoystickAxisState(int axis, double value) { }
+        public void UpdateJoystickPovState(int hundredthsOfDegree) { }
         public MouseWheelOutcome ApplyMouseWheel(int delta, bool advanceMessageOnWheel, bool textRevealing)
             => MouseWheelOutcome.Dropped;
         public MouseWheelOutcome ApplyMouseHorizontalWheel(int delta) => MouseWheelOutcome.Dropped;

@@ -11,7 +11,7 @@
 # converted (docs/engine-re.md, "Kamidori engine builds").
 [meta]
 instruction_model = "code = seq of <opcode:u32> then argc*(<argtype:u32><value:u32>); len_dwords = 1 + 2*argc"
-profile_ids = ["himegari", "kamidori", "arterial", "verita", "bg0", "koukaku"]
+profile_ids = ["himegari", "kamidori", "arterial", "verita", "bg0", "koukaku", "ladea"]
 inline_array_opcode = 0x64
 
 # Compact defaults resolve the existing semantic evidence text into structured records. They state
@@ -272,6 +272,45 @@ opcodes = [
   0x330, 0x332, 0x334, 0x335, 0x337, 0x33b, 0x33d, 0x33e, 0x33f,
 ]
 
+[[observation]]
+profile_id = "ladea"
+catalog_revision = "S4IC445"
+script_revision = "SYS4445"
+engine_abi_id = "SYS4445"
+method = "catalog-corpus"
+artifact = "build/games/ladea/catalog-opcode-coverage.json"
+script_count = 1054
+instruction_count = 2362847
+opcodes = [
+  0x1, 0x2, 0x3, 0x5, 0x6, 0x8, 0x9, 0x25, 0x26, 0x28, 0x32, 0x35,
+  0x36, 0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a,
+  0x5b, 0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x63, 0x64, 0x6c, 0x6e, 0x6f,
+  0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b,
+  0x7c, 0x7f, 0x80, 0x82, 0x83, 0x85, 0x86, 0x87, 0x88, 0x8b, 0x8c, 0x8f,
+  0x90, 0x93, 0x94, 0x97, 0xa0, 0xa1, 0xa2, 0xa3, 0xae, 0xb4, 0xb5, 0xb6,
+  0xb7, 0xb8, 0xb9, 0xba, 0xbf, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6,
+  0xc7, 0xc8, 0xcc, 0xcd, 0xce, 0xcf, 0xd0, 0xd3, 0xd4, 0xd5, 0xd9, 0xfa,
+  0xfb, 0xfe, 0xff, 0x100, 0x101, 0x106, 0x107, 0x108, 0x109, 0x10a, 0x10b, 0x10c,
+  0x10d, 0x10e, 0x10f, 0x12c, 0x12d, 0x12e, 0x12f, 0x130, 0x131, 0x135, 0x136, 0x137,
+  0x13f, 0x140, 0x141, 0x142, 0x143, 0x144, 0x147, 0x149, 0x14b, 0x14c, 0x14d, 0x191,
+  0x192, 0x193, 0x194, 0x195, 0x196, 0x197, 0x198, 0x199, 0x19a, 0x19b, 0x19c, 0x19d,
+  0x19e, 0x1a0, 0x1a1, 0x1a2, 0x1a3, 0x1a4, 0x1a5, 0x1a6, 0x1a7, 0x1a8, 0x1a9, 0x1aa,
+  0x1ab, 0x1ac, 0x1ad, 0x1ae, 0x1af, 0x1b0, 0x1b1, 0x1b2, 0x1b3, 0x1b4, 0x1b5, 0x1b6,
+  0x1b7, 0x1b8, 0x1b9, 0x1ba, 0x1bb, 0x1bc, 0x1be, 0x1bf, 0x1c1, 0x1c4, 0x1c7, 0x1c8,
+  0x1ca, 0x1cb, 0x1cc, 0x1cd, 0x1ce, 0x1cf, 0x1d0, 0x1d1, 0x1d2, 0x1d3, 0x1f4, 0x1f5,
+  0x1f6, 0x1f7, 0x1f8, 0x1f9, 0x1fa, 0x1fb, 0x1fd, 0x1fe, 0x1ff, 0x202, 0x203, 0x204,
+  0x205, 0x207, 0x208, 0x20a, 0x20b, 0x20c, 0x20d, 0x20e, 0x20f, 0x212, 0x213, 0x214,
+  0x215, 0x216, 0x217, 0x218, 0x219, 0x21a, 0x21b, 0x21c, 0x21d, 0x21e, 0x21f, 0x220,
+  0x222, 0x223, 0x224, 0x228, 0x229, 0x22c, 0x22d, 0x22f, 0x230, 0x231, 0x232, 0x233,
+  0x234, 0x235, 0x236, 0x238, 0x239, 0x23b, 0x23c, 0x23d, 0x23f, 0x241, 0x242, 0x243,
+  0x244, 0x248, 0x249, 0x24a, 0x24e, 0x24f, 0x250, 0x251, 0x252, 0x254, 0x256, 0x258,
+  0x259, 0x25a, 0x25c, 0x25d, 0x25e, 0x25f, 0x260, 0x261, 0x2bd, 0x2bf, 0x2c0, 0x2c5,
+  0x2c7, 0x2ce, 0x2cf, 0x2d0, 0x2d1, 0x2d2, 0x2d3, 0x2d5, 0x2d8, 0x2da, 0x2db, 0x2dc,
+  0x2dd, 0x2de, 0x2e0, 0x2e1, 0x2e3, 0x2e5, 0x2e6, 0x2e7, 0x2e8, 0x2e9, 0x2ea, 0x2eb,
+  0x2ec, 0x2ee, 0x2f2, 0x2f3, 0x2f4, 0x2f5, 0x2f6, 0x2f7, 0x2f8, 0x2f9, 0x2fa, 0x2fb,
+  0x320, 0x322, 0x323, 0x324, 0x32b,
+]
+
 [[abi_layer]]
 id = "SYS4422"
 kind = "complete-observed-snapshot"
@@ -340,6 +379,18 @@ observation_profile_id = "koukaku"
 evidence_method = "catalog-corpus"
 evidence_artifact = "build/games/koukaku/catalog-opcode-coverage.json"
 evidence_scope = "S4IC443 / SYS4443 complete decoded corpus snapshot"
+members = []
+contracts = []
+removes = []
+
+[[abi_layer]]
+id = "SYS4445"
+kind = "complete-observed-snapshot"
+composes = []
+observation_profile_id = "ladea"
+evidence_method = "catalog-corpus"
+evidence_artifact = "build/games/ladea/catalog-opcode-coverage.json"
+evidence_scope = "S4IC445 / SYS4445 complete decoded corpus snapshot"
 members = []
 contracts = []
 removes = []
@@ -3969,13 +4020,13 @@ evidence = [
 i = 1
 role = "out_absolute_value"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write"], SYS4438 = ["write"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write"], SYS4438 = ["write"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "value"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read"], SYS4438 = ["read"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read"], SYS4438 = ["read"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x192
@@ -5670,7 +5721,7 @@ source = "investigation"
 confidence = "high"
 depends_on = [0xc4]
 evidence = "Ghidra /v2: op_0x1d5_mute_next_voice@0x416cb0 sets voice_mute_next_flags (ctx+0x1493c, voice facade +0x434) to 1. op_0xc4_handler promotes bit 0 to 0x10001 and clears an already-promoted value; voice_play_indexed_asset@0x4883a0 tests bit 0, sets channel-12 volume 0 and marks the playback muted. voice_tick_delayed_playback, op 0x1bd and op 0x1bc clear it. Corpus: emitted only in the ADV template's speaker<0 / character-voice-suppressed (G[0x2e49]) branches immediately before play-voice. The historical name cond-block was a structural guess."
-details = "Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the native 0xc4/0x1bd/0x1bc transitions and plays a muted voice on channel 12 at volume 0 (-100 dB), so completion and Auto timing are unchanged; a voice held back under fast-forward keeps the flag. Not modelled: voice_tick_delayed_playback also clears the request, but the port's delayed voices (0x2c0) do not touch it."
+details = "Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the native 0xc4/0x1bd/0x1bc transitions and plays a muted voice on channel 12 at volume 0 (-100 dB), so completion and Auto timing are unchanged; a voice held back under fast-forward keeps the flag. A delayed start (0x2c0) clears the request, promoted or not, and plays audibly, as voice_tick_delayed_playback does (Audio.ServiceDelayedVoices, 2026-11-26). AGE 4.45D keeps one request per voice (ctx+0x14c68[3]; op 0x2f7)."
 
 [[opcode]]
 op = 0x1f4
@@ -5960,19 +6011,19 @@ access = ["read"]
 i = 2
 role = "current X scale percent"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "current Y scale percent"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "current Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x1fe
@@ -6002,25 +6053,25 @@ access = ["read"]
 i = 2
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x1ff
@@ -6050,19 +6101,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x202
@@ -6121,7 +6172,7 @@ abi_source = "kelebek+decode-validated"
 [opcode.semantics]
 name = "gfx-draw-color"
 category = "draw"
-summary = "0x203 (handle)(mode)(alpha)(color) — worker stores the D3D blend selector at obj+0x30 and STATIC packed color at obj+0x60; the handler's ctx+0x53d88 write is the generic 9-dword instruction length. Negative alpha/RGB preserve current static bytes. Mode 0 is the default textured path: preserved 0xffffffff is identity (the alpha byte is not tint strength). Its consumption is order-sensitive: a post-bind write supplies opacity until the next draw-texture bind, covering both FIELD's bound idle-unit suppression and CALLBACK_SETTING's freshly rebuilt ADV backing; pre-bind alpha-zero initialization remains opaque after the later bind. Mode 1 is SRCALPHA/ONE additive glow with ARGB alpha scaling the source contribution and RGB providing multiplicative modulation. Mode 2 conditionally forces ONE/ZERO for the selected render target and is used by 0x223 transition sources; mode 3 selects a subtractive special path. Every other mode is mode 0: the blit branches on 1, 2 and 3 alone, and Verita's DRAWMAP hides a map unit with alpha 0 and a mode of 15 to 300 (DRAWMAP@0x8c1). Surfaceless mode-0 fill consumption remains distinct."
+summary = "0x203 (handle)(mode)(alpha)(color) — worker stores the D3D blend selector at obj+0x30 and STATIC packed color at obj+0x60; the handler's ctx+0x53d88 write is the generic 9-dword instruction length. Negative alpha/RGB preserve current static bytes. Mode 0 is the default textured path: preserved 0xffffffff is identity (the alpha byte is not tint strength). Its consumption is order-sensitive: a post-bind write supplies opacity until the next draw-texture bind, covering both FIELD's bound idle-unit suppression and CALLBACK_SETTING's freshly rebuilt ADV backing. The port keeps a pre-bind alpha-zero write opaque after the later bind, which native's sprite draw (the colour passed unchanged under D3DXSPRITE_ALPHABLEND) does not show (docs/backlog.md, \"The port's mode-0 alpha is not native's\"); a restored object consumes its saved alpha (docs/engine-re.md, \"Object blend modes\", the restore). Mode 1 is SRCALPHA/ONE additive glow with ARGB alpha scaling the source contribution and RGB providing multiplicative modulation. Mode 2 conditionally forces ONE/ZERO for the selected render target and is used by 0x223 transition sources; mode 3 selects a subtractive special path. Every other mode is mode 0: the blit branches on 1, 2 and 3 alone, and Verita's DRAWMAP hides a map unit with alpha 0 and a mode of 15 to 300 (DRAWMAP@0x8c1). Surfaceless mode-0 fill consumption remains distinct."
 noop_headless = false
 waits = "never"
 leaves = ["falls"]
@@ -6704,19 +6755,19 @@ access = ["read"]
 i = 2
 role = "a"
 observed_types = ["imm", "g-int", "l-int", "l-ptr"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "b"
 observed_types = ["imm", "g-int", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "c"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x218
@@ -6746,19 +6797,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode]]
 op = 0x219
@@ -6788,19 +6839,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x21a
@@ -6830,19 +6881,19 @@ access = ["read"]
 i = 2
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode]]
 op = 0x21b
@@ -6958,19 +7009,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x21f
@@ -7012,25 +7063,25 @@ access = ["read"]
 i = 4
 role = "rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 7
 role = "target angle degrees"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x220
@@ -7072,19 +7123,19 @@ access = ["read"]
 i = 4
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x222
@@ -7236,19 +7287,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["g-int", "l-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode]]
 op = 0x229
@@ -7284,19 +7335,19 @@ access = ["read"]
 i = 3
 role = "range-transform anchor X"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "range-transform anchor Y"
 observed_types = ["imm", "g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "range-transform anchor Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x22a
@@ -7320,19 +7371,19 @@ evidence = "Ghidra /v2: op_0x22a_set_gfx_range_scale_current@0x4237b0 divides al
 i = 1
 role = "X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x22c
@@ -7356,19 +7407,19 @@ evidence = "Ghidra /v2: op_0x22c_set_gfx_range_translation_current@0x423900 pass
 i = 1
 role = "translation X"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "translation Y"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 3
 role = "translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x22d
@@ -7404,19 +7455,19 @@ access = ["read"]
 i = 3
 role = "target X scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target Y scale percent"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target Z scale percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x22f
@@ -7452,19 +7503,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x230
@@ -7610,19 +7661,19 @@ access = ["read"]
 i = 3
 role = "target scale X percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target scale Y percent"
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target scale Z percent"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x234
@@ -7658,19 +7709,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x236
@@ -8358,7 +8409,7 @@ abi_source = "kelebek+decode-validated"
 name = "schedule-voice-playback"
 category = "audio"
 summary = "Arm delayed voice playback: (voice_id, playback_variant, delay_ms). The engine main tick starts the voice after the monotonic deadline."
-details = "The setter replaces the single pending request, marks it active, and clears its start timestamp. On the first service tick the worker captures the current millisecond time; once unsigned elapsed time reaches delay_ms it clears the request and calls the ordinary indexed-voice player with voice_id and playback_variant. BTL's only call selects a randomized combat voice id, variant 0, and an entity-specific delay."
+details = "The setter replaces the single pending request, marks it active, and clears its start timestamp. On the first service tick the worker captures the current millisecond time and compares in the same tick, so a zero delay plays at once; once unsigned elapsed time reaches delay_ms it clears the request and the mute-next request (promoted or not) and calls the ordinary indexed-voice player with voice_id and playback_variant. The engine tick then begins the BGM duck, marks adv_auto_voice_pending while the Voice route is on (ctx+0x1491c), and arms the duck release as op 0x1bf does (4.24J 0x411a72..0x411aae). AGE 4.45D keeps one request per voice (op 0x2f5) and this op is voice 0's. BTL's only call selects a randomized combat voice id, variant 0, and an entity-specific delay. Port: Audio.ScheduleVoicePlayback and Audio.ServiceDelayedVoices (the same-tick start, the mute clear and the pending voice since 2026-11-26)."
 noop_headless = false
 waits = "never"
 leaves = ["falls"]
@@ -10203,17 +10254,42 @@ evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this
 op = 0xce
 label = "u0041E0B0"
 argc = 3
+code_target_args = [2, 3]
+code_target_kind = "callback"
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0041E0B0"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "register-timed-catchup-callback"
+category = "control"
+summary = "(interval ms)(on-time target)(catch-up target) - register the engine's one timed catch-up callback, owned by the current script, and start its interval timer."
+details = "The registration is engine-wide, as op 0xcc's: one from any frame replaces the earlier one, and op 0xcf in another script raises the Depth error. Its timer is its own (AGE 4.45D ctx+0x68e00), apart from op 0xc8's sleep (+0x68dc8) and op 0xcc's (+0x68de4); an interval of 0 is 1. Port: VirtualMachine.OpRegisterTimedCatchUpCallback, the targets and owner in the scene. LAUNCH, the battle cut-in BTLMAIN runs, registers once: 1 ms, the update with its draw and input as the on-time target, the update alone as the catch-up."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0xce_register_timed_catchup_callback@0x421090 records frame_instruction_word_count 7, stores operand 2 at ctx+0x6914c, operand 3 at ctx+0x69150 and the frame's script id at ctx+0x69174, then sleep_timer_arm@0x4520e0(ECX = ctx+0x68e00, operand 1): active +8 = 1, start +0x14 = timeGetTime, interval +0x18 = operand 1 or 1 for 0. 4.24J's handler (/v2 0x420fd0) is the same code over its own offsets. scene_context_init_reset@0x40ca80 writes only the owner (0x40cf22); no other code writes the targets." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "interval in milliseconds (0 is 1)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "on-time callback code target"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "catch-up callback code target"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0xcf
@@ -10222,14 +10298,19 @@ argc = 0
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u00416D40"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "dispatch-timed-catchup-callback"
+category = "control"
+summary = "Once op 0xce's interval has passed (at once under fast-forward), call the on-time target; when a whole interval more has passed, the catch-up target once for each further interval (at most 128 runs), then the on-time target, then return here."
+details = "The handler restarts the timer and pushes the following pc. Within two intervals it jumps to the on-time target, or pops the pc again for -1. Later it pushes the on-time target and one catch-up per further whole interval as returns and jumps to the catch-up target; a -1 catch-up drops what it queued but the first pc, and runs on, so the frame's next ret returns to the following pc. A target registered by another script raises Depth with the pc still pushed: on time 「Depth が不正です %d != %d」 with the two scripts' ids, late with their names. Its recorded length is 1, so 無視 resumes after it. Port: VirtualMachine.OpDispatchTimedCatchUpCallback; a target that is no instruction's offset halts the run, where native moves the pc there unchecked. LAUNCH calls it in its loop with a 1 ms sleep, so its frame counter advances once a millisecond however late the loop is."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls", "jumps"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0xcf_handler@0x41a830 records length 1 and takes timeGetTime - ctx+0x68e14. Unless that reaches ctx+0x68e18 or run-state 0x8000000 is set it does nothing; else it stores the time and pushes the following dword offset on the frame's call stack (+0x5edac, depth +0x5ed0c). Below twice the interval: a -1 target at +0x6914c pops it, a frame script other than +0x69174 throws flags 0x10007 with format 0x616a38 (raw ids), else pc = target. Otherwise the owner check throws with 0x6157ec (names, via asset_catalog_get_entry_name), it pushes +0x6914c, then +0x69150 while elapsed - interval, less an interval each time, still exceeds the interval and its count stays below 128; with +0x69150 = -1 it pops all but the first push and falls through, else pc = +0x69150. 4.24J's /v2 0x417f80 is the same code." },
+]
 
 [[opcode]]
 op = 0xd1
@@ -10593,14 +10674,61 @@ argc = 7
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "u0041E720"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "boxes-overlap"
+category = "compute"
+summary = "(out)(box cells)(dx)(dy)(box cells 2)(dx2)(dy2) - 1 when two boxes, each four cells (left, right, top, bottom) moved by its offset, overlap, edges included; else 0."
+details = "Port: VirtualMachine.OpBoxesOverlap. Native ORs the four edge differences in 32-bit arithmetic and tests the sign, which the port does the same way, so a difference that wraps answers as natively. CHMENU uses it twice."
 noop_headless = false
-source = "kelebek"
-confidence = "low"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x12d_boxes_overlap@0x42da70 resolves operands 2 and 5 as addresses and reads four cells of each raw, undoing the bank's obfuscation (rotl 11, xor ctx+0x5eb94, rotl 7). With dx = op3 - op6 and dy = op4 - op7 it writes operand 1 = -1 < ((B.bottom - dy - A.top) | (B.right - dx - A.left) | (dy - B.top + A.bottom) | (dx - B.left + A.right)). CHMENU@0x1bfa and @0x21b4 pass a local box, a zero offset and a second local box." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when the boxes overlap"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "first box: four cells, left, right, top and bottom"
+observed_types = ["l-int"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "first box's x offset"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "first box's y offset"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "second box: four cells, left, right, top and bottom"
+observed_types = ["l-int"]
+access = ["address"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "second box's x offset"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "second box's y offset"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x138
@@ -11184,13 +11312,13 @@ evidence = [
 i = 1
 role = "result"
 observed_types = ["l-float"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 2
 role = "x"
 observed_types = ["l-float"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x1d6
@@ -11496,19 +11624,19 @@ access = ["read"]
 i = 3
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = ""
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode]]
 op = 0x227
@@ -11547,25 +11675,25 @@ access = ["read"]
 i = 3
 role = "out: current rotation axis X"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "out: current rotation axis Y"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "out: current rotation axis Z"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "out: current rotation angle in degrees"
 observed_types = ["g-int"]
-access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"] }
+access_by_abi = { SYS4415 = ["write"], SYS4422 = ["write"], SYS4424 = ["write"], SYS4433 = ["write-float"], SYS4438 = ["write-float"], SYS4443 = ["write-float"], SYS4445 = ["write-float"] }
 
 [[opcode]]
 op = 0x22b
@@ -11620,25 +11748,25 @@ access = ["read"]
 i = 3
 role = "target rotation axis X"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target rotation axis Y"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target rotation axis Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 6
 role = "target rotation angle in degrees"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x235
@@ -11677,19 +11805,19 @@ access = ["read"]
 i = 3
 role = "target translation X"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 4
 role = "target translation Y"
 observed_types = ["imm", "l-int"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode.semantics.args]]
 i = 5
 role = "target translation Z"
 observed_types = ["imm"]
-access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"] }
+access_by_abi = { SYS4415 = ["read"], SYS4422 = ["read"], SYS4424 = ["read"], SYS4433 = ["read-float"], SYS4438 = ["read-float"], SYS4443 = ["read-float"], SYS4445 = ["read-float"] }
 
 [[opcode]]
 op = 0x237
@@ -14245,14 +14373,55 @@ argc = 6
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F3"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "find-text-history-voice-pair"
+category = "adv"
+summary = "(out id)(out argument)(out pan)(unused)(record)(voice) - op 0x1d4 for one voice: the group's last voice record of the voice, its id, argument and pan; -1, -1 and 0 when there is none."
+details = "Port: VirtualMachine.OpFindTextHistoryVoicePair over AdvTextHistory.TryFindVoicePair. A record keeps its voice at +0x20 and its pan at +0x1c (AdvTextHistoryRecord.VoiceIndex, VoicePan), which the numbered save's history tail carries (dwords 8 and 7)."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f3_find_text_history_voice_pair@0x430470 reads operands 6, 5 and 4 and calls text_history_find_pair@0x455c20(out, out, out, op4, op5, op6), then writes operands 1 to 3. The worker defaults to -1, -1, 0, returns 0 for a record index below 0 or past the records, and scans the group for the last 0x40000000 record whose +0x20 equals the voice, returning +0x14, +0x18 and +0x1c. HISTORY uses it once." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: the voice id, -1 when none"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "result: the voice argument, -1 when none"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "result: the voice's pan, 0 when none"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "unused"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "the group's first record index"
+observed_types = ["l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "the voice, 0 to 2"
+observed_types = ["l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f4
@@ -14261,14 +14430,37 @@ argc = 3
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F4"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "play-voice-n"
+category = "audio"
+summary = "(voice id)(playback variant)(voice) - op 0xc4 on voice N (0 to 2), channel 12 + N, with the playback variant: the voice's mute request is promoted as 0xc4's is, fast-forward holds it, and History records it with voice N."
+details = "Port: VirtualMachine.OpPlayVoiceN over Audio.PlayVoice (Audio.Voices = 3 under AGE 4.45D's AudioRules). History's argument is 0 whatever the variant, as native writes. Another voice halts the run: native indexes its arrays unchecked."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f4_play_voice_n@0x425c00 fetches operands 1 to 3, applies 0xc4's transitions to ctx+0x14c68[N], calls voice_bgm_duck_begin (0x406f70), then without fast-forward (ctx+0xaa9c4 bit 0x8000000) voice_play_indexed_asset@0x4a9b90(N, op1, op2, ctx+0x4e8c[N]), else keeps op1 and op2 in ctx+0x778a8[N] and +0x778b4[N]; then text_history_append_voice_pair(0, op1, 0, N, ctx+0x4e8c[N]) and, with the Voice route on, ctx+0x77898 = 1. Its one site, in HISTORY, passes three locals." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "voice id"
+observed_types = ["l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "playback variant"
+observed_types = ["l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "voice, 0 to 2"
+observed_types = ["l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f5
@@ -14277,14 +14469,43 @@ argc = 4
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F5"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "schedule-voice-playback-n"
+category = "audio"
+summary = "(voice id)(playback variant)(delay ms)(voice) - op 0x2c0 on voice N: replace the voice's delayed start. With variant 3 it is a background voice: it loops, pauses while another voice plays and starts again its delay after they end, and no voice test counts it."
+details = "Port: VirtualMachine.OpScheduleVoicePlaybackN over Audio.ScheduleVoicePlayback and the tick's Audio.ServiceDelayedVoices (AudioRules.BackgroundVoices). The port plays every voice once, so a background voice does not loop (docs/backlog.md)."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f5_schedule_voice_playback_n@0x425d10 calls voice_schedule_playback_n@0x4a9d50(op1, op2, op3, op4): the voice facade's +0x43c[N] delay, +0x448[N] id, +0x454[N] variant, +0x424[N] = 1, +0x430[N] = 0. The facade's tick 0x4a9dc0 runs each voice: one whose variant has bits 0 and 1 set pauses while another voice's channel plays and is armed again after; a start passes variant & 1 and clears the mute request. All 52 sites (the SP scripts, CONFIG2, CALLBACK_LOAD) pass variant 3, 300 ms and voice 2." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "voice id"
+observed_types = ["g-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "playback variant (3: a background voice)"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "delay in milliseconds"
+observed_types = ["imm"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "voice, 0 to 2"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f6
@@ -14293,14 +14514,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F6"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "stop-voice"
+category = "audio"
+summary = "(voice) - stop voice N and forget it: its channel releases the sound, its delayed start, held voice and mute request go, and a voice stays pending for Auto while any voice still plays."
+details = "Port: VirtualMachine.OpStopVoice over Audio.StopVoice and SkipAndAuto.SetPendingVoice. SYSTEM4 stops the three voices as it boots, and every scene stops them around each page."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f6_stop_voice_n@0x425d60 calls voice_stop_n@0x4a9d00(N): sound_buffer_destroy(12 + N) and the facade's +0x460[N], +0x418[N], +0x424[N], +0x454[N] cleared; then ctx+0x14c68[N], ctx+0x778a8[N] and +0x778b4[N] = 0, and ctx+0x77898 = voice_any_playing@0x404c70. 78,263 sites in 197 scripts." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "voice, 0 to 2"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f7
@@ -14309,14 +14541,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F7"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "mute-next-voice-n"
+category = "audio"
+summary = "(voice) - op 0x1d5 on voice N: the voice's next play (op 0xc4 or 0x2f4) is at volume 0."
+details = "Port: VirtualMachine.OpMuteNextVoiceN over Audio.MuteNextVoice."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f7_mute_next_voice_n@0x425dc0 writes ctx+0x14c68[op1] = 1 (4.43B's one flag is ctx+0x14938). Its 25,570 sites all pass voice 0." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "voice, 0 to 2"
+observed_types = ["imm"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f8
@@ -14325,14 +14568,31 @@ argc = 2
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F8"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-voice-pan"
+category = "audio"
+summary = "(voice)(pan) - voice N's pan, -10000 (left) to 10000 (right), on the sound playing; the next play of the voice sets the pan of ctx+0x4e8c, which nothing writes."
+details = "Port: VirtualMachine.OpSetVoicePan; Audio.SetVoicePan only records it, as the port's channels have no pan. Every site passes 0, the centre."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f8_set_voice_n_pan@0x425e00 calls sound_set_channel_pan@0x4a4e60(12 + op1, op2): a channel past 14 traces 関数：dsSetVolume エラー：不正なSound番号です (0x622ebc) and returns; else the value, clamped to -10000..10000, goes to the manager's +0x5dc[ch] and to sound_channel_set_pan@0x4a4870, which calls IDirectSoundBuffer::SetPan (vtable +0x40) on the channel's buffer. voice_play_indexed_asset@0x4a9b90 sets the pan of ctx+0x4e8c[N] at each play; no instruction writes it, and native read it as 0 on 2026-11-26. SYSTEM4 and the scenes pass 0 for voices 0 to 2." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "voice, 0 to 2"
+observed_types = ["imm", "l-int"]
+access = ["read"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "pan in hundredths of a decibel"
+observed_types = ["imm", "l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2f9
@@ -14341,14 +14601,61 @@ argc = 7
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2F9"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "read-joystick-axes"
+category = "input"
+summary = "(out present)(out x)(out y)(out z)(out r)(out u)(out v) - whether joystick 0 exists, and its six axes as floats, each its position over the caps' range (0 at one end, 1 at the other)."
+details = "joyGetPosEx is polled at most every 20 ms by this reader; within that it gives the last poll's positions. An axis whose caps' max is not above its min reads 0. Without a joystick native writes 0 and leaves the six floats as its stack holds them; the port writes 0. Port: VirtualMachine.OpReadJoystickAxes over InputBindings.ReadJoystickAxes, whose six axes are the front end's axes 0 to 5 over WinMM's range 0 to 65535; a joystick exists when the input host reports buttons (op 0x106's count). FIELD, FACT, CONFIRMSTICK and CONFIRMSTICK2 read it: FIELD picks an axis by a configured index, centres it on 0.5 and leaves a dead zone."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2f9_read_joystick_axes@0x430500 records length 15 and calls input_read_joystick_axes@0x474920(joystick 0, six out floats). The reader returns 0 when the manager's +0x490 + N*0x84 (the button count op 0x106 reads) is not above 0; else it polls joyGetPosEx (dwFlags 0xff) when more than 20 ms have passed since its own last poll (0x670134), and writes each of dwXpos to dwVpos, unsigned, over max - min of the 0x4c-byte caps record at +0xcd0 + N*0x4c. The handler writes operand 1 = the return != 0, then operands 2 to 7 with vm_operand_write_float." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: 1 when joystick 0 exists"
+observed_types = ["l-int"]
+access = ["write"]
+
+[[opcode.semantics.args]]
+i = 2
+role = "result: the X axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
+
+[[opcode.semantics.args]]
+i = 3
+role = "result: the Y axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
+
+[[opcode.semantics.args]]
+i = 4
+role = "result: the Z axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
+
+[[opcode.semantics.args]]
+i = 5
+role = "result: the R axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
+
+[[opcode.semantics.args]]
+i = 6
+role = "result: the U axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
+
+[[opcode.semantics.args]]
+i = 7
+role = "result: the V axis, 0 to 1"
+observed_types = ["l-float"]
+access = ["write-float"]
 
 [[opcode]]
 op = 0x2fa
@@ -14357,14 +14664,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2FA"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "set-joystick-axes-ignored"
+category = "input"
+summary = "(flags) - the joystick's direction flags: with bit 0 set, the axes no longer make the four direction actions (the POV still does)."
+details = "Port: VirtualMachine.OpSetJoystickAxesIgnored sets InputBindings.JoystickAxesFlags, which the level poll (op 0xff) reads. FIELD sets it from a configured bit while the field runs and clears it on leaving, so an analog stick read through op 0x2f9 does not also step the cursor; CONFIRMSTICK2 and FACT likewise."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2fa_set_joystick_axes_ignored@0x425e40 records length 3 and writes operand 1 to ctx+0x1e7c, the input manager's +0x1a74. input_poll_joystick_action_bits@0x474450 and input_poll_joystick_action_edges@0x474660 skip the axis directions when its bit 0 is set and the POV is centred; with the POV pressed they take the directions from it either way. 4.43B's polls (0x473ed0, 0x473fe0) have neither the flag nor the POV." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "flags: bit 0, the axes make no directions"
+observed_types = ["imm", "l-int"]
+access = ["read"]
 
 [[opcode]]
 op = 0x2fb
@@ -14373,14 +14691,25 @@ argc = 1
 abi_source = "kelebek"
 
 [opcode.semantics]
-name = "2FB"
-category = "unknown"
-summary = "Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on."
+name = "read-joystick-buttons"
+category = "input"
+summary = "(out buttons) - joystick 0's held buttons (bit N for button N) from a fresh poll; 0 when polled within the last 20 ms, when input polling is off, or without a joystick."
+details = "The reader returns the buttons only in the call that polls, so a script polling it every frame sees 0 on some frames. Port: VirtualMachine.OpReadJoystickButtons over InputBindings.ReadJoystickButtons; the port has no polling switch, since the front end's input stops arriving when native's would be off. CONFIRMJOY and SETJOY read it to learn which button the player presses."
 noop_headless = false
-source = "kelebek"
-confidence = "med"
+waits = "never"
+leaves = ["falls"]
+source = "investigation"
+confidence = "high"
 depends_on = []
-evidence = "ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim."
+evidence = [
+  { method = "native-re", artifact = "天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog", scope = "SYS4445 handler", profile_ids = ["ladea"], engine_revisions = ["SYS4445"], confidence = "high", text = "op_0x2fb_read_joystick_buttons@0x4305c0 records length 3 and writes operand 1 = input_read_joystick_buttons@0x4745e0(0): 0 when the manager's +0x1a60 (input_set_polling_enabled@0x4741f0, from age_main_window_proc) is 0 or its +0x490 button count is not above 0; else, when more than 20 ms have passed since its own last poll (0x6700b8), it polls joyGetPosEx and returns dwButtons, and otherwise returns 0." },
+]
+
+[[opcode.semantics.args]]
+i = 1
+role = "result: the held buttons, bit N for button N"
+observed_types = ["l-int"]
+access = ["write"]
 
 [[opcode]]
 op = 0x2fc

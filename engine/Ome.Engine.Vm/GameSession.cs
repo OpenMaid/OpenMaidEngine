@@ -84,7 +84,9 @@ public sealed partial class GameSession
         var vm = new VirtualMachine(
             script, table, waits, options, provider, sink, TextHistory,
             saves: new SavesAndSettings(SharedProfile, NativeDatStore), shell: shell, build: build, skipAndAuto: skip,
-            audio: audio?.Invoke(skip) ?? Audio.Silent(skip, AudioMixerSettings), scripting: scripting);
+            audio: audio?.Invoke(skip)
+                   ?? Audio.Silent(skip, AudioMixerSettings, EngineBuilds.ForVm(build, table).Rules.Audio),
+            scripting: scripting);
         if (textListener != null) vm.Text.Listen(textListener);
         if (presenter != null)
         {

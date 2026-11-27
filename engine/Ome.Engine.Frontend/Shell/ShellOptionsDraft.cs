@@ -67,12 +67,15 @@ public sealed class ShellOptionsDraft
     /// <param name="autoMessagePage">The engine build's <c>ShellRules.AutoMessagePage</c>.</param>
     /// <param name="boundKeys">The engine build's <c>SettingsRules</c>: an option whose key they do not bind is not
     /// shown. Null shows it.</param>
+    /// <param name="voiceEndDisablesVoicePitch">The engine build's <c>ShellRules.VoiceEndDisablesVoicePitch</c>.</param>
     public ShellOptionsDraft(IShellSettingsHost host, Sys4StartupSettings settings, bool readOnly,
-                             bool autoMessagePage = false, SettingsRules? boundKeys = null)
+                             bool autoMessagePage = false, SettingsRules? boundKeys = null,
+                             bool voiceEndDisablesVoicePitch = true)
     {
         _host = host;
         ReadOnly = readOnly;
         AutoMessagePage = autoMessagePage;
+        VoiceEndDisablesVoicePitch = voiceEndDisablesVoicePitch;
         Visible = ShellOptions.All.Where(o => o.IsVisible(settings, autoMessagePage, boundKeys)).ToArray();
         for (int category = 0; category < 4; category++) _openedVolumes[category] = host.Volume(category);
         for (int category = 1; category < 4; category++) _openedRoutes[category] = host.RouteEnabled(category);
@@ -92,10 +95,14 @@ public sealed class ShellOptionsDraft
     /// <summary>The options the profile shows, in the panel's order.</summary>
     public IReadOnlyList<ShellOption> Visible { get; }
 
-    /// <summary>Whether a switch that is on disables <paramref name="option"/> (<see cref="ShellOption.DisabledWhile"/>).
-    /// </summary>
+    /// <summary>Whether 音声終了まで待つ checked disables the voice group's 文字単位時間 on this build.</summary>
+    public bool VoiceEndDisablesVoicePitch { get; }
+
+    /// <summary>Whether a switch that is on disables <paramref name="option"/> (<see cref="ShellOption.DisabledWhile"/>),
+    /// on a build whose page does so.</summary>
     public bool Disabled(ShellOption option) =>
-        option.DisabledWhile is { } name && ShellOptions.Find(name) is { } by && Visible.Contains(by) && _values[by] != 0;
+        option.DisabledWhile is { } name && (name != "auto-wait-voice-end" || VoiceEndDisablesVoicePitch)
+        && ShellOptions.Find(name) is { } by && Visible.Contains(by) && _values[by] != 0;
 
     public int Value(ShellOption option) => _values[option];
 

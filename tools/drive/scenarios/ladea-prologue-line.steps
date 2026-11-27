@@ -1,0 +1,23 @@
+# 天秤のLa DEA。's opening with oms/examples/mods/example.ladea-prologue-line: the title, Game Start, GAMESTART's
+# ゲーム開始 and SC0000's first page, which is the mod's line. Native AGE takes the exported patch in its own scratch copy:
+#   Ome.Cli omp export --game ladea --output-dir build/games/ladea/prologue-export --mod oms/examples/mods/example.ladea-prologue-line
+#   py -3.11 -X utf8 tools/native_scratch.py --game ladea --name prologue --replace --overlay build/games/ladea/prologue-export/SC0000.BIN
+#   py -3.11 -X utf8 tools/drive.py --game ladea native start --exe build/games/ladea/native-scratch-prologue/AGE.EXE
+#   py -3.11 -X utf8 tools/drive.py --game ladea port start --mod oms/examples/mods/example.ladea-prologue-line
+#   py -3.11 -X utf8 tools/drive.py --game ladea <target> run tools/drive/scenarios/ladea-prologue-line.steps
+# The route is ladea-opening.steps'. Both targets show the line at SC0000@0xf16 and the game's first page after it at
+# SC0000@0x1082 (0x103e unpatched).
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0xf16 timeout=120  # the mod's line
+settle timeout=30
+shot ladea-prologue-line-page1
+advance
+expect top=SC0000@0x1082                 # the game's first page
+shot ladea-prologue-line-page2

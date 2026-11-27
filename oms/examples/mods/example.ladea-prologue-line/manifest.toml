@@ -1,0 +1,9 @@
+omp = 1
+id = "example.ladea-prologue-line"
+name = "天秤のLa DEA。 prologue line"
+version = "1.0.0"
+description = "Inserts a line before the first page of 天秤のLa DEA。's opening scene."
+
+[game]
+profile = "ladea"
+target = "native"

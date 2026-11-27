@@ -51,10 +51,17 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // A voice op marks a voice pending for Auto while the Voice route is on (ctx+0x1491c in 4.24J's
+    // op_0xc4_play_voice@0x420610 and op_0x1bd_play_history_voice@0x420920; 4.45D's ctx+0x14c10, op 0x2f4 too).
+    private void NoteVoiceStarted()
+    {
+        if (_audio.VoiceRouteEnabled) _skip.NoteVoiceStarted();
+    }
+
     private StepResult OpPlayVoice(Instruction ins, int pc)
     {
         long voiceId = Read(ins.Args[0]);
-        _skip.NoteVoiceStarted();
+        NoteVoiceStarted();
         _text.History.AppendVoice(voiceId, 0, _text.Style);
         _audio.PlayVoice(voiceId);
         return StepResult.Next;
@@ -64,7 +71,7 @@ public sealed partial class VirtualMachine
     private StepResult OpPlayHistoryVoice(Instruction ins, int pc)
     {
         long voiceId = Read(ins.Args[0]);
-        _skip.NoteVoiceStarted();
+        NoteVoiceStarted();
         _text.History.AppendVoice(voiceId, 1, _text.Style);
         _audio.PlayHistoryVoice(voiceId);
         return StepResult.Next;
@@ -99,6 +106,71 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // AGE 4.45D's voice ops name a voice, 0 to 2, and index the voice arrays with it unchecked (ctx+0x14c68[N], the
+    // voice facade's arrays), so another halts the run.
+    private StepResult? VoiceRefused(Instruction ins, long voice)
+        => IndexRefused(ins, "voice", voice, _audio.Voices, IndexTest.Unchecked);
+
+    // 0x2f4 (4.45D): op 0xc4 on voice N (operand 3) with the playback variant of operand 2. History records voice N
+    // with argument 0 (op_0x2f4_play_voice_n@0x425c00).
+    private StepResult OpPlayVoiceN(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        long voiceId = Read(a[0]);
+        int playbackVariant = unchecked((int)Read(a[1]));
+        long voice = Read(a[2]);
+        if (VoiceRefused(ins, voice) is { } refused) return refused;
+        NoteVoiceStarted();
+        _text.History.AppendVoice(voiceId, 0, _text.Style, voiceIndex: (int)voice);
+        _audio.PlayVoice(voiceId, playbackVariant, (int)voice);
+        return StepResult.Next;
+    }
+
+    // 0x2f5 (4.45D): op 0x2c0 on voice N (operand 4): voice id, playback variant, delay
+    // (op_0x2f5_schedule_voice_playback_n@0x425d10).
+    private StepResult OpScheduleVoicePlaybackN(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        long voice = Read(a[3]);
+        if (VoiceRefused(ins, voice) is { } refused) return refused;
+        _audio.ScheduleVoicePlayback(Read(a[0]), unchecked((int)Read(a[1])), Read(a[2]), (int)voice);
+        return StepResult.Next;
+    }
+
+    // 0x2f6 (4.45D): stop voice N and forget it; a voice stays pending for Auto while any voice still plays
+    // (op_0x2f6_stop_voice_n@0x425d60).
+    private StepResult OpStopVoice(Instruction ins, int pc)
+    {
+        long voice = Read(ins.Args[0]);
+        if (VoiceRefused(ins, voice) is { } refused) return refused;
+        _audio.StopVoice((int)voice);
+        _skip.SetPendingVoice(_audio.IsVoicePlaying);
+        return StepResult.Next;
+    }
+
+    // 0x2f7 (4.45D): op 0x1d5 on voice N (op_0x2f7_mute_next_voice_n@0x425dc0)
+    private StepResult OpMuteNextVoiceN(Instruction ins, int pc)
+    {
+        long voice = Read(ins.Args[0]);
+        if (VoiceRefused(ins, voice) is { } refused) return refused;
+        _audio.MuteNextVoice((int)voice);
+        return StepResult.Next;
+    }
+
+    // 0x2f8 (4.45D): voice N's pan (op_0x2f8_set_voice_n_pan@0x425e00 calls the channel worker on 12 + N, which traces
+    // a channel past 14 and skips it; a negative voice reaches another channel or outside the table).
+    private StepResult OpSetVoicePan(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        long voice = Read(a[0]);
+        if (IndexRefused(ins, "voice", voice, _audio.Voices,
+                         IndexTest.Traced("関数：dsSetVolume エラー：不正なSound番号です", Audio.MaxVoices, signed: true))
+            is { } refused)
+            return refused;
+        _audio.SetVoicePan((int)voice, Read(a[1]));
+        return StepResult.Next;
+    }
+
     // 0xb4 / semantics: sfx-load. sfx_channel_load@0x482500 decodes into the sound manager's channel, which refuses
     // 13 and up (sound_decode_channel's dsReadSound trace), and then throws 「WAVファイル %s の読み込みに失敗しました」
     // with flags 0x10007. A load it decodes is recorded in its ten-entry resource table unchecked: channels 10 to 12
@@ -108,9 +180,9 @@ public sealed partial class VirtualMachine
         var a = ins.Args;
         long resourceId = Read(a[0]);
         long channel = Read(a[1]);
-        if (channel >= Audio.NativeChannelCount)
+        if (channel >= _audio.ChannelCount)
         {
-            _waits.ReportWarning($"{At(ins)}: sound channel {channel} is outside 0..{Audio.NativeChannelCount - 1}; "
+            _waits.ReportWarning($"{At(ins)}: sound channel {channel} is outside 0..{_audio.ChannelCount - 1}; "
                                  + "AGE traces 「関数：dsReadSound エラー：不正なSound番号です」 and fails the load");
             return StepResult.Jump(RaiseInstructionScriptError(
                 AgeBoxMessage.Keyed(AgeBoxText.WaveLoadFailed, _audio.SoundEffectName(resourceId)), pc));
@@ -146,9 +218,9 @@ public sealed partial class VirtualMachine
     /// (sfx_channel_start@0x4825d0 returns before the manager when it is off).</summary>
     private StepResult? SoundStartRefused(Instruction ins, long channel)
     {
-        if (IndexRefused(ins, "sound channel", channel, Audio.NativeChannelCount,
+        if (IndexRefused(ins, "sound channel", channel, _audio.ChannelCount,
                          IndexTest.Traced($"関数：dsPlay エラー：不正なSound番号[{unchecked((int)channel)}]です",
-                                          Audio.NativeChannelCount)) is { } refused)
+                                          _audio.ChannelCount)) is { } refused)
             return refused;
         if (!_audio.ChannelHoldsSound((int)channel)
             && _audio.TryGetRouteEnabled((int)AudioMixerCategory.SoundEffect, out bool routed) && routed)
@@ -184,20 +256,21 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
-    // 0x1c4 (out boolean): whether the voice channel, native channel 12, is playing; 0 without a sound manager
+    // 0x1c4 (out boolean): whether the voice channel, native channel 12, is playing; 0 without a sound manager. With
+    // three voices, whether any plays but a background voice (4.45D voice_any_playing@0x404c70).
     private StepResult OpVoiceIsPlaying(Instruction ins, int pc)
     {
-        Write(ins.Args[0], _audio.IsChannelPlaying(Audio.NativeChannelCount - 1) ? 1 : 0); return StepResult.Next;
+        Write(ins.Args[0], _audio.IsVoicePlaying ? 1 : 0); return StepResult.Next;
     }
 
-    // 0x1be (out boolean)(native channel 0..12). sound_channel_is_playing@0x483000 traces channels of 13 and up and
-    // writes 0; its test is signed, so a negative channel reads before its table.
+    // 0x1be (out boolean)(native channel 0..12, 0..14 with three voices). sound_channel_is_playing@0x483000 traces
+    // channels past the manager's and writes 0; its test is signed, so a negative channel reads before its table.
     private StepResult OpGetSoundChannelPlaying(Instruction ins, int pc)
     {
         var a = ins.Args;
         long channel = Read(a[1]);
-        if (IndexRefused(ins, "sound channel", channel, Audio.NativeChannelCount,
-                         IndexTest.Traced("関数：dsIsPlaying エラー：不正なSound番号です", Audio.NativeChannelCount,
+        if (IndexRefused(ins, "sound channel", channel, _audio.ChannelCount,
+                         IndexTest.Traced("関数：dsIsPlaying エラー：不正なSound番号です", _audio.ChannelCount,
                                           signed: true)) is { } refused)
         {
             if (refused.Continues) Write(a[0], 0);

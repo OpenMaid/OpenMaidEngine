@@ -1,0 +1,17 @@
+omp = 4
+id = "example.ladea-speaker-name"
+name = "Speaker name (天秤のLa DEA。)"
+version = "1.0.0"
+description = "A data file that renames the name plate シュリ shows before the opening scene names her, 荷物を背負った少女 (character 3's name form 1), to [MOD] 旅する少女."
+
+[game]
+profile = "ladea"
+target = "extended"
+
+[[requires]]
+id = "ladea-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "ladea.tables"
+file = "names.toml"

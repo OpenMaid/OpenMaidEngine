@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 import sys
 import time
 from datetime import datetime, timezone
@@ -208,6 +209,81 @@ def reference_provenance(reference_id: str) -> dict[str, object]:
     }
 
 
+def pe_base_relocations(pe: bytes) -> tuple[int, list[int]]:
+    """A PE32 executable's preferred image base and the RVAs of its HIGHLOW base relocations, which a packed AGE.EXE
+    has none of. 天秤のLa DEA。's 4.45D is not packed and keeps its relocations, so Windows loads it elsewhere."""
+    pe_at = struct.unpack_from("<I", pe, 0x3C)[0]
+    if pe[pe_at:pe_at + 4] != b"PE\0\0":
+        raise ValueError("not a PE executable")
+    sections = struct.unpack_from("<H", pe, pe_at + 6)[0]
+    optional_size = struct.unpack_from("<H", pe, pe_at + 20)[0]
+    optional = pe_at + 24
+    if struct.unpack_from("<H", pe, optional)[0] != 0x10B:
+        raise ValueError("not a PE32 executable")
+    image_base = struct.unpack_from("<I", pe, optional + 28)[0]
+    if struct.unpack_from("<I", pe, optional + 92)[0] <= 5:
+        return image_base, []
+    reloc_rva, reloc_size = struct.unpack_from("<II", pe, optional + 96 + 5 * 8)
+    if not reloc_rva or not reloc_size:
+        return image_base, []
+    table = optional + optional_size
+
+    def file_offset(rva: int) -> int:
+        for index in range(sections):
+            virtual_size, address, raw_size, raw = struct.unpack_from("<IIII", pe, table + 40 * index + 8)
+            if address <= rva < address + max(virtual_size, raw_size):
+                return raw + rva - address
+        raise ValueError(f"RVA 0x{rva:x} is in no section")
+
+    sites: list[int] = []
+    at = file_offset(reloc_rva)
+    end = at + reloc_size
+    while at + 8 <= end:
+        page, block = struct.unpack_from("<II", pe, at)
+        if block < 8:
+            break
+        for index in range((block - 8) // 2):
+            entry = struct.unpack_from("<H", pe, at + 8 + 2 * index)[0]
+            kind = entry >> 12
+            if kind == 3:                                    # IMAGE_REL_BASED_HIGHLOW
+                sites.append(page + (entry & 0xFFF))
+            elif kind != 0:                                  # 0 pads a block
+                raise ValueError(f"base relocation type {kind} at page 0x{page:x}")
+        at += block
+    return image_base, sites
+
+
+def undo_relocations(image: bytearray, sites: list[int], delta: int) -> int:
+    """Take the loader's delta back off every relocated dword the image holds; returns how many."""
+    undone = 0
+    for rva in sites:
+        if rva + 4 <= len(image):
+            value = struct.unpack_from("<I", image, rva)[0]
+            struct.pack_into("<I", image, rva, (value - delta) & 0xFFFFFFFF)
+            undone += 1
+    return undone
+
+
+def rebase_module(outdir: Path, entry: dict[str, object], executable: Path) -> None:
+    """Write a module Windows relocated at its preferred base, as range_<preferred>.bin, so every tool reads the
+    image as it reads the packed builds' (operand_access.py's IMAGE_BASE, the Ghidra images at 0x400000). The
+    manifest's runtime_module keeps the base it ran at; the entry keeps it as rebased_from."""
+    loaded = int(str(entry["base"]), 16)
+    preferred, sites = pe_base_relocations(executable.read_bytes())
+    if loaded == preferred or not sites:
+        return
+    old = outdir / str(entry["file"])
+    image = bytearray(old.read_bytes())
+    undone = undo_relocations(image, sites, loaded - preferred)
+    entry["file"] = f"range_{preferred:08x}.bin"
+    (outdir / str(entry["file"])).write_bytes(image)
+    old.unlink()
+    entry["rebased_from"] = str(entry["base"])
+    entry["base"] = f"0x{preferred:x}"
+    entry["relocations_undone"] = undone
+    print(f"[frida] rebased age-module 0x{loaded:x} -> 0x{preferred:x} ({undone} relocations undone)")
+
+
 def build_manifest(
     provenance: dict[str, object],
     runtime: dict[str, object],
@@ -336,8 +412,11 @@ def capture(proc: str, *, overwrite: bool = False, reference: str | None = None)
             stream.close()
         session.detach()
 
+    module = next((entry for entry in range_records.values() if entry["tag"] == "age-module"), None)
+    if module is not None and runtime.get("age_path"):
+        rebase_module(OUTDIR, module, Path(str(runtime["age_path"])))
     dumped_ranges = []
-    for base, entry in sorted(range_records.items(), key=lambda item: int(item[0], 16)):
+    for base, entry in sorted(range_records.items(), key=lambda item: int(str(item[1]["base"]), 16)):
         dump_path = OUTDIR / str(entry["file"])
         entry["file_size"] = dump_path.stat().st_size
         entry["sha256"] = sha256_file(dump_path)

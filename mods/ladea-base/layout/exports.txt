@@ -1,0 +1,1293 @@
+# DO NOT EDIT -- generated from vm-map/globals-ladea.toml by tools/base_mod_build.py --build
+# The names ladea-base 1 exports (Lua scripting spec §9.1): its globals, then its
+# record tables and their fields (data patches plan §9.1), then its scopes and their tables' short names
+# (data patches spec §6.2), then the names its OMS modules declare, oms/*.oms (modding from a release
+# spec §5.2). Each stays until the major version changes: a renamed global, table or field keeps its old
+# name, listed as OLD = NAME; a scope and a module's names have no old-name form.
+major = 1
+acquisition_log_counts
+acquisition_log_ids
+acquisition_log_index
+acquisition_log_kinds
+acquisition_log_places
+adv_background_voice_clip
+adv_background_voice_speaker
+adv_button_bar_pinned
+adv_button_bar_state
+adv_face_picture
+adv_face_shown
+adv_page_has_text
+adv_speaker_id
+adv_speaker_name
+adv_speaker_name_form
+adv_speaker_name_width
+adv_voice_clip
+adv_voice_setting
+adv_window_shown
+alchemy_facility_masks
+alchemy_forbidding_flags
+alchemy_ingredient_counts
+alchemy_ingredients
+alchemy_products
+alchemy_required_character_levels
+alchemy_required_characters
+alchemy_required_flags
+alchemy_required_items
+atlas_marker_keys
+atlas_marker_names
+atlas_marker_y_offsets
+attack_element_names
+attitude_names
+autosave_off
+battle_animation_effect_starts
+battle_animation_effects
+battle_animation_in_play
+battle_animation_lengths
+battle_attacker
+battle_defender
+battle_effect_anchor_kinds
+battle_effect_blend_modes
+battle_effect_frame_counts
+battle_effect_heights
+battle_effect_in_play
+battle_effect_lengths
+battle_effect_pictures
+battle_effect_placed_flags
+battle_effect_scales
+battle_effect_sheet_columns
+battle_effect_sheet_rows
+battle_effect_slot_in_play
+battle_effect_sound_delays
+battle_effect_sounds
+battle_effect_still_kinds
+battle_effect_widths
+battle_effect_x_offsets
+battle_effect_y_offsets
+battle_formation_marks
+battle_id
+battle_place_name
+battle_wave_backdrops
+battle_wave_music
+battle_wave_parties
+battler_attack_elements
+battler_battle_pictures
+battler_characters
+battler_condition_effects
+battler_condition_floors
+battler_condition_levels
+battler_defense_elements
+battler_equipment
+battler_flags
+battler_hp
+battler_in_work
+battler_max_hp
+battler_max_mp
+battler_max_tp
+battler_mp
+battler_routine_step_uses
+battler_special_skill_active_levels
+battler_special_skill_levels
+battler_tp
+battler_voice_clips
+btaninit_chain_script_ids
+cg_gallery_cg_ids
+cg_gallery_variants
+cg_page_sheets
+cg_part_pictures
+cg_part_set_pictures
+cg_part_set_save_pictures
+cg_part_x
+cg_part_y
+cg_seen_part_sets
+chapter_label
+chapter_number
+chapter_title
+character_affinity_types
+character_arg_id
+character_base_characters
+character_base_levels
+character_base_stats
+character_boss_flags
+character_condition_bases
+character_condition_levels
+character_condition_turns
+character_description_lines
+character_drop_forbidding_flags
+character_drop_required_flags
+character_enemy_actions
+character_equipment
+character_equippable_classes
+character_experience
+character_experience_rewards
+character_flags
+character_follow_up_actions
+character_form_backdrops
+character_form_conditions
+character_form_gallery_pictures
+character_form_names
+character_form_pictures
+character_formation_heights
+character_formation_widths
+character_full_names
+character_habitats
+character_hp
+character_initial_armors
+character_initial_item_kind_ranks
+character_initial_item_kinds
+character_initial_morale
+character_initial_morale_bonus
+character_initial_shields
+character_initial_weapons
+character_innate_skill_ranks
+character_item_columns
+character_item_counts
+character_item_kind_ranks
+character_items
+character_large_unit_flags
+character_learned_skill_ranks
+character_level_cap_bonus
+character_level_caps
+character_level_scaling_divisors
+character_levels
+character_look_arg_character
+character_look_arg_costume
+character_look_battle_pictures
+character_look_battle_voices
+character_look_carry_picture
+character_look_icons
+character_look_jump_pictures
+character_look_status_picture
+character_max_hp
+character_max_morale
+character_max_morale_values
+character_max_mp
+character_max_tp
+character_monster_book_flags
+character_morale
+character_mp
+character_name_forms
+character_names
+character_playable_flags
+character_point_rewards
+character_races
+character_routines
+character_sexes
+character_skill_ranks
+character_sort_keys
+character_stat_bonuses
+character_stat_caps
+character_stat_growth
+character_stones
+character_support_actions
+character_temperaments
+character_tp
+character_unit_affinity_types
+character_unit_attack_elements
+character_voice_settings
+checkss_chain_script_ids
+coinit_chain_script_ids
+condition_affinity_columns
+condition_argument_id
+condition_argument_levels
+condition_attack_count_modifiers
+condition_boss_proof_flags
+condition_critical_modifiers
+condition_cure_bits
+condition_defense_count_modifiers
+condition_durations
+condition_evasion_modifiers
+condition_gauge_drains
+condition_hit_modifiers
+condition_hp_changes
+condition_icons
+condition_luck_modifiers
+condition_magic_attack_modifiers
+condition_magic_defense_modifiers
+condition_magic_power_modifiers
+condition_mental_resistance_modifiers
+condition_mental_speed_modifiers
+condition_mp_changes
+condition_names
+condition_physical_attack_modifiers
+condition_physical_defense_modifiers
+condition_physical_resistance_modifiers
+condition_physical_speed_modifiers
+condition_polarities
+condition_resistances
+condition_tp_changes
+condition_war_attack_modifiers
+condition_war_defense_modifiers
+confirm_commands
+confirm_save_load
+current_cg_id
+current_cg_part_set
+current_cg_variant
+current_character
+current_floor_id
+current_item
+current_map_block_id
+current_place_name
+current_scene_id
+current_scene_script_id
+debug_play_active
+defense_element_names
+duinit_chain_script_ids
+element_affinities
+encounter_chances
+encounter_entry_formations
+encounter_entry_gauge_highs
+encounter_entry_gauge_lows
+encounter_entry_weights
+encounter_set_in_play
+ending_scene_played
+enemy_book_flags
+eninit_chain_script_ids
+equipment_preview_slots
+esinit_chain_script_ids
+evinit_chain_script_ids
+extras_room_page
+fate_chapters
+fate_forbidding_flags
+fate_required_flags
+fate_sort_keys
+fate_states
+fate_texts
+field_action_icons
+field_action_names
+field_distance
+field_encounters_limited
+field_frame_rate
+field_land_id
+field_sprite_anchor_x
+field_sprite_anchor_y
+flinit_chain_script_ids
+floor_atlas_initialised
+floor_atlas_origin_x
+floor_atlas_origin_y
+floor_atlas_part_pictures
+floor_atlas_parts_hidden
+floor_atlas_parts_hidden_at_start
+floor_atlas_scales
+floor_atlas_sort_keys
+floor_dungeon_first_floors
+floor_encounter_classes
+floor_gauge_drain_steps
+floor_names
+floor_object_action_args
+floor_object_actions
+floor_object_count
+floor_object_flags
+floor_object_kinds
+floor_object_start_kinds
+floor_object_x_offsets
+floor_object_y_offsets
+floor_seen_flags
+floor_visited_flags
+formation_effect_lines
+formation_in_play
+formation_mark
+formation_names
+formation_slot_barring_flags
+formation_slot_chances
+formation_slot_first_columns
+formation_slot_first_rows
+formation_slot_items
+formation_slot_last_columns
+formation_slot_last_rows
+formation_slot_links
+formation_slot_required_flags
+formation_slot_units
+glossary_categories
+glossary_line_conditions
+glossary_lines
+glossary_sort_keys
+glossary_titles
+glossary_unlocked_flags
+goddess_gauge
+goddess_gauge_maximum
+inn_rite_descriptions
+inn_rite_forbidding_flags
+inn_rite_gauge_targets
+inn_rite_names
+inn_rite_pictures
+inn_rite_required_flags
+inn_rite_required_gauge_maximums
+inn_rite_required_unlocks
+installed_appends_mask
+item_allowed_characters
+item_ammunition
+item_attack_elements
+item_battle_animations
+item_battle_use_limits
+item_buy_prices
+item_catalogued_flags
+item_class_flags
+item_class_names
+item_class_use_sounds
+item_classes
+item_costume_overrides
+item_count_change
+item_counts
+item_defence_attributes
+item_description_lines
+item_duplicate_crystals
+item_goddess_gauge_changes
+item_granted_conditions
+item_hp_changes
+item_icons
+item_improvable_flags
+item_improvement_bonus_amounts
+item_improvement_bonus_stats
+item_improvement_costs
+item_improvement_levels
+item_improvement_mastery_flags
+item_improvement_material
+item_improvement_points
+item_improvement_target
+item_inflicted_conditions
+item_kind_equipment_notes
+item_kind_icons
+item_kind_lists
+item_kind_names
+item_kind_required_weapon_masks
+item_kind_short_names
+item_kind_sort_keys
+item_kinds
+item_marked_flags
+item_morale_gains
+item_mp_changes
+item_names
+item_not_carried_flags
+item_obtained_flags
+item_random_spreads
+item_ranks
+item_rarity_ratios
+item_required_genders
+item_required_items
+item_required_skills
+item_second_wait_floors
+item_second_waits
+item_seen_flags
+item_sell_prices
+item_skill_levels
+item_skills
+item_sort_keys
+item_stat_bonuses
+item_summoned_characters
+item_target_sides
+item_tp_changes
+item_use_count_changes
+item_use_places
+item_wait_floors
+item_waits
+joystick_buttons
+land_drift_walkable
+land_drift_x
+land_drift_y
+land_encounter_levels
+land_flags
+land_footstep_sounds
+land_speed_changes
+land_sprite_columns
+map_block_backdrop_parallax
+map_block_backdrop_pictures
+map_block_battle_backdrops
+map_block_destination_id
+map_block_encounter_levels
+map_block_encounter_sets
+map_block_enemy_level_spreads
+map_block_enemy_levels
+map_block_event_scripts
+map_block_floor_x
+map_block_floor_y
+map_block_floors
+map_block_music
+map_block_names
+map_block_overlay_pictures
+map_block_overlay_scales
+map_block_piece_pictures
+map_block_piece_pictures_2
+map_block_piece_x
+map_block_piece_y
+map_block_prop_flags
+map_block_scripts
+map_block_visited_flags
+map_block_wall_flags
+map_encounter_variant
+map_music_variant
+map_overlay_scale
+map_player_facing
+map_player_target_facing
+map_player_target_x
+map_player_target_y
+map_player_x
+map_player_y
+message_font_name
+message_window_colour
+money
+music_bgm_numbers
+music_titles
+music_unlock_resources
+object_kind_anchor_x
+object_kind_anchor_y
+object_kind_atlas_markers
+object_kind_blend_modes
+object_kind_change_sounds
+object_kind_depth_offsets
+object_kind_effect_columns
+object_kind_effect_frame_counts
+object_kind_effect_frame_times
+object_kind_effect_pictures
+object_kind_event_point_counts
+object_kind_event_point_x
+object_kind_event_point_y
+object_kind_fade_times
+object_kind_heights
+object_kind_idle_columns
+object_kind_idle_frame_counts
+object_kind_idle_periods
+object_kind_next_kinds
+object_kind_pictures
+object_kind_wall_point_counts
+object_kind_wall_point_x
+object_kind_wall_point_y
+object_kind_widths
+orinit_chain_script_ids
+party_leader
+previous_cg_id
+previous_cg_variant
+previous_floor_id
+previous_map_block_id
+profile_line_characters
+profile_line_conditions
+profile_lines
+profile_names
+profile_races
+profile_sort_keys
+profile_unlocked_flags
+puzzle_block_colours
+puzzle_block_columns
+puzzle_block_counts
+puzzle_block_kinds
+puzzle_block_rows
+puzzle_block_start_columns
+puzzle_block_start_rows
+puzzle_block_states
+puzzle_grids
+puzzle_heights
+puzzle_reset_rules
+puzzle_states
+puzzle_widths
+quest_accepted_flags
+quest_appear_blocking_flag_ids
+quest_appear_required_flag_ids
+quest_clear_blocking_flag_ids
+quest_clear_flag_ids
+quest_clear_items
+quest_clients
+quest_description_lines
+quest_factions
+quest_failure_blocking_flag_ids
+quest_failure_flag_ids
+quest_names
+quest_required_items
+quest_reward_counts
+quest_reward_flags
+quest_reward_ids
+quest_reward_kinds
+quest_sort_keys
+quest_states
+race_names
+replay_page_sheets
+replay_room_active
+replay_scripts
+routine_in_play
+routine_step_actions
+routine_step_args
+routine_step_chances
+routine_step_flags
+routine_step_in_play
+routine_step_kinds
+routine_step_limits
+routine_step_percents
+routine_step_skip_bits
+routine_step_tactic_masks
+routine_step_taken
+routine_step_target_counts
+scene_graphic_element_numbers
+scene_offer_contexts
+scene_on_map_flags
+scene_over_map
+scene_played_flags
+scene_run_mode
+scene_script_ids
+scene_seen_flags
+scene_town_marks
+scene_visit_ranks
+scene_window_layout
+scjump_chain_pending
+scjump_chain_script_ids
+scjump_context_id
+selnum_value
+setss_chain_script_ids
+sex_names
+shinit_chain_script_ids
+shop_offer_flags
+shop_offers
+shop_pictures
+shop_price_column
+shuri_fatigue
+sound_channels
+speaker_heard_flags
+speaker_text_colour_mode
+special_encounter_area_kinds
+special_encounter_barring_flags
+special_encounter_battles
+special_encounter_chances
+special_encounter_in_play
+special_encounter_kinds
+special_encounter_prerequisites
+special_encounter_required_flags
+special_encounter_scenes
+special_encounter_states
+special_skill_always_on_flags
+special_skill_amounts
+special_skill_append_numbers
+special_skill_attack_only_flags
+special_skill_condition_levels
+special_skill_description_lines
+special_skill_effect_sides
+special_skill_effects
+special_skill_hp_costs
+special_skill_kinds
+special_skill_mp_costs
+special_skill_names
+special_skill_sort_keys
+special_skill_tp_costs
+special_skill_trigger_chances
+start_chain_script_ids
+stone_bonus_amounts
+stone_bonus_stats
+stone_characters
+stone_compatibilities
+stone_costs
+stone_pictures
+stone_skill_levels
+stone_skills
+system_after_battle_mode
+system_base_mode
+system_mode
+system_next_mode
+title_picture_chain
+town_building_depth_biases
+town_building_heights
+town_building_list_order
+town_building_names
+town_building_pictures
+town_building_places
+town_building_shown_variants
+town_building_tab_pictures
+town_building_tile_x
+town_building_tile_y
+town_building_variant_forbidding_flags
+town_building_variant_leaders
+town_building_variant_masks
+town_building_variant_progress_maximums
+town_building_variant_progress_minimums
+town_building_variant_required_flags
+town_building_widths
+town_current_place_id
+town_faction_points
+town_place_backgrounds
+town_place_layouts
+town_place_marker_x
+town_place_marker_y
+town_place_states
+town_screen_argument
+town_screen_kind
+town_screen_scripts
+town_selected_building
+town_shown_building_count
+town_shown_buildings
+town_spot_characters
+town_spot_exit_facings
+town_spot_exit_maps
+town_spot_exit_x
+town_spot_exit_y
+town_spot_forbidding_flags
+town_spot_frame_columns
+town_spot_frame_counts
+town_spot_grid
+town_spot_masks
+town_spot_pictures
+town_spot_progress_maximums
+town_spot_progress_minimums
+town_spot_required_flags
+town_spot_required_leaders
+town_spot_screen_arguments
+town_spot_screen_kinds
+town_spot_voices
+town_spot_x
+town_spot_y
+town_visit_scenes
+tumes_chain_script_ids
+tutorial_current
+tutorial_excluding_tutorials
+tutorial_forbidden_scenes
+tutorial_required_scenes
+tutorial_required_tutorials
+tutorial_screen
+tutorial_screens
+tutorial_shown_flags
+tutorial_text_chain_slots
+tutorial_titles
+ui_font_name
+unlock_amounts
+unlock_board_cells
+unlock_board_down_links
+unlock_board_right_links
+unlock_costs
+unlock_in_play
+unlock_kinds
+unlock_listed
+unlock_names
+unlock_node_pictures
+unlock_node_sizes
+unlock_opened_flags
+unlock_points
+unlock_prerequisites
+unlock_sort_keys
+unlock_states
+unlock_story_flags
+unlock_subjects
+unlock_targets
+unlock_texts
+voice_continues_past_page
+voice_mute_switches
+voice_name_colors
+voice_setting_characters
+voice_setting_in_play
+voice_setting_labels
+voice_setting_name_colors
+voice_setting_pictures
+voice_setting_sample_voices
+wheel_turns_pages
+table alchemy_recipe
+table atlas_marker
+table battle_animation
+table battle_effect
+table cg_gallery_entry
+table character
+table condition
+table element
+table encounter_entry
+table fate
+table field_action
+table floor
+table floor_object
+table formation
+table formation_slot
+table glossary
+table inn_rite
+table item
+table item_class
+table item_improvement
+table item_kind
+table land
+table map_block
+table music
+table object_kind
+table profile
+table puzzle
+table quest
+table replay
+table routine
+table scene
+table special_encounter
+table special_skill
+table stone
+table town_building
+table town_place
+table town_spot
+table tutorial
+table unlock
+table voice_setting
+field alchemy_recipe.facility_mask
+field alchemy_recipe.forbidding_flags
+field alchemy_recipe.ingredient_counts
+field alchemy_recipe.ingredients
+field alchemy_recipe.product
+field alchemy_recipe.required_character
+field alchemy_recipe.required_character_level
+field alchemy_recipe.required_flags
+field alchemy_recipe.required_item
+field atlas_marker.key
+field atlas_marker.name
+field atlas_marker.y_offset
+field battle_animation.effect_starts
+field battle_animation.effects
+field battle_animation.length
+field battle_effect.anchor_kind
+field battle_effect.blend_mode
+field battle_effect.frame_count
+field battle_effect.height
+field battle_effect.length
+field battle_effect.picture
+field battle_effect.placed
+field battle_effect.scale
+field battle_effect.sheet_columns
+field battle_effect.sheet_rows
+field battle_effect.sound
+field battle_effect.sound_delay
+field battle_effect.still_kind
+field battle_effect.width
+field battle_effect.x_offset
+field battle_effect.y_offset
+field cg_gallery_entry.cg
+field cg_gallery_entry.variant
+field character.affinity_type
+field character.base_character
+field character.base_level
+field character.base_stats
+field character.boss
+field character.description
+field character.drop_forbidding_flags
+field character.drop_required_flags
+field character.enemy_actions
+field character.equippable_classes
+field character.experience_rewards
+field character.follow_up_action
+field character.formation_height
+field character.formation_width
+field character.full_name
+field character.habitats
+field character.initial_armor
+field character.initial_item_kind_ranks
+field character.initial_item_kinds
+field character.initial_morale
+field character.initial_shield
+field character.initial_weapon
+field character.innate_skill_ranks
+field character.item_column
+field character.item_counts
+field character.items
+field character.large_unit
+field character.level_cap
+field character.level_scaling_divisor
+field character.max_morale
+field character.monster_book
+field character.name
+field character.name_forms
+field character.playable
+field character.point_reward
+field character.race
+field character.routine
+field character.sex
+field character.sort_key
+field character.stat_growth
+field character.support_action
+field character.temperament
+field character.voice_setting
+field condition.affinity_columns
+field condition.attack_count_modifiers
+field condition.boss_proof
+field condition.critical_modifiers
+field condition.cure_bits
+field condition.defense_count_modifiers
+field condition.durations
+field condition.evasion_modifiers
+field condition.gauge_drains
+field condition.hit_modifiers
+field condition.hp_changes
+field condition.icon
+field condition.luck_modifiers
+field condition.magic_attack_modifiers
+field condition.magic_defense_modifiers
+field condition.magic_power_modifiers
+field condition.mental_resistance_modifiers
+field condition.mental_speed_modifiers
+field condition.mp_changes
+field condition.names
+field condition.physical_attack_modifiers
+field condition.physical_defense_modifiers
+field condition.physical_resistance_modifiers
+field condition.physical_speed_modifiers
+field condition.polarity
+field condition.resistance
+field condition.tp_changes
+field condition.war_attack_modifiers
+field condition.war_defense_modifiers
+field element.affinities
+field element.name
+field encounter_entry.formations
+field encounter_entry.gauge_high
+field encounter_entry.gauge_low
+field encounter_entry.weight
+field fate.chapter
+field fate.forbidding_flags
+field fate.required_flags
+field fate.sort_key
+field fate.text
+field field_action.icon
+field field_action.name
+field floor.atlas_origin_x
+field floor.atlas_origin_y
+field floor.atlas_part_pictures
+field floor.atlas_parts_hidden_at_start
+field floor.atlas_scales
+field floor.atlas_sort_key
+field floor.dungeon_first_floor
+field floor.encounter_class
+field floor.gauge_drain_steps
+field floor.name
+field floor_object.action
+field floor_object.action_args
+field floor_object.start_kind
+field formation.effect_lines
+field formation.name
+field formation_slot.barring_flag
+field formation_slot.chance
+field formation_slot.first_column
+field formation_slot.first_row
+field formation_slot.item
+field formation_slot.last_column
+field formation_slot.last_row
+field formation_slot.link
+field formation_slot.required_flag
+field formation_slot.unit
+field glossary.category
+field glossary.line_conditions
+field glossary.lines
+field glossary.sort_key
+field glossary.title
+field inn_rite.descriptions
+field inn_rite.forbidding_flags
+field inn_rite.gauge_target
+field inn_rite.name
+field inn_rite.picture
+field inn_rite.required_flags
+field inn_rite.required_gauge_maximum
+field inn_rite.required_unlocks
+field item.allowed_characters
+field item.ammunition
+field item.attack_element
+field item.battle_animation
+field item.battle_use_limit
+field item.buy_prices
+field item.catalogued
+field item.class
+field item.costume_override
+field item.defence_attribute
+field item.description
+field item.duplicate_crystal
+field item.goddess_gauge_change
+field item.granted_conditions
+field item.hp_change
+field item.icon
+field item.improvable
+field item.inflicted_conditions
+field item.kind
+field item.morale_gain
+field item.mp_change
+field item.name
+field item.not_carried
+field item.random_spread
+field item.rank
+field item.required_gender
+field item.required_items
+field item.required_skill
+field item.second_wait
+field item.second_wait_floor
+field item.sell_prices
+field item.skill
+field item.skill_level
+field item.sort_key
+field item.stat_bonuses
+field item.summoned_character
+field item.target_side
+field item.tp_change
+field item.use_count_change
+field item.use_places
+field item.wait
+field item.wait_floor
+field item_class.flags
+field item_class.name
+field item_class.use_sound
+field item_improvement.bonus_amounts
+field item_improvement.bonus_stats
+field item_improvement.costs
+field item_improvement.mastery_flag
+field item_kind.equipment_note
+field item_kind.icon
+field item_kind.name
+field item_kind.required_weapons
+field item_kind.short_name
+field item_kind.sort_key
+field land.drift_walkable
+field land.drift_x
+field land.drift_y
+field land.encounter_level
+field land.flags
+field land.footstep_sound
+field land.speed_change
+field land.sprite_column
+field map_block.backdrop_parallax
+field map_block.backdrop_picture
+field map_block.battle_backdrops
+field map_block.encounter_level
+field map_block.encounter_sets
+field map_block.enemy_level
+field map_block.enemy_level_spread
+field map_block.event_script
+field map_block.floor
+field map_block.floor_x
+field map_block.floor_y
+field map_block.music
+field map_block.name
+field map_block.overlay_picture
+field map_block.overlay_scale
+field map_block.piece_pictures
+field map_block.piece_pictures_2
+field map_block.piece_x
+field map_block.piece_y
+field map_block.script
+field music.bgm
+field music.title
+field music.unlock_resource
+field object_kind.anchor_x
+field object_kind.anchor_y
+field object_kind.atlas_marker
+field object_kind.blend_mode
+field object_kind.change_sound
+field object_kind.depth_offset
+field object_kind.effect_columns
+field object_kind.effect_frame_count
+field object_kind.effect_frame_time
+field object_kind.effect_picture
+field object_kind.event_point_count
+field object_kind.event_point_x
+field object_kind.event_point_y
+field object_kind.fade_time
+field object_kind.height
+field object_kind.idle_columns
+field object_kind.idle_frame_count
+field object_kind.idle_period
+field object_kind.next_kind
+field object_kind.picture
+field object_kind.wall_point_count
+field object_kind.wall_point_x
+field object_kind.wall_point_y
+field object_kind.width
+field profile.form_backdrops
+field profile.form_conditions
+field profile.form_gallery_pictures
+field profile.form_names
+field profile.form_pictures
+field profile.line_characters
+field profile.line_conditions
+field profile.lines
+field profile.name
+field profile.race
+field profile.sort_key
+field puzzle.block_colours
+field puzzle.block_count
+field puzzle.block_kinds
+field puzzle.block_start_columns
+field puzzle.block_start_rows
+field puzzle.grid
+field puzzle.height
+field puzzle.reset_rule
+field puzzle.width
+field quest.appear_blocking_flags
+field quest.appear_required_flags
+field quest.clear_blocking_flags
+field quest.clear_flags
+field quest.clear_item
+field quest.client
+field quest.description
+field quest.faction
+field quest.failure_blocking_flags
+field quest.failure_flags
+field quest.name
+field quest.required_item
+field quest.reward_counts
+field quest.reward_flag
+field quest.reward_ids
+field quest.reward_kinds
+field quest.sort_key
+field replay.script
+field routine.step_action
+field routine.step_arg
+field routine.step_chance
+field routine.step_flag
+field routine.step_kind
+field routine.step_limit
+field routine.step_percent
+field routine.step_skip_bit
+field routine.step_tactic_mask
+field routine.step_target_count
+field scene.offer_context
+field scene.on_map
+field scene.played
+field scene.script
+field scene.seen
+field scene.town_mark
+field scene.visit_rank
+field special_encounter.area_kinds
+field special_encounter.barring_flags
+field special_encounter.battle
+field special_encounter.chances
+field special_encounter.kind
+field special_encounter.prerequisite
+field special_encounter.required_flags
+field special_encounter.scene
+field special_skill.always_on
+field special_skill.amounts
+field special_skill.append_number
+field special_skill.attack_only
+field special_skill.condition_levels
+field special_skill.description_lines
+field special_skill.effect
+field special_skill.effect_side
+field special_skill.hp_costs
+field special_skill.kind
+field special_skill.mp_costs
+field special_skill.names
+field special_skill.sort_key
+field special_skill.tp_costs
+field special_skill.trigger_chances
+field stone.bonus_amounts
+field stone.bonus_stats
+field stone.character
+field stone.compatibilities
+field stone.cost
+field stone.pictures
+field stone.skill_levels
+field stone.skills
+field town_building.depth_bias
+field town_building.height
+field town_building.name
+field town_building.pictures
+field town_building.place
+field town_building.tab_picture
+field town_building.tile_x
+field town_building.tile_y
+field town_building.variant_forbidding_flags
+field town_building.variant_leaders
+field town_building.variant_masks
+field town_building.variant_progress_maximums
+field town_building.variant_progress_minimums
+field town_building.variant_required_flags
+field town_building.width
+field town_place.background
+field town_place.layout
+field town_place.marker_x
+field town_place.marker_y
+field town_spot.character
+field town_spot.exit_facing
+field town_spot.exit_map
+field town_spot.exit_x
+field town_spot.exit_y
+field town_spot.forbidding_flags
+field town_spot.frame_columns
+field town_spot.frame_counts
+field town_spot.mask
+field town_spot.pictures
+field town_spot.progress_maximum
+field town_spot.progress_minimum
+field town_spot.required_flags
+field town_spot.required_leader
+field town_spot.screen_argument
+field town_spot.screen_kind
+field town_spot.voice
+field town_spot.x
+field town_spot.y
+field tutorial.excluding_tutorial
+field tutorial.forbidden_scenes
+field tutorial.required_scenes
+field tutorial.required_tutorial
+field tutorial.screen
+field tutorial.shown
+field tutorial.text_chain_slot
+field tutorial.title
+field unlock.amounts
+field unlock.cost
+field unlock.kind
+field unlock.listed
+field unlock.name
+field unlock.node_picture
+field unlock.node_size
+field unlock.prerequisites
+field unlock.sort_key
+field unlock.story_flag
+field unlock.subject
+field unlock.targets
+field unlock.texts
+field voice_setting.character
+field voice_setting.labels
+field voice_setting.name_color
+field voice_setting.pictures
+field voice_setting.sample_voice
+scope dungeon_floor
+scope dungeon_floor.object
+scope place
+scope place.spot
+module ladea.adv.adv_hide_window_handler
+module ladea.adv.adv_show_window_handler
+module ladea.adv.apply_speaker_text_style
+module ladea.adv.auto_button_click
+module ladea.adv.auto_button_enter
+module ladea.adv.auto_button_leave
+module ladea.adv.begin_page_voice
+module ladea.adv.begin_window_transition
+module ladea.adv.begin_window_transition_3
+module ladea.adv.center_voice_pans
+module ladea.adv.clear_message_layer
+module ladea.adv.clear_message_text
+module ladea.adv.clear_speaker
+module ladea.adv.clear_speaker_face
+module ladea.adv.collapse_button_bar
+module ladea.adv.collapse_button_bar_1
+module ladea.adv.compose_cg_parts
+module ladea.adv.create_layer_canvas
+module ladea.adv.create_layer_canvas_1
+module ladea.adv.cursor_key_0
+module ladea.adv.cursor_key_0_3
+module ladea.adv.cursor_key_0_5
+module ladea.adv.cursor_key_1
+module ladea.adv.cursor_key_2
+module ladea.adv.cursor_key_3
+module ladea.adv.cursor_key_7
+module ladea.adv.cursor_key_8
+module ladea.adv.draw_message_window
+module ladea.adv.draw_nameplate
+module ladea.adv.draw_nameplate_1
+module ladea.adv.draw_speaker_name
+module ladea.adv.expand_button_bar
+module ladea.adv.fade_in_600ms_and_show_message_window_500ms
+module ladea.adv.fade_message_window
+module ladea.adv.get_layer_anchor
+module ladea.adv.get_layer_anchor_1
+module ladea.adv.hide_button_click
+module ladea.adv.hide_button_enter
+module ladea.adv.hide_button_leave
+module ladea.adv.hide_message_window_150ms
+module ladea.adv.hide_message_window_500ms_and_fade_to_black_600ms
+module ladea.adv.history_button_click
+module ladea.adv.history_button_enter
+module ladea.adv.history_button_leave
+module ladea.adv.ignore_button_bar
+module ladea.adv.init_adv_layer_slots
+module ladea.adv.line
+module ladea.adv.load_cg_parts
+module ladea.adv.mark_cg_seen
+module ladea.adv.pin_button_click
+module ladea.adv.pin_button_enter
+module ladea.adv.pin_button_leave
+module ladea.adv.place_layer_graphic
+module ladea.adv.present_window_transition
+module ladea.adv.publish_message_text
+module ladea.adv.quick_load_button_click
+module ladea.adv.quick_load_button_enter
+module ladea.adv.quick_load_button_leave
+module ladea.adv.quick_save_button_click
+module ladea.adv.quick_save_button_enter
+module ladea.adv.quick_save_button_leave
+module ladea.adv.read_skip_button_click
+module ladea.adv.read_skip_button_enter
+module ladea.adv.read_skip_button_leave
+module ladea.adv.redraw_message_window
+module ladea.adv.register_adv_hotspots
+module ladea.adv.set_goddess_gauge_conditions
+module ladea.adv.set_message_text_origins
+module ladea.adv.set_speaker_face
+module ladea.adv.show_layer_graphic
+module ladea.adv.show_message_window_150ms
+module ladea.adv.show_speaker
+module ladea.adv.skip_button_click
+module ladea.adv.skip_button_enter
+module ladea.adv.skip_button_leave
+module ladea.adv.speaker
+module ladea.adv.speaker_0x2f
+module ladea.adv.speaker_0x76
+module ladea.adv.speaker_0x80
+module ladea.adv.speaker_0x81
+module ladea.adv.start_background_voice
+module ladea.adv.wipe_layer_graphic
+module ladea.adv.アナスタシア
+module ladea.adv.アビルース
+module ladea.adv.アムドシアス
+module ladea.adv.アリシア
+module ladea.adv.イルザーブ
+module ladea.adv.イルン
+module ladea.adv.ウェンディス
+module ladea.adv.エウクレイアさん
+module ladea.adv.エウシュリーちゃん
+module ladea.adv.エクト
+module ladea.adv.エルフ
+module ladea.adv.エルフの娘
+module ladea.adv.エルフの長老
+module ladea.adv.エルモン
+module ladea.adv.オリヴド
+module ladea.adv.カウラ
+module ladea.adv.カチュア
+module ladea.adv.クーン
+module ladea.adv.グロック
+module ladea.adv.サウルーレ
+module ladea.adv.サガモア
+module ladea.adv.サリア
+module ladea.adv.シュリ
+module ladea.adv.シュヴェルトライテ
+module ladea.adv.セリカ
+module ladea.adv.ゼン
+module ladea.adv.ティント
+module ladea.adv.トールレント兵
+module ladea.adv.ドルジス
+module ladea.adv.ナラウク
+module ladea.adv.ニウ
+module ladea.adv.ハイシェラ
+module ladea.adv.ハレッガ
+module ladea.adv.バルディエル
+module ladea.adv.フラロウス
+module ladea.adv.ヘルトマイト
+module ladea.adv.マチス
+module ladea.adv.ミルフェ衛兵団員
+module ladea.adv.ミルモ
+module ladea.adv.ムールムール
+module ladea.adv.メティサーナ
+module ladea.adv.メルヤ
+module ladea.adv.ヤニス
+module ladea.adv.ヨルマ
+module ladea.adv.ラクチェ
+module ladea.adv.ラティナ
+module ladea.adv.ランザブ
+module ladea.adv.リザイラ
+module ladea.adv.リリエム
+module ladea.adv.リンシャ
+module ladea.adv.ルドーン
+module ladea.adv.ルー
+module ladea.adv.レニ
+module ladea.adv.レフィン
+module ladea.adv.レヴィア
+module ladea.adv.ロカ
+module ladea.adv.ローレン
+module ladea.adv.ヴァレフォル
+module ladea.adv.中年の店員
+module ladea.adv.娼婦
+module ladea.adv.子供Ａ
+module ladea.adv.子供Ｂ
+module ladea.adv.山賊
+module ladea.adv.店の客
+module ladea.adv.店の客Ｄ
+module ladea.adv.果物屋
+module ladea.adv.柄の悪い酔客
+module ladea.adv.男
+module ladea.adv.老人
+module ladea.adv.街の住民Ａ
+module ladea.adv.街の住民Ｂ
+module ladea.adv.街の住民Ｃ
+module ladea.adv.貴族軍傭兵
+module ladea.adv.貴族軍騎士
+module ladea.adv.闇混の魔術師
+module ladea.adv.黒狐団
+module ladea.adv.Ｂエウシュリーちゃん

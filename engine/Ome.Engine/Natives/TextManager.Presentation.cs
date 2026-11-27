@@ -132,7 +132,7 @@ public sealed partial class TextManager
                 layoutSlot, firstRecordIndex, flags, overrideTextColor, overrideEffectColor, Style,
                 out AdvTextRedrawBatch redraw))
             return;
-        if (redraw.Records.Any(record => !record.IsRuby)
+        if (redraw.Records.Any(record => !record.IsRuby && record.Text.Length > 0)
             && PresentHistoryGroup(redraw.FirstRecordIndex, flags) is { } presented)
             redraw = redraw with { Presented = presented };
         RedrawRetainedTextGroup(gfx, History.GetLayoutObjectBinding(redraw.LayoutSlot), redraw);

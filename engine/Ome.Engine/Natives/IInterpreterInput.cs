@@ -18,8 +18,11 @@ public interface IInterpreterInput
     int UpdateKeyboardVirtualKeyState(int virtualKey, bool pressed);
     /// <summary>A joystick button through the script's bindings: the mask of logical actions.</summary>
     int UpdateJoystickButtonState(int physicalButton, bool pressed);
-    /// <summary>A joystick axis (0 is x, 1 is y).</summary>
+    /// <summary>A joystick axis, 0 to 5 (X, Y, Z, R, U, V; the directions read 0 and 1), from -1 to 1.</summary>
     void UpdateJoystickAxisState(int axis, double value);
+    /// <summary>The joystick's POV in hundredths of a degree clockwise from up, or 0xffff when it is not pressed
+    /// (<c>JOYINFOEX.dwPOV</c>).</summary>
+    void UpdateJoystickPovState(int hundredthsOfDegree);
     /// <summary>Route one WM_MOUSEWHEEL delta as age_main_window_proc and the ADV services do.</summary>
     MouseWheelOutcome ApplyMouseWheel(int delta, bool advanceMessageOnWheel, bool textRevealing);
     /// <summary>Route one WM_MOUSEHWHEEL delta as AGE 4.38D's age_main_window_proc does.</summary>

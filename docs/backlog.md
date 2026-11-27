@@ -185,6 +185,49 @@ it; git history keeps the record.
   keeps the variant (`Audio.VoicePlaybackVariant`; `engine-re.md`, "Retained History record model and lifetime",
   calls its meaning unproven). Done when native is driven past the end of a History replay, with channel 12's state
   read while it runs, and the port plays variant 1 as native does, with `engine-re.md`'s passage saying which.
+  AGE 4.45D's code says the same (read 2026-11-26): `sound_stream_play@0x4a5900` keeps the variant as the stream's
+  loop flag and `sound_stream_fill_segment@0x4a5150` rewinds on it. Its background voice depends on it: op `0x2f5`
+  schedules voice 2 with variant 3 (all 52 sites, in the SP scripts, CONFIG2 and CALLBACK_LOAD), which the tick starts
+  with variant 1, so natively it loops until another voice pauses it. The port plays it once and starts it again 300 ms
+  after it ends (`engine-re.md`, "The three voices"). A 天秤のLa DEA。 run that holds on an SP page past the voice's end
+  would show both.
+- **The retained text is not redrawn on a screen-mode or font change (AGE 4.43B and 4.45D).** Switching the screen
+  mode (`display_toggle_screen_mode_and_menu_bar`) or UseAntiFont (`text_set_use_anti_font`) makes 4.43B and 4.45D
+  redraw every window's retained text (`0x466100`, `0x466a20`: the window's style applied, each layout record drawn,
+  the style restored). 4.43B also applies each record's own style before drawing it; 4.45D draws them all in the
+  window's (`engine-re.md`, "魔導巧殻 against 天秤のLa DEA。, triaged"). The port redraws nothing then
+  (`TextManager.SetTextAntialias`, which follows 4.24J's setter), so text already on screen keeps the old glyphs
+  until it is drawn again. Done when a build's rule says whether the change redraws, the port redraws as native does
+  with 4.45D's style rule, and a native run that switches UseAntiFont on a page with text compares on both targets.
+- **4.45D's dash strip.** After drawing a `0xF042` or `0xF043`, 4.45D's five join sites take the copied strip's rows
+  from the glyph's black box (from the baseline less `gmptGlyphOrigin.y`, `gmBlackBoxY` rows; the drawer at
+  `0x46edd0` widens it by the effect offset), where the port, as 4.38D and 4.43B do, takes the cell's
+  (`ExtendedDashJoin`). No text of 天秤のLa DEA。 can show it: every joined dash in its strings follows a dash, and
+  SC0000's page 3 is identical on both targets (`engine-re.md`, the triage's dash row). A mod's text could (a
+  `0xF043` after a glyph with ink above or below the dash). Done when the five sites are read, the strip is a
+  `TextRules` rule set in `Age445D`, and a synthetic test draws a `0xF043` after a kanji under both rules.
+- **The port's mode-0 alpha is not native's (every build; older than 天秤のLa DEA。's branch).** Native draws a mode-0
+  object by its colour's alpha whenever `+0x60` was written: its sprite blends with the colour unchanged and the bind
+  leaves `+0x60` alone (`engine-re.md`, "Object blend modes", the restore). The port draws a textured mode-0 object
+  opaque unless a fade or a colour written after its bind latched the alpha (`GfxState.Presentation.cs`), a rule
+  opcodes.toml's op `0x203` gives for CGs initialised with `0x00ffffff` before their bind. The case it came from is not
+  in the record: Himegari's SC0000 CGs that get `0x00ffffff` (`0x323a`, `0x326f` and the like) arm a fade to
+  `0xffffffff` first (op `0x202`), so natively they fade in. A restored object now takes the latch, which a load needs
+  (La DEA's SAVE rings). Done when a native run shows whether any object given alpha 0 before its bind is drawn, the
+  port draws mode 0 by its alpha as native's code does or names the case that differs, and the latches go if nothing
+  needs them.
+- **The joystick reaches the port in Godot's numbering (older than 天秤のLa DEA。's branch).** The front end passes
+  Godot's button and axis indexes (`Main.Input.cs`), which follow SDL's game-controller layout (A, B, X, Y, back,
+  guide, start, …; the sticks, then the triggers from 0 to 1), where native reads WinMM's `joyGetPosEx`: the device's
+  own buttons (`dwButtons`) and axes X, Y, Z, R, U and V, and a hat as the POV. So a script's button bindings (op
+  `0xff`), op `0x2f9`'s six axes and op `0x2fb`'s buttons see another numbering than natively; La DEA's d-pad POV is
+  made from Godot's four d-pad buttons. Done when the front end reports a pad as WinMM does, or the mapping is chosen
+  and documented, checked with a pad on both targets.
+- **4.43B's 音声終了まで待つ writes display:ForceScreen (unverified).** On the ｵｰﾄﾒｯｾｰｼﾞ page, 4.43B's AGERC
+  procedure (`0x6ff24880`) also calls the host's `+0xdc` (`0x473390`) on the check's click, which writes
+  `display:ForceScreen`; 4.45D's page does not (`engine-re.md`, "魔導巧殻 against 天秤のLa DEA。, triaged", step 7).
+  The port writes nothing then. Done when a native 魔導巧殻 run clicks the check and its `SYS4REG.INI` shows whether
+  ForceScreen changes, and the port does the same.
 - **The models are not drawn (AGE 4.43B).** 魔導巧殻's FIELD and DEBUG make 3D models with ops `0x330` to `0x33e`: a
   mesh slot of op `0x329` with a colour, a blend mode and world matrices. The port keeps the records
   (`GfxState.Models.cs`; `engine-re.md`, "The models") but draws none, where native's frame walk (`gfx_render_frame`,
@@ -615,6 +658,31 @@ From the user's design pass on the built site (2026-11-22). The export's design 
   - **Read at medium or low confidence, so not shown:** `object_type_action_command_id` and
     `object_type_interaction_class`. A card's `visual_asset_id` is its animation, a movie FIELD plays when it is dealt,
     which the site cannot show yet.
+- **File formats on the site (the user, 2026-11-26).** The user wants the site to document AGE's file formats apart
+  from modding: the ALF archives, the append catalogs and the rest, for a reader who is not writing a mod. The site's
+  reference section holds the modding guides and the registries' pages today (site design §7,
+  `ome-site/docs/specs/2026-11-21-site-design.md`). What is known of the formats is in working notes, written as
+  dated findings with native addresses and confidence marks:
+  - `sys4-format-notes.md`: the `SYS4INI.BIN` catalog that indexes the ALF archives, and its settings trailer; the
+    script `.BIN` layout; the `.DAT` save container, `SAVE.DAT`, `RT.DAT`, the numbered saves and their `.STH`
+    thumbnails;
+  - `engine-re.md`, "S4AC append catalogs and packed resource ids": the `.AAI` catalogs and their `APPENDnn.ALF`;
+  - `asset-resolution-re.md`: how a resource id reaches a file, loose files and overlays included;
+  - AGF images have no notes of their own: what is known is the decoder, `engine/Ome.Engine/Sys4/AgfDecoder.cs`,
+    ported from GARbro (`THIRD_PARTY_NOTICES.md`).
+
+  What it needs:
+  - pages written for a reader, kept in this repository, since the site edits no page of OME's and reads only the
+    export and the reference bundle (site design §3.2 and §7.1);
+  - the reference bundle carrying them (`tools/reference_bundle.py`; export design §8), and a section of the site
+    for them apart from the guides under `/docs/` (site design §4);
+  - each page saying which engine builds it holds for, since the formats differ by build (`S4IC422`, `S4IC438`),
+    and naming the public research it rests on.
+
+  Open: where the pages' facts live. One fact has one home (`AGENTS.md`), so the pages either become the formats'
+  home, with the notes keeping the evidence, or are written from the notes without restating them. Done when the
+  site has a formats section built from the bundle that covers at least the archives and their catalog, the append
+  catalogs and the script file, and the `AGENTS.md` map names the pages' home.
 
 ## Platform and project
 
@@ -664,6 +732,116 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     pairs (the window procedure, the main tick, import call sites) would reach them.
 
   Done when each is fixed or dropped with a reason, and `adding-a-game.md` describes no workaround.
+- **Onboard 天秤のLa DEA。 (ladea, AGE 4.45D, catalog `S4IC445`, scripts `SYS4445`).** The user, 2026-11-26: "Let's
+  get ladea added and brought up to p3/m3 next". The id is `ladea`, the install `games/ladea/`
+  (`PROJECT-STRUCTURE.md`). It is the newest build taken in; the nearest supported one is 魔導巧殻's 4.43B. Work is on
+  `feature/ladea`. It stands at **P3** and **M3** since 2026-11-26 (its manifest's `support`).
+  - **Step 1, the intake, is done (2026-11-26):** every check passes (`build/games/ladea/intake.json`). 1,054 scripts
+    (914 base, 140 in the two appends: `APPEND01.AAI`, selector 1, 612 entries; `APPEND02.AAI`, selector 2, 1,317
+    entries), 2,362,847 instructions, 317 distinct opcodes. Catalog: 25,363 entries in six archives, 936 of them
+    placeholders; it ships the font AGE Extend (`AGE-EXTEND.TTF`, file 44). Saved prefix `[848614, 1, 847, 1, 1, 1]`,
+    full banks `[16015186, 30, 159379, 2, 2, 2]`: one float saved, where 魔導巧殻 saves 88,241. 50 settings pairs, no
+    key and no file type the other games lack. Its `AGE.EXE` is not packed (sections `.text` to `.reloc`, the entry in
+    `.text`), unlike every other build's.
+    - **12 opcodes have no handler, at 117,185 sites:** `0x2f6` (78,263 sites in 197 scripts), `0x2f7` (25,570 in
+      168), `0x2f8` (13,264 in 194), `0x2f5` (52), `0x2fa` (21), `0x2f9` (5), `0x2fb` (4), `0x12d` (2, CHMENU), and one
+      site each for `0xce` and `0xcf` (LAUNCH) and `0x2f3` and `0x2f4` (HISTORY). No supported game uses any of the
+      12.
+    - **Opcodes it uses that a supported game never does:** 魔導巧殻 23, 創刻のアテリアル 38, Kamidori 65, Verita 68,
+      戦女神ZERO 80, Himegari 83.
+  - **Step 2, the dump, is done (2026-11-26):** its `AGE.EXE` is the first not packed, and Windows loaded it at
+    `0x5a0000`; `dump_engine.py` now takes such a module back to its preferred base by its relocations. The build is
+    pinned in `operand_access.py` `ENGINES` with 4.43B's 15 accessors, aligned against 魔導巧殻 unanimously. The Ghidra
+    image `/ladea/4.45D` has 837 names, ported from `/koukaku/4.43B` and the registry, and its 272 import slots named
+    from the executable's own import table. The revision diff against 魔導巧殻, the nearest build, has 24 rows that
+    differ (`engine-re.md`, "魔導巧殻 against 天秤のLa DEA。"). Nine opcodes are only 4.45D's, `0x2f3` to `0x2fb`.
+  - **Step 3, the profile, is done (2026-11-26):** `Profiles/ladea.json` (P1, writes off, save version 320, its banks),
+    the engine build `Age445D` declared from 4.43B with its own save stamp, the registry's observation and `SYS4445`
+    snapshot, and operand access for all 317 opcodes its scripts use (`0x2ef` and `0x2f1` in `LOOP_INDEXED`, the same
+    code as 4.43B's). Its outputs are in `build/games/ladea/` and its archives in `../extracted-ladea/`. Its installed-data
+    tests and corpus decode pass in `validate.py --level workspace --game ladea` (82 of 82). `catalog-scan`: 12 opcodes
+    without a handler at 117,185 sites, as the intake counted.
+  - **Step 4, the triage, is done (2026-11-26):** every differing row has a disposition (`engine-re.md`, "魔導巧殻
+    against 天秤のLa DEA。, triaged"), and the 12 opcodes without a handler are read there. The real ones go to: the audio
+    native's three voices on channels 12 to 14, with ops `0x2f4` to `0x2f8` and History's voice index (step 6:
+    SYSTEM4 and every scene stop and level the voices); the dash join's strip, the glyph's black box (step 6, against
+    native pixels); the joystick's POV and the flag of op `0x2fa`, with ops `0x2f9` and `0x2fb` (step 7); ops
+    `0x2f3`, `0x12d`, `0xce` and `0xcf` (step 7). Two rows are to read against native: whether 4.45D's layout still
+    applies a window's style (`0x466a20`, step 6), and op `0x72`'s auto-mode character count (step 7).
+  - **Step 5, native driving, is done (2026-11-26):** `tools/drive/ladea.toml` holds the title's and GAMESTART's
+    points and the native facts, found from 4.43B's by their code. Windows loads this build at a different base each
+    run, so the native agent now moves each fact by the module's base (`native-agent.js`, `image()`). The opening
+    scenario passes on native.
+  - **Step 6, the boot, is done (2026-11-26):** the natural boot reaches SC0000's first page with no opcode skipped
+    (`NaturalBootIntegrationTests`, La DEA's case; `validate.py --level full --game ladea` runs it). The audio native
+    has the three voices (`AudioRules.Voices`, `BackgroundVoices`), with ops `0x2f3` to `0x2f8` and History's voice
+    index and pan (`engine-re.md`, "The three voices"). Every build's delayed voice now starts on its first due tick,
+    clears the mute request and marks Auto's voice pending, and the voice ops mark it only while the Voice route is
+    on, as native does. `tools/drive/scenarios/ladea-opening.steps` passes on both targets at the same positions,
+    and its five shots match native but for the page-wait icon's frame; the port's `settle` now waits for detached
+    animations (page 3's pictures). The two rows step 4 left to read: the dash strip changes no pixel of the game's
+    text, and `0x466a20` does restyle, but only in a redraw the port lacks for 4.43B too (both are items above).
+  - **Step 7 is done (2026-11-26): it stands at P3.** Every opcode has a handler (`catalog-scan`: `unsupported=0`):
+    `0x12d`, the joystick ops `0x2f9` to `0x2fb` with the POV's directions (`InputRules`), and the timed catch-up
+    callback `0xce`/`0xcf`. Its shell is 4.43B's but for dialog 2's year, and its ｵｰﾄﾒｯｾｰｼﾞ page leaves the voice
+    group's 文字単位時間 enabled (`ShellRules.VoiceEndDisablesVoicePitch`). The options scenario leaves the same
+    `SYS4REG.INI` on both targets; native's save decodes as 4.43B's layout with its own stamp, so the profile writes;
+    the save scenario passes on both targets with `save-diff` showing only the time, and saves load both ways
+    (`engine-re.md`, "魔導巧殻 against 天秤のLa DEA。, triaged", step 7). On the way two faults older than the branch
+    were fixed: op `0x82` now binds one object per record and writes each record's drawn rectangle back, as native
+    does on every build, and a restored mode-0 object takes its saved alpha. Three items above came from it: the
+    port's mode-0 alpha, the joystick's numbering, and 4.43B's ForceScreen write.
+  - **Step 10's scripts are done (2026-11-26): it stands at M1.** All 1,054 scripts round-trip at both levels and at
+    their fixed points, and all 177 scenes rebuild equivalent from core and from idiomatic source and pass the patch
+    probe. `mods/ladea-base` carries the toolchain alone: `ladea.adv` (81 speakers from CHINIT's names, the scene
+    header's 31 units, 30 library subs, koukaku.adv's names where the two share a sub) lifts 27,464 pages, 59.4% of the
+    instructions. Its example `example.ladea-prologue-line` links in a workspace test and runs on both targets
+    (`ladea-prologue-line.steps`); an English test package ran in the port; the guide is `docs/modding/games/ladea.md`,
+    and the launcher's art is `eu15/`.
+  - **Step 9 is done, and it stands at M2 (2026-11-26):** the data document `ladea-data-tables.md` (the 34 boot
+    tables INIT2 calls, both appends' AUTORUNs, the hook chains of 32 slots and the on-demand loaders), the registry
+    `vm-map/globals-ladea.toml` with 667 names, 40 record tables and the scopes `dungeon_floor` (a floor, 1 to 86) and
+    `place` (a town place, 1 to 20), the script index (1,054 scripts), 133 script notes (`vm-map/scripts-ladea.toml`)
+    and the entity declarations (16 kinds; 13 of the export's 1,282 pictures are explicit). The layout tool gained La
+    DEA's 34 leaders. What M2 leaves open:
+    - **The data document's "What is not decoded":** arrays with no reader or no writer, fields read but not
+      understood, the rule scripts RTN000 to RTN307, and whether an object works after a load before the next map-block
+      entry (a native run that saves beside a chest and opens it after the load would settle it). Each is done when
+      that document and the registry say it.
+    - **The layout tool's limits, older than the branch:** `init_layout.py` gives one capacity to all of a leader's
+      arrays, so AFINIT has no leader and ILINIT's level names come out one record low; it has no mode for a table
+      loaded on demand by a selector (COINIT, FLINIT, DUINIT, ORINIT, ENINIT, ESINIT, BTANINIT) or written as boards of
+      rows (FMINIT, EEINIT). `scjump_decode.py` reads only Himegari's `SCJUMP`. Done when the tool or a game's
+      extractor covers them, or never.
+    - **What the export leaves out:** fields whose meaning is inferred (`character.playable`, the item's target side
+      and defence attribute, the conditions' gauge drains and cure bits, a floor's encounter class), the item's
+      conditions and the character's innate skill ranks (a column reference would name them), and the starting item
+      kinds; 32 item and 3 join calls whose arguments are computed; and 6,735 written cells with no name. CHINIT's full
+      names carry the developers' notes, （クエスト用） and （強いＶｅｒ）, which the site shows as titles.
+  - **The base mod level, M3, is reached (2026-11-26).** `mods/ladea-base/` declares five events at five named points
+    (`vm-map/patch-points-ladea.toml`): the boot's data layered and ready, a floor's objects loaded (FIELD, after the
+    FLINIT chain), a town place's spots loaded (SETORNDATA, after the ORINIT chain), and one character's experience
+    award (ADDEXP), whose amount is the add's third operand. It accepts `ladea.tables` (boot tables at
+    `ladea.data.layered`, a floor's part at `ladea.floor.loaded`, a place's part at `ladea.town.place_loaded`) and
+    gives `give_item`. `ModLuaLinkTests` binds every event on the install, runs INIT2 with the boot events, SETORNDATA
+    with a place part, and the helper. In the port, `example.ladea-speaker-name` renames シュリ's name plate
+    (`tools/drive/scenarios/port/ladea-speaker-name.steps`), and through the title's debug menu 迷宮マップ２ raises
+    sixteen awards and the floor event with a floor part (`ladea-debug-field.steps`), and 街 the town event for each
+    of the 20 places (`ladea-debug-town.steps`); the menu and 迷宮マップ２ run alike on native AGE. On the way the ADV
+    module took in `set_goddess_gauge_conditions` (SC0000's `label_2876d`, five scenes; lift coverage 59.5%), and the
+    two AFINIT tables traded names, so that `item_kind` and `item_class` mean what ITINIT's `item_kinds` and
+    `item_classes` hold. What M3 leaves open:
+    - **Loaders without an event:** ENINIT's encounter entries, ESINIT's formation slots and BTANINIT's effects. Done
+      when a mod needs one and it is added, or never.
+    - **A floor's part after a load:** a load on a floor runs no FLINIT walk, so `ladea.floor.loaded` does not come
+      until the next entry (the open question above). Done when that is read and the base mod raises the event after
+      such a load, or the guide says why it need not.
+    - **A battle's award** (RESULT) and FIELD's walking award were not raised in a played game; the debug entry's
+      ADDEXP calls were. Done when a run raises one.
+  - **Next, by the plan:** the sweep (P4, step 8).
+
+  The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-26. The item stays for the open points
+  above, each with its own end; the sweep (P4) is the next target by the plan, unless the user sets another.
 - **Onboard 魔導巧殻 (koukaku, AGE 4.43B, catalog `S4IC443`, scripts `SYS4443`).** The user, 2026-11-26: "Add support
   for the next game, koukaku, aiming for P3 / M3". The id is `koukaku`, the install `games/koukaku/`
   (`PROJECT-STRUCTURE.md`). It is the newest build taken in: every supported build is 4.38D or older. Work is on

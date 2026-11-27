@@ -61,8 +61,8 @@ public sealed class BaseModTests : IDisposable
     public void TheEngineShipsABaseModForEachGameWithARegistryAndItIsTheRepositorysFolder()
     {
         // The base mods, and ome-records, the library they apply record tables with (data patches spec §6.4).
-        Assert.Equal(["arterial-base", "bg0-base", "himegari-base", "kamidori-base", "koukaku-base", "ome-records",
-            "verita-base"], ShippedPackages.Ids);
+        Assert.Equal(["arterial-base", "bg0-base", "himegari-base", "kamidori-base", "koukaku-base", "ladea-base",
+            "ome-records", "verita-base"], ShippedPackages.Ids);
         foreach (string id in ShippedPackages.Ids.Where(id => id.EndsWith("-base", StringComparison.Ordinal)))
         {
             using ModPackage shipped = ShippedPackages.Open(id)!;
@@ -102,7 +102,8 @@ public sealed class BaseModTests : IDisposable
             // dungeon map, whose part comes at map.loaded and, after a load of a save made on it, at data.ready.
             // 戦女神ZERO's scopes are the world map, a town and a field map, each at its own loaded event, and a field
             // map's part after a load of a save made in a scene after it at data.ready. 魔導巧殻's scope is a
-            // battlefield map, whose part comes at battlefield.loaded.
+            // battlefield map, whose part comes at battlefield.loaded. 天秤のLa DEA。's are a dungeon floor and a town
+            // place, whose parts come at floor.loaded and town.place_loaded.
             ModKind kind = Assert.Single(shipped.Manifest.Accepts);
             Assert.Equal($"{game}.tables", kind.Kind);
             (string, string)[] at = game switch
@@ -115,6 +116,8 @@ public sealed class BaseModTests : IDisposable
                              ("verita.data.ready", "tables.lua:apply_loaded_dungeon")],
                 "koukaku" => [("koukaku.data.layered", "tables.lua:apply_boot"),
                               ("koukaku.battlefield.loaded", "tables.lua:apply_battlefield")],
+                "ladea" => [("ladea.data.layered", "tables.lua:apply_boot"), ("ladea.floor.loaded", "tables.lua:apply_floor"),
+                            ("ladea.town.place_loaded", "tables.lua:apply_place")],
                 _ => [($"{game}.data.layered", "tables.lua:apply_boot"), ($"{game}.stage.loaded", "tables.lua:apply_stage")],
             };
             if (game == "kamidori") at = [.. at, ("kamidori.stage.previewed", "tables.lua:apply_stage")];

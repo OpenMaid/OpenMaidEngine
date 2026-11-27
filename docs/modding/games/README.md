@@ -20,6 +20,7 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Himegari Dungeon Meister | `himegari` | `SYS4422` | P3 (complete) | M3 (base mod) | [the guide](himegari.md) |
 | Kamidori Alchemy Meister | `kamidori` | `SYS4433` | P3 (complete) | M3 (base mod) | [the guide](kamidori.md) |
 | Madou Koukaku | `koukaku` | `SYS4443` | P3 (complete) | M3 (base mod) | [the guide](koukaku.md) |
+| Tenbin no La DEA | `ladea` | `SYS4445` | P3 (complete) | M3 (base mod) | [the guide](ladea.md) |
 | Ikusa Megami VERITA | `verita` | `SYS4424` | P3 (complete) | M3 (base mod) | [the guide](verita.md) |
 
 ## Soukoku no Arterial
@@ -121,6 +122,26 @@ below P3 is still being added and is not playable. The levels' gates are in
 | Named patch points | `koukaku.boot.data_layered`, `koukaku.boot.data_ready`, `koukaku.battlefield.after_map_loaders_field`, `koukaku.battlefield.after_map_loaders_reign`, `koukaku.battlefield.after_map_loaders_palace`, `koukaku.battlefield.after_map_loaders_checkreg`, `koukaku.battlefield.after_map_loaders_occupy`, `koukaku.battlefield.after_map_loaders_delcn`, `koukaku.turn.before_week_advance`, `koukaku.experience.before_add` ([reference](../../patch-point-reference-koukaku.md)) |
 | Publisher's page | <https://www.eukleia.co.jp/eushully/> |
 | Guide | [Madou Koukaku's guide](koukaku.md) |
+
+## Tenbin no La DEA
+
+| Fact | Value |
+|---|---|
+| Game id | `ladea` (`--game ladea`) |
+| Title | Tenbin no La DEA (天秤のLa DEA。 ～戦女神MEMORIA～) |
+| Support | play P3 (complete); modding M3 (base mod) |
+| Engine build | AGE `4.45D` |
+| Engine ABI | `SYS4445` |
+| Catalog revision | `S4IC445` |
+| Boot script | `SYSTEM4.BIN` |
+| Install | anywhere: a profile made in the launcher names it; from source, `games/ladea/` beside the repository by default |
+| Port saves | enabled, in the profile's `SAVE/` (with no profile, in `games/ladea/` of the engine's data folder) |
+| OMS modules | `ladea.globals`, `ladea.scripts` (generated); `ladea.adv` ([its source in `ladea-base`](../../../mods/ladea-base/oms/adv.oms)) |
+| Speakers | 81 in `ladea.adv`'s `enum speaker` |
+| Tables | `scene[10000]` (7 fields), `cg_gallery_entry[4000]` (2 fields), `replay[240]` (1 fields), `music[50]` (3 fields), `tutorial[1000]` (8 fields), `character[1000]` (43 fields), `voice_setting[1000]` (5 fields), `fate[1000]` (5 fields), `profile[1000]` (11 fields), `glossary[1000]` (5 fields), `special_skill[500]` (15 fields), `condition[60]` (29 fields), `element[30]` (2 fields), `item_kind[80]` (6 fields), `item_class[100]` (3 fields), `field_action[100]` (2 fields), `formation[16]` (2 fields), `routine[1000]` (10 fields), `battle_animation[20000]` (3 fields), `battle_effect[46]` (16 fields), `special_encounter[100]` (8 fields), `encounter_entry[100]` (4 fields), `formation_slot[8]` (10 fields), `item[20000]` (42 fields), `stone[20000]` (8 fields), `item_improvement[20000]` (4 fields), `alchemy_recipe[1000]` (9 fields), `floor[100]` (10 fields), `map_block[1000]` (20 fields), `object_kind[1000]` (24 fields), `atlas_marker[100]` (3 fields), `land[100]` (8 fields), `puzzle[100]` (9 fields), `floor_object[100]` (3 fields), `town_building[300]` (15 fields), `town_place[100]` (4 fields), `town_spot[200]` (19 fields), `quest[1000]` (17 fields), `inn_rite[10]` (8 fields), `unlock[1000]` (13 fields) ([reference](../../global-reference-ladea.md)) |
+| Named patch points | `ladea.boot.data_layered`, `ladea.boot.data_ready`, `ladea.floor.after_object_loaders`, `ladea.town.after_spot_loaders`, `ladea.experience.before_add` ([reference](../../patch-point-reference-ladea.md)) |
+| Publisher's page | <https://www.eukleia.co.jp/eushully/> |
+| Guide | [Tenbin no La DEA's guide](ladea.md) |
 
 ## Ikusa Megami VERITA
 

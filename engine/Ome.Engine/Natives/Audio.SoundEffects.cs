@@ -20,19 +20,20 @@ public sealed partial class Audio
 
     /// <summary>Ops 0xb5 (start mode 0, once) and 0xba (1, the decoder rewinds at the end): start a channel that holds
     /// a sound (sfx_channel_start@0x4825d0, then sound_manager_start_channel@0x482f00; 4.33G the same). Nothing starts
-    /// while the sound effect route is off. The manager's channels go to 12: channel 11 is the BGM's and 12 the voice's,
-    /// whose sound plays again from its start; channel 10 never holds one.</summary>
+    /// while the sound effect route is off. The manager's channels go to 12 (14 with three voices): channel 11 is the
+    /// BGM's and 12 on the voices', whose sound plays again from its start; channel 10 never holds one.</summary>
     public void StartSoundEffect(int channel, int startMode)
     {
         if (!SoundEffectRouteOn()) return;
-        switch (channel)
+        if (channel == BgmChannel)
         {
-            case BgmChannel:
-                StartBgmChannel(startMode);
-                return;
-            case VoiceChannel:
-                StartVoiceChannel(startMode);
-                return;
+            StartBgmChannel(startMode);
+            return;
+        }
+        if (IsVoiceChannel(channel))
+        {
+            StartVoiceChannel(channel - VoiceChannel, startMode);
+            return;
         }
         if (!IsSoundEffectChannel(channel) || _soundEffectNames[channel] == null) return;
         _timeline?.Event("sfx-start", new() { ["channel"] = channel,
@@ -60,13 +61,15 @@ public sealed partial class Audio
     }
 
     /// <summary>Whether a channel of the sound manager holds a sound: a sound effect's (0..9), the BGM's (11, the track
-    /// last played) or the voice's (12, the last voice). Ops 0xb5 and 0xba trace a start of one that does not.</summary>
-    public bool ChannelHoldsSound(int channel) => channel switch
+    /// last played) or a voice's (12 on, its last voice). Ops 0xb5 and 0xba trace a start of one that does not.</summary>
+    public bool ChannelHoldsSound(int channel)
     {
-        BgmChannel => _bgmChannelClip != null,
-        VoiceChannel => _voiceLoaded,
-        _ => IsSoundEffectChannel(channel) && _soundEffectNames[channel] != null,
-    };
+        if (channel == BgmChannel) return _bgmChannelClip != null;
+        if (IsVoiceChannel(channel)) return _voiceLoaded[channel - VoiceChannel];
+        return IsSoundEffectChannel(channel) && _soundEffectNames[channel] != null;
+    }
+
+    private bool IsVoiceChannel(int channel) => channel >= VoiceChannel && channel < ChannelCount;
 
     // sfx_channel_start@0x4825d0 starts nothing while the facade's route flag (+0x414, ctx+0x14438, which
     // sound_set_sfx_route_enabled writes) is clear: an op 0xb5 or 0xba start, and a delayed start falling due.

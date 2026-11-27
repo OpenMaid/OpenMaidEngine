@@ -123,6 +123,21 @@ public sealed partial class VirtualMachine
         return StepResult.Next;
     }
 
+    // 0x2f3 (AGE 4.45D): op 0x1d4 for one voice. Operands 1 to 3 receive the group's last voice record of the voice in
+    // operand 6 (its id, argument and pan; -1, -1 and 0 when there is none); operand 4 is read and unused, as 0x1d4's
+    // third, and operand 5 is the record index (op_0x2f3_find_text_history_voice_pair@0x430470).
+    private StepResult OpFindTextHistoryVoicePair(Instruction ins, int pc)
+    {
+        var a = ins.Args;
+        if (NegativeHistoryRecordRefused(ins, Read(a[4])) is { } refused) return refused;
+        _text.History.TryFindVoicePair((int)Read(a[4]), unchecked((int)Read(a[5])), out long voiceId,
+                                       out long voiceArgument, out int voicePan);
+        Write(a[0], voiceId);
+        Write(a[1], voiceArgument);
+        Write(a[2], voicePan);
+        return StepResult.Next;
+    }
+
     // 0x85: bound the backlog to the current ordinary ADV block
     private StepResult OpClearTextHistory(Instruction ins, int pc)
     {

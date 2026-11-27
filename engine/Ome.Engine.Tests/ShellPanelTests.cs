@@ -230,6 +230,23 @@ public class ShellPanelTests
     }
 
     [Fact]
+    public void FourFortyFiveDsVoiceEndCheckLeavesTheVoicePitchEnabled()
+    {
+        // AGE 4.45D's ｵｰﾄﾒｯｾｰｼﾞ page procedure (0x6fea4d60 in 天秤のLa DEA。's running AGERC) sets the check and
+        // disables nothing; native lists auto-pitch-voice with the check on.
+        var host = new Host { MessageSettings = new MessageSettings(5, 8, 500, 2000, 0, 15, 0) };
+        var draft = new ShellOptionsDraft(host, AntiFont, readOnly: false, autoMessagePage: true,
+                                          voiceEndDisablesVoicePitch:
+                                              EngineBuilds.Age445D.Rules.Shell.VoiceEndDisablesVoicePitch);
+        ShellOption voicePitch = ShellOptions.Find("auto-pitch-voice")!;
+
+        Assert.Equal(1, draft.Value("auto-wait-voice-end"));
+        Assert.False(draft.Disabled(voicePitch));
+        Assert.True(draft.Set(voicePitch, 230));
+        Assert.True(EngineBuilds.Age443B.Rules.Shell.VoiceEndDisablesVoicePitch);
+    }
+
+    [Fact]
     public void TheAutoPageReadsAndCommitsThePitchesAndTheCheck()
     {
         // Native 4.38D (docs/engine-re.md, "4.38D's menu bar and 設定 dialog"): the trackbars at 23, 9, 37 and 12

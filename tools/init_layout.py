@@ -239,7 +239,57 @@ KOUKAKU: dict[str, Leader] = {
     "SAINIT": Leader("G", 0x2b26f9, 20),   # the area's picture
 }
 
-LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA, "bg0": BG0, "koukaku": KOUKAKU}.get(paths.CONTEXT.profile_id, {})
+# 天秤のLa DEA。's boot tables (docs/ladea-data-tables.md), in INIT2's order. Each leader is the array a record writes
+# first. COINIT (one record at a time, chosen by a selector), AFINIT (lists by kind), FMINIT (boards of rows) and EEINIT
+# (five inline rows) need none; the on-demand tables are not in the boot image.
+LADEA: dict[str, Leader] = {
+    "SCINIT": Leader("G", 0xe7d7f, 10000),   # scene ids start at 0 (SC0000)
+    "CHINIT": Leader("G", 0x15765f, 1000, arrays=(   # characters: the base character, each record's first write
+        ("G", 0x15d80a, 500), ("G", 0x1dee5a, 18), ("G", 0x1e34aa, 14))),   # skill ranks, stats, growth: too sparse to win
+    "SSINIT": Leader("G", 0x2fcc97, 500, arrays=(("G", 0x301cab, 300),)),   # special skills: the kind; the conditions
+    #   matrix (300 cells a family) is declared, else its cells fall outside
+    "FAINIT": Leader("GS", 0x1fee4, 1000),   # unlocks (解放), ids 1..992: the name first
+    "ILINIT": Leader("G", 0x3286a5, 60, arrays=tuple(("G", 0x326a85 + 300 * n, 5) for n in range(24))),   # conditions:
+    #   the polarity first; the 24 level arrays are declared, since stride 5 on a grid of 60 is otherwise misread. The
+    #   level names come out at GS[0x110cb], one record low: their true base is GS[0x110d0] (ILINIT@0xa)
+    "ITINIT": Leader("GS", 0x111fc, 20000),   # the name; one id space: items, equipment, stones, spells, skills, actions
+    "DPINIT": Leader("G", 0x6f4277, 20000, stride=2),   # the stones 1001..1640, keyed by item id: the two pictures lead
+    "IMINIT": Leader("G", 0xa76977, 20000, stride=11),   # improvement, keyed by item id: the points per level lead
+    "RTINIT": Leader("G", 0x1effcd, 100000, group=100),   # routine × 100 + step
+    "BLINIT": Leader("GS", 0x229dc, 300, arrays=(   # buildings: the name first
+        ("G", 0xbf39ae, 18),)),   # the pictures, 18 a building (3 variants × 6)
+    "QUINIT": Leader("G", 0xbf6c76, 1000, arrays=(   # quests: the sort key first
+        ("G", 0xbfb2c6, 3),)),   # the failure's forbidding flags: one record is too few for its stride to win
+    "ALINIT": Leader("G", 0xc05099, 1000),   # alchemy recipes 1..224: the product
+    "NUINIT": Leader("GS", 0x26988, 10, arrays=(   # the inn's rites, ids 1..5: the name first
+        ("GS", 0x26992, 6),)),   # five lines a rite, columns 1..5
+    "MPINIT": Leader("GS", 0x26a96, 1000, arrays=(   # map blocks, 10 × floor + n: the name first; the floors'
+        ("GS", 0x26a32, 1), ("G", 0xc9ee85, 1), ("G", 0xc9eee9, 1), ("G", 0xc9ef4d, 1), ("G", 0xc9efb1, 1))),   # arrays (100)
+    "OBINIT": Leader("G", 0xc2e5bd, 1000),   # object kinds: the picture first
+    "OBINIT2": Leader("G", 0xc2f945, 1000),   # the same kinds: the depth offset first
+    "LAINIT": Leader("G", 0xc2b421, 100),   # lands: the walking sheet first
+    "PZINIT": Leader("G", 0xc92045, 100, arrays=(   # block puzzles: the reset rule first
+        ("G", 0xc92171, 484),)),   # the 22 × 22 grid, written with copy-inline-int-array
+    "ATINIT": Leader("G", 0xc9f141, 100, stride=2),   # the floors' atlases: the two scales first
+    "ELINIT": Leader("G", 0xd0a1e3, 100),   # special encounters
+    "CGINIT": Leader("G", 0xf42f1, 4000, group=200),   # 200 × page + 10 × thumbnail + k (CGMODE@0x9e8)
+    "SPINIT": Leader("G", 0xf6245, 240, group=12),   # 20 pages of 12 (HMODE@0x97a)
+    "MUINIT": Leader("G", 0xf6349, 50),   # music
+    "CVINIT": Leader("G", 0x157276, 1000, arrays=(   # voice settings: the name colour
+        ("G", 0x157a47, 1),)),   # each character's setting, keyed by character id
+    "FTINIT": Leader("G", 0xf63ae, 1000),   # fates (運命): the sort key
+    "CIINIT": Leader("G", 0xfade6, 1000, arrays=(   # the 人物 book's profiles: the sort key
+        ("G", 0xfc93e, 18),)),   # the lines' later conditions: too few records for stride 18 to win
+    "CFINIT": Leader("GS", 0x5f14, 1000, stride=10, arrays=(   # character forms, 10 a character: the name
+        ("G", 0x100f8e, 30), ("G", 0x10abce, 250))),   # 3 conditions and 25 pictures a form: too sparse to win
+    "VIINIT": Leader("G", 0x14a36e, 1000, arrays=(   # the 用語 glossary: the sort key
+        ("G", 0x14a756, 39), ("GS", 0x8df4, 13))),   # 13 lines and their conditions: too sparse to win
+    "TUINIT": Leader("G", 0x154396, 1000),   # tutorials: the TUMES slot first
+    "BTANINIT2": Leader("G", 0xef8696, 20000, stride=6),   # battle animations, six effect slots an id
+}
+
+LEADERS: dict[str, Leader] = {"arterial": ARTERIAL, "verita": VERITA, "bg0": BG0, "koukaku": KOUKAKU,
+                               "ladea": LADEA}.get(paths.CONTEXT.profile_id, {})
 AREA: AreaRule | None = AREAS.get(paths.CONTEXT.profile_id)
 
 

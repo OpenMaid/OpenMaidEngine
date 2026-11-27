@@ -1,0 +1,10 @@
+oms 1
+// A line before the first page of 天秤のLa DEA。's opening scene. A page of this game starts at the instruction that
+// turns the tick presentation off, before it resets the text layouts and sets G[0x3a47] (the page has text): 0xed5 is
+// that instruction of the first page.
+patch "SC0000.BIN" fingerprint "sha256:627b62a1c0586c3adb7e17c04fef71aac061160f2a7f45887022355895a47482"
+use ladea.adv
+
+before site 0xed5 {
+    "[OMS] A mod inserted this line before the opening scene's first page."
+}

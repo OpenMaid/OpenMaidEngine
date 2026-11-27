@@ -10,7 +10,12 @@ namespace Ome.Engine.Natives;
 /// times and the 音声終了まで待つ check, and the menu the command that opens it, with ﾒｯｾｰｼﾞの設定 beside it in 設定
 /// (AGE 4.38D; docs/engine-re.md, "4.38D's menu bar and 設定 dialog"). Without it the two delays are on the ﾒｯｾｰｼﾞ
 /// page and ﾒｯｾｰｼﾞの設定 is in the ﾒｯｾｰｼﾞ popup.</param>
-public sealed record ShellRules(bool AutoMessagePage);
+/// <param name="VoiceEndDisablesVoicePitch">On the ｵｰﾄﾒｯｾｰｼﾞ page, whether 音声終了まで待つ checked disables the voice
+/// group's 文字単位時間 (its trackbar `0x414`, edit `0x3ee` and labels): 4.38D's and 4.43B's page procedure does it at
+/// WM_INITDIALOG and on the check's click (4.43B's AGERC `0x6ff24880`); 4.45D's (`0x6fea4d60`) has no WM_COMMAND
+/// branch and only sets the check, so the row stays enabled (docs/engine-re.md, "魔導巧殻 against 天秤のLa DEA。,
+/// triaged", the shell).</param>
+public sealed record ShellRules(bool AutoMessagePage, bool VoiceEndDisablesVoicePitch = true);
 
 /// <summary>message:MessageSpeed, MesWinAlpha and AutoMessageTime0/1, as the 設定 dialog reads and commits them, and
 /// on a build with the ｵｰﾄﾒｯｾｰｼﾞ page message:AutoMessagePitch0/1 and AutoMessageOption too. A commit applies the

@@ -6,11 +6,15 @@ import sys
 import tempfile
 from pathlib import Path
 
+import struct
+
 from dump_engine import (
     PROFILE_LANDMARK_RVAS,
     build_manifest,
+    pe_base_relocations,
     read_catalog_identity,
     sha256_file,
+    undo_relocations,
 )
 
 FAILS: list[str] = []
@@ -86,8 +90,48 @@ def test_new_profiles_have_no_borrowed_landmark() -> None:
     )
 
 
+def synthetic_pe(image_base: int, relocations: list[int]) -> bytes:
+    """A PE32 header with one section at RVA 0x1000 (file 0x400) and, when given, a .reloc block for page 0x1000."""
+    pe = bytearray(0x800)
+    struct.pack_into("<I", pe, 0x3C, 0x80)
+    pe[0x80:0x84] = b"PE\0\0"
+    struct.pack_into("<H", pe, 0x86, 2)                  # two sections
+    struct.pack_into("<H", pe, 0x94, 0xE0)               # optional header size
+    optional = 0x98
+    struct.pack_into("<H", pe, optional, 0x10B)
+    struct.pack_into("<I", pe, optional + 28, image_base)
+    struct.pack_into("<I", pe, optional + 92, 16)
+    table = optional + 0xE0
+    struct.pack_into("<8sIIII", pe, table, b".text", 0x1000, 0x1000, 0x200, 0x400)
+    struct.pack_into("<8sIIII", pe, table + 40, b".reloc", 0x1000, 0x2000, 0x200, 0x600)
+    if relocations:
+        entries = [0x3000 | rva - 0x1000 for rva in relocations] + [0]      # a pad entry, type 0
+        block = 8 + 2 * len(entries)
+        struct.pack_into("<II", pe, 0x600, 0x1000, block)
+        for index, entry in enumerate(entries):
+            struct.pack_into("<H", pe, 0x608 + 2 * index, entry)
+        struct.pack_into("<II", pe, optional + 96 + 5 * 8, 0x2000, block)
+    return bytes(pe)
+
+
+def test_a_relocated_module_is_taken_back_to_its_preferred_base() -> None:
+    base, sites = pe_base_relocations(synthetic_pe(0x400000, [0x1004, 0x1010]))
+    check(base == 0x400000 and sites == [0x1004, 0x1010], "the reader finds the base and the HIGHLOW sites")
+    check(pe_base_relocations(synthetic_pe(0x400000, []))[1] == [], "a PE without relocations, as a packed AGE, has none")
+    image = bytearray(0x2000)
+    struct.pack_into("<I", image, 0x1004, 0x5A1234)      # 0x401234 as the loader relocated it to 0x5a0000
+    struct.pack_into("<I", image, 0x1010, 0x6D0000)
+    struct.pack_into("<I", image, 0x1008, 0x5A9999)      # not a relocation site: stays
+    undone = undo_relocations(image, sites, 0x5A0000 - 0x400000)
+    check(undone == 2 and struct.unpack_from("<I", image, 0x1004)[0] == 0x401234
+          and struct.unpack_from("<I", image, 0x1010)[0] == 0x530000
+          and struct.unpack_from("<I", image, 0x1008)[0] == 0x5A9999,
+          "the loader's delta comes off the relocation sites alone")
+
+
 def main() -> int:
     test_hash_and_catalog_identity()
+    test_a_relocated_module_is_taken_back_to_its_preferred_base()
     test_manifest_keeps_profile_runtime_and_range_provenance_separate()
     test_new_profiles_have_no_borrowed_landmark()
     print("FAILURES:", len(FAILS))

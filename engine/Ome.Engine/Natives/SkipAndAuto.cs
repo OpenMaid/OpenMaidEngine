@@ -335,6 +335,10 @@ public sealed partial class SkipAndAuto
     /// <summary>Op 0x1bc's part: no voice is pending any more.</summary>
     public void ClearPendingVoice() => _scene.AutoVoicePending = false;
 
+    /// <summary>Op 0x2f6's part (AGE 4.45D): a voice is pending while any voice still plays (ctx+0x77898 =
+    /// voice_any_playing@0x404c70 after the stop).</summary>
+    public void SetPendingVoice(bool pending) => _scene.AutoVoicePending = pending;
+
     /// <summary>
     /// What a text wait's Auto timer reads, for a page whose layout holds <paramref name="characters"/> glyphs
     /// (native's record count less its pending record, adv_layout_character_count@0x407b10). The unvoiced delay is

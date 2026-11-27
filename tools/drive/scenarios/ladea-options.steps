@@ -1,0 +1,31 @@
+# 天秤のLa DEA。's 設定 (docs/engine-re.md, "魔導巧殻 against 天秤のLa DEA。, triaged", the shell): at the title the
+# `option` steps set controls on each page, each through its menu command and OK. Natively AGERC's dialog, on the port
+# the options panel. AGE 4.45D's AGERC.DLL has 4.43B's menu 110, bar and pages, so the same option names as
+# koukaku-options.steps.
+#
+# - The first `options` lists the sandbox's values; the last lists what was set, the same on both targets.
+#
+# Compare SYS4REG.INI after `stop` on both targets. On a fresh sandbox, on both targets:
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port start
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port run tools/drive/scenarios/ladea-options.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+
+options                                 # the sandbox's values
+option auto-wait-voice-end off          # 音声終了まで待つ; on 4.45D the voice group's 文字単位時間 stays enabled
+option auto-pitch-voice 230
+option auto-wait-voice 900
+option auto-pitch-text 370
+option auto-wait-text 1200
+option message-speed 30                 # the ﾒｯｾｰｼﾞ page
+option wheel-advance on
+option se-volume 7000                   # the ｻｳﾝﾄﾞ page
+option lower-bgm-level 30
+option effect-skip on                   # the その他 page
+wait 1
+options                                 # the values set above
+expect script=TITLE
+shot ladea-options

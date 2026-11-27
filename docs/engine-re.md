@@ -179,7 +179,7 @@ a screen-mode present during a save restore ("Comparing engine builds" below).
 `tools/revision_diff.py` compares the native code behind every opcode two engine dumps share (usage and report
 format: `docs/tools-reference.md`, "Opcode revision diff"). Its purpose is a high-level list of what a new game's
 engine changed, read before any playthrough, so a new game needs no full native-vs-port sweep to find its
-revision changes; a sweep then checks the rows that matter. Seven builds have dumps and pinned facts in
+revision changes; a sweep then checks the rows that matter. Eight builds have dumps and pinned facts in
 `tools/operand_access.py` `ENGINES`:
 
 | Engine id | Game | AGE.EXE | ctx constructor | Opcode table | Handlers | C runtime starts |
@@ -190,7 +190,8 @@ revision changes; a sweep then checks the rows that matter. Seven builds have du
 | `arterial` | 創刻のアテリアル (EU13) | 4.38D | `0x414e10` | `ctx+0xa4b9c` | 473 | `0x583dd8` |
 | `verita` | 戦女神VERITA, being added | 4.24N | `0x414180` | `ctx+0x9b2b8` | 420 | `0x550cce` |
 | `bg0` | 戦女神ZERO, being added | 4.15D | `0x412070` | `ctx+0x99758` | 402 | `0x52b0ee` |
-| `koukaku` | 魔導巧殻, being added | 4.43B | `0x414f70` | `ctx+0xa4bd4` | 501 | `0x5f2338` |
+| `koukaku` | 魔導巧殻 | 4.43B | `0x414f70` | `ctx+0xa4bd4` | 501 | `0x5f2338` |
+| `ladea` | 天秤のLa DEA。, being added | 4.45D | `0x415320` | `ctx+0xa4f1c` | 510 | `0x5f3058` |
 
 **Himegari is 4.24J** (checked 2026-11-12). The dump's own version resource reads `FileVersion` `4.24J` (UTF-16 at
 `0x602f08`), and so does the installed `AGE.EXE` (1,105,920 bytes, dated 2009-11-13, SHA-256
@@ -418,6 +419,25 @@ paired 2,940 functions (326 of them by a unique string) and ported 740 of `/arte
 functions. With the 28 handlers named from the registry and the 15 accessors, 783 functions got a name and plate, 67
 of them new functions. Its packer sites are not restored and its imports not typed.
 
+**天秤のLa DEA。 (`ladea`).** `games/ladea/` was taken in on 2026-11-26 (`Ome.Cli intake`; the report is
+`build/games/ladea/intake.json`). Its `AGE.EXE` (2,947,072 bytes, dated 2014-04-28, SHA-256
+`815c0a63df0fd68529abd3daa77c704f674b98ddb5abdd105d1e3508f948c05d`) reads `FileVersion` `4.45D`, and its product
+version is 4.45.4.0. Its catalog is `S4IC445` and its scripts are `SYS4445`, newer than any build in the table. Unlike
+every other build's, its `AGE.EXE` is not packed: its sections are `.text`, `.rdata`, `.data`, `.rsrc` and `.reloc`,
+its entry point is in `.text` (`0x5f71ee`), and it keeps its base relocations, so Windows loaded it at `0x5a0000`.
+`dump_engine.py --reference ladea --spawn` dumped it from a scratch copy, the install checked unchanged, and took the
+module back to its preferred base, `0x400000`, by undoing its 33,188 `HIGHLOW` relocations; the manifest keeps the base
+it ran at (`build/games/ladea/engine-dump/`, 2,998,272 bytes). The table-fill search (`lea edi,[esi+0xa4f1c]; mov
+ecx,0x400; mov eax,0x418810; rep stosd`, at `0x415ab1`) found the constructor at `0x415320`, with 魔導巧殻's
+`0x414f70`'s prologue, and the table holds 510 handlers: 4.43B's 501 and `0x2f3` to `0x2fb`. `operand_access.py
+--align-accessors` aligned 4.43B's 15 accessors against 魔導巧殻, every alignment unanimous, and against Arterial with
+op `0x191`'s two dissents, as for 4.43B. The C runtime starts at the `operator new` thunk `0x5f3058`, whose bytes match
+魔導巧殻's `0x5f2338`. The Ghidra image is `/ladea/4.45D/range_00400000.bin`, 6,079 functions after analysis.
+`tools/ghidra_port_names.py koukaku ladea` paired 3,480 functions (353 of them by a unique string) and ported 813 of
+`/koukaku/4.43B`'s 1,232 named or commented functions. With the nine handlers named from the registry and the 15
+accessors, 837 functions got a name and plate, 68 of them new functions. With no packer, its import table is whole:
+the image's 272 import slots, in 11 DLLs, are named from it and typed as pointers.
+
 **Himegari against Verita (2026-11-24).** 4.24J against 4.24N: 370 `same`, 9 `minor`, 41 `differs`; helpers 100 /
 3 / 6, none unpaired, and neither build has an opcode the other lacks. Triaged below ("Himegari against Verita,
 triaged"). The largest differences:
@@ -462,6 +482,22 @@ triaged" below):
   constants 56 lower, as the context grew before the save data;
 - `0xc2`, which reads the new setting `set:TransferMusicVolume`;
 - `0x191`, `absolute-value`, which works on floats (above).
+
+**魔導巧殻 against 天秤のLa DEA。 (2026-11-26).** 4.43B against 4.45D: 467 `same`, 10 `minor`, 24 `differs`; helpers
+120 / 4 / 8, none unpaired. Nine opcodes are only 4.45D's (`0x2f3` to `0x2fb`), and none only 4.43B's. Arterial's
+4.38D against 4.45D gives 381 / 54 / 38, so 4.43B is the nearest build. The largest differences
+(`build/revision-diff/koukaku-ladea.md`):
+- the sound ops `0x72`, `0xfa`, `0x82`, `0x1d1`, `0xc4`, `0x1bd`, `0xc6`, `0x1ba`, `0x1bc`, `0x1be`, `0x1c4`, `0xb6`
+  and `0xbb`, with the shared helpers `0x4a3f40=0x4a4a90`, `0x4a3a80=0x4a4590` and `0x4a3c70=0x4a4780`: compares with
+  13 become compares with 15 (and one with 12 one with 14), the message 「WAVファイル %s の読み込みに失敗しました」 gives way
+  to 「VOICEファイル %s の読み込みに失敗しました」, and 4.45D has a new `ERROR dsbSetPan` message;
+- `0xff` and the helper `0x473fe0=0x474660`, which 13 opcodes reach (`0x9`, `0x21` to `0x25` among them): new tests and
+  masks of bits 1, 2, 4, 8 and `0x20`;
+- the numbered load ops (`0xab`, `0x190`, `0x19f`, `0x1a1`) and their helper `0x40ffe0=0x4102b0`, with constants 840
+  lower, as the context grew by `0x348` before the save data;
+- `0x9`, `0x82`, `0x2cf` and `0x1a5`, `set-font`, which gain a `@%s` format where 4.43B reads an address;
+- three rows (`0x1c0`, `0x1c6`, `0x7d`) whose only fact is one context field, a correspondence gap by the report's
+  rule.
 
 ### Kamidori against Arterial, triaged (2026-11-19)
 
@@ -974,6 +1010,121 @@ Quit (`modding/games/koukaku.md`, "The debug menu"), is alike on both targets bu
 `gfx_surface_load_asset` fails (`op_0x1f9_set_texture@0x421e90`), and the field's picture is 0. After 無視 native goes
 on through OUTBREAK and ORGANIZE to an immediate 戦闘敗北, and its RESULT screen is the port's, pixel for pixel. The
 port raises the same box, word for word ("A failed picture load", below).
+
+### 魔導巧殻 against 天秤のLa DEA。, triaged (2026-11-26)
+
+Every one of the report's 24 differing opcodes and 8 differing helpers has a disposition (`adding-a-game.md`, step
+4). Each pair was decompiled from `/koukaku/4.43B` and `/ladea/4.45D` (52 function pairs, the handlers and every
+function a row localizes to) and compared with `tools/decomp_pair_diff.py`; where the decompiles disagree, the two
+dumps' assembly was read. Addresses are 4.43B's first, then 4.45D's. Of the rows, `0x7d`, `0xab`, `0x190`, `0x19f`,
+`0x1bd`, `0x1c0`, `0x1c6` and `0xbb` occur in no script of 天秤のLa DEA。. The names below are in the 4.45D image,
+with plates. Its imports are typed, so a decompile there names each Windows call where the packed 4.43B image shows
+the packer's stubs, which accounts for many changed lines.
+
+Two facts explain most rows. The sound manager has 15 channels where 4.43B has 13, and the voice is three voices, on
+channels 12 to 14, where 4.43B has one, on channel 12. The context grew by `0x348` bytes before the save data.
+
+| Cause | Rows | Disposition |
+|---|---|---|
+| Three voices: the voice facade's per-voice state becomes arrays of three (the playing id and its pair, `+0x460` and `+0x418`; the mute-next flags, `ctx+0x14c68`, 4.43B's single `ctx+0x14938`; the delayed start, `+0x424` to `+0x454`; the pending pair under fast-forward, `ctx+0x778a8` and `+0x778b4`). `voice_play_indexed_asset` (`0x4a8f70`=`0x4a9b90`) takes a voice index and plays on channel 12 plus it, and every site that played, paused, tested or released the voice loops over the three | ops `0xc4` (voice 0), `0x72` and `0xfa` (the voices held under fast-forward), `0x1c4` (`voice_any_playing@0x404c70`: any voice whose variant's bits 0 and 1 are not both set), `0x1bc` and `0x1ba` with `sound_set_voice_route_enabled` (`0x4083f0`=`0x4086f0`), `0x1bd`, `0xc6` (the voice level reaches all three), `0x2c0` (voice 0's delayed start, `voice_schedule_playback_n@0x4a9d50`); History's replay in `0x460980`=`0x461150`, `text_history_render_records` (`0x4646d0`=`0x464fa0`) and `text_redraw_retained_group` (`0x463310`=`0x463b40`), which replays a record's own voice; `scene_context_init_reset` (`0x40c7e0`=`0x40ca80`), which clears the new fields | real, ported at step 6 (below, "The three voices"): the audio native has three voices, channels 12 to 14, with the per-voice state; the ops above work on voice 0 as they did on the one voice, and the new ops `0x2f4` to `0x2f8` name a voice |
+| History's voice: a record (72 bytes) fills `+0x20` with its voice index and `+0x1c` with the voice's pan (`ctx+0x4e8c[N]`), which 4.43B leaves 0; `text_history_find_pair` (`0x455110`=`0x455c20`) matches the voice index too and returns `+0x1c` | `text_history_append_voice_pair` (`0x45c400`=`0x45ce80`), `0x1d4` (voice 0), the new `0x2f3`, and History's replay above | real, ported with the three voices (`AdvTextHistoryRecord.VoiceIndex` and `VoicePan`). The record's layout is unchanged, so History's save form is too: a voice record's pan and voice index are its dwords 7 and 8, which a 4.43B save holds 0 in. `ctx+0x4e8c` is the voice's pan, which no instruction writes, so 0 (native read it so on 2026-11-26) |
+| The sound manager's 15 channels: every bound of 13 becomes 15 (and of 12, 14), and the per-channel arrays moved (`+0x5a4` to `+0x618`, `+0x570` to `+0x5a0`, the critical sections `+0x5d8` to `+0x654`) | `sound_manager_start_channel` (`0x4a3a80`=`0x4a4590`), `sound_channel_pause` (`0x4a3b20`=`0x4a4630`), `0x4a3c70`=`0x4a4780`, `sound_buffer_destroy` (`0x4a3d60`=`0x4a48b0`), `sound_decode_channel` (`0x4a3f40`=`0x4a4a90`, the manager 64 bytes larger), `0x4a4270`=`0x4a4dc0`, `0x4a4ac0`=`0x4a56e0`; ops `0x1be`, `0xb6`, `0xbb` | real only through the voices: no op of 4.45D reaches channel 13 or 14 but through a voice index, and the port's channels are indexed by number, so the bound is the voices' |
+| The joystick's POV: with `JOYCAPS_POV4DIR` (the caps' `+0x34` bit `0x20`) a pressed POV makes the four directions and the axes are not read; without it the POV counts as centred. Bit 0 of the input manager's `+0x1a74` (op `0x2fa`) drops the axes | `0xff` through `input_poll_joystick_action_bits` (`0x473ed0`=`0x474450`) and `input_poll_joystick_action_edges` (`0x473fe0`=`0x474660`, which 13 opcodes reach) | real: the port's joystick (`InputBindings`) gains the POV's directions and the flag. Step 7: SETJOY and the configuration screens |
+| The dash join's strip: after a `0xF042` or `0xF043`, every drawer takes the strip's rows from the glyph's black box (from the baseline less `gmptGlyphOrigin.y`, `gmBlackBoxY` rows; the drawer at `0x46edd0` also widens it by the effect offset), where 4.43B takes the cell's (`size × scale + 2 × ey` rows from the string's top). 4.45D has five join sites to 4.43B's three | `text_draw_glyph_string_plain` (`0x46bf50`=`0x46c4b0`, the join at `0x46c510`=`0x46ca70`; the report's `+0x355e4`, the text scale, is the term 4.45D drops) and the drawers at `0x46bc6a` and `0x46edd0` | real, without an effect on the game's own text, so not ported (`backlog.md`, "4.45D's dash strip"). The strip's rows differ only outside the dash's ink, and the copy lands on the glyph before the dash: every `0xF043` and `0xF042` in 天秤のLa DEA。's strings follows a dash (412 after `0xF041`, 5 after `0xF042`), whose cell has no ink outside its rows. SC0000's page 3 (古の女神 and `0xF041` `0xF043`) is identical on native and the port under 4.43B's strip (step 6) |
+| The redraw of every window's retained text (read at step 6): both builds apply the window's style (its record's `+0xa8` to `+0xcc`: flags, size, weight, effect offset, face, the ruby's size and weight), draw each layout record, and restore the style. 4.43B's `0x466100` also applies each record's own style (the record list `+0xd0`, 116-byte records: `+0x4c` to `+0x60`, the size and the effect offset) before drawing it; 4.45D's `0x466a20` draws every record in the window's style. The step 4 reading, that `0x466a20` has no restyle, was wrong | its only callers, in both builds: `display_toggle_screen_mode_and_menu_bar` (`0x4136f0`=`0x413ac0`) and `text_set_use_anti_font` (`0x414ed0`=`0x415280`). No op reaches it | not modelled: the port redraws no retained text when the screen mode or UseAntiFont changes, in any build (`backlog.md`, "The retained text is not redrawn on a screen-mode or font change"). 4.45D's change goes with that redraw |
+| The auto mode's time: op `0x72` counts a page's characters from the layout's 24-byte records inline (`(end - begin) / 24 - 1`), where 4.43B calls `adv_layout_character_count` | op `0x72` | noise: 4.43B's `adv_layout_character_count@0x407970` gives the same `(end - begin) / 24 - 1` (read at step 7) |
+| The context grew by `0x348` bytes before the save data | the numbered load ops `0xab`, `0x190`, `0x19f`, `0x1a1` (constants 840 lower) through `save_data_deserialize_and_begin_restore` (`0x40ffe0`=`0x4102b0`, the same code); `script_frame_load_resource` (`0x40ebf0`=`0x40eec0`, the frame's fields in another order) | noise for the opcodes. The save format is 4.43B's with 4.45D's stamp (step 7, below) |
+| The save folder | `0x40ba70`=`0x40bd20` under the save ops | not modelled: the port keeps saves in its profile's folder |
+| The window | `display_toggle_screen_mode_and_menu_bar` (`0x4136f0`=`0x413ac0`, under `0x2cf`): the same `GetSystemMetrics` and `SetWindowPos` calls, which the packed image reaches through stubs | not modelled: the port's window |
+| Moved fields and literals | `text_set_font_face` (`0x430470`=`0x430da0`) and `text_manager_initialize` (`0x4626e0`=`0x462f10`): the vertical font's `@%s` is a literal, no longer behind a pointer; op `0x9` (one field), `0x1c0`, `0x1c6`, `0x7d` (`0x419ca0`=`0x41a170`), `0x1a5`, `0x2cf` | noise |
+| The weak rows | `0xc`, `0x94`, `0xad`, `0x13a`, `0x22d`, `0x24b`, `0x329` (one constant or field each), `0x1d4` and `0x2c0` (the voices above), `0x221` (no script uses it) | noise, but for the two that are the voices |
+
+**The opcodes it adds, and those no supported game used.** Read in `/ladea/4.45D`; each is named there with a
+plate, and each gets its registry entry, scoped to SYS4445 where it is 4.45D's, when it is implemented. Operand
+indexes count from 1.
+
+| Op | Handler | What it does |
+|---|---|---|
+| `0x2f4` | `op_0x2f4_play_voice_n@0x425c00` | `0xc4` on voice N (operand 3): plays voice id 1 (with id 2) on channel 12 + N, with `0xc4`'s mute-next transitions on N's flag, the pending pair under fast-forward, and History's record with N. 4.45D's `0xc4` is it with N = 0 |
+| `0x2f5` | `op_0x2f5_schedule_voice_playback_n@0x425d10` | `0x2c0` on voice N (operand 4): voice id, variant, delay |
+| `0x2f6` | `op_0x2f6_stop_voice_n@0x425d60` | stops voice N and clears its flag and pending pair; `ctx+0x77898` = any voice playing. 78,263 sites in 197 scripts |
+| `0x2f7` | `op_0x2f7_mute_next_voice_n@0x425dc0` | `0x1d5` on voice N: its mute-next flag = 1. 25,570 sites |
+| `0x2f8` | `op_0x2f8_set_voice_n_pan@0x425e00` | voice N's pan (channel 12 + N), clamped to ±10000: `IDirectSoundBuffer::SetPan` through `sound_set_channel_pan@0x4a4e60`. Every site passes 0. 13,264 sites |
+| `0x2f3` | `op_0x2f3_find_text_history_voice_pair@0x430470` | `0x1d4` with a voice index: the record's two ids and its `+0x1c`. HISTORY, once |
+| `0x2f9` | `op_0x2f9_read_joystick_axes@0x430500` | operand 1 = whether joystick 0 exists, operands 2 to 7 its six axes as floats, each the position over the caps' range (`input_read_joystick_axes@0x474920`) |
+| `0x2fa` | `op_0x2fa_set_joystick_axes_ignored@0x425e40` | `ctx+0x1e7c` (the input manager's `+0x1a74`) = operand 1; bit 0 drops the axes from the directions |
+| `0x2fb` | `op_0x2fb_read_joystick_buttons@0x4305c0` | joystick 0's `dwButtons` from a fresh poll, else 0 (`input_read_joystick_buttons@0x4745e0`: also 0 when polled within 20 ms) |
+| `0x12d` | `op_0x12d_boxes_overlap@0x42da70` | 1 when two four-cell boxes (left, right, top, bottom) overlap, edges included, each at its own offset: box A at operand 2 with offset (3, 4), box B at operand 5 with offset (6, 7). It reads the cells raw, undoing the bank's obfuscation. The same code since 4.33G; CHMENU |
+| `0xce`, `0xcf` | `op_0xce_register_timed_catchup_callback@0x421090`, `op_0xcf_handler@0x41a830` | the timed catch-up callback (Himegari's `/v2` decode, the same code), which no supported game ran; LAUNCH, once each |
+
+SYSTEM4 runs `0x2f6` and `0x2f8` as it boots, and every scene runs `0x2f6` to `0x2f8` beside `0xc4`. Step 6 ported
+the five voice ops and `0x2f3` with the three voices (below), and step 7 the rest (below).
+
+**The three voices (ported 2026-11-26).** The voice facade (`ctx+0x147fc`) keeps per voice N, 0 to 2: the playing id
+and its pair (`+0x460[N]`, `+0x418[N]`), the delayed start (armed `+0x424[N]`, start time `+0x430[N]`, delay
+`+0x43c[N]`, id `+0x448[N]`, variant `+0x454[N]`); the context keeps the mute requests (`ctx+0x14c68[N]`), the pair
+held under fast-forward (`ctx+0x778a8[N]`, `+0x778b4[N]`) and the pans (`ctx+0x4e8c[N]`).
+
+- `voice_play_indexed_asset@0x4a9b90(N, id, variant, pan)` plays on channel 12 + N: the volume from the manager's
+  `+0x51c` (`sound_channel_set_volume@0x4a4780`), the pan (`sound_set_channel_pan@0x4a4e60`), then
+  `sound_manager_start_channel(12 + N, variant)`, whose `sound_stream_play@0x4a5900` keeps the variant as the loop
+  flag (`+0x2450`) that `sound_stream_fill_segment@0x4a5150` rewinds on. So a voice with a nonzero variant loops.
+- `voice_any_playing@0x404c70` is true when a voice's channel plays and its scheduled variant does not have bits 0
+  and 1 both set. Op `0x1c4`, the Auto wait, the engine tick's duck release and op `0x2f6` read it.
+- **The background voice.** The facade's tick runs `voice_tick_delayed_playback_n@0x4a9dc0` for each voice. A voice
+  scheduled with variant 3 (all 52 sites of `0x2f5`: voice 2, 300 ms, in the SP scripts, CONFIG2 and CALLBACK_LOAD)
+  is a background voice. While another voice's channel plays, a playing one is re-armed and its channel paused, and
+  one not playing is disarmed. Once the others are silent, a disarmed one is armed again, so it starts its delay
+  after the last of them ends. It starts with `variant & 1`, so it loops, without beginning the BGM duck. The tick
+  returns 1 only for a voice that is not a background one, and then the engine tick (`0x4125e6`) begins the duck and
+  arms its release.
+- **Every build's delayed start** (4.24J `0x4884d0`, 4.43B `0x4a9110`, 4.45D `0x4a9dc0`) takes its start time on the
+  first tick after the request and compares in the same tick, so no delay plays at once, and the start clears the
+  voice's mute request, promoted or not. For a start that is not a background voice's, the engine tick then begins
+  the duck, marks a voice pending for Auto while the Voice route is on (4.24J `voice_route_enabled`, `ctx+0x1491c`, at
+  `0x411a89`; 4.45D `ctx+0x14c10`, at `0x412601`) and arms the duck release. Ops `0xc4` and `0x1bd` (4.24J
+  `0x420610`, `0x420920`) and 4.45D's `0x2f4` mark it under the same test. Until 2026-11-26 the port waited a tick
+  more, kept the mute request, marked no voice pending after a delayed start, and marked one for the ops whatever
+  the route.
+
+The port: `AudioRules.Voices` (3) and `BackgroundVoices` in `Age445D`, `Audio.Voice.cs` (per-voice state, the
+background cycle in `CycleBackgroundVoice`, the delayed starts in `ServiceDelayedVoices`), the handlers in
+`VirtualMachine.Audio.cs`, and `Age445DVoiceTests`. The port plays every voice once, the background voice too, which
+it starts again after its delay when the others end (`backlog.md`, "A voice replayed from History may loop natively").
+`0x2f8`'s pan is recorded only: the port's channels have no pan, and every site passes 0.
+
+**Step 6, the boot (2026-11-26).** The natural boot reaches SC0000's first page (神殺しと呼ばれる男がいる。) with no
+opcode skipped once the voices are in. The opening scenario (`tools/drive/scenarios/ladea-opening.steps`: the title,
+GAMESTART's initial settings, five pages of SC0000) passes on both targets at the same positions, and its shots match
+native but for the page-wait icon's frame. Page 3 starts two picture animations that op `0x242` detaches from the
+page's wait (`set-object-animation-detached`), so the page waits on neither while the screen changes for 1.5 seconds;
+the port's drive `settle` now waits for detached one-shot channels too (`GfxState.HasRunningFiniteAnimation`), as native's
+waits for the screen to stop changing.
+
+**Step 7, the shell and the saves (2026-11-26).** Every opcode the scripts use has a handler (`catalog-scan`:
+`unsupported=0`).
+- **The opcodes.** `0x12d`, the joystick ops `0x2f9` to `0x2fb` with the POV's directions (`InputRules`,
+  `JoystickPovDirections` in `Age445D`; the front end makes the POV from the d-pad) and the timed catch-up callback
+  `0xce`/`0xcf` (`VirtualMachine.Timing.cs`), tested in `Age445DInputAndCallbackOpsTests`.
+- **The shell.** La DEA's `AGERC.DLL` is packed, so it was dumped from the running game by a read-only Frida attach
+  to a flat image (`/ladea/4.45D/agerc_6fea0000.bin`). Its resources are 4.43B's but for the version, the icons and
+  dialog 2's copyright year (2012 to 2014): menus 110 and 124 and dialog 10 are the same, and so is the live menu bar.
+  The ｵｰﾄﾒｯｾｰｼﾞ page's procedure (`0x6fea4d60` in the running DLL) handles only WM_INITDIALOG and WM_HSCROLL, so
+  音声終了まで待つ (check `0x3e8`) never disables the voice group's 文字単位時間, as 4.43B's (`0x6ff24880`) does
+  at its init and on the check's click: `ShellRules.VoiceEndDisablesVoicePitch` is false in `Age445D`. 4.43B's click
+  also calls the host's `+0xdc` (`0x473390`), which writes `display:ForceScreen` (`backlog.md`).
+- **The settings.** `tools/drive/scenarios/ladea-options.steps` sets ten options at the title; both targets list the
+  same values before and after and leave identical `SYS4REG.INI` files.
+- **The saves.** Native's 4.45D save decodes as 4.43B's layout with the stamp `445D` (`Age445D`'s `Saves`), and the
+  profile now writes. `tools/drive/scenarios/ladea-save-load.steps` saves on SC0000's page 4 from CONFIG, the option
+  screen the page's right click opens, reads on and loads it back, on both targets. `save-diff` of the two targets'
+  saves shows only the time and the play seconds. Loaded the other way round, each target's save resumes page 4 on the
+  other, and the two targets' saves of the loaded page differ only in the time and the play seconds.
+- **Two port faults the saves showed, both older than the branch.** CONFIG's exit runs op `0x82` (`CONFIG@0x200`)
+  before SAVE opens, and the port bound the page's glyphs again where native binds one object per record and writes
+  each record's drawn rectangle back: the save held 30 text objects to native's 7 ("Op `0x82` redraw"). And a load
+  drew SAVE's rings, objects `0x1d90c` and `0x1d95c` in colour `0x00ffffff`, opaque, where native's mode 0 draws
+  by the saved alpha ("Object blend modes", the restore).
 
 ### The opcodes 創刻のアテリアル's scripts add (2026-11-19)
 
@@ -4047,6 +4198,18 @@ it is for a texel of alpha 0: on 4.24J and 4.33G a transparent texel of a copied
 it writes its colour at alpha 0. 4.38D also draws `ONE/ZERO` into the back buffer when display `+0x48c` is 1, a mode the
 port does not have (surface `0x26` in "Polygon objects: winding, depth, texture size and the render targets").
 
+**The restore (2026-11-26).** Every build draws a mode-0 object by its colour's alpha, whenever `+0x60` was written:
+the sprite draws with `D3DXSPRITE_ALPHABLEND` and the object's colour unchanged (4.45D's surface draw
+`gfx_surface_draw_through_sprite_mode0@0x47bc50` passes it to `ID3DXSprite::Draw`; 4.24J's `gfx_object_blit_d3d9`
+likewise), and the bind leaves `+0x60` as it is (4.24J `gfx_object_bind_draw@0x47e870`, 4.45D `0x49c420`). The port
+draws a textured mode-0 object opaque unless its live sequence latched the alpha: a fade (op `0x202`) or a colour
+written after the bind (`GfxObject.OneShotColorBlend`, `PostBindStaticColorBlend`). Its opaque default is for an
+alpha written before the bind (opcodes.toml, op `0x203`), which native's code does not show (`backlog.md`, "The port's
+mode-0 alpha"). A save record has no sequence, so a restored object that is shown and in mode 0 takes the post-bind
+latch (`NativeGfxPersistenceCodec.DecodeObject`;
+`RenderObjectBlendTests.ARestoredMode0ObjectDrawsByItsSavedAlpha`). 天秤のLa DEA。's SAVE screen hides its rings
+with alpha 0 (objects `0x1d90c` and `0x1d95c`), which a load drew opaque until then.
+
 The scripts use both. 創刻のアテリアル's draw mode 3 at ten sites: COUPANIME's movies and one of ATTACK's surfaces. Its
 BUNKIMOVE and SBUNKIMOVE set the choice window's objects (`0xc35a` to `0xc362`, `0x13892` to `0x1389a`) to mode 2,
 present their range into surface `0xe`, made with kind 1, and scale that surface in. So the window lands in the surface
@@ -5996,8 +6159,11 @@ The port now writes that pair in the native order, allowing HISTORY's type-2 gat
 
 #### Op `0x82` redraw (2026-11-07)
 
-**Where it runs.** Only Kamidori runs op `0x82`, and not when CONFIG returns. Its six sites are CONFIG's setting
-handlers, so the ADV page behind the open CONFIG screen shows a change at once:
+**Where it runs.** Kamidori's CONFIG1 to CONFIG5, 創刻のアテリアル's CONFIG1 to CONFIG4 and HISTORY, 魔導巧殻's
+CONFIG and 天秤のLa DEA。's CONFIG run op `0x82`; Himegari, Verita and 戦女神ZERO never do. La DEA's runs it on CONFIG's
+exit (`CONFIG@0x200`), so a save from CONFIG holds the redrawn page. Kamidori runs it only as a setting changes, not
+when CONFIG returns. Its six sites are CONFIG's setting handlers, so the ADV page behind the open CONFIG screen shows a
+change at once:
 
 - CONFIG1's 初期設定 (`label_fb6`, after `INITCONFIG`, `INITCONFIG2` and `CHECKCONFIG`);
 - every CONFIG2 change (`label_1d47`);
@@ -6028,9 +6194,20 @@ the configured outline color.
    - Each character is drawn from the record's rectangle top-left. It advances by its measured extent, or by the
      reference cell `+0x313e8` in aspect mode (half for a single byte).
    - A ruby record (`+0x28` bit 2) draws in the ruby font, mode 0, advancing by `+0x355d8`.
-   - It writes the drawn right/bottom back to the record.
-   - Unless flag 4 is set, it binds one object per record over the drawn rectangle
-     (`gfx_bind_object_to_surface_rect@0x4855e0`, handles counting up from `layout+0x68`).
+   - It writes the drawn rectangle back to the record, the same in 4.33G (`0x455cb0`), 4.38D (`0x461640`), 4.43B
+     (`0x463c78`) and 4.45D (`0x46450f`), read 2026-11-26. The left and top stay. The right is the pen after the last
+     character; a ruby record's pen moves by the ruby size `+0x355d8` (op `0x197`'s operand) for a double-byte
+     character and half of it for a single byte. The bottom is the top plus the primary size `+0x313d4`, which the walk
+     sets from the record's `+0x24` (`text_set_primary_font_size`, 4.45D `0x417fe0`), plus the effect's y offset
+     `+0x56c` while the render mode `+0x55c` is not 0 and message:UseAntiFont (`+0x548`) is set. After taking a
+     character's bottom the walk sets the mode: 0 after a ruby character, the mode at entry after any other; the end
+     restores it. So a ruby record right after text keeps the offset and the ruby records after it lose it (La DEA's
+     page 4: 16, then 15). A record with no text, a line break, gets its left as its right and keeps its bottom.
+   - Unless flag 4 is set, it binds one object per text record, a line break's empty one included, over the rectangle
+     written back (`gfx_bind_object_to_surface_rect@0x4855e0`, handles counting up from `layout+0x68`). From 4.33G a
+     record is grown and moved as the layout publisher does a glyph of its kind ("AntiFont off in 4.33G and 4.38D"):
+     one that is not ruby by the rows under its cell, the mode-3 move and op `0x261`'s paddings, in the mode the walk
+     left; a ruby record by its raise.
 5. The aspect in-cell placement flag (`+0x35598`) is 1 during the walk. The style is restored at the end, and the
    live glyph vector and the text cursor are left alone, so later text continues the page.
 
@@ -6041,9 +6218,14 @@ the configured outline color.
 - The text native's `RedrawGroup` (`engine/Ome.Engine/Natives/TextManager.Presentation.cs`) receives it and draws
   every record at its rectangle into a cleared layout surface (`RetainedGlyphLayoutEngine.RenderRedraw`; ruby through
   `RubyTextLayout.DrawAt`).
-- Unless flag 4 is set, it binds the published glyphs again over the new pixels. Native binds one object per record,
-  which covers the same cells. On 4.33G and 4.38D it grows and moves each that is not ruby as the layout publisher
-  does ("AntiFont off in 4.33G and 4.38D"; `RetainedAdvTextLayoutPresentation.RepublishEach`).
+- It writes each text record's drawn rectangle back as native does (`TextManager.RedrawnRecords`,
+  `AdvTextHistory.SetRedrawnRect`; the pen from `RenderRedraw`), so a later redraw, History and a save read it.
+- Unless flag 4 is set, it binds one object per text record as native does
+  (`RetainedAdvTextLayoutPresentation.BindRecord`, with the build's `LayoutPublication`). The glyph vector and its
+  published count stay for later text. A group presented again in the selected language has no records to its
+  glyphs, so it binds the published glyphs again (`RepublishEach`). Until 2026-11-26 every redraw did that, which
+  covers the same cells but binds an object per glyph: La DEA's save from CONFIG held 30 text objects to native's 7
+  (`TextRedrawOpsTests.ARedrawBindsOneObjectPerRecordAndWritesItsRightAndBottomBack`).
 - Flag 8's voice replay is not modelled (`docs/backlog.md`).
 - It is not a History presentation, which History's exit would erase.
 
@@ -9897,7 +10079,9 @@ asks GDI (`CreatePolygonRgn`, `PtInRegion`), not the x87.
         target (`+0x5f68c`) and owner `+0x5f6b0`, and starts its interval timer (`+0x5f33c`).
       - `op_0xcf_dispatch_timed_catchup_callback@0x417f80` dispatches it with the same check. Its on-time path
         formats the raw ids instead: 「Depth が不正です %d != %d」 (`0x5714c0`).
-      - Neither game uses ops `0xce`/`0xcf`.
+      - Neither Himegari nor Kamidori uses ops `0xce`/`0xcf`. 天秤のLa DEA。's LAUNCH runs each once, and the port has
+        them since 2026-11-26 (4.45D's `0x421090` and `0x41a830`, the same code; "魔導巧殻 against 天秤のLa DEA。,
+        triaged").
     - **Resets.**
       - Construction and op `0x9`'s root reload call `scene_context_init_reset@0x40b3b0`. It sets every owner to -1
         and clears `coroutine_runstate` and the timed schedule, but keeps the `0xcc` target.

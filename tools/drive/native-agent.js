@@ -422,16 +422,26 @@ function hookModule(module) {
     }
 }
 
+// The [native.*] facts are addresses of the image at its preferred base, 0x400000, as the dumps and the Ghidra images
+// read it. The packed builds always load there; 天秤のLa DEA。's unpacked 4.45D keeps its relocations, and Windows may
+// load it elsewhere. imageDelta is the module's load base less 0x400000, set by init().
+const IMAGE_BASE = 0x400000;
+let imageDelta = 0;
+
+function image(address) {
+    return ptr(address).add(imageDelta);
+}
+
 let pollingKept = null;    // { count } once keeppolling() has run
 
 function keepPolling() {
     const facts = config.keep_polling;
     if (facts === null || facts === undefined) return null;
     if (pollingKept === null) {
-        const activateReturn = ptr(facts.activate_return);
+        const activateReturn = image(facts.activate_return);
         pollingKept = { count: 0 };
         // input_set_polling_enabled(this = input manager, disable): thiscall, so args[0] is the stack argument.
-        Interceptor.attach(ptr(facts.setter), {
+        Interceptor.attach(image(facts.setter), {
             onEnter(args) {
                 if (this.returnAddress.equals(activateReturn) && !args[0].isNull()) {
                     args[0] = ptr(0);
@@ -440,7 +450,7 @@ function keepPolling() {
             },
         });
     }
-    const ctx = ptr(config.engine.ctx_global).readPointer();
+    const ctx = image(config.engine.ctx_global).readPointer();
     if (!ctx.isNull()) ctx.add(facts.gate).writeU32(1);   // undo a deactivation that came before the hook
     return pollingKept.count;
 }
@@ -455,7 +465,7 @@ const OP60_RETURN_BYTES = [0x6a, 0x02, 0x8b, 0xce, 0xa3];   // push 2; mov ecx, 
 
 function randDraw() {
     const engine = config.engine;
-    const ctx = ptr(engine.ctx_global).readPointer();
+    const ctx = image(engine.ctx_global).readPointer();
     const frame = ctx.add(ctx.add(engine.cur_ctx_index).readU32() * engine.frame_stride);
     const resid = frame.add(engine.frame_script_resource_id).readU32();
     const offset = ((frame.add(engine.frame_pc).readU32() - frame.add(engine.frame_codebase).readU32()) >>> 2) >>> 0;
@@ -480,7 +490,7 @@ function randSeed(seed) {
         : { seed: rand.seed, draws: rand.draws,
             sites: Array.from(rand.sites.values(), site => [site.resid, site.offset, site.draws]) };
     if (seed !== null && randProbe === null) {
-        const site = ptr(facts.op60_rand_return);
+        const site = image(facts.op60_rand_return);
         const found = Array.from(new Uint8Array(site.readByteArray(OP60_RETURN_BYTES.length)));
         if (found.some((byte, index) => byte !== OP60_RETURN_BYTES[index]))
             throw new Error(`op 0x60's rand() call does not return to the expected code at ${site}: ${hex(found)}`);
@@ -520,7 +530,7 @@ function activateInThread(window) {
 
 function frameState() {
     const engine = config.engine;
-    const ctx = ptr(engine.ctx_global).readPointer();
+    const ctx = image(engine.ctx_global).readPointer();
     if (ctx.isNull()) return { ctx: '0x0', current: null, frames: [] };
     const current = ctx.add(engine.cur_ctx_index).readU32();
     const frames = [];
@@ -539,6 +549,7 @@ function frameState() {
 rpc.exports = {
     init(value) {
         config = value;
+        imageDelta = Process.mainModule.base.sub(ptr(IMAGE_BASE)).toInt32();
         Process.enumerateModules().forEach(hookModule);
         Process.attachModuleObserver({ onAdded: hookModule });
         return Array.from(hooked);

@@ -67,6 +67,28 @@ public class RenderObjectBlendTests
     }
 
     [Fact]
+    public void ARestoredMode0ObjectDrawsByItsSavedAlpha()
+    {
+        // Native draws a mode-0 object by its packed alpha whenever it was written (D3DXSPRITE_ALPHABLEND, the colour
+        // unchanged: 4.45D gfx_surface_draw_through_sprite_mode0@0x47bc50). A save record has no live sequence for the
+        // port's latches, so a restored object takes its alpha: 天秤のLa DEA。's SAVE screen hides its rings with
+        // 0x00ffffff (objects 0x1d90c and 0x1d95c), and a load drew them opaque.
+        GfxState live = WithVisibleObject(0x100, resId: 5, colorKey: -1);
+        live.SetObjectColor(0x100, GfxState.PackColor(0x00, 0xFFFFFF));
+        Assert.Equal(255, live.SnapshotVisibleObjects().Single().Alpha);   // the port's live rule: no latch yet
+
+        var (surfaces, objects, first, count, range) = Ome.Engine.Persistence.NativeGfxPersistenceCodec.Capture(live);
+        var state = new Ome.Engine.Persistence.NativeNumberedSaveState(
+            0, -1, [], new byte[Ome.Engine.Persistence.NativeNumberedSaveState.ResourceRecordsSize], surfaces, [], [], [],
+            [], [], [], [], objects, first, count, range);
+        var restored = new GfxState();
+        restored.RestorePersistenceSnapshot(Ome.Engine.Persistence.NativeGfxPersistenceCodec.Decode(state));
+
+        var ro = restored.SnapshotVisibleObjects().Single();
+        Assert.Equal((0, BlendKind.Alpha, true), (ro.Alpha, ro.Blend, ro.MultiplyTint));
+    }
+
+    [Fact]
     public void FieldMovement_StaticAlphaSuppressesOnlyIdleLoopingClone()
     {
         const long prototype = 0x9c40;

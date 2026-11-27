@@ -122,6 +122,13 @@ in `SAVEPATH` (`Eushully\魔導巧殻\SAVE`), `REGFILEPATH` (`Eushully\魔導巧
 (`AGE-EXTEND.TTF`, file 46). Its saved prefix is the first with a float bank larger than one cell: 88,241 float
 globals, beside 2,169,864 integers and 433 strings (the header's `+0xf0` counts, below).
 
+天秤のLa DEA。's trailer (`S4IC445`, AGE 4.45D) has 魔導巧殻's 50 keys in the same order, with the same canvas
+(`1280` by `720`), `RUBYSHIFTMODE` (`2`), `TRANSFERMUSICVOLUME` (`1`) and `SAVEVERSION` (`320`). Its values differ in
+`SAVEPATH` (`Eushully\天秤のLaDEA\SAVE`), `REGFILEPATH` (`Eushully\天秤のLaDEA`), `COPYRIGHT` (`Copyright (c)
+Eushully 2014`), `RCVERSION` (`36`), `VERREGPOS` (`739AC832-D6F1-4D04-861F-F7140E6E64B1`) and `REGKEY`
+(`1939523634`). Its font list names AGE Extend (`AGE-EXTEND.TTF`, file 44). Its catalog reads with the reader as it
+is: `S4IC445` adds no block. Its saved prefix is 848,614 integers, one float and 847 strings.
+
 #### The font list (AGE 4.38D) — CONFIRMED (2026-11-19)
 
 Since AGE 4.38D the stream goes on after the settings pairs with a list of the fonts the game ships in its catalog:

@@ -1,0 +1,60 @@
+# 天秤のLa DEA。: save on SC0000's fourth page, read on, and load the save back. Unchanged on both targets, on a fresh
+# sandbox (the default). It is the scenario of the game's save gate (docs/adding-a-game.md, step 7).
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port start
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port run tools/drive/scenarios/ladea-save-load.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port stop
+# The page's right click opens CONFIG, the game's option screen; its データセーブ and データロード tabs open SAVE, and
+# SBUNKI asks セーブしますか？ or ロードしますか？. Returning to the page from the menu, native may show the scratch
+# install's registration box, which the profile answers. The save is SAVE00.DAT in the sandbox's SAVE folder. Compare
+# two targets' files with
+#   Ome.Cli save-diff A/SAVE00.DAT B/SAVE00.DAT --game ladea
+# Seed a new sandbox from the other target's (--seed native:fresh or port:fresh, after that target has stopped, since
+# the shared SAVE.DAT is written when the game closes) to load one target's save on the other: run the scenario's
+# second half (from "# Load") alone after the opening.
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0x103e timeout=120 # page 1
+settle timeout=30
+advance 3
+expect top=SC0000@0x17cb                 # page 4
+shot ladea-save-page4
+
+rclick adv.next                          # CONFIG, the option screen
+wait-state script=CONFIG timeout=20
+wait 1.5
+click menu.save
+wait-state script=SAVE timeout=20
+wait 1.5
+click slot.0
+wait-state script=SBUNKI timeout=20      # セーブしますか？
+wait 1.5
+click confirm.yes
+wait-state script=SAVE timeout=20        # the slot shows the save
+wait 1.5
+shot ladea-save-slot
+rclick adv.next                          # back to the page
+wait-state top=SC0000@0x17cb timeout=20
+settle timeout=20
+
+advance 2
+expect top=SC0000@0x1d01                 # page 6
+# Load
+rclick adv.next
+wait-state script=CONFIG timeout=20
+wait 1.5
+click menu.load
+wait-state script=SAVE timeout=20
+wait 1.5
+click slot.0
+wait-state script=SBUNKI timeout=20      # ロードしますか？
+wait 1.5
+click confirm.yes
+wait-state top=SC0000@0x17cb timeout=60  # the load resumes page 4
+settle timeout=20
+shot ladea-save-loaded

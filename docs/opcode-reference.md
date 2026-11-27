@@ -1,7 +1,7 @@
 <!-- DO NOT EDIT -- generated from vm-map/opcodes.toml by tools/opcodes_build.py --build -->
 # Opcode Reference (generated)
 
-548 revision-unscoped upstream AGE catalog entries; 359 are observed in at least one recorded game corpus. Source of truth: `vm-map/opcodes.toml`.
+548 revision-unscoped upstream AGE catalog entries; 371 are observed in at least one recorded game corpus. Source of truth: `vm-map/opcodes.toml`.
 
 Observation proves presence in that exact script revision; it does not prove a base SYS4 definition, revision ancestry, or absence from any unscanned game.
 
@@ -15,6 +15,7 @@ An implemented opcode's **control** facts (Lua scripting spec §7.1) say whether
 - **verita:** 262 opcodes in 2130 scripts / 1655135 instructions; catalog `S4IC424`, scripts `SYS4424`, artifact `build/games/verita/catalog-opcode-coverage.json`
 - **bg0:** 246 opcodes in 1579 scripts / 1771109 instructions; catalog `S4IC415`, scripts `SYS4415`, artifact `build/games/bg0/catalog-opcode-coverage.json`
 - **koukaku:** 321 opcodes in 453 scripts / 1928527 instructions; catalog `S4IC443`, scripts `SYS4443`, artifact `build/games/koukaku/catalog-opcode-coverage.json`
+- **ladea:** 317 opcodes in 1054 scripts / 2362847 instructions; catalog `S4IC445`, scripts `SYS4445`, artifact `build/games/ladea/catalog-opcode-coverage.json`
 
 ## ABI snapshots and composition
 
@@ -27,12 +28,13 @@ Each selected revision currently resolves one complete observed snapshot directl
 - **SYS4424** (complete-observed-snapshot): 262 members; parents=none; evidence=catalog-corpus `build/games/verita/catalog-opcode-coverage.json`; S4IC424 / SYS4424 complete decoded corpus snapshot
 - **SYS4415** (complete-observed-snapshot): 246 members; parents=none; evidence=catalog-corpus `build/games/bg0/catalog-opcode-coverage.json`; S4IC415 / SYS4415 complete decoded corpus snapshot
 - **SYS4443** (complete-observed-snapshot): 321 members; parents=none; evidence=catalog-corpus `build/games/koukaku/catalog-opcode-coverage.json`; S4IC443 / SYS4443 complete decoded corpus snapshot
+- **SYS4445** (complete-observed-snapshot): 317 members; parents=none; evidence=catalog-corpus `build/games/ladea/catalog-opcode-coverage.json`; S4IC445 / SYS4445 complete decoded corpus snapshot
 
 ## adv
 
 ### 0x6e `show-text` (show-text, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(text) - build and publish a retained text run in the selected ADV layout, using the current glyph delay and raster style; slot zero selects the current layout.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read-string
@@ -43,8 +45,8 @@ Each selected revision currently resolves one complete observed snapshot directl
 The live 20-byte glyph record is {chain_flag,left,top,right,bottom}; rectangle members are edges. Overflow bits use strict bound<glyph-edge comparisons. With horizontal wrapping enabled, CP932 0x8141/0x8142/0x8176 (、/。/」) remain on the preceding line. Timed publication binds first_handle+reveal_index only while reveal_index is below the configured object capacity. Like ops 0x71 and 0x72 it runs the read-skip block (0x41e3b1): with message:ReadTextSkip on and the message read, it sets run-state 0x08000000 and adv_read_skip_state; an unread message clears adv_read_skip_state only while ctx+0x550fc is clear. The block never clears the run-state bit and never starts it from persistent Skip (docs/engine-re.md, 'Read skip and ctx+0x13dc'). Port: VirtualMachine.ApplyReadTextSkip.
 
 ### 0x6f `end-text-line` (end-text-line, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot) - reset the selected layout's horizontal cursor and advance vertically by the primary font height plus configured line spacing.
 - **operand access:** `1` read (layout 0..9, untested)
@@ -53,8 +55,8 @@ The live 20-byte glyph record is {chain_flag,left,top,right,bottom}; rectangle m
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x6f`; scope=Himegari SYS4422. Ghidra /v2 newline paths at 0x456fd0/0x452970 reset x to the layout's configured line origin and advance y by text-manager line spacing at +0x560 minus the negative primary LOGFONT height. The corpus pairs op 0x6f after show-text throughout ADV and retained UI helpers; STUDY's 16-pixel font plus 9-pixel spacing yields the observed 25-pixel MAMES line step. It also appends an empty flag-8 line-break record to the History backlog (text_history_append_record_with_render_mode@0x456f30); every horizontal wrap inside op 0x6e appends the same record (2026-11-03).
 
 ### 0x70 `define-adv-text-layout` (define-adv-text-layout, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(width)(height)(x)(y) - configure an ADV text layout/surface and, when history recording is enabled, append its logical history index and arm the next retained record as a group start.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read · `4` read · `5` read
@@ -64,8 +66,8 @@ The live 20-byte glyph record is {chain_flag,left,top,right,bottom}; rectangle m
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x70`; scope=Himegari SYS4422. Ghidra /v2: op_0x70_handler@0x41e4e0 forwards the five operands and ctx+0x55110 to adv_text_layout_define@0x4550e0. The worker stores width/height/origin, creates or resizes surface slot layout+0x14, appends {layout_slot,current_record_count} to the 8-byte history index unless suppression bit31 is set, and arms manager+0xd40[slot] so the next 0x48-byte record receives group-start flag bit0.
 
 ### 0x71 `reset-adv-text-layout` (reset-adv-text-layout, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot) - clear/reset an ADV text layout, append a retained-history boundary when recording is enabled, snapshot the current code/text position, and commit pending ReadTextDB records. T1 entries target these structural reset sites.
 - **operand access:** `1` read (layout 0..9, untested)
@@ -77,8 +79,8 @@ The live 20-byte glyph record is {chain_flag,left,top,right,bottom}; rectangle m
 The reset recreates the initial {0,reset_x,reset_y,right,bottom} layout record, clears every pixel of source surface layout_slot+0x14, and erases the complete configured glyph-object range. Port status (2026-07-24): also commits the profile-owned ReadTextDB queue and records the current T1 coordinate. After the commit it runs the read-skip block shared with ops 0x6e and 0x72 (0x41e63a), so a reset outside ADV (after op 0x19b; Kamidori FIELD@0x30a) does not restart fast-forward from persistent Skip (docs/engine-re.md, 'Read skip and ctx+0x13dc'). Port: VirtualMachine.ApplyReadTextSkip (2026-11-07).
 
 ### 0x72 `wait-for-input` (wait-for-input, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot) - arm the ADV input wait after text reveal completes; activate the configured wait indicator and, while Auto is enabled, arm the appropriate Auto-message timer.
 - **operand access:** `1` read (layout 0..9, untested)
@@ -89,8 +91,8 @@ The reset recreates the initial {0,reset_x,reset_y,right,bottom} layout record, 
 Port status (2026-07-24): after the blocking host releases this wait, the VM queues the current packed script id, T1 message index, and T1 count; the next 0x71 commits it. Already-read waits use the same queue path after immediate host release. Entry runs the read-skip block (0x41e73b), then clears run-state 0x08000000 when the message is unread and the held action mask lacks 0x40 (0x41e786). The wait polls the triggered mask, into which ctx+0x13dc injects action 6, so persistent Skip starts fast-forward again at every polling wait while ctx+0x13dc holds (docs/engine-re.md, 'Read skip and ctx+0x13dc'). Port (2026-11-07): ApplyReadTextSkip, then the script channel follows MessageSkipInjected unless the message is read.
 
 ### 0x73 `configure-adv-wait-indicator` (configure-adv-wait-indicator, argc 10)
-- **observed by:** himegari (SYS4422), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4443`
+- **observed by:** himegari (SYS4422), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(dst_x)(dst_y)(surface_slot)(src_x)(src_y)(cell_w)(cell_h)(terminal_frame)(frame_period_ms) - configure the animated marker shown while the selected ADV layout waits for input.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read · `4` read (surface 0..999, untested) · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read
@@ -99,8 +101,8 @@ Port status (2026-07-24): after the blocking host releases this wait, the VM que
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x73`; scope=Himegari SYS4422. Ghidra /v2: op_0x73_configure_wait_indicator@0x41e900 passes operands 1..9 to adv_text_configure_wait_indicator@0x44ff60 and operand 10 to adv_indicator_set_frame_period@0x44d060. The worker writes surface/source rect, layout-relative destination, enabled=1, and terminal/column values to the selected layout at +0x3c..+0x60. SYSTEM4 executes `set-texture 0x337c 0xc 0xff00` (raw id 0x337c = SO000.AGF, a decoded 360x27 strip of twelve 30x27 bat frames), then `0x73 1 385 140 12 0 0 30 27 12 48`; the value 12 is the exclusive terminal/frame count, so animation publishes frames 0..11 and wraps before 12. Layout 1 begins at y=430, placing the 30x27 marker at screen (385,570), matching the original. Op 0x72 activates this descriptor only after reveal completion.
 
 ### 0x74 `set-glyph-delay` (u0041AC00, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (milliseconds) - set the per-glyph ADV text reveal delay without the setting message:MessageSpeed, which op 0x1b5 also writes; op 0x7f reads it back.
 - **operand access:** `1` read
@@ -111,8 +113,8 @@ Port status (2026-07-24): after the blocking host releases this wait, the VM que
 The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the setting, which the 設定 dialog shows and the quit writes (Natives/TextManager.cs). 魔導巧殻's scripts make it 0 for a screen of instant text (175 uses) and give it back the setting's value, global 0x211c14, after (174).
 
 ### 0x75 `set-font-size` (set-font-size, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (pixels) - set the primary text font height and rebuild its native rasterization state.
 - **operand access:** `1` read
@@ -122,8 +124,8 @@ The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the s
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x75`; scope=Himegari SYS4422. Ghidra /v2: op_0x75_set_font_size@0x41ea10 calls text_set_primary_font_size@0x415bd0 on ctx+0x14940. The worker writes the negated pixel height to both primary LOGFONT states, sets lfWidth to negative half the requested size, applies AGE's odd/32/33-pixel height adjustment, and rebuilds both GDI font resources plus glyph buffers. All shipped Himegari sizes are even and avoid the adjustment; HISTORY.BIN selects 22 pixels while active and restores 24 on exit.
 
 ### 0x76 `set-text-color` (set-text-color, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (rgb) - set the current primary text color.
 - **operand access:** `1` read
@@ -132,8 +134,8 @@ The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the s
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x76`; scope=Himegari SYS4422. Ghidra /v2: op_0x76_handler@0x41ea50 byte-swaps operand RGB into text-manager+0x54c and rebuilds text raster state. Retained 0x48-byte history records copy this field to record+0x24; HISTORY.BIN uses white.
 
 ### 0x77 `set-text-effect-color` (set-text-effect-color, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (rgb) - set the secondary outline/shadow color used by the current text raster mode.
 - **operand access:** `1` read
@@ -142,8 +144,8 @@ The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the s
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x77`; scope=Himegari SYS4422. Ghidra /v2: op_0x77_handler@0x41eab0 byte-swaps operand RGB into text-manager+0x550 and rebuilds text raster state. The rasterizer consumes it beside the primary color and retained history copies it to record+0x1c; HISTORY.BIN uses dark 0x333e52 while active.
 
 ### 0x78 `set-text-render-mode` (set-text-render-mode, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (mode) - select the current text raster/effect mode.
 - **operand access:** `1` read
@@ -154,8 +156,8 @@ The port keeps the delay (TextManager.SetMessageGlyphDelayOnly) apart from the s
 Mode 0 draws only the primary glyph. Mode 1 draws one effect-colored copy displaced by the configured x/y offset, then the primary glyph. Mode 2 adds a reduced-coverage primary-color bitmap pass after the ordinary glyph and is unused by Himegari scripts. Mode 3 repeatedly draws the effect glyph around an ellipse whose radii are the configured x/y extents, then draws the primary glyph; Himegari's (1,1) profile produces its one-pixel outline.
 
 ### 0x79 `set-adv-text-reset-cursor` (set-adv-text-reset-cursor, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(x)(y) - configure the cursor coordinates restored by a later reset of the selected ADV text layout. Slot 0 selects the current layout. This does not move the live cursor immediately; opcode 0x7a does that.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read
@@ -165,8 +167,8 @@ Mode 0 draws only the primary glyph. Mode 1 draws one effect-colored copy displa
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x79`; scope=Himegari SYS4422. Ghidra /v2: op_0x79_set_adv_text_reset_cursor@0x41eb50 reads three operands and calls adv_text_layout_set_reset_cursor@0x44fed0. Slot 0 resolves through the manager current-layout field at +0x4c8; the selected layout pointer is manager+0x414[slot], and x/y are stored at layout +0x1c/+0x20. adv_text_layout_reset_cursor_and_bounds_record@0x455070 later copies those configured values into the initial retained record on layout reset. SYSTEM4 has all nine corpus sites, paired with 0x1c1 after defining/resetting layouts 1..9; slot 1 configures (100,47), layouts 2..6 configure (45,42), layouts 7/8 (53,10), and layout 9 (10,10). Port implementation stores the configured cursor separately from the live cursor, restores it on 0x71, and replays the SYSTEM4 configuration in the direct-scene bootstrap.
 
 ### 0x7a `set-adv-text-cursor` (set-adv-text-cursor, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(x)(y) - set the cursor in the selected ADV text layout's last 20-byte record. Slot 0 selects the current layout.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read
@@ -175,8 +177,8 @@ Mode 0 draws only the primary glyph. Mode 1 draws one effect-colored copy displa
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x7a`; scope=Himegari SYS4422. Ghidra /v2: op_0x7a_handler@0x41eba0 fetches operands 3,2,1 and calls adv_text_set_cursor@0x4530f0 on text manager ctx+0x14940. Slot 0 resolves manager+0x4c8; manager+0x414[slot] selects the layout; text_layout_set_cursor@0x452530 writes x/y to +4/+8 of its last 0x14-byte record. SC0000 0x9d3 computes slot 1, x=75, y=47 before voiced show-text.
 
 ### 0x7f `get-message-glyph-delay` (u00414C60, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - read the current per-glyph ADV text reveal delay in milliseconds.
 - **operand access:** `1` write
@@ -185,8 +187,8 @@ Mode 0 draws only the primary glyph. Mode 1 draws one effect-colored copy displa
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x7f`; scope=Himegari SYS4422. Complete corpus consistency across all 7 uses in 5 scripts: MAMES, ITMES, SKMES, and INFOMES save this value immediately before op 0x1b5 sets zero for retained UI-description text, then restore it on exit; CONFIG reads it for the message-speed slider, whose paired op 0x1b5 adjustments use 5-ms steps over 5..100. Native ADV traces identify the consumed text-manager field as the per-glyph charDelay (normally 50 ms).
 
 ### 0x82 `redraw-retained-text-group` (redraw-retained-text-group, argc 5)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(record_index)(flags)(text_color)(effect_color) - clear and redraw an ordinary retained ADV text group into its original layout.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read · `4` read · `5` read
@@ -198,8 +200,8 @@ Mode 0 draws only the primary glyph. Mode 1 draws one effect-colored copy displa
 This is the ordinary-page redraw sibling of 0x1d1's History renderer, which draws in the current style. It releases the layout's objects, clears its surface and draws each retained record again at its own rectangle, ruby records included: each text record keeps its colors (or bit 1's) and pixel height and takes the manager's current face, weight and render mode, and a ruby record draws in the ruby font in mode 0. It stops at the next group boundary, binds one object per record unless bit 2 is set, restores the font state, and leaves the live glyph vector and text cursor alone, so later text continues the page. Flag bit 0 crosses navigation-filtered records, bit 1 overrides both colors, bit 2 suppresses the binding, and bit 3 replays retained voice records. All six Kamidori calls are CONFIG setting handlers that run right after a change, so the page behind CONFIG shows it at once (not CONFIG return paths): 0x83 supplies layout_slot/record_index, flags is 2, text_color is white, and effect_color is the configured outline color. The port builds the per-record draws (AdvTextHistory.TryBuildRedrawBatch -> TextManager.RedrawGroup -> RetainedGlyphLayoutEngine.RenderRedraw) and binds its published glyphs again over the new pixels; bit 3's voice replay is not modelled. docs/engine-re.md, 'Op 0x82 redraw'.
 
 ### 0x83 `query-current-text-redraw` (query-current-text-redraw, argc 3)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_direction)(out_layout_slot)(out_record_index) - return the ADV redraw direction and selected retained-entry pair, or -1/-1 when no entry exists.
 - **operand access:** `1` write · `2` write · `3` write
@@ -211,8 +213,8 @@ This is the ordinary-page redraw sibling of 0x1d1's History renderer, which draw
 The first result is the native direct-history redraw direction/state (-1, 0, or 1). SYS4433 returns the entry at its mutable redraw cursor, while the inspected SYS4422 helper reads the latest navigation anchor instead. Kamidori's six CONFIG setting-handler sites discard out_direction and immediately pass the pair to 0x82. The portable runtime therefore returns neutral direction 0 and its newest retained navigation entry; this exactly covers every shipped Kamidori use while leaving native direct-history key walking as a distinct future input-service feature.
 
 ### 0x85 `clear-text-history` (clear-text-history, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear both the retained ADV text-record vector and its logical layout/message index.
 - **control (port handler):** waits never; leaves falls
@@ -232,8 +234,8 @@ The first result is the native direct-history redraw direction/state (-1, 0, or 
 An empty string draws nothing. The worker has no surface test of its own: its rasterizers size the slot first (gfx_surface_get_size), so an empty slot draws nothing and one outside 0..999 draws nothing with the trace 関数：GetTextureSize エラー：不正なtexture %d, unlike draw-string, which reads the surface table unchecked. Surface 0 becomes surface 30 with a dirty-rectangle report when the draw-mode-0 backend's +0x1f7c is set and its +0x1f88 is 1; only that backend's setup and the screen-mode switch write them, Verita read 0 and 0 at its first field under DrawMode 1, and the port never redirects (docs/engine-re.md, Op 0x89, a string drawn as the ADV text is).
 
 ### 0x8b `set-text-line-spacing` (u0041B3D0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (pixels) - set the extra pixel spacing added between text lines.
 - **operand access:** `1` read
@@ -242,8 +244,8 @@ An empty string draws nothing. The worker has no surface test of its own: its ra
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x8b`; scope=Himegari SYS4422. Ghidra /v2: op_0x8b_set_text_line_spacing@0x41f270 stores operand 1 at text manager +0x560 (ctx+0x14ea0). adv_text_manager_initialize@0x456800 defaults it to 6. Horizontal newline/history paths at 0x456fd0/0x452970 advance y by (+0x560 - primary LOGFONT.lfHeight); lfHeight is negative, so this is font pixel height plus configured leading. Corpus arguments are 8 for 22/24px Mincho blocks and 9 for 16px Gothic blocks.
 
 ### 0xfa `refresh-adv-skip-input-state` (refresh-adv-skip-input-state, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () — end transient ADV fast-forward unless logical action 6 is held, release the latest skip-queued voice when it ends, and then, with fast-forward off, wait for input on the ADV input poll with no page.
 - **control (port handler):** waits may; leaves falls, calls, ends
@@ -254,8 +256,8 @@ An empty string draws nothing. The worker has no surface test of its own: its ra
 Both revisions set the frame's instruction length to 1 and clear ctx+0x5510c (op 0xae sets it after a load), then poll the held action mask, which carries no ctx+0x13dc injection. If bit 0x40 (logical action 6) is absent they clear run-state fast-forward bit 0x08000000, even on a read message, and play/clear the latest voice retained during skip. When fast-forward is then inactive they discard the input latch and set run-state bit 0x80000000. That is the wait op 0x72 enters: the engine runs adv_input_service_poll instead of the interpreter, so the script holds past this op until a click, persistent Skip's injected action 6 (which also starts fast-forward again), Auto or a hotspot callback ends it. Unlike op 0x72 it publishes no wait indicator, arms no Auto timer (Auto polls the shared timer an earlier page or sleep armed) and shows no page. Kamidori's only site, SHOWALLMAP@0x16a, holds the world map on it until the player clicks. The port enters the same poll through IInputAndWaits.WaitForAdvInputPoll, which the input and waits native runs without a page break, wait indicator or text clear (docs/engine-re.md, 'ADV skip/input-state refresh -- opcode 0xfa'; 2026-11-09).
 
 ### 0x196 `display-furigana` (display-furigana, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(base)(ruby) - show-text for a base word with furigana: the base reveals as ordinary glyphs and the ruby is drawn above it in the ruby font.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read-string · `3` read-string
@@ -267,8 +269,8 @@ Both revisions set the frame's instruction length to 1 and clear ctx+0x5510c (op
 The ruby (MS Gothic, op-0x197 size, default 8) is spread over each drawn base row: with the ruby narrower, an equal gap (row width - ruby width) / (characters + 1) before, between and after its characters; otherwise centred with half the difference overhanging. Cells start at the base top + lfHeight + 1 (minus the effect y in render mode 3) and draw plain in the text color. A wrapped base splits the ruby by CP932 bytes per row. Every record after a ruby character has chain flag 1, so the first ruby character publishes alone, the rest in the next tick, and the following run's first glyph shares a tick. History keeps one flag-4 record per ruby character. Unlike op 0x6e it does not re-read message:ReadTextSkip or re-arm the glyph timer.
 
 ### 0x197 `set-ruby-font-size` (set-ruby-font-size, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (pixels) - set the secondary/ruby text font height and rebuild its native rasterization state.
 - **operand access:** `1` read
@@ -278,8 +280,8 @@ The ruby (MS Gothic, op-0x197 size, default 8) is spread over each drawn base ro
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x197`; scope=Himegari SYS4422. Ghidra /v2: op_0x197_handler@0x41f3b0 calls the parallel secondary-font size worker at 0x415c40 on ctx+0x14940, which updates the second LOGFONT pair and rebuilds it. UI font preset sequences consistently set primary size through 0x75 and the smaller ruby size through 0x197; HISTORY.BIN uses 22/8.
 
 ### 0x198 `set-adv-text-layout-origin` (set-adv-text-layout-origin, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(x)(y) - set the selected ADV text layout's presentation origin; slot 0 selects the current layout.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read
@@ -288,8 +290,8 @@ The ruby (MS Gothic, op-0x197 size, default 8) is spread over each drawn base ro
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x198`; scope=Himegari SYS4422. Ghidra /v2: op_0x198_handler@0x41f3f0 passes all three operands to adv_text_layout_set_origin@0x44ff30 on ctx+0x14940. The worker resolves slot 0 to current and writes x/y to layout+0x0c/+0x10. HISTORY.BIN positions its dynamically selected backlog layout with this opcode.
 
 ### 0x1a4 `set-text-effect-offset` (set-text-effect-offset, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (x)(y) - set the horizontal and vertical extent/offset used by the current text effect mode.
 - **operand access:** `1` read · `2` read
@@ -298,8 +300,8 @@ The ruby (MS Gothic, op-0x197 size, default 8) is spread over each drawn base ro
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1a4`; scope=Himegari SYS4422. Ghidra /v2: op_0x1a4_set_text_effect_offset@0x41f440 writes operands 1/2 to text-manager+0x564/+0x568. Mode 1 uses them as a single displaced effect-color shadow. Mode 3 treats them as ellipse radii and samples x=cos(angle)*offset_x, y=sin(angle)*offset_y around the glyph before the primary draw. The Himegari corpus pairs mode 1 with (0,0) at all 43 sites and mode 3 with (1,1) at all 164 paired sites.
 
 ### 0x1a5 `set-font` (set-font, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (face) - select the primary GDI font face, derive its vertical-writing companion, and rebuild the native font/glyph state.
 - **operand access:** `1` read-string
@@ -310,8 +312,8 @@ The ruby (MS Gothic, op-0x197 size, default 8) is spread over each drawn base ro
 The requested CP932 face is copied into the primary LOGFONT lfFaceName and AGE also constructs an @-prefixed vertical face. Himegari uses only the full-width Windows family names ＭＳ 明朝 (168 sites) and ＭＳ ゴシック (39 sites). This is live raster state, not a declaration/no-op.
 
 ### 0x1b1 `set-adv-wait-indicator-follow-last-glyph` (u0041B5C0, argc 1)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) — choose the ADV wait indicator's destination anchor. Zero uses the layout origin plus configured offset; one also adds the left/top of the layout's last 20-byte glyph record, which is the pending record at the text cursor, just past the last drawn glyph.
 - **operand access:** `1` read
@@ -322,8 +324,8 @@ The requested CP932 face is copied into the primary LOGFONT lfFaceName and AGE a
 SYS4433's renderer is adv_wait_indicator_draw_frame_sys4433@0x4526d0: x = layout+0xc + *(layout+0x30 - 0x10) + config+0x50, and likewise for y. The builders draw into the last record and then push the next one at the cursor, which op 0x6f's line end, op 0x7a and a layout reset move. The port keeps each layout's cursor (TextManager._layoutCursors, fed by every drawn run and by TextManager.SetAdvTextCursor) and anchors there; anchoring on the last glyph's own left had put Kamidori's indicator one cell left of native's (fixed 2026-11-07). Op 0x9's reset sets the mode to 0 on both builds: the text manager's initializer zeroes +0x56c (SYS4433 +0x570) and scene_context_init_reset then zeroes ctx+0x14eac (SYS4433 +0x14ea8); Kamidori's SYSTEM4 sets it again at 0xb7 (2026-11-13).
 
 ### 0x1b5 `set-message-glyph-delay` (u0041B5F0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (milliseconds) - set the per-glyph ADV text reveal delay; zero makes retained UI text publish immediately.
 - **operand access:** `1` read
@@ -334,8 +336,8 @@ SYS4433's renderer is adv_wait_indicator_draw_frame_sys4433@0x4526d0: x = layout
 Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS4REG.INI [message] MessageSpeed (default 5, was a fixed 50) and writes it back at shutdown, not per op, because the description scripts set 0 and restore it for every item.
 
 ### 0x1bb `set-text-history-recording` (set-text-history-recording, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - enable or suppress retained ADV text-history recording. Zero suppresses recording; one enables it.
 - **operand access:** `1` read
@@ -344,8 +346,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1bb`; scope=Himegari SYS4422. Ghidra /v2: op_0x1bb_handler@0x41f650 writes 0x80000000 to ctx+0x55110 for operand 0 and zero for operand 1, rejecting other values. Text/layout/metadata/voice paths test or propagate that high bit before appending retained history. HISTORY.BIN disables recording at entry and reenables it at exit so the backlog UI does not record itself.
 
 ### 0x1c1 `set-adv-text-bounds` (set-adv-text-bounds, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(right)(bottom) - configure the selected ADV text layout's right and bottom overflow boundaries in layout-local coordinates. Slot 0 selects the current layout.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read
@@ -355,8 +357,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1c1`; scope=Himegari SYS4422. Ghidra /v2: op_0x1c1_set_adv_text_bounds@0x41f6c0 reads three operands and calls adv_text_layout_set_bounds@0x44ff00. That helper stores right/bottom at layout +0x24/+0x28; adv_text_layout_reset_cursor_and_bounds_record@0x455070 copies them into the initial retained record, and adv_text_layout_check_overflow@0x45efc0 compares glyph end coordinates against them. SYSTEM4 has all nine sites, paired with 0x79. Slot 1 computes (720,147), layouts 2..6 use (645,135), layout 7 (495,180), layout 8 (495,60), and layout 9 (250,368), proving these are layout-local boundary coordinates rather than width/height deltas. Port implementation retains the configured bounds in engine-owned layout snapshots and sizes ordinary/history Godot labels from right-cursor_x and bottom-cursor_y.
 
 ### 0x1ce `set-adv-wait-indicator-enabled` (u0041B9F0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - explicitly start or stop the animated ADV input-wait indicator service.
 - **operand access:** `1` read
@@ -367,8 +369,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS
 4.38D's handler differs from 4.33G's in one fact, the graphics manager's polygon dirty flag (+0xb58c) that the erase helper 0x494440 sets; the port decides what to present from its own state, so one handler serves both builds (docs/engine-re.md, 'Kamidori against Arterial, triaged').
 
 ### 0x1d0 `step-text-history` (step-text-history, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_layout_slot)(out_record_index)(delta) - resolve a cumulative delta from the latest retained ADV boundary and return its layout slot and first record index, or -1 outputs at a boundary.
 - **operand access:** `1` write · `2` write · `3` read
@@ -377,8 +379,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1d0`; scope=Himegari SYS4422. Ghidra /v2: op_0x1d0_step_text_history@0x427360 calls text_history_step_group@0x4537c0 with operand 3 and mode mask 2, then writes the index entry's first field (layout slot) and second field (record index). Layout define/reset set manager+0xd6c to the newest entry; the helper reads but does not mutate that anchor, so deltas are cumulative. It skips duplicate record offsets and record-flag bit1, and returns -1 outputs at a boundary. HISTORY.BIN uses negative cumulative deltas to count/page backward.
 
 ### 0x1d1 `render-text-history` (u0041BAE0, argc 5)
-- **observed by:** bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4443`
+- **observed by:** bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot)(record_index)(flags)(text_color)(effect_color) - render one retained ADV text group into a selected layout in the current text style, breaking rows only at retained line breaks.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read · `4` read · `5` read
@@ -390,8 +392,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the delay from SYS
 Records supply only text and flags. Font, colors, effect and render mode are the text manager's current state, so HISTORY.BIN's 22 px style (set at 0xf78) applies, not the 24 px style the ADV window recorded. Rows flow from the target layout's cursor; a line-break record returns x to the layout's reset x and advances y by the current pixel height plus line spacing. There is no wrap or bounds check. Flag bit 0 crosses navigation-filtered records, bit 1 temporarily overrides both colors, bit 2 suppresses destination binding and bit 3 replays voice records. Metadata records are skipped.
 
 ### 0x1d2 `append-text-history-metadata` (append-text-history-metadata, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (metadata_type)(value) - append a typed metadata record to the current retained ADV message group when history recording is enabled.
 - **operand access:** `1` read · `2` read
@@ -400,8 +402,8 @@ Records supply only text and flags. Font, colors, effect and render mode are the
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1d2`; scope=Himegari SYS4422. Ghidra /v2: op_0x1d2_append_text_history_metadata@0x41f9c0 tests ctx+0x55110, fetches operand 2 followed by operand 1, and calls text_history_append_typed_metadata@0x455f00 as (layout=0, type=operand1, value=operand2). The helper appends a 0x48-byte record with flag 0x20000000, value at +0x14, and type at +0x18, consuming the pending group-start flag if set. SC0000's voiced page at 0x96d writes (type=2, value=0x11), and HISTORY.BIN later queries type 2 before replay. The corpus has 17,323 uses. This opcode is effectful, not a statement marker.
 
 ### 0x1d3 `find-text-history-value` (find-text-history-value, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_found)(out_value)(direction)(record_index)(value_type) - find typed metadata within one retained ADV message group.
 - **operand access:** `1` write · `2` write · `3` read · `4` read · `5` read
@@ -420,8 +422,8 @@ Records supply only text and flags. Font, colors, effect and render mode are the
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1d4`; scope=Himegari SYS4422. Ghidra /v2: op_0x1d4_find_text_history_pair@0x427430 calls text_history_find_pair@0x4509f0 and writes two outputs. The helper scans forward from operand 4 until the next group-start bit and returns the last 0x40000000 record's +0x14/+0x18 pair, defaulting both outputs to -1. Operand 3 reaches an unused helper parameter. HISTORY.BIN passes 1 and uses the pair to expose voice replay for a backlog entry.
 
 ### 0x204 `draw-string` (draw-string, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (surface_slot)(x)(y)(string) - rasterize a CP932 string immediately into a numbered graphics surface using current font/color/effect state.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read-string
@@ -431,8 +433,8 @@ Records supply only text and flags. Font, colors, effect and render mode are the
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x204`; scope=Himegari SYS4422. Ghidra /v2: op_0x204_handler@0x422a60 resolves operand 4 as a string, fetches surface/x/y, then calls draw_string_to_surface@0x450150 on text manager ctx+0x14940. The worker validates and locks gfx-manager surface table +0xa590[slot], chooses text_raster_string_uncached@0x459d90 or cached/effect path @0x45b600, rasterizes GDI GetGlyphOutlineA bitmaps through text_blit_glyph_bitmap@0x458c80 using font/color state +0x4d0/+0x458, then unlocks. SC0000 0x9b2 draws the speaker name into 400x30 surface 0xd at (1,1); following 0x1fb binds it to retained object 0xe678 at (74,444).
 
 ### 0x20a `publish-adv-text-layout` (u00420CE0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout_slot) - republish one ADV text layout and, while active, its current wait-indicator frame.
 - **operand access:** `1` read (layout 0..9, untested)
@@ -443,8 +445,8 @@ Records supply only text and flags. Font, colors, effect and render mode are the
 Republish snapshots the global reveal index, clamps only to the selected layout's record count, erases its configured retained-object interval, and rebinds records zero through the reveal index inclusive from surface layout_slot+0x14. Unlike timed reveal, native republish does not clamp to the configured object capacity; Himegari reserves 500 handles for every layout and shipped ordinary strings remain below that bound.
 
 ### 0x212 `set-adv-wait-indicator-handle` (set-adv-wait-indicator-handle, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x212 (layout_slot)(retained_handle) — set the retained gfx handle used by that ADV layout's animated wait indicator.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read
@@ -453,8 +455,8 @@ Republish snapshots the global reveal index, clamps only to the selected layout'
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x212`; scope=Himegari SYS4422. Ghidra /v2: handler 0x4230c0 indexes ctx+0x14d54, which is text-manager ctx+0x14940 plus its layout-pointer table at +0x414, then writes layout+0x64. It indexes the table with the operand as it is: slot 0 is layout object 0, not the current layout. adv_text_publish_wait_indicator_frame@0x453120 reads layout+0x64 for both gfx_object_bind_draw and gfx_object_erase. The only corpus site is SYSTEM4(layout 1, handle 0xd674).
 
 ### 0x213 `set-adv-text-object-range` (set-adv-text-object-range, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x213 (layout_slot)(first_handle)(capacity) — assign the retained gfx-object interval used to publish that ADV layout's glyphs.
 - **operand access:** `1` read (layout 0..9, untested) · `2` read · `3` read
@@ -463,8 +465,8 @@ Republish snapshots the global reveal index, clamps only to the selected layout'
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x213`; scope=Himegari SYS4422. Ghidra /v2: handler 0x423110 indexes the ADV layout pointer table at text-manager+0x414 (EngineCtx+0x14d54) with the operand as it is (slot 0 is layout object 0) and writes layout+0x68/+0x6c. adv_text_publish_next_glyph@0x451220 binds handle first+glyph_index; adv_text_layout_reset@0x455210 and adv_text_publish_layout@0x450c80 erase this interval. All nine corpus sites are SYSTEM4 layout initialization; layout 1 receives 0xd6d8/0x1f4.
 
 ### 0x25c `set-text-line-images` (u00423122, argc 8)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout)(x offset)(y offset)(surface)(source x)(source y)(width)(height) - give an ADV layout line images: while set, the publishers bind one object per text row the published glyphs reach, showing the surface rectangle at the layout's origin plus the offsets, one row pitch lower per row, in opaque white with no animation. Layout 0 is the current one.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read
@@ -475,8 +477,8 @@ Republish snapshots the global reveal index, clamps only to the selected layout'
 The port keeps the images with the layout (Model/AdvTextHistory.cs, AdvTextLineImages) and binds them in Natives/TextManager.LineImages.cs after each timed publication and op 0x20a, and erases them at op 0x71. 魔導巧殻's SYSTEM4 gives layout 1 a 911x1 dotted line from surface 17 at (0, 249), 46 rows under each of its rows. History's flag 0x20 and op 0x82's flags 0x20 and 0x30, which bind or erase them too, are not modelled: no supported script passes them.
 
 ### 0x25d `set-text-line-image-handles` (u00423123, argc 3)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout)(first handle)(count) - the retained-object handles an ADV layout's line images bind: count of them from the first. The op indexes the layout table itself, so layout 0 is layout object 0.
 - **operand access:** `1` read · `2` read · `3` read
@@ -487,8 +489,8 @@ The port keeps the images with the layout (Model/AdvTextHistory.cs, AdvTextLineI
 The port keeps them with the layout's line images (Model/AdvTextHistory.cs).
 
 ### 0x25e `set-text-line-images-fade` (u00423124, argc 5)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout)(delay)(duration)(alpha)(rgb) - the colour animation an ADV layout's line image starts when the timed publisher binds it: after the delay, over the duration, to the colour; a duration of 0 turns it off. The alpha is capped at 0xff. Layout 0 is the current one.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read
@@ -499,8 +501,8 @@ The port keeps them with the layout's line images (Model/AdvTextHistory.cs).
 The layout publisher binds a line image in the animation's end colour instead (Natives/TextManager.LineImages.cs).
 
 ### 0x25f `set-text-line-images-color` (u00423125, argc 4)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (layout)(blend)(alpha)(rgb) - the blend mode and colour an ADV layout's line images are bound with (as op 0x203 sets an object's); the alpha is capped at 0xff. Layout 0 is the current one.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
@@ -511,8 +513,8 @@ The layout publisher binds a line image in the animation's end colour instead (N
 SYSTEM4 binds layout 1's at alpha 0, so its op 0x25e animation fades them in to half.
 
 ### 0x260 `set-glyph-paddings` (u00423126, argc 4)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (left)(right)(top)(bottom) - the paddings the ADV publishers add round a glyph's cell while op 0x261's bit 0 is set: the source rectangle grows by all four, and the object moves back by the left and top ones, in place of the effect offset under the cell.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
@@ -523,8 +525,8 @@ SYSTEM4 binds layout 1's at alpha 0, so its op 0x25e animation fades them in to 
 The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication) and Model/AdvRetainedTextContract.cs (GlyphPublication's GrowLeft, GrowTop, GrowRight). The paddings outlast op 0x9, as native's do. 魔導巧殻's scenes set 2, 0, 2, 2 (127 uses) or 2, 2, 2, 2 (3).
 
 ### 0x261 `set-glyph-padding-flags` (u00423127, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (flags) - the glyph padding flags: bit 0 turns op 0x260's paddings on in the ADV publishers.
 - **operand access:** `1` read
@@ -545,8 +547,8 @@ The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication)
 - **evidence:** method=native-re; confidence=high; profiles=himegari, kamidori; revisions=SYS4422, SYS4433; artifact=`Himegari SYS4422 Ghidra /v2 and Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x2bc`; scope=matching SYS4422 and SYS4433 native handlers plus Kamidori natural SYSTEM4 boot. SYS4422 op_0x2bc_configure_wait_indicator_grid@0x4250e0 and SYS4433 equivalent @0x423210 set the animation period from operand 11, then copy operands 1..10 into the selected ADV layout's wait-indicator descriptor. The shared helper stores atlas column count and exclusive terminal frame separately; adjacent opcode 0x73's helper duplicates operand 9 into both fields. Rendering therefore selects (frame % columns, frame / columns). Kamidori's natural SYSTEM4.BIN boot first reaches this opcode at 0xa0 with (1,2,L0,12,0,0,30,30,32,20,64). Himegari's native dispatcher installs the equivalent handler despite no decoded Himegari use.
 
 ### 0x2bd `set-font-bold` (set-font-bold, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - set the current primary text font weight to 700 when enabled or 0 when disabled, then rebuild the native font state.
 - **operand access:** `1` read
@@ -555,8 +557,8 @@ The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication)
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x2bd`; scope=Himegari SYS4422. Ghidra /v2: op_0x2bd_set_font_bold@0x4251c0 writes enabled?700:0 to LOGFONT weight at text-manager+0x4dc and calls text_rebuild_primary_font_resources@0x44f7f0. It immediately follows set-font throughout the UI corpus; HISTORY.BIN selects the Mincho face with bold enabled.
 
 ### 0x2db `set-text-aspect-mode` (u004235C0, argc 1)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (mode) - select the SYS4433 glyph aspect/metric mode and rebuild the primary font resources.
 - **operand access:** `1` read
@@ -566,8 +568,8 @@ The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication)
 - **evidence:** method=native-re; confidence=high; profiles=kamidori; revisions=SYS4433; artifact=`Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x2db`; scope=mode-1 font calibration and in-cell glyph placement. Mode 1 also calibrates a proportional face's lfWidth from the glyph 激 against the reference MS Gothic (text_measure_glyph_with_aspect_mode@0x452020, text_calibrate_mode1_glyph_font@0x451270; Kamidori's Meiryo bold comes out at -18 for 20 and 22 px), places each glyph inside its reference-width cell by its bracket class (text_classify_aspect_glyph@0x45c560, the glyph draws at 0x460918/0x45e815) and raises it by the realized font's ascent difference (0x45be16). Port: AspectFontRealization, AspectGlyphPlacement, RetainedGlyphLayoutEngine.AspectGlyphRaise; Kamidori's furigana page and History match native in their text (2026-11-07). Immediate surface text (0x204/0x205, text_draw_string_to_surface_sys4433@0x44f7d0) takes the calibrated fonts too, with each single-byte glyph in a font calibrated against itself, and advances by its glyph-string draw's rule: the plain draw by the glyph's own cell, the effect draw by half the reference cell for one byte; Kamidori's CONFIG2 values and font names match native (2026-11-07). docs/engine-re.md, 'Aspect-mode font calibration', 'Aspect-mode glyph placement' and 'Aspect-mode surface text'.
 
 ### 0x2dc `get-font-family-count` (get-font-family-count, argc 1)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_count) - return the number of entries in SYS4433's installed-font-family cache, or -1 when the cache is empty.
 - **operand access:** `1` write
@@ -578,8 +580,8 @@ The port's publications are in Natives/TextManager.Reveal.cs (PaddedPublication)
 The native cache is the same vector of 0x20-byte strings searched by opcode 0x2de and indexed by opcode 0x2dd. Kamidori's sole call stores the result in local integer 1033 near the start of SELFONT.BIN. SYS4422 does not install this dispatch slot.
 
 ### 0x2dd `get-font-family-name` (get-font-family-name, argc 2)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_face_name)(index) - copy the indexed entry from SYS4433's installed-font-family cache, or write an empty string when the index is negative or out of range.
 - **operand access:** `1` write-string · `2` read
@@ -590,8 +592,8 @@ The native cache is the same vector of 0x20-byte strings searched by opcode 0x2d
 The handler reads the same 0x20-byte string vector counted by opcode 0x2dc and searched by 0x2de. The startup reader builds that list once (text_build_font_family_list@0x458040): GDI's Shift-JIS families, minus FontLink SystemLink faces other than ten Japanese ones, minus the proportional ones unless set:UseProportionalFont, minus any family lacking a VALIDFONTCHECKER character (docs/engine-re.md, 'Font family list'). The port builds the same list (FontFamilyCatalog over WindowsGdiFontFamilySource); on this machine it equals native's 37 families in order (2026-11-07). Both Kamidori calls are in SELFONT.BIN: one writes a global string from local index 1040 and one writes a local string from that same index. SYS4422 does not install this dispatch slot.
 
 ### 0x2de `find-font-family-index` (u0042BAC0, argc 2)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_index)(face_name) - find a face in the installed-font cache, ignoring one leading vertical-font '@'; return -1 when absent.
 - **operand access:** `1` write · `2` read-string
@@ -600,8 +602,8 @@ The handler reads the same 0x20-byte string vector counted by opcode 0x2dc and s
 - **evidence:** method=native-re; confidence=high; profiles=kamidori; revisions=SYS4433; artifact=`Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x2de`; scope=SYS4433 handler, operand conversion, font-family cache lookup, and natural startup. op_0x2de_find_font_family_index@0x42ba30 reads operand 2 as a string, calls text_find_font_family_index@0x423a80, and writes its zero-based index or -1 result to operand 1. The lookup ignores one leading '@'. Natural boot reaches CHECKCONFIG.BIN@0x0; SYS4422 has no handler in this slot.
 
 ### 0x2e6 `get-auto-message-pitch` (u0042CE60, argc 2)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (selector)(out) — read Auto's per-character delay in milliseconds: selector 0 is message:AutoMessagePitch0 (after a voice), 1 is message:AutoMessagePitch1 (an unvoiced page).
 - **operand access:** `1` read · `2` write
@@ -612,8 +614,8 @@ The handler reads the same 0x20-byte string vector counted by opcode 0x2dc and s
 Another selector writes nothing and traces a script error, which the port reports as a warning. 創刻のアテリアル has 6 sites.
 
 ### 0x2e7 `set-auto-message-pitch` (u0042CE70, argc 2)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (selector)(milliseconds) — set Auto's per-character delay: selector 0 is message:AutoMessagePitch0 (after a voice), 1 is message:AutoMessagePitch1 (an unvoiced page).
 - **operand access:** `1` read · `2` read
@@ -624,8 +626,8 @@ Another selector writes nothing and traces a script error, which the port report
 Another selector writes nothing and traces a script error, which the port reports as a warning. The setting is kept in SYS4REG.INI. 創刻のアテリアル has 10 sites.
 
 ### 0x2e8 `set-auto-message-option` (u0042CE80, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (value) — set message:AutoMessageOption. With bit 0 a voiced page's Auto wait runs on a timer of AutoMessageTime0 plus its per-character part from the wait's start, and does not wait for the voice.
 - **operand access:** `1` read
@@ -636,8 +638,8 @@ Another selector writes nothing and traces a script error, which the port report
 The port applies bit 0 (AdvAutoAdvanceTimer); no other bit is read natively. The setting is kept in SYS4REG.INI. 創刻のアテリアル has 4 sites.
 
 ### 0x2e9 `set-auto-message-count-offset` (u0042CE90, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (count) — how many of a page's characters the Auto delay's per-character part leaves out, until the scene reset.
 - **operand access:** `1` read
@@ -648,8 +650,8 @@ The port applies bit 0 (AdvAutoAdvanceTimer); no other bit is read natively. The
 The port keeps the value (SkipAndAuto.AutoMessageCountOffset) and subtracts it from the page's glyph count in both delays (SkipAndAuto.AutoWaitStateFor). 創刻のアテリアル has 579 sites.
 
 ### 0x2ea `get-auto-message-option` (u0042CEA0, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) — read message:AutoMessageOption.
 - **operand access:** `1` write
@@ -660,8 +662,8 @@ The port keeps the value (SkipAndAuto.AutoMessageCountOffset) and subtracts it f
 創刻のアテリアル has 1 site.
 
 ### 0x2ee `set-message-fade` (u0042CEC2, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (percent) - MessageFade and the setting message:MessageFade: the timed ADV publisher fades each glyph it binds in over this percent of the glyph delay, from white at alpha 0 to opaque white, when both are above 0.
 - **operand access:** `1` read
@@ -671,11 +673,23 @@ The port keeps the value (SkipAndAuto.AutoMessageCountOffset) and subtracts it f
 
 The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from Natives/TextManager.Reveal.cs. engine_initialize@0x4174f2 seeds MessageFade from the setting (registered 0 by 0x481ef0); 魔導巧殻's CHECKCONFIG.BIN sets 250 at every start.
 
+### 0x2f3 `find-text-history-voice-pair` (2F3, argc 6)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (out id)(out argument)(out pan)(unused)(record)(voice) - op 0x1d4 for one voice: the group's last voice record of the voice, its id, argument and pan; -1, -1 and 0 when there is none.
+- **operand access:** `1` write · `2` write · `3` write · `4` read · `5` read · `6` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f3`; scope=SYS4445 handler. op_0x2f3_find_text_history_voice_pair@0x430470 reads operands 6, 5 and 4 and calls text_history_find_pair@0x455c20(out, out, out, op4, op5, op6), then writes operands 1 to 3. The worker defaults to -1, -1, 0, returns 0 for a record index below 0 or past the records, and scans the group for the last 0x40000000 record whose +0x20 equals the voice, returning +0x14, +0x18 and +0x1c. HISTORY uses it once.
+
+Port: VirtualMachine.OpFindTextHistoryVoicePair over AdvTextHistory.TryFindVoicePair. A record keeps its voice at +0x20 and its pan at +0x1c (AdvTextHistoryRecord.VoiceIndex, VoicePan), which the numbered save's history tail carries (dwords 8 and 7).
+
 ## audio
 
 ### 0xb4 `sfx-load` (play-sound-effect, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (packed_raw_resource_id)(channel) — synchronously open the universal SYS4INI/AAI catalog entry and replace the channel's decoded sound buffer without starting playback. A zero high byte is a raw SYS4INI index; a nonzero high byte selects an append catalog and uses the low 24-bit index. Native manager supports channels 0..12; SC0000 uses 0..9.
 - **operand access:** `1` read · `2` read (sound effect channel 0..9; native lets through 10..12 and negatives)
@@ -684,8 +698,8 @@ The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xb4`; scope=Himegari SYS4422. Ghidra /v2: op_0xb4_sfx_load@0x4201d0 -> sfx_channel_load@0x482500 -> asset_open_indexed_entry@0x44f390 + sound_decode_channel@0x483360. The opener indexes the base catalog directly for a zero high byte and selects mounted_aai[high_byte] otherwise. SC0000 0xc29 uses raw 0x28 = E0808.WAV. TITLE independently proves the addressing rule: raw 0x2aea = SE020.WAV is preloaded on channel 2 and started on every hover-selection change; raw 0x3321 = SE015.WAV is loaded/started on activation. The pre-fix port trace reported file=null under scene-manifest resolution; after switching Godot to ResolveSoundEffect/ResolvePacked, a synchronized TITLE->GAMESTART->TITLE trace resolves and starts SE020/SE015/SE013, confirmed audible by the user.
 
 ### 0xb5 `sfx-start` (u0041D050, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (channel) — start the already-loaded channel once (logical loop=false). DirectSound publishes synchronously through Play(0,0,DSBPLAY_LOOPING); the low-level flag loops only the streaming ring, while decoder EOF stops logical playback. Nothing starts while the sound effect route is off. Any of the manager's 13 channels starts: 11 holds the last BGM track and 12 the last voice, which play again from their start at their level (docs/engine-re.md, "Channels 10 to 12").
 - **operand access:** `1` read
@@ -694,8 +708,8 @@ The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xb5`; scope=Himegari SYS4422. Ghidra op 0xb5 handler 0x420210 passes mode 0 to sfx_channel_start@0x4825d0; mode 1 belongs to op 0xba. sound_buffer_start@0x484270 primes four quarter-buffer notifications then calls IDirectSoundBuffer::Play with flag 1 before returning. Native trace at SC0000 0xc2e: E0808 channel 0 start enters/leaves in the same ms, preloaded 1->0 and playing 0->1.
 
 ### 0xb6 `sfx-release` (u0041D080, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (channel) - stop/destroy the channel decoder and DirectSound buffer, clear its retained resource id, and leave the slot empty. Idempotent for an unused channel.
 - **operand access:** `1` read (sound effect channel 0..9, untested)
@@ -704,8 +718,8 @@ The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xb6`; scope=Himegari SYS4422. Ghidra op 0xb6 handler 0x420250 -> sfx_channel_release@0x482600 -> sound_buffer_destroy@0x4831a0, which releases the per-channel object under its critical section and clears the slot. Native trace captured SC0000's channels 0..9 release sweep in consecutive calls.
 
 ### 0xb7 `restart-bgm-loop` (restart-bgm-loop, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (track_or_zero) — force-start looping BGM even when the requested nonzero track already matches the retained current track. A zero operand restarts the retained track; when no track is retained it resolves to an idempotent stop. Any active BGM fade is completed/cancelled first.
 - **operand access:** `1` read
@@ -716,8 +730,8 @@ The port fades in RetainedAdvTextLayoutPresentation.PublishThrough (FadeIn) from
 Implemented: the audio native (Ome.Engine.Natives.Audio, engine layering milestone 6, 2026-11-12) resolves zero through its retained current track and restarts it with mode 1: it ends a running fade, loads the OGG on channel 11 and plays it looping at full level; ordinary op 0xbf keeps its same-track idempotence.
 
 ### 0xb8 `stop-bgm` (stop-bgm, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Stop and release the active BGM source and clear the retained current track. Any active BGM fade is completed/cancelled first.
 - **control (port handler):** waits never; leaves falls
@@ -727,8 +741,8 @@ Implemented: the audio native (Ome.Engine.Natives.Audio, engine layering milesto
 Implemented: the audio native clears its retained track, ends voice ducking and any fade, and unloads channel 11 (bgm_stop_release); the envelope starts again at full.
 
 ### 0xb9 `restart-bgm-once` (restart-bgm-once, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (track_or_zero) — force-start one-shot BGM even when the requested nonzero track already matches the retained current track. A zero operand restarts the retained track once; when no track is retained it resolves to an idempotent stop. Any active BGM fade is completed/cancelled first.
 - **operand access:** `1` read
@@ -739,8 +753,8 @@ Implemented: the audio native clears its retained track, ends voice ducking and 
 Implemented: the audio native shares op 0xb7's retained-track/zero handling but supplies mode 0, so channel 11 plays once and BGM025 naturally stops at EOF.
 
 ### 0xba `sfx-start-loop` (sfx-start-loop, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (channel) — start the already-loaded sound-effect channel with logical loop mode 1; the streaming decoder rewinds at EOF until the channel is replaced or released. Nothing starts while the sound effect route is off. As op 0xb5, any of the manager's 13 channels starts: 11 holds the last BGM track and 12 the last voice (docs/engine-re.md, "Channels 10 to 12").
 - **operand access:** `1` read
@@ -749,8 +763,8 @@ Implemented: the audio native shares op 0xb7's retained-track/zero handling but 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xba`; scope=Himegari SYS4422. Ghidra /v2: op_0xba_sfx_start_loop@0x420290 records a 3-dword instruction, fetches channel operand 1, and calls sfx_channel_start@0x4825d0 with logical loop mode 1. The same worker receives mode 0 from op 0xb5. sound_stream_fill_quarter@0x483b70 rewinds the decoder at EOF only for mode 1. All 334 Himegari sites pass literal channel 9 immediately after op 0xb4 loads that channel.
 
 ### 0xbf `play-bgm` (play-bgm, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Play background music by id. BGM is addressed by DIRECT LITERAL NAME: id -> BGM{id:03d}.OGG (in DATA3), unlike ordinary resource operands, which are universal packed SYS4INI/AAI ids. E.g. play-bgm 5 -> BGM005. Reasserting the facade's current track id is idempotent and preserves playback position; a different id starts the new track, while fade-to-zero clears the current id so a later request can start it again.
 - **operand access:** `1` read
@@ -761,8 +775,8 @@ Implemented: the audio native shares op 0xb7's retained-track/zero handling but 
 Implemented in the audio native (Audio.PlayBgm). Track 0 starts the retained track again, and with none releases the source: bgm_play_track's zero branch (創刻のアテリアル's DEBUGADV2 has the one site). 4.33G and 4.38D keep the stream only when the retained start mode is also 1, so a track op 0xb9 played once, or one a scene reset left, starts again; 4.24J compares the track alone (the build rule AudioRules.PlayComparesStartMode). A scene reset (op 0x9) zeroes the retained track, the pause flag and the start mode without stopping the stream, so a title's play of the track that plays starts it again. With set:KeepMusicVolume 1 (the SYS4INI key KEEPMUSICVOLUME), sound:MusicFadeOnVoicePlaying 1 and no duck release armed, the op then sets the BGM level to sound:MusicFadeOnVoicePlayingVolume x 100 in all three builds; no game sets the key, and the port does not model it.
 
 ### 0xc0 `get-current-bgm-track` (get-current-bgm-track, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (track_out) - return the direct-name BGM track id retained by the music facade; the same value is restored from numbered saves.
 - **operand access:** `1` write
@@ -771,8 +785,8 @@ Implemented in the audio native (Audio.PlayBgm). Track 0 starts the retained tra
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xc0`; scope=Himegari SYS4422. Ghidra /v2 op_0xc0_get_current_bgm_track@0x428440 writes EngineCtx.current_bgm_track_id (+0xa0b84) to operand 1. op 0xbf's bgm_play_track retains the selected direct-name id at the same music-facade field; layout-3 serialization copies it to payload +0x008 and restoration copies it back. Installed SAVE00 stores 0x18, matching FORT's BGM024.
 
 ### 0xc1 `toggle-bgm-pause` (u00415650, argc 0)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Flip the BGM's pause: a playing track is held where it is, and a held one plays on from there.
 - **control (port handler):** waits never; leaves falls
@@ -782,8 +796,8 @@ Implemented in the audio native (Audio.PlayBgm). Track 0 starts the retained tra
 The flag flips whether or not a track plays; starting a track and releasing the source clear it, and an identical play request, which keeps the stream, does not. With the DirectSound route the backend stops channel 11's buffer and later plays it on; with the CD route it sends MCI_PAUSE and MCI_RESUME. A numbered save does not keep the flag (context_state_serialize saves the track alone), and after a load CALLBACK_LOAD's op 0xb7 0 starts the track again unheld. A scene reset zeroes the flag without telling the backend, so a held stream stays held and the next op 0xc1 holds it again; the Music route's restart clears it. Not read: whether anything else plays or stops channel 11 while it is held. 創刻のアテリアル has 1 site.
 
 ### 0xc2 `fade-bgm` (u0041D2B0, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (target_basis_points)(duration_ms) — start a background fade of the current BGM level to a target in basis points (0..10000; CONFIG passes its setting × 100), applied linearly through the native log volume curve; the script continues at once. Durations >=1000 ms use 100 steps; shorter fades use 10. Active ADV fast-forward applies the endpoint immediately; an ordinary advance click does not. At completion target 0 releases the current BGM source and clears the retained track; 4.24N, 4.33G and 4.38D clear the retained track already when a target of 0 is armed, and the music fades on. The next BGM op (0xb7/0xb8/0xb9/0xbf/0xc3) completes a running fade before it acts.
 - **operand access:** `1` read · `2` read
@@ -794,8 +808,8 @@ The flag flips whether or not a track plays; starting a track and releasing the 
 Implemented as a background fade (2026-11-07; until then the port parked the VM for the whole duration, so each scene's BGM change waited up to the fade time: SC0000's first page took 5.0 s after 始める against native's 1.8 s, now 1.9 s). The audio native (Ome.Engine.Natives.Audio, since engine layering milestone 6 on 2026-11-12) keeps the fade (run-state 0x200) and the engine tick runs it on the frame clock, so under a modal dialog it holds and the next tick makes up the time, as native's does (docs/engine-re.md, 'A fade under the 終了 dialog stops, then catches up'); at a zero target it releases the source and clears the retained track. Ops 0xb7/0xb8/0xb9/0xbf, and a numbered load, first end a running fade; op 0xc0 and a numbered save settle a fade that has run its course, so a fade to zero clears the retained track exactly when it ends. On 4.24N, 4.33G and 4.38D it clears it when it is armed: their bgm_fade_arm (4.24N 0x465220, 4.33G 0x469f80, 4.38D 0x4764d0) zeroes the track (+0x40c) when the stored target is exactly 0, after its two restarts of the retained track, where 4.24J's 0x464830 does not; the tick is the same in all four, so op 0xc0 and a numbered save during the fade read no track there (the build rule AudioRules.ZeroFadeClearsTrack; docs/engine-re.md, 'Himegari against Verita, triaged', 2026-11-24). VM dispatch substitutes zero duration only when persistent/read/physical ADV fast-forward is already active, matching the native direct-endpoint branch; ordinary execution, including a click that merely released the preceding text wait, retains the authored duration. As native, a fade step applies its interpolated level without committing it (+0x420 changes only at 100 %), so a fade re-armed mid-way starts again from the last committed level. bgm_fade_tick interpolates ((100-p)*current + target*p)/100 in basis points and the backend converts the level with AGE's shared curve (1000*log2(level/10000) mB, bgm_dshow_apply_volume_level@0x4610d0); the native tracks the level in basis points and sends the device the level converted through NativeAudioVolume (2026-11-04).
 
 ### 0xc3 `set-bgm-track` (u0041D390, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (track) - end a running op 0xc2 fade, then set the BGM's retained track without starting it. The next fade's arm starts the track from silence when the channel is not playing, so a script sets a track and fades it in; op 0xc0 reads it and a numbered save keeps it.
 - **operand access:** `1` read
@@ -807,8 +821,8 @@ Implemented as a background fade (2026-11-07; until then the port parked the VM 
 Implemented in the audio native (Audio.SetBgmTrack). The fade arm's restarts are Audio.RestartRetainedTrackForFade, for every build: bgm_fade_arm plays the retained track again, silent, when the committed level is 0 and when channel 11 is not playing (released, run out, or held by op 0xc1), the second also making the committed level 0. 魔導巧殻 is the first supported game to use the op (322 sites), mostly as stop-bgm, restart-bgm-loop 0, set-bgm-track N, fade-bgm 10000 over 5000 ms (SC0000@0x50ae).
 
 ### 0xc4 `play-voice` (play-voice, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Play a voice clip by universal packed SYS4INI/AAI id with native playback/history variant 0. While all-message Skip is active, retain/replace the queued voice request instead of starting it; playback resumes from the latest queued request after Skip clears. Uses the same packed-id opener as textures/scripts/movies, unlike play-bgm's direct BGM{id:03d} naming.
 - **operand access:** `1` read
@@ -818,8 +832,8 @@ Implemented in the audio native (Audio.SetBgmTrack). The fade arm's restarts are
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xc4`; scope=Himegari SYS4422. By-ear confirmed (2026-07-06): SC0000 prologue voices play on their lines via Godot AudioStreamPlayer. Ghidra /v2 op_0xc4_handler@0x420610 passes operand 1 unchanged to voice_play_indexed_asset@0x488330, which passes it unchanged to asset_open_indexed_entry@0x44f390. That opener directly indexes the flat base table for a zero high byte or selects mounted_aai[high_byte] and low24 for append resources; it has no executing-scene input or section-base branch. SC0010 is decisive beyond base-zero SC0000: play-voice 0x120 is raw SYS4INI entry LILA1414.OGG, also SC0010 file_number 2; applying SC0010 base 0x11e again is wrong. ROOM's 0x3365 similarly resolves directly to EUA0016.OGG. While Skip is active the handler stores the latest id/zero variant at ctx+0x6dbf4/+0x6dbf8; adv_interpreter_tick starts and clears it when Skip/read-skip input ends. Lily's lines remain correctly form-gated.
 
 ### 0xc5 `get-audio-volume` (get-audio-volume, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (category)(out_basis_points) — read the configured audio volume: 0=master, 1=music, 2=SFX, 3=voice, 4=movie. Native values use 0..10000 basis points.
 - **operand access:** `1` read · `2` write
@@ -830,8 +844,8 @@ Implemented in the audio native (Audio.SetBgmTrack). The fade arm's restarts are
 Port status (2026-07-29): implemented against the profile-lifetime AudioMixerSettings registry. The native -1 unconfigured sentinel is preserved; CONFIG reads receive the exact stored basis-point value.
 
 ### 0xc6 `set-audio-volume` (set-audio-volume, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (category)(basis_points) — update the configured 0..10000 audio volume and apply it immediately: 0=master, 1=music, 2=SFX, 3=voice, 4=movie.
 - **operand access:** `1` read · `2` read
@@ -842,8 +856,8 @@ Port status (2026-07-29): implemented against the profile-lifetime AudioMixerSet
 Port status (2026-07-29): implemented with native SYS4REG.INI [sound] persistence and live Godot Master/Music/SFX/Voice/Movie bus gain changes. The CP932 preserving writer retains unrelated options; master and category buses compose multiplicatively like native basis-point application.
 
 ### 0xc7 `get-audio-route-enabled` (get-audio-route-enabled, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (category)(out_enabled) — query whether an audio route is enabled: 1=music, 2=SFX, 3=voice, 4=movie. Writes boolean 0 or 1.
 - **operand access:** `1` read · `2` write
@@ -854,8 +868,8 @@ Port status (2026-07-29): implemented with native SYS4REG.INI [sound] persistenc
 Port status (2026-07-29): implemented as the read half of the shared audio-route registry loaded from native SYS4REG.INI.
 
 ### 0x1ba `set-audio-route-enabled` (set-audio-route-enabled, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (category)(enabled) — enable or disable an audio route and persist the setting: 1=music, 2=SFX, 3=voice, 4=movie.
 - **operand access:** `1` read · `2` read
@@ -876,8 +890,8 @@ Port status (2026-07-29): implemented with native SYS4REG.INI route persistence 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1bd`; scope=Himegari SYS4422. Ghidra /v2: op_0x1bd_play_history_voice@0x420920 stops/replaces the active voice and calls voice_play_indexed_asset@0x488330 with operand 1 plus playback variant 1 when Skip is inactive (or queues that pair while Skip is active). When text-history recording is enabled it appends voice pair {id,1}; HISTORY.BIN suppresses recording with op 0x1bb while its UI is active, preventing replay clicks from recursively entering the backlog. The handler also sets adv_auto_voice_pending when playback exists. voice_play_indexed_asset retains the variant in sound-buffer state before starting channel 12; its exact audible meaning remains unproven.
 
 ### 0x1be `get-sound-channel-playing` (u0041D9D0, argc 2)
-- **observed by:** bg0 (SYS4415), kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`
+- **observed by:** bg0 (SYS4415), kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out boolean)(channel) — report whether native sound channel 0..12 is currently playing. The observed channel organization is SFX 0..9, BGM 11, and voice 12; an unavailable channel reads false, channels of 13 and up are traced (dsIsPlaying) and read false, and a negative channel passes native's signed test (the port halts).
 - **operand access:** `1` write · `2` read (sound channel 0..12; native lets through negatives)
@@ -886,8 +900,8 @@ Port status (2026-07-29): implemented with native SYS4REG.INI route persistence 
 - **evidence:** method=native-re; confidence=high; profiles=himegari, kamidori; revisions=SYS4422, SYS4433; artifact=`Himegari SYS4422 Ghidra /v2 and Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x1be`; scope=matching SYS4422 and SYS4433 native handlers plus Kamidori TITLE.BIN use. SYS4422 op_0x1be_sound_channel_is_playing@0x4286a0 and SYS4433 op_0x1be_sound_channel_is_playing@0x429360 have the same five-dword contract: fetch operand 2, call the revision's sound_channel_is_playing helper, normalize the result to boolean, and write operand 1. Each helper validates channel < 13 and returns sound-buffer +0x2460, independently identified as the live playing flag by the existing SFX trace. SYS4433 op 0x1c4 independently hard-codes channel 12 for its voice-playing query. Kamidori TITLE.BIN@0xd7 queries channel 11 after restart-bgm-once and combines false with its idle counter to wait for the one-shot title BGM to finish before the idle transition. Himegari's native dispatcher installs the equivalent handler even though no decoded Himegari script uses it.
 
 ### 0x1bf `arm-voice-duck-release` (u004156C0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - advance the one-shot stage of voice_bgm_duck_control_flags (clear the mask when bit 0x10000 is set) and, unless bit 0 suppresses voice ducking, arm voice_bgm_duck_release_armed so the outer tick restores ducked BGM once the voice ends.
 - **control (port handler):** waits never; leaves falls
@@ -898,8 +912,8 @@ Port status (2026-07-29): implemented with native SYS4REG.INI route persistence 
 Port status (2026-11-12): the handler calls the audio native's ArmVoiceBgmDuckRelease, which applies the 0x1cf one-shot stage (bit 0x10000 clears the mask) and, unless bit 0 is set, arms the release; the engine tick restores ducked BGM once the voice is idle, the release is armed, no 0xc2 fade owns the envelope and bit 0 is clear. A delayed voice start (0x2c0) arms it the same way. The duck no longer lifts at voice completion alone, so BGM stays ducked between lines until the next line's 0x1bf. The restore is native's one-second run-state-0x200 fade (2026-11-03): linear in basis points from the ducked level to full in 10 ms steps, owning the BGM envelope so a voice starting meanwhile does not duck.
 
 ### 0x1c4 `voice-is-playing` (u00415720, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) — 1 while the voice channel, native channel 12, is playing, else 0.
 - **operand access:** `1` write
@@ -910,8 +924,8 @@ Port status (2026-11-12): the handler calls the audio native's ArmVoiceBgmDuckRe
 Op 0x1be with the channel fixed at 12. Without a sound manager it writes 0. 創刻のアテリアル has 1 site.
 
 ### 0x1cf `set-voice-bgm-duck-control` (set-voice-bgm-duck-control, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (flags) - replace the transient voice/BGM-duck control mask. Bit 0 suppresses automatic BGM attenuation when voice playback starts; zero permits the configured duck behavior.
 - **operand access:** `1` read
@@ -930,11 +944,11 @@ Op 0x1be with the channel fixed at 12. Without a sound manager it writes 0. 創�
 - **depends on:** 0xc4
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1d5`; scope=Himegari SYS4422. Ghidra /v2: op_0x1d5_mute_next_voice@0x416cb0 sets voice_mute_next_flags (ctx+0x1493c, voice facade +0x434) to 1. op_0xc4_handler promotes bit 0 to 0x10001 and clears an already-promoted value; voice_play_indexed_asset@0x4883a0 tests bit 0, sets channel-12 volume 0 and marks the playback muted. voice_tick_delayed_playback, op 0x1bd and op 0x1bc clear it. Corpus: emitted only in the ADV template's speaker<0 / character-voice-suppressed (G[0x2e49]) branches immediately before play-voice. The historical name cond-block was a structural guess.
 
-Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the native 0xc4/0x1bd/0x1bc transitions and plays a muted voice on channel 12 at volume 0 (-100 dB), so completion and Auto timing are unchanged; a voice held back under fast-forward keeps the flag. Not modelled: voice_tick_delayed_playback also clears the request, but the port's delayed voices (0x2c0) do not touch it.
+Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the native 0xc4/0x1bd/0x1bc transitions and plays a muted voice on channel 12 at volume 0 (-100 dB), so completion and Auto timing are unchanged; a voice held back under fast-forward keeps the flag. A delayed start (0x2c0) clears the request, promoted or not, and plays audibly, as voice_tick_delayed_playback does (Audio.ServiceDelayedVoices, 2026-11-26). AGE 4.45D keeps one request per voice (ctx+0x14c68[3]; op 0x2f7).
 
 ### 0x2bf `schedule-sfx-start` (schedule-sfx-start, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (channel)(start_mode)(delay_ms) - schedule the already-loaded SFX channel to enter the ordinary start worker after the requested delay. Channels are limited to 0..9.
 - **operand access:** `1` read (sound effect channel 0..9; native lets through negatives) · `2` read · `3` read
@@ -943,8 +957,8 @@ Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the 
 - **evidence:** method=frida; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE runtime capture and Ghidra /v2`; site=`vm-map/opcodes.toml opcode 0x2bf`; scope=Himegari SYS4422. Ghidra /v2: op_0x2bf_schedule_sfx_start@0x425240 calls sfx_set_delay@0x482720 on the ctx+0x14024 sound facade. The worker's native error text names Function:SetDelay, validates channel<=9, and stores active/progress/delay/start-mode state. Existing SC0000 trace: SetDelay(channel 4, mode 0, 100) is followed about 109 ms later by the ordinary sfx_channel_start worker on channel 4 with mode 0 and no intervening 0xb5.
 
 ### 0x2c0 `schedule-voice-playback` (schedule-voice-playback, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Arm delayed voice playback: (voice_id, playback_variant, delay_ms). The engine main tick starts the voice after the monotonic deadline.
 - **operand access:** `1` read · `2` read · `3` read
@@ -952,13 +966,73 @@ Port status (2026-11-12): the audio native keeps voice_mute_next_flags with the 
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x2c0`; scope=Himegari SYS4422. Ghidra /v2: op_0x2c0_schedule_voice_playback@0x425290 forwards three operands to voice_schedule_delayed_playback@0x488480 on the text/ADV service at EngineCtx+0x14508. That worker stores active=1, start=0, delay at +0x424, voice id at +0x428, and variant at +0x42c. engine_main_tick_with_exception_policy calls voice_tick_delayed_playback@0x4884d0; after unsigned elapsed >= delay it clears the request and calls voice_play_indexed_asset(voice_id,variant). Corpus: one BTL site at 0x2f6e.
 
-The setter replaces the single pending request, marks it active, and clears its start timestamp. On the first service tick the worker captures the current millisecond time; once unsigned elapsed time reaches delay_ms it clears the request and calls the ordinary indexed-voice player with voice_id and playback_variant. BTL's only call selects a randomized combat voice id, variant 0, and an entity-specific delay.
+The setter replaces the single pending request, marks it active, and clears its start timestamp. On the first service tick the worker captures the current millisecond time and compares in the same tick, so a zero delay plays at once; once unsigned elapsed time reaches delay_ms it clears the request and the mute-next request (promoted or not) and calls the ordinary indexed-voice player with voice_id and playback_variant. The engine tick then begins the BGM duck, marks adv_auto_voice_pending while the Voice route is on (ctx+0x1491c), and arms the duck release as op 0x1bf does (4.24J 0x411a72..0x411aae). AGE 4.45D keeps one request per voice (op 0x2f5) and this op is voice 0's. BTL's only call selects a randomized combat voice id, variant 0, and an entity-specific delay. Port: Audio.ScheduleVoicePlayback and Audio.ServiceDelayedVoices (the same-tick start, the mute clear and the pending voice since 2026-11-26).
+
+### 0x2f4 `play-voice-n` (2F4, argc 3)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (voice id)(playback variant)(voice) - op 0xc4 on voice N (0 to 2), channel 12 + N, with the playback variant: the voice's mute request is promoted as 0xc4's is, fast-forward holds it, and History records it with voice N.
+- **operand access:** `1` read · `2` read · `3` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f4`; scope=SYS4445 handler. op_0x2f4_play_voice_n@0x425c00 fetches operands 1 to 3, applies 0xc4's transitions to ctx+0x14c68[N], calls voice_bgm_duck_begin (0x406f70), then without fast-forward (ctx+0xaa9c4 bit 0x8000000) voice_play_indexed_asset@0x4a9b90(N, op1, op2, ctx+0x4e8c[N]), else keeps op1 and op2 in ctx+0x778a8[N] and +0x778b4[N]; then text_history_append_voice_pair(0, op1, 0, N, ctx+0x4e8c[N]) and, with the Voice route on, ctx+0x77898 = 1. Its one site, in HISTORY, passes three locals.
+
+Port: VirtualMachine.OpPlayVoiceN over Audio.PlayVoice (Audio.Voices = 3 under AGE 4.45D's AudioRules). History's argument is 0 whatever the variant, as native writes. Another voice halts the run: native indexes its arrays unchecked.
+
+### 0x2f5 `schedule-voice-playback-n` (2F5, argc 4)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (voice id)(playback variant)(delay ms)(voice) - op 0x2c0 on voice N: replace the voice's delayed start. With variant 3 it is a background voice: it loops, pauses while another voice plays and starts again its delay after they end, and no voice test counts it.
+- **operand access:** `1` read · `2` read · `3` read · `4` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f5`; scope=SYS4445 handler. op_0x2f5_schedule_voice_playback_n@0x425d10 calls voice_schedule_playback_n@0x4a9d50(op1, op2, op3, op4): the voice facade's +0x43c[N] delay, +0x448[N] id, +0x454[N] variant, +0x424[N] = 1, +0x430[N] = 0. The facade's tick 0x4a9dc0 runs each voice: one whose variant has bits 0 and 1 set pauses while another voice's channel plays and is armed again after; a start passes variant & 1 and clears the mute request. All 52 sites (the SP scripts, CONFIG2, CALLBACK_LOAD) pass variant 3, 300 ms and voice 2.
+
+Port: VirtualMachine.OpScheduleVoicePlaybackN over Audio.ScheduleVoicePlayback and the tick's Audio.ServiceDelayedVoices (AudioRules.BackgroundVoices). The port plays every voice once, so a background voice does not loop (docs/backlog.md).
+
+### 0x2f6 `stop-voice` (2F6, argc 1)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (voice) - stop voice N and forget it: its channel releases the sound, its delayed start, held voice and mute request go, and a voice stays pending for Auto while any voice still plays.
+- **operand access:** `1` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f6`; scope=SYS4445 handler. op_0x2f6_stop_voice_n@0x425d60 calls voice_stop_n@0x4a9d00(N): sound_buffer_destroy(12 + N) and the facade's +0x460[N], +0x418[N], +0x424[N], +0x454[N] cleared; then ctx+0x14c68[N], ctx+0x778a8[N] and +0x778b4[N] = 0, and ctx+0x77898 = voice_any_playing@0x404c70. 78,263 sites in 197 scripts.
+
+Port: VirtualMachine.OpStopVoice over Audio.StopVoice and SkipAndAuto.SetPendingVoice. SYSTEM4 stops the three voices as it boots, and every scene stops them around each page.
+
+### 0x2f7 `mute-next-voice-n` (2F7, argc 1)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (voice) - op 0x1d5 on voice N: the voice's next play (op 0xc4 or 0x2f4) is at volume 0.
+- **operand access:** `1` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f7`; scope=SYS4445 handler. op_0x2f7_mute_next_voice_n@0x425dc0 writes ctx+0x14c68[op1] = 1 (4.43B's one flag is ctx+0x14938). Its 25,570 sites all pass voice 0.
+
+Port: VirtualMachine.OpMuteNextVoiceN over Audio.MuteNextVoice.
+
+### 0x2f8 `set-voice-pan` (2F8, argc 2)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (voice)(pan) - voice N's pan, -10000 (left) to 10000 (right), on the sound playing; the next play of the voice sets the pan of ctx+0x4e8c, which nothing writes.
+- **operand access:** `1` read · `2` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f8`; scope=SYS4445 handler. op_0x2f8_set_voice_n_pan@0x425e00 calls sound_set_channel_pan@0x4a4e60(12 + op1, op2): a channel past 14 traces 関数：dsSetVolume エラー：不正なSound番号です (0x622ebc) and returns; else the value, clamped to -10000..10000, goes to the manager's +0x5dc[ch] and to sound_channel_set_pan@0x4a4870, which calls IDirectSoundBuffer::SetPan (vtable +0x40) on the channel's buffer. voice_play_indexed_asset@0x4a9b90 sets the pan of ctx+0x4e8c[N] at each play; no instruction writes it, and native read it as 0 on 2026-11-26. SYSTEM4 and the scenes pass 0 for voices 0 to 2.
+
+Port: VirtualMachine.OpSetVoicePan; Audio.SetVoicePan only records it, as the port's channels have no pan. Every site passes 0, the centre.
 
 ## compute
 
 ### 0x53 `div` (div, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(dividend)(divisor) — signed integer quotient truncated toward zero (native IDIV); the VM returns 0 for a zero divisor.
 - **operand access:** `1` write · `2` read · `3` read
@@ -967,8 +1041,8 @@ The setter replaces the single pending request, marks it active, and clears its 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x53`; scope=Himegari SYS4422. Ghidra /v2: op_0x53_handler@0x4265c0 reads operands 2 and 3, CDQ+IDIV, and writes EAX to operand 1 (no zero-divisor guard). Floored division was an early-VM assumption; see 0x54 for the Kamidori SETTOOLBOX consequence. 2026-09-28.
 
 ### 0x54 `mod` (mod, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(dividend)(divisor) — signed integer remainder with the dividend's sign (native IDIV EDX), not a floored modulo; the VM returns 0 for a zero divisor.
 - **operand access:** `1` write · `2` read · `3` read
@@ -977,8 +1051,8 @@ The setter replaces the single pending request, marks it active, and clears its 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x54`; scope=Himegari SYS4422. Ghidra /v2: op_0x54_handler@0x426600 reads operands 2 and 3, CDQ+IDIV, and writes EDX to operand 1, so -1 mod 18 = -1. Kamidori SETTOOLBOX@0x61 sizes the last item page as ((count-1) mod 18)+1; a floored remainder (17) made every empty inventory category show 18 zero-id entries. 2026-09-28.
 
 ### 0x60 `random-modulo` (u0041A270, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(bound) — write CRT rand() % bound. A bound of zero first writes zero and then raises the engine's script error.
 - **operand access:** `1` write · `2` read
@@ -989,8 +1063,8 @@ The setter replaces the single pending request, marks it active, and clears its 
 Native draws are not reproducible: _rand@0x550fe4 is the MSVC LCG (seed * 0x343fd + 0x269ec3), seeded from the tick count by _srand@0x550fd7 (0x413b7f, 0x413c8d, 0x44e5d4), and the main tick, screen transitions, the save encoder and the catalog parse draw from the same generator, as AGE 4.38D's leaf effect does. The port draws from its model of that generator (Ome.Engine/Hosting/CrtRandom.cs), seeded from the tick count and shared with the leaf effect and Lua's math.random; the main tick, transitions, save encoder and catalog parse are not modelled, so the sequences still differ. Kamidori's enemy movement, spawns and battle rolls therefore differ between native and the port from the first enemy phase on. The drive step rand-seed gives both targets the same per-call-site streams (Ome.Engine/Natives/ScriptMemory.Random.cs; native: a Frida probe after the rand() call, SYS4422 0x4269af, SYS4433 0x42768f), and a seeded Kamidori enemy turn and battle end alike on both (docs/engine-re.md, 'Op 0x60 randomness', 2026-11-07).
 
 ### 0x61 `lookup-array` (lookup-array, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Take a typed reference to base[index], preserving whether the base belongs to local or global storage.
 - **operand access:** `1` bind · `2` address · `3` read
@@ -1009,8 +1083,8 @@ Operand 2 names the base cell itself: a global-bank operand produces a global re
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x62`; scope=Himegari SYS4422. Ghidra /v2: op_0x62_handler@0x426a70 negates fetch(3), resolves operand 2 with vm_operand_resolve_address and binds operand 1 through vm_pointer_operand_bind_element, otherwise identical to op_0x61_handler@0x426a20.
 
 ### 0x63 `take-address` (take-address, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination_pointer)(source) - store the underlying typed storage address of source in destination_pointer; a pointer source aliases its existing target.
 - **operand access:** `1` bind · `2` address
@@ -1019,8 +1093,8 @@ Operand 2 names the base cell itself: a global-bank operand produces a global re
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x63`; scope=Himegari SYS4422. Ghidra /v2 op_0x63_take_address@0x426ac0 calls vm_operand_resolve_address@0x425a50 for operand 2 with unsubscripted indices -1/-1, then vm_pointer_operand_write@0x416090 for operand 1. The resolver returns a backing-cell address for direct global/local integer or string operands and the already-stored target for pointer operands. Corpus: 92 calls; destination is always local-ptr, while sources are local-ptr x81, local-int x7, and global-int x4. The C# VM preserves the local/global address domain and supports the native string-pointer destination forms; the traced natural boot reaches the UNITECH/CALCCC pair without fallback.
 
 ### 0x64 `copy-inline-int-array` (copy-inline-int-array, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(inline_blob_offset) - decode the count-prefixed integer literal blob at codebase + offset*4 and copy its values to consecutive VM integer cells beginning at destination. Himegari SYSTEM4@0x1ca copies the SFX channel table [0,4,5,6,9] to G[0x6242c..] this way, on every boot and in a Godot direct-scene run, which SYSTEM4 hosts. The copy writes the bank directly, not through vm_operand_write, so the Frida write capture does not see it.
 - **operand access:** `1` address · `2` read
@@ -1029,8 +1103,8 @@ Operand 2 names the base cell itself: a global-bank operand produces a global re
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x64`; scope=Himegari SYS4422. Ghidra /v2: op_0x64_handler@0x426b00 resolves operand 1 as a writable VM address, reads a count dword followed by values from frame_codebase + operand2*4, reverses the native loader's rotate/XOR in-memory representation with anti_tamper_a, and writes consecutive dwords. The original SYS4 file footer stores the count and values plainly; HISTORY.BIN uses 15 blobs to initialize its rectangle, coordinate, and lookup arrays.
 
 ### 0x6c `zero-int-range` (copy-to-global, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(count) — write logical integer zero to count consecutive VM cells beginning at the resolved destination.
 - **operand access:** `1` address · `2` read
@@ -1039,8 +1113,8 @@ Operand 2 names the base cell itself: a global-bank operand produces a global re
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x6c`; scope=Himegari SYS4422. Ghidra /v2: op_0x6c_handler@0x426d90 resolves operand 1 as a writable VM pointer and fills operand-2 consecutive dwords with ctx->anti_tamper_b, the native encoded representation of logical integer zero. INITCONFIG@0x30 clears G[0x2e49..0x2e55] before registering those 13 profile cells; treating operand 2 as a scalar source incorrectly wrote 13 to G[0x2e49] and disabled ROOM's character greeting/farewell voices. /v2 annotated and saved 2026-07-21.
 
 ### 0x12c `lookup-array-2d` (lookup-array-2d, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (dst_ref)(base)(row)(stride)(column) - bind reference dst_ref to base[row*stride + column] (integer cells of 4 bytes, string records of 0x1c); no bounds check.
 - **operand access:** `1` bind · `2` address · `3` read · `4` read · `5` read
@@ -1048,9 +1122,21 @@ Operand 2 names the base cell itself: a global-bank operand produces a global re
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x12c`; scope=Himegari SYS4422. Ghidra /v2: op_0x12c_handler@0x428d70 computes fetch(5) + fetch(4) * fetch(3), resolves operand 2 with vm_operand_resolve_address and binds operand 1 through vm_pointer_operand_bind_element. Corpus row tables use it directly, for example ADDEXP lookup-array-2d (local-ptr 2) unit_current_stats current_unit_id 0xe 0 (14 stat columns).
 
+### 0x12d `boxes-overlap` (u0041E720, argc 7)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (out)(box cells)(dx)(dy)(box cells 2)(dx2)(dy2) - 1 when two boxes, each four cells (left, right, top, bottom) moved by its offset, overlap, edges included; else 0.
+- **operand access:** `1` write · `2` address · `3` read · `4` read · `5` address · `6` read · `7` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x12d`; scope=SYS4445 handler. op_0x12d_boxes_overlap@0x42da70 resolves operands 2 and 5 as addresses and reads four cells of each raw, undoing the bank's obfuscation (rotl 11, xor ctx+0x5eb94, rotl 7). With dx = op3 - op6 and dy = op4 - op7 it writes operand 1 = -1 < ((B.bottom - dy - A.top) | (B.right - dx - A.left) | (dy - B.top + A.bottom) | (dx - B.left + A.right)). CHMENU@0x1bfa and @0x21b4 pass a local box, a zero offset and a second local box.
+
+Port: VirtualMachine.OpBoxesOverlap. Native ORs the four edge differences in 32-bit arithmetic and tests the sign, which the port does the same way, so a difference that wraps answers as natively. CHMENU uses it twice.
+
 ### 0x12f `sort-indices-by-key-sum` (sort-indices-by-key-sum, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_indices, key_a, key_b, count) - write a stable ascending permutation of indices 0..count-1, ordered by the signed 32-bit sum key_a[index] + key_b[index].
 - **operand access:** `1` address · `2` address · `3` address · `4` read
@@ -1097,8 +1183,8 @@ Implemented with signed 32-bit value normalization into the selected FIFO. Id 10
 Implemented as FIFO TryDequeue: nonempty writes success=1 plus the signed dword; empty writes success=0 and retains the prior value destination because native's failure value is an unusable implementation pointer. Focused tests cover slot independence, ordering, empty/reset behavior, and signed values; real MVSEEK/ATSEEK regressions prove both searches expand beyond the origin.
 
 ### 0x135 `bit-set` (bit-set, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (value)(bit_index) - set the indexed bit in the destination integer.
 - **operand access:** `1` read+write · `2` read
@@ -1107,8 +1193,8 @@ Implemented as FIFO TryDequeue: nonempty writes success=1 plus the signed dword;
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x135`; scope=Himegari SYS4422. Ghidra /v2: op_0x135_handler@0x4296c0 fetches operand 2 as an unsigned bit index, traces SetBitの引数が不正です． for values >=32 and writes nothing (corrected 2026-11-17: no script error is thrown); otherwise it fetches operand 1 and writes value | (1 << index). HIDEWIN.BIN sets index 1 at 0x13d and later tests mask 0x2 at 0x146.
 
 ### 0x136 `bit-reset` (bit-reset, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (value)(bit_index) - clear the indexed bit in the destination integer.
 - **operand access:** `1` read+write · `2` read
@@ -1117,8 +1203,8 @@ Implemented as FIFO TryDequeue: nonempty writes success=1 plus the signed dword;
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x136`; scope=Himegari SYS4422. Ghidra /v2: op_0x136_handler@0x429730 fetches operand 2 as an unsigned bit index, traces RemBitの引数が不正です． for values >=32 and writes nothing (corrected 2026-11-17: no script error is thrown); otherwise it fetches operand 1 and writes value & ~(1 << index). HIDEWIN.BIN clears index 1 at 0x154 after testing mask 0x2.
 
 ### 0x137 `reset-int-stack` (reset-int-stack, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (stack_id) - destroy the selected native integer LIFO and replace it with an empty stack.
 - **operand access:** `1` read (stack 0..9; native lets through 10)
@@ -1155,8 +1241,8 @@ Port status (2026-07-29): implemented over the scene-context stack registry. All
 On success native writes the removed value. On empty, the release handler still writes its reused `this`/EngineCtx local into out_value, so that cell is implementation garbage and must not be consumed unless out_success is nonzero. Port status (2026-07-29): implemented as LIFO TryPop; success writes 1 and the signed dword, while empty writes 0 and deliberately preserves out_value rather than exposing a host pointer. The ten-slot/id-10 alias caveat is documented on op 0x137.
 
 ### 0x14b `load-agerc-module` (load-agerc-module, argc 1)
-- **observed by:** bg0 (SYS4415), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`
+- **observed by:** bg0 (SYS4415), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (entry) - loads the DLL the catalog entry names (Verita: AGERC.DLL) as the module set-agerc-export looks names up in, freeing the one loaded before. The port's module is its own AGERC: it loads AGERC.DLL and halts on any other name.
 - **operand access:** `1` read
@@ -1166,8 +1252,8 @@ On success native writes the removed value. On empty, the release handler still 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14b`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14b_load_agerc_module@0x422080 and Verita 4.24N @0x422c00, the same code (revision diff same). Length 3 words. FreeLibrary(ctx+0x6dc18, Verita +0x6dc7c) when set, then LoadLibraryA(asset_catalog_get_entry_name(operand 1)) into it; a failed load throws. Only the entry's name is used: the DLL is the install folder's, which AGE already loaded for its menus, and the catalog's bytes are not read. The label was Kelebek's placeholder u0041FF50. Only Verita's FIELD.BIN uses it, once: FIELD@0x0 passes 0x5118, entry 20760, AGERC.DLL (docs/engine-re.md, Comparing engine builds, Verita). scene_context_init_reset frees the module and zeroes the 100 export slots (Verita 0x40beb6); the DLL stays loaded for AGE's menus, so its statics outlive it. Port 2026-11-24: VirtualMachine.Agerc.cs, the module and slots in the shell native's scene (ShellServices.Agerc.cs).
 
 ### 0x14c `set-agerc-export` (set-agerc-export, argc 2)
-- **observed by:** bg0 (SYS4415), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`
+- **observed by:** bg0 (SYS4415), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (slot, name) - binds slot (0..99) to the AGERC.DLL export the string names, for call-agerc-export. A name the module does not export raises the error box 「name のアドレス取得に失敗しました．」 with ERRORCODE = 127. The port halts on a slot of 100 or more, whose error text native formats from an operand past the instruction, and on a bind before any load.
 - **operand access:** `1` read · `2` read-string
@@ -1178,8 +1264,8 @@ On success native writes the removed value. On empty, the release handler still 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14c`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14c_set_agerc_export@0x422160 and Verita 4.24N @0x422ce0, the same code (revision diff same). Length 5 words. GetProcAddress(the AGERC module handle at ctx+0x6dc18, Verita +0x6dc7c; operand 2) is stored at ctx+0x6dc1c[operand 1] (Verita +0x6dc80) when operand 1 < 100; a missing export or a larger slot throws. The slot error path formats operand 3, which does not exist (operand_access.py's value-dependent read). Only Verita's FIELD.BIN uses it: FIELD@0x3..0x53 binds slots 1-17 to AGERC's map exports (docs/engine-re.md, Comparing engine builds, Verita). The missing-name throw carries flags 0x10007 (Verita 0x422d55) and the text at 0x573dbc. Port 2026-11-24: VirtualMachine.Agerc.cs; the names are AGERC.DLL's 20 exports (AgercMap).
 
 ### 0x14d `call-agerc-export` (call-agerc-export, argc 6)
-- **observed by:** bg0 (SYS4415), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`
+- **observed by:** bg0 (SYS4415), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (slot, result, cells, count, ref, value) - calls the AGERC.DLL export bound to slot with count integer cells from cells' address as an array, the address of ref's cell and value; the export may change the cells, and its return goes to result. The port runs AGERC's 17 map functions, as native's code does them, and halts on an unbound slot, an export that runs past the cells or the DLL's tables, and a shell export.
 - **operand access:** `1` read (AGERC export slot 0..99, untested) · `2` write · `3` address · `4` read · `5` address · `6` read
@@ -1189,11 +1275,11 @@ On success native writes the removed value. On empty, the release handler still 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x14d`; scope=Himegari SYS4422. Native read 2026-11-24: Himegari /v2 op_0x14d_call_agerc_export@0x429ee0 and Verita 4.24N @0x42aa70, the same code (revision diff same). Length 13 words. Copies operand-4 cells from operand 3's address into a new int array, decoding each (rol 11, xor anti_tamper_a, rol 7), calls ctx+0x6dc1c[operand 1] (Verita +0x6dc80) as __stdcall fn(owner window, array, count, &operand-5 cell, operand 6), encodes the array back into the cells and writes the return to operand 2. Operand 5's cell address is passed as is, not decoded. Only Verita's FIELD.BIN uses it, 19 sites (docs/engine-re.md, Comparing engine builds, Verita). Port 2026-11-24: VirtualMachine.Agerc.cs over AgercMap, the map functions read instruction for instruction in Himegari's AGERC.DLL and compared with Verita's; it writes back only the cells the export changed, which leaves memory as native's write-back does.
 
 ### 0x191 `absolute-value` (absolute-value, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Write the signed 32-bit absolute value of operand 2 to operand 1. AGE 4.43B (SYS4443) works on floats: the float read rounded to a float, its fabs written through the float accessor.
-- **operand access:** `1` write (SYS4415) / write (SYS4422) / write (SYS4424) / write (SYS4433) / write (SYS4438) / write-float (SYS4443) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read (SYS4433) / read (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` write (SYS4415) / write (SYS4422) / write (SYS4424) / write (SYS4433) / write (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read (SYS4433) / read (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari SYS4422 Ghidra /v2`; site=`vm-map/opcodes.toml opcode 0x191`; scope=handler. op_0x191_handler@0x426de0 computes (value ^ (value >> 31)) - (value >> 31) and writes it through vm_operand_write. All five Himegari calls are in SELACT, where it normalizes a signed preview delta before drawing it.
@@ -1202,8 +1288,8 @@ On success native writes the removed value. On empty, the release handler still 
 Port: VirtualMachine.OpAbsoluteValue, which takes the float form where the ABI's operand contract says read-float (SYS4443).
 
 ### 0x193 `concat` (concat, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Concatenate operand 2 followed by operand 3 and replace the destination string. Sources are resolved before the write, so destination/source aliasing is supported.
 - **operand access:** `1` write-string · `2` read-string · `3` read-string
@@ -1212,8 +1298,8 @@ Port: VirtualMachine.OpAbsoluteValue, which takes the float form where the ABI's
 - **evidence:** method=inference; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x193`; scope=Himegari SYS4422. Kelebek identifies param1 = param2.concat(param3). Corpus ordering confirms direction and aliasing: ADDEXP builds level/result messages with both literal-prefix concat(dst, literal, dst) and append concat(dst, dst, literal); BTL has eight calls.
 
 ### 0x194 `string-equals` (string-equals, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(left)(right) - compare two complete SYS4 strings and write 1 when equal, otherwise 0.
 - **operand access:** `1` write · `2` read-string · `3` read-string
@@ -1222,8 +1308,8 @@ Port: VirtualMachine.OpAbsoluteValue, which takes the float form where the ABI's
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x194`; scope=Himegari SYS4422. Ghidra /v2 op_0x194_string_equals@0x426e20 fetches operands 2 and 3 through the string resolver, compares their byte ranges through FUN_004017a0, and writes compare_result==0 to integer operand 1. INIT2 and GAMESTART use it as a branch predicate for INPUTNAME/default-name handling; the natural Game Start diagnostic reached one GAMESTART call at 0x134c. The C# VM implements ordinal equality through the shared string resolver, covering literal, global, local, global-string-pointer, and local-string-pointer operands; the traced natural-boot regression proves the reached GAMESTART call no longer falls back.
 
 ### 0x195 `string-not-equals` (string-not-equals, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(left)(right) - compare two complete SYS4 strings and write 1 when different, otherwise 0.
 - **operand access:** `1` write · `2` read-string · `3` read-string
@@ -1234,8 +1320,8 @@ Port: VirtualMachine.OpAbsoluteValue, which takes the float form where the ABI's
 This is the logical inverse of op 0x194 string-equals. Skipping it is stateful: the destination is not cleared. At BUNKI@0x905, local 0x99 still contains a nonzero graphics handle, so the missing write falsely reserves a 30-pixel title row and shifts every choice down. The C# VM implements ordinal inequality through the shared string resolver; focused tests cover literal/global/local/pointer operands and the exact empty-title stale-handle overwrite.
 
 ### 0x19d `is-catalog-resource-unlocked` (is-catalog-resource-unlocked, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(packed_resource_id) - return 1 when the shared SAVE.DAT catalog marker for the selected base or append resource decodes to AGE's deterministic per-index unlock stamp, otherwise 0.
 - **operand access:** `1` write · `2` read
@@ -1246,8 +1332,8 @@ This is the logical inverse of op 0x194 string-equals. Skipping it is stateful: 
 Base ids use the low 24-bit index in the primary catalog marker table. A nonzero high-byte selector addresses that append catalog's independent table; selectors require SaveVersion 3.10 or later, and AGE's signed selector lookup only supports 1..127. Successful native catalog opens write the stamp `low16(index * 0x053d6f99 + 0xb0b0b0b0)` and its encrypted SAVE.DAT form. CGMODE tests CGINIT image ids and HMODE tests SPINIT scene-script ids through this predicate. Port status (2026-07-28): shared-profile import decodes both catalog sections, successful VFS opens mark resources, shared SAVE.DAT writes native-decodable encrypted markers, and the opcode returns the live profile predicate.
 
 ### 0x1a6 `half-byte-string-length` (halve-strlen, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Write half the resolved string's byte length, using integer truncation.
 - **operand access:** `1` write · `2` read-string
@@ -1258,8 +1344,8 @@ Base ids use the low 24-bit index in the primary catalog marker table. A nonzero
 Native applies strlen to the NUL-terminated engine byte string and shifts the byte count right by one. DRAWCHP uses this Shift-JIS-oriented width proxy to center unit and weapon names before rasterizing them into a scratch surface.
 
 ### 0x1b0 `copy-dwords` (copy-dwords, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source)(destination)(count) - copy count consecutive 32-bit cells from source to destination.
 - **operand access:** `1` address · `2` address · `3` read
@@ -1268,8 +1354,8 @@ Native applies strlen to the NUL-terminated engine byte string and shifts the by
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1b0`; scope=Himegari SYS4422. Ghidra /v2 op_0x1b0_copy_dwords@0x427060 fetches operand 3, resolves addressable operands 1 and 2 through vm_operand_resolve_address@0x425a50, and calls memcpy(destination, source, count*4). Corpus: 65 calls across direct global/local spans and local pointers; 43 are immediately preceded by take-address 0x63. The C# VM copies resolved integer-cell spans while retaining local/global address domains; focused tests cover direct spans and aliased pointers, and the traced natural boot reaches the UNITECH/CALCCC pair without fallback.
 
 ### 0x1c8 `toString` (toString, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Convert the source signed 32-bit integer to its invariant decimal string and replace the destination string.
 - **operand access:** `1` write-string · `2` read
@@ -1278,11 +1364,11 @@ Native applies strlen to the NUL-terminated engine byte string and shifts the by
 - **evidence:** method=inference; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1c8`; scope=Himegari SYS4422. Kelebek identifies integer-to-string conversion. All five corpus sites are in ADDEXP and feed concat immediately: level numbers, signed deployment-cost deltas, and movement deltas. Source types are global/local integer and the destination is a local string.
 
 ### 0x1cd `sqrt` (u0041A560, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(x) — out = the square root of x.
-- **operand access:** `1` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=arterial; revisions=SYS4438; artifact=`Arterial SYS4438 Ghidra /arterial/4.38D and the complete Arterial catalog`; site=`vm-map/opcodes.toml opcode 0x1cd`; scope=SYS4438 handler; 4.33G's pairs with it at similarity 1.00 and is not read. op_0x1cd_handler@0x42a3d0 calls vm_operand_fetch_float(2), then 0x584e30, the C runtime's sqrt on st(0), and vm_operand_write_float(1, the result rounded to a float).
@@ -1290,8 +1376,8 @@ Native applies strlen to the NUL-terminated engine byte string and shifts the by
 The C runtime's sqrt on the fetched value; a negative x gives a NaN. 4.33G and 4.38D read and write through the float accessors, 4.24J through the integer ones (the operand contracts below), and the port takes each operand through its ABI's accessor. 4.24J's handler itself is not read. 創刻のアテリアル has 1 site.
 
 ### 0x2c5 `byte-string-length` (strlen, argc 2)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Write the resolved NUL-terminated engine string's raw byte length.
 - **operand access:** `1` write · `2` read-string
@@ -1314,8 +1400,8 @@ This is raw strlen(bytes), not a .NET UTF-16 character count. BUNKI compares all
 This is character count rather than .NET UTF-16 length or raw CP932 byte length. Port status (2026-07-29): implemented by encoding the C-string prefix through VmOptions.NativeStringCodePage and counting valid CP932 lead/trail pairs as one character; focused tests cover mixed single-byte and double-byte characters.
 
 ### 0x2c7 `byte-substring` (u0042B5F0, argc 4)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(string)(start)(count) — native's SBSubstr: copy count bytes of the string from byte start, kept from splitting a double-byte character. A start at or past the end, or a count below 1, gives the empty string.
 - **operand access:** `1` write-string · `2` read-string · `3` read · `4` read
@@ -1339,8 +1425,8 @@ The port matches (Cp932Text.ByteSubstring) and reports each of native's two trac
 The release call uses nonnegative in-range indices and count 1. Port status (2026-07-29): implemented over encoded byte spans, preserving every valid lead/trail pair and reproducing native end clamping (`end = length` when start+count < 1 or > length) before selecting the half-open character interval [start,end).
 
 ### 0x2d0 `add-float` (u0042B940, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(a)(b) — destination = a + b, in floats.
 - **operand access:** `1` write-float · `2` read-float · `3` read-float
@@ -1353,8 +1439,8 @@ The release call uses nonnegative in-range indices and count 1. Port status (202
 Both operands come through the float accessor (vm_operand_fetch_float), which leaves an integer operand exact on the x87 stack. The operation itself rounds the exact result to a float: Direct3D runs that thread's x87 at single precision (docs/engine-re.md, "The x87 runs at single precision"), and vm_operand_write_float stores the value unchanged. The port rounds the exact result once as well (SinglePrecision); computing in double and storing a float would round twice, which differs only when an integer operand has more than 24 significant bits. A float-pointer operand (type 0xd) is a local float reference (docs/engine-re.md, "Float cells as arrays, and float references").
 
 ### 0x2d1 `sub-float` (u0042B950, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(a)(b) — destination = a - b, in floats.
 - **operand access:** `1` write-float · `2` read-float · `3` read-float
@@ -1367,8 +1453,8 @@ Both operands come through the float accessor (vm_operand_fetch_float), which le
 Both operands come through the float accessor (vm_operand_fetch_float), which leaves an integer operand exact on the x87 stack. The operation itself rounds the exact result to a float: Direct3D runs that thread's x87 at single precision (docs/engine-re.md, "The x87 runs at single precision"), and vm_operand_write_float stores the value unchanged. The port rounds the exact result once as well (SinglePrecision); computing in double and storing a float would round twice, which differs only when an integer operand has more than 24 significant bits. A float-pointer operand (type 0xd) is a local float reference (docs/engine-re.md, "Float cells as arrays, and float references").
 
 ### 0x2d2 `mul-float` (u0042B960, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(a)(b) — destination = a * b, in floats.
 - **operand access:** `1` write-float · `2` read-float · `3` read-float
@@ -1381,8 +1467,8 @@ Both operands come through the float accessor (vm_operand_fetch_float), which le
 Both operands come through the float accessor (vm_operand_fetch_float), which leaves an integer operand exact on the x87 stack. The operation itself rounds the exact result to a float: Direct3D runs that thread's x87 at single precision (docs/engine-re.md, "The x87 runs at single precision"), and vm_operand_write_float stores the value unchanged. The port rounds the exact result once as well (SinglePrecision); computing in double and storing a float would round twice, which differs only when an integer operand has more than 24 significant bits. A float-pointer operand (type 0xd) is a local float reference (docs/engine-re.md, "Float cells as arrays, and float references").
 
 ### 0x2d3 `div-float` (u0042B970, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(a)(b) — destination = a / b, in floats. A zero divisor is not tested: the quotient is the IEEE infinity or NaN.
 - **operand access:** `1` write-float · `2` read-float · `3` read-float
@@ -1395,8 +1481,8 @@ Both operands come through the float accessor (vm_operand_fetch_float), which le
 Both operands come through the float accessor (vm_operand_fetch_float), which leaves an integer operand exact on the x87 stack. The operation itself rounds the exact result to a float: Direct3D runs that thread's x87 at single precision (docs/engine-re.md, "The x87 runs at single precision"), and vm_operand_write_float stores the value unchanged. The port rounds the exact result once as well (SinglePrecision); computing in double and storing a float would round twice, which differs only when an integer operand has more than 24 significant bits. A float-pointer operand (type 0xd) is a local float reference (docs/engine-re.md, "Float cells as arrays, and float references").
 
 ### 0x2d5 `mov-float` (u0042B990, argc 2)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(source) — destination = source, as a float.
 - **operand access:** `1` write-float · `2` read-float
@@ -1419,8 +1505,8 @@ The operand comes through the float accessor (vm_operand_fetch_float), which lea
 The operand comes through the float accessor (vm_operand_fetch_float), which leaves an integer exact on the x87 stack; the truncation does no arithmetic, so the x87's single precision does not reach it. A float-pointer operand (type 0xd) is a local float reference (docs/engine-re.md, "Float cells as arrays, and float references").
 
 ### 0x2d8 `fill-int-array` (set-array-to, argc 3)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (destination)(value)(count) — fill `count` consecutive integer cells at the resolved destination address with the signed dword value. Nonpositive counts write nothing.
 - **operand access:** `1` address · `2` read · `3` read
@@ -1443,8 +1529,8 @@ The destination follows the ordinary SYS4 address resolver, so direct global/loc
 Both operands come through the float accessor, so an integer operand is converted. A NaN is equal to nothing and neither less nor greater. 創刻のアテリアル has no sites.
 
 ### 0x2e0 `ne-float` (u0042CE0F, argc 3)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(a)(b) — out = 1 when a != b as floats, else 0.
 - **operand access:** `1` write · `2` read-float · `3` read-float
@@ -1455,8 +1541,8 @@ Both operands come through the float accessor, so an integer operand is converte
 Both operands come through the float accessor, so an integer operand is converted. A NaN is equal to nothing and neither less nor greater. 創刻のアテリアル has no sites.
 
 ### 0x2e1 `lt-float` (u0042CE10, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(a)(b) — out = 1 when a < b as floats, else 0.
 - **operand access:** `1` write · `2` read-float · `3` read-float
@@ -1479,8 +1565,8 @@ Both operands come through the float accessor, so an integer operand is converte
 Both operands come through the float accessor, so an integer operand is converted. A NaN is equal to nothing and neither less nor greater. 創刻のアテリアル has no sites.
 
 ### 0x2e3 `gr-float` (u0042CE30, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(a)(b) — out = 1 when a > b as floats, else 0.
 - **operand access:** `1` write · `2` read-float · `3` read-float
@@ -1503,8 +1589,8 @@ Both operands come through the float accessor, so an integer operand is converte
 Both operands come through the float accessor, so an integer operand is converted. A NaN is equal to nothing and neither less nor greater. 創刻のアテリアル has no sites.
 
 ### 0x2eb `get-game-version` (u0042CEB0, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_string) — write the game's version text, set:GameVersion.
 - **operand access:** `1` write-string
@@ -1515,8 +1601,8 @@ Both operands come through the float accessor, so an integer operand is converte
 The port writes VmOptions.GameVersion, which the front end fills by GameVersionRule (SYS4INI GAMEVERSION, or with VERREGPOS the installer's DisplayVersion from the registry; docs/engine-re.md, set:GameVersion). A headless run has the empty string. 創刻のアテリアル's only site is TITLE@0x74a, which shows it under the logo as 'Ver 2.00.0022' on the reference machine.
 
 ### 0x2ec `string-to-int` (u0042CEC0, argc 2)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(string) — out = atol(string): the integer a string begins with, 0 when it begins with none.
 - **operand access:** `1` write · `2` read-string
@@ -1566,8 +1652,8 @@ Port: VirtualMachine.OpEllipsePolygonIntersect. The ellipse is made first; a coo
 Port: VirtualMachine.OpEllipsesIntersect. The regions are GDI's, pixel for pixel: GdiRegion and GdiCurveFlattener (Model/GdiRegion.cs), checked against gdi32 on 3500 polygons and ellipses; docs/engine-re.md, 'The region tests'.
 
 ### 0x2f2 `point-in-ellipse` (u0042CEC6, argc 6)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(x)(y)(rectangle cells)(dx)(dy) - 1 when the ellipse holds the pixel (x, y), else 0 (PtInRegion). The ellipse fills the rectangle (c0 + dx, c2 + dy) to (c1 + dx, c3 + dy) from four cells read left, right, top, bottom; one GDI refuses traces 楕円形リージョン作成に失敗しました． and writes 0.
 - **operand access:** `1` write · `2` read · `3` read · `4` address · `5` read · `6` read
@@ -1581,8 +1667,8 @@ Port: VirtualMachine.OpPointInEllipse. The regions are GDI's, pixel for pixel: G
 ## control
 
 ### 0x1 `throw-exit-request` (throw-exit-request, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - raise Command_Exit_Exception with result value 1. The outer engine loop catches it, exits without advancing the VM PC, and returns control to the frontend. TITLE uses it for the fifth main-menu action; SYSTEM4 uses it after reporting an invalid execution mode.
 - **control (port handler):** waits never; leaves falls, ends
@@ -1590,8 +1676,8 @@ Port: VirtualMachine.OpPointInEllipse. The regions are GDI's, pixel for pixel: G
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1`; scope=Himegari SYS4422. Ghidra /v2: op_0x1_throw_exit_request@0x4162e0 constructs a four-byte payload with value 1 and calls __CxxThrowException_8 with ThrowInfo 0x5a9710. Its CatchableTypeArray resolves to RTTI TypeDescriptor 0x5b13e8, `.?AVCommand_Exit_Exception@@`. The outer engine_main_tick_with_exception_policy@0x411840 has MSVC FuncInfo 0x5a9750; its typed catch entry maps Command_Exit_Exception to catch_CommandExitException_set_exit_result@0x412648, which forces result 1 and returns continuation 0x412961 for loop teardown/return. The dispatcher advances frame_pc only after a handler returns, and this catch never advances it. A separate generic error-dialog result-4 path at 0x412928 explicitly advances the PC, proving fall-through is opt-in and does not apply here. Corpus has exactly two sites: TITLE@0x393 after the fifth menu action's sound/sleep, and SYSTEM4@0x5b9 after printing 'invalid execution mode'. TITLE bytecode following 0x1 builds a developer debug menu and is unreachable in the retail native path. The frontend full-exit/return-to-title prompt remains a separate unimplemented boundary.
 
 ### 0x3 `call-script` (call-script, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** load & call another SYS4 script by id; id = RAW index into the SYS4INI file table (asset-index). Pushes a script frame; returns to caller when the callee ends.
 - **operand access:** `1` read
@@ -1626,8 +1712,8 @@ failures".
 
 
 ### 0x5 `ret` (ret, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - pop the current frame's local return stack and resume at the popped code offset unless it is -1; when a run-state snapshot is pending on ctx+0x5f2f4/+0x5f2f8 it is restored. Local calls (op 0x8f) and the native callback dispatches push the return entry, so callback bodies are local subroutines that return to the waiting opcode. The exception is a click in the modal hotspot waits (ops 0x91/0x92/0x95), which redirects without a push, so that callback's ret pops the enclosing call.
 - **control (port handler):** waits never; leaves jumps, ends
@@ -1636,8 +1722,8 @@ failures".
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x5`; scope=Himegari SYS4422. Ghidra /v2: op_0x5_handler@0x417ad0 decrements ret_stack_a[cur] and redirects frame_pc to codebase + ret_stack_b[...]*4 when that entry is not 0xffffffff, then pops the saved run-state stack if non-empty. vm_return_stack_push_pc@0x405330 is called by timed_callback_sequence_tick, adv_input_dispatch_callbacks, adv_interpreter_tick, adv_input_service_poll and two helpers before redirecting to a callback. Corpus: every hotspot/mouse/joy/timed callback target (0x90 operands 5-7, 0xcc 2, 0xfb 2, 0xd4 3-4) and 72,792 of 72,794 local-call targets reach ret; coroutine handlers registered by 0x7b end at 0x7c instead.
 
 ### 0x6 `preload-script-slot` (preload-script-slot, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (script_id, frame_slot) - load and allocate a script into a numbered engine context slot without executing it. Valid slots are 0..39.
 - **operand access:** `1` read · `2` read (script frame 0..39, untested)
@@ -1649,8 +1735,8 @@ failures".
 Implemented as persistent VM-owned preloaded slots containing the resolved script id and one reusable ExecFrame. Replacing a slot allocates a fresh frame/local bank; invalid slots and absent providers halt diagnostically. An id the resource open refuses shows the loader's 再試行/キャンセル box as op 0x3's does (docs/engine-re.md, "The frame limit and load failures"). Root scene reload clears the slots before SYSTEM4 registers them again.
 
 ### 0x8 `call-preloaded-script-slot` (call-preloaded-script-slot, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (frame_slot) - restart and execute the script previously loaded into that engine context slot, returning to the caller when it exits.
 - **operand access:** `1` read (script frame 0..39, untested)
@@ -1662,8 +1748,8 @@ Implemented as persistent VM-owned preloaded slots containing the resolved scrip
 Implemented by recursively executing the reusable preloaded ExecFrame while preserving its local banks across invocations, restarting at script offset zero, and propagating halt/root-reload/exit outcomes like ordinary call-script. The port emits normal call-script trace events for observability. Focused tests prove code restart plus local persistence and drive the real MVSEEK through SYSTEM4's exact 0x06/0x08 ABI.
 
 ### 0x9 `exit-script` (exit-script, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - discard the complete active script stack, zero every global bank, reset scene-owned engine services, and load raw script resource 0 as the new root. Process-owned configuration survives; the initial-root-run flag queried by op 0x130 is cleared so LOGO/OP are not replayed.
 - **control (port handler):** waits never; leaves ends
@@ -1673,8 +1759,8 @@ Implemented by recursively executing the reusable preloaded ExecFrame while pres
 Implemented as a whole-stack root-reload boundary in the persistent VM. A request propagates through every nested call-script frame without resuming caller instructions, clears VM/host scene presentation and input state, keeps every surface unless VmOptions.CreateObject/AutoFreeTex ask for the release (the surface records, reload flags and movies are cleared), cancels deferred SFX starts while preserving active/process-owned audio, zeroes the global banks and restarts the playtime clock from 0 (both 2026-11-07), preserves process-owned host configuration/caches, then resolves raw resource 0 through the script provider and starts it at offset zero. The retained history backlog is deliberately preserved pending a separate proof of its native lifetime; recording suppression is reset.
 
 ### 0x7b `coroutine-save-yield-handlers` (u0041ADB0, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handler1_pc)(handler2_pc) — scene-coroutine: save the two per-frame yield/resume handler PCs. Native writes op1→ctx[0x6da88+idx*4], op2→ctx[0x6db28+idx*4] (idx=ctx[0x53d14] script-context index); its generic handler prologue records the 5-dword instruction length. SC0000 0x79: `0x7b label_3c9 label_41e` registers the ADV per-frame render→poll→yield handlers. Part of the scene-coroutine framework (see engine-re.md §Scene-coroutine framework); pairs with 0x7c (resume) + 0x140 (loop iterator).
 - **operand access:** `1` read (coroutine target) · `2` read (coroutine target)
@@ -1683,8 +1769,8 @@ Implemented as a whole-stack root-reload boundary in the persistent VM. A reques
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x7b`; scope=Himegari SYS4422. Ghidra: handler FUN_0041ebf0 (dispatch ctx[0x26c93+0x7b]) = {frame_instruction_word_count[idx]=5; ctx[0x6da88+idx*4]=op1; ctx[0x6db28+idx*4]=op2}. Both operands are code PCs (handler labels).
 
 ### 0x7c `coroutine-resume` (u00416A90, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () — scene-coroutine RESUME point (native name EndHWL). Native requires run-state bit 0x2000000 (ctx[0x6dbc8]) set — THROWS (__CxxThrowException) if unset, so it is only ever reached on a scheduler-driven re-entry, NEVER on a cold first pass (cold flow jmps over it). A resume saved by another script raises the Depth error first. Restores PC=ctx[0x53d28]+ctx[0x6dbcc]*4, clears the run-bit (ctx+0xa0ce4 &= ~0x2000000), resets input/line state. SC0000 0x443 (falls into the main loop label_444). See engine-re.md §Scene-coroutine framework.
 - **control (port handler):** waits may; leaves falls, jumps, ends
@@ -1694,8 +1780,8 @@ Implemented as a whole-stack root-reload boundary in the persistent VM. A reques
 The yield state is engine-wide: coroutine_runstate (+0x6dbc8), coroutine_resume_off (+0x6dbcc) and coroutine_yield_owner_script_id (+0x5f6bc), the script that op 0x199 (or an engine-armed yield) saved it from. When the running frame's script is not that owner, the handler throws flags 0x10007 "Depth が不正です <running> != <owner>" before changing anything, so 再試行 raises it again. It records no instruction length before either throw, so 無視 skips by the previous handler's length. The port keeps the yield on the VM and skips the 0x7c itself on 無視 (engine-re.md, "The other guards"). The restored run state is coroutine_runstate & ~0x2000000, so a yield still entered (bit 0x4000000: handler A ended here without a second op 0x199) leaves the frame in the hidden-window wait: engine_main_tick_with_exception_policy@0x411ec8 polls input_poll_triggered_action_mask each tick and, on the first trigger, enters handler B with a fresh yield (run state | 0x2000000, resume = the frame pc, owner = the running script). A yield entered from a text wait (adv_input_service_poll's action-5 entry) restores the wait's 0x80000000 and returns to the parked wait. Port: VirtualMachine.WaitInHiddenWindow (2026-11-05; engine-re.md, "ADV hide window: the engine's hidden-window wait"). The input state it resets is the hotspot hit: ctx+0xc6f8 (registry +0x74b0) and ctx+0x13bdc (op-0x95 choice table) become -1 and their pending enters (ctx+0xc6f0, ctx+0x13bd4) 0, while the hovered record stays. The wait's next poll then runs the hovered record's leave, and a click hits nothing until a WM_MOUSEMOVE at a new point re-tests: after a Space hide-and-restore under a resting pointer, the control loses its tooltip and a click on it advances the page (native-driven 2026-11-05). Port: HotspotRegistry.InvalidateHit (engine-re.md, "The hit and the hovered record").
 
 ### 0x8f `call` (call, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** intra-script subroutine call (local JSR): PC = frame.codebase + operand*4; pushes a return address on the per-frame return stack. NOT cross-script (that is call-script 0x03).
 - **operand access:** `1` read (call target)
@@ -1705,8 +1791,8 @@ The yield state is engine-wide: coroutine_runstate (+0x6dbc8), coroutine_resume_
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x8f`; scope=Himegari SYS4422. native-RE (Ghidra): handler FUN_0041fba0 (= ctx[0x26c93+0x8f]) sets [frame PC @+0x53d2c] = [frame codebase @+0x53d28] + operand*4 and pushes ((pc-base)>>2)+3 onto the per-frame return stack ([ctx+0x552e8]/[ctx+0x55248]). Target is a code OFFSET within the current script (matches header table T3 tag 0x8F = local call targets), confirming it is a local JSR, not a script load.
 
 ### 0xa1 `begin-value-switch` (begin-value-switch, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear and initialize the current value-to-PC dispatch table used by the following case and switch-jump opcodes.
 - **control (port handler):** waits never; leaves falls
@@ -1714,8 +1800,8 @@ The yield state is engine-wide: coroutine_runstate (+0x6dbc8), coroutine_resume_
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xa1`; scope=Himegari SYS4422. Ghidra /v2: op_0xa1_handler@0x42bd60 resets the engine's open-addressing value-dispatch table with capacity 0xfff. Corpus has 12 canonical sequences of 0xa1, one or more 0xa2 cases, then 0xa3 dispatch.
 
 ### 0xa2 `add-value-switch-case` (add-value-switch-case, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (case_value)(target_pc) - format the VM value as a dispatch key and add its branch target to the current switch table.
 - **operand access:** `1` read-string · `2` read (transfer target)
@@ -1724,8 +1810,8 @@ The yield state is engine-wide: coroutine_runstate (+0x6dbc8), coroutine_resume_
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xa2`; scope=Himegari SYS4422. Ghidra /v2: op_0xa2_handler@0x42d310 formats operand 1 through vm_value_format_string@0x418860 and inserts operand 2 into value_dispatch_insert_case@0x42cf70. HISTORY.BIN maps action values 0,3,4,5,6 to callback branches; it is generic switch/case dispatch, not menu registration.
 
 ### 0xa3 `value-switch-jump` (value-switch-jump, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (selector)(default_target) - jump to the target registered for selector, or to the supplied default target when no case matches.
 - **operand access:** `1` read-string · `2` read (transfer target)
@@ -1745,8 +1831,8 @@ The yield state is engine-wide: coroutine_runstate (+0x6dbc8), coroutine_resume_
 Port status (2026-11-07): implemented as VirtualMachine.CommitLoadedPlayTime, the same commit a full load's frame restore performs (docs/engine-re.md, "Playtime"). Neither shipped corpus calls the op.
 
 ### 0xae `continue-save-load-stack-restore` (continue-save-load-stack-restore, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - during serialized save restoration, replace the current frame PC with its saved resume/call target and advance through the saved script-context stack; otherwise a no-op.
 - **control (port handler):** waits never; leaves falls, jumps, calls, ends, restores
@@ -1756,8 +1842,8 @@ Port status (2026-11-07): implemented as VirtualMachine.CommitLoadedPlayTime, th
 Layout 3 frame d259 indexes SYS4 T1 read-message reset sites, d260 indexes T2 call-script sites, and the saved local return stack indexes T3 local-call sites. Port status (2026-07-24): each saved script is loaded at its ordinary entry, runs its frame-local prologue, and reaches 0xae itself; the active path then reconstructs the saved recursive frame chain, preserves each synthetic ancestor's original T1/T2/T3 coordinates while its restored child is active, reinstates the terminal restored frame as opcode 0x1ad's save boundary, and resumes it at T1. The installed SAVE00 continuation gate proves SYSTEM4 -> FORT restoration reaches FORT's CHMENU gameplay poll; the unchanged port-authored dungeon slot 006 proves FIELD's pre-rendezvous zoom table is initialized; synthetic gates assert both root/child prologue execution, SaveRestore rather than ordinary CallScript entry, exclusion of nested SAVE helpers from a re-save, and reload of that rewrite without ordinary boot re-entry. Each restored child frame commits the loaded playtime (2026-11-07).
 
 ### 0xc8 `sleep` (sleep, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Pause the current script for <duration> milliseconds while retained presentation continues.
 - **operand access:** `1` read
@@ -1767,9 +1853,32 @@ Layout 3 frame d259 indexes SYS4 T1 read-message reset sites, d260 indexes T2 ca
 
 Native handler sleep_op_0xc8 @0x420ec0 is NON-BLOCKING: it arms a timer (sleep_timer_arm @0x44cff0 at ctx+0x5f304 = active flag + start tick + duration) that the engine main loop polls, resuming the script when elapsed. Operand UNIT = MILLISECONDS (start = ms tick source DAT_0056f3d4, timeGetTime/GetTickCount class), and the native arm helper clamps duration to a minimum of 1 ms. An operand under 10 skips the timer: the handler calls kernel32 Sleep(operand) and returns, and the main loop renders a dirty frame at its next iteration without waiting for the display; ROOM's input loop's sleep(0) gives up the time slice. The handler also records its generic 3-dword instruction length and runs anti-tamper checks, neither needed host-side. Port equivalent: the Godot host parks the VM thread for max(1, scaled duration) ms while the presentation compositor continues. Under 10 ms it requests presentation without waiting for the compositor, so a sleep-1 poll loop wakes about once a millisecond and a 50 ms mouse callback keeps its period (docs/engine-re.md, 'Short sleeps do not wait for the display', 2026-11-07). Sleep is one proven presentation-capable service boundary; ordinary AE setup runs burst-fast to 0x21c and is not paced per opcode. Headless hosts no-op it (parity). While ADV fast-forward (run-state 0x08000000) is active the handler arms nothing, and the main loop dispatches ops ahead of an already-armed sleep timer; the port returns immediately and ends an in-progress host sleep when fast-forward starts.
 
+### 0xce `register-timed-catchup-callback` (u0041E0B0, argc 3)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (interval ms)(on-time target)(catch-up target) - register the engine's one timed catch-up callback, owned by the current script, and start its interval timer.
+- **operand access:** `1` read · `2` read (callback target) · `3` read (callback target)
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0xce`; scope=SYS4445 handler. op_0xce_register_timed_catchup_callback@0x421090 records frame_instruction_word_count 7, stores operand 2 at ctx+0x6914c, operand 3 at ctx+0x69150 and the frame's script id at ctx+0x69174, then sleep_timer_arm@0x4520e0(ECX = ctx+0x68e00, operand 1): active +8 = 1, start +0x14 = timeGetTime, interval +0x18 = operand 1 or 1 for 0. 4.24J's handler (/v2 0x420fd0) is the same code over its own offsets. scene_context_init_reset@0x40ca80 writes only the owner (0x40cf22); no other code writes the targets.
+
+The registration is engine-wide, as op 0xcc's: one from any frame replaces the earlier one, and op 0xcf in another script raises the Depth error. Its timer is its own (AGE 4.45D ctx+0x68e00), apart from op 0xc8's sleep (+0x68dc8) and op 0xcc's (+0x68de4); an interval of 0 is 1. Port: VirtualMachine.OpRegisterTimedCatchUpCallback, the targets and owner in the scene. LAUNCH, the battle cut-in BTLMAIN runs, registers once: 1 ms, the update with its draw and input as the on-time target, the update alone as the catch-up.
+
+### 0xcf `dispatch-timed-catchup-callback` (u00416D40, argc 0)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** Once op 0xce's interval has passed (at once under fast-forward), call the on-time target; when a whole interval more has passed, the catch-up target once for each further interval (at most 128 runs), then the on-time target, then return here.
+- **control (port handler):** waits never; leaves falls, jumps
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0xcf`; scope=SYS4445 handler. op_0xcf_handler@0x41a830 records length 1 and takes timeGetTime - ctx+0x68e14. Unless that reaches ctx+0x68e18 or run-state 0x8000000 is set it does nothing; else it stores the time and pushes the following dword offset on the frame's call stack (+0x5edac, depth +0x5ed0c). Below twice the interval: a -1 target at +0x6914c pops it, a frame script other than +0x69174 throws flags 0x10007 with format 0x616a38 (raw ids), else pc = target. Otherwise the owner check throws with 0x6157ec (names, via asset_catalog_get_entry_name), it pushes +0x6914c, then +0x69150 while elapsed - interval, less an interval each time, still exceeds the interval and its count stays below 128; with +0x69150 = -1 it pops all but the first push and falls through, else pc = +0x69150. 4.24J's /v2 0x417f80 is the same code.
+
+The handler restarts the timer and pushes the following pc. Within two intervals it jumps to the on-time target, or pops the pc again for -1. Later it pushes the on-time target and one catch-up per further whole interval as returns and jumps to the catch-up target; a -1 catch-up drops what it queued but the first pc, and runs on, so the frame's next ret returns to the following pc. A target registered by another script raises Depth with the pc still pushed: on time 「Depth が不正です %d != %d」 with the two scripts' ids, late with their names. Its recorded length is 1, so 無視 resumes after it. Port: VirtualMachine.OpDispatchTimedCatchUpCallback; a target that is no instruction's offset halts the run, where native moves the pc there unchecked. LAUNCH calls it in its loop with a 1 ms sleep, so its frame counter advances once a millisecond however late the loop is.
+
 ### 0xd0 `get-monotonic-time-ms` (get-monotonic-time-ms, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Write the native monotonic millisecond clock to operand 1. Battle presentation uses paired samples around timed callback sequences to calculate elapsed time.
 - **operand access:** `1` write
@@ -1778,8 +1887,8 @@ Native handler sleep_op_0xc8 @0x420ec0 is NON-BLOCKING: it arms a timer (sleep_t
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xd0`; scope=Himegari SYS4422. Ghidra /v2: op_0xd0_handler@0x428860 calls imp_winmm_timeGetTime and writes the returned 32-bit tick count to operand 1. BTL samples it before and after its timed HP/damage presentation; MVRTN has the other two corpus calls.
 
 ### 0xd3 `begin-timed-callback-sequence` (u00425960, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear and initialize the current script frame's timed local-callback sequence.
 - **control (port handler):** waits never; leaves falls
@@ -1787,8 +1896,8 @@ Native handler sleep_op_0xc8 @0x420ec0 is NON-BLOCKING: it arms a timer (sleep_t
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xd3`; scope=Himegari SYS4422. Ghidra /v2: op_0xd3_handler@0x41a430 clears the 16-byte-entry vector at ctx+0x5f694, sets last index ctx+0x5f6a4 and abort target ctx+0x5f690 to -1, and resets playback cursor ctx+0x5f6a8 to zero. HISTORY.BIN@0xbf9 begins its seven-event scrollbar interpolation schedule.
 
 ### 0xd4 `append-relative-timed-callbacks` (u004266F0, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Append repeated relative deadlines and their on-time/catch-up local callback targets to the current frame's timed sequence.
 - **operand access:** `1` read · `2` read · `3` read (callback target) · `4` read (callback target)
@@ -1797,8 +1906,8 @@ Native handler sleep_op_0xc8 @0x420ec0 is NON-BLOCKING: it arms a timer (sleep_t
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xd4`; scope=Himegari SYS4422. Ghidra /v2: op_0xd4_handler@0x428890 loops operand 2 times, accumulates operand 1 onto the preceding deadline, stores operand 3 at entry+8 and operand 4 at entry+0xc, and appends each 16-byte entry. HISTORY.BIN@0xbfa/0xc03/0xc0c produces deadlines 10,20,30,40,50,51,52 ms.
 
 ### 0xd5 `run-timed-callback-sequence` (u004262C0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Start or service the engine-wide timed sequence, dispatching scheduled local callbacks through the penultimate entry and selecting the catch-up target when the following deadline is already late. A sequence started by another script raises the Depth error.
 - **operand access:** `1` read (transfer target)
@@ -1809,8 +1918,8 @@ Native handler sleep_op_0xc8 @0x420ec0 is NON-BLOCKING: it arms a timer (sleep_t
 Run-state bit 0x40 suppresses the outer loop's ordinary retained-frame renderer while the timed service sleeps. A scheduled callback becomes visible only through its own explicit presentation opcode; the pacing wait is not itself a retained-state publication boundary. The schedule is one engine-wide list: the op starts it when its cursor is 0, recording the abort PC and the running script as guard (+0x5f6b4/+0x5f6b8). A frame that runs op 0xd5 while another script's sequence is mid-way reaches the tick's guard, which throws flags 0x10007 "Depth が不正です <running> != <owner>" before the cursor moves. The op records length 0, so 再試行 and 無視 both run it again until 中止. A nested op 0xd3 instead resets the shared schedule.
 
 ### 0xd9 `clear-run-state-0x1000` (u00415880, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear native run/service bit 0x1000; if the secondary context is active, clear the same bit there. SC0000 executes it once after the initial SFX-channel reset, with no VM-visible result.
 - **control (port handler):** waits never; leaves falls
@@ -1818,8 +1927,8 @@ Run-state bit 0x40 suppresses the outer loop's ordinary retained-frame renderer 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xd9`; scope=Himegari SYS4422. Ghidra op 0xd9 handler 0x416da0: ctx->run_state_flags &= ~0x1000; when ctx+0x6f8b8 is nonzero, also clears bit 0x1000 at ctx+0x53d20. No operands, calls, or return value.
 
 ### 0x130 `get-initial-root-run` (get-initial-root-run, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - write the engine's initial-root-run flag. It is initialized to 1 when the AGE context is constructed and cleared by op 0x9 before that opcode resets state and reloads root script id 0. SYSTEM4 uses the value to call LOGO.BIN and OP.BIN only on the process's initial root run.
 - **operand access:** `1` write
@@ -1830,8 +1939,8 @@ Run-state bit 0x40 suppresses the outer loop's ordinary retained-frame renderer 
 Implemented as process-lifecycle state owned by the persistent VM: it begins at one and op 0x9 clears it. It is not a script global, save/profile value, command-line seed, or script-name special case.
 
 ### 0x140 `coroutine-label-yield` (u0041F9C0, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(name_str)(sub_str)(in) — developer jump picker. Copies the name/sub strings and the int operand, calls AGERC host command 8 (modal dialog resource 8, agerc_label_dialog_proc@0x10002270) and writes its result to operand 1. Name 'LABEL' lists the script's labels filtered by the sub string ('J') and returns the chosen label's PC (Cancel: 0); any other name picks a catalog entry by suffix and '?' pattern (TITLE's 'BIN','SC????.BIN' scene-script picker). ADV scenes use it in their entry loop (SC0000 label_462 'ループ開始': `out=G[0x6be]=LABEL('J',G[0x6be])`; the loop runs the setup body, calls *out, and exits when out==G[0x6c3], the scene loop head's offset). The loop only runs when the scene-entry gate (Himegari G[0xaba5c], Kamidori G[0x1372d9]) is 1, which only the developer entry sets (Kamidori TITLE developer-menu case 0); retail play skips it. PORT = HOST-MODEL: at gate 1 the VM runs the setup once (first visit returns -1), then returns the scene loop head (the nearest call followed by exit before the yield; the script's terminal immediate must name it, or a run of comments (op 0x1a7) leading into it, or the VM halts with coroutine-yield-terminal; comments anywhere in the pattern are skipped). It does not emulate the dialog. Only a seeded gate reaches it: port direct-scene runs enter as the F4 launcher does (SYSTEM4 hosts the scene, gate -1; 2026-11-05). See engine-re.md §Scene-coroutine framework.
 - **operand access:** `1` write (code-address) · `2` read-string · `3` read-string · `4` read
@@ -1840,8 +1949,8 @@ Implemented as process-lifecycle state owned by the persistent VM: it begins at 
 - **evidence:** method=native-re; confidence=med; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x140`; scope=Himegari SYS4422. Ghidra: handler 0x4299c0 (dispatch ctx[0x9b74c]=0x4299c0; created+typed EngineCtx*+annotated; Kelebek u0041F9C0 = VA-drift). Records the generic 9-dword instruction length; op2→local_204, op3→local_104, op4→local_208; g_pfnAgercHostCallback(8, ctx[0x54fe8], &local_210) → FUN_00425fb0(1,ret). A read-only probe resolves the callback to AGERC.DLL+0x1050; imported /support/AGERC.DLL identifies agerc_dispatch_host_command@0x100025f0 and its command-8 dialog-resource branch. FUN_00405740 calls the same dispatcher with command 3 and branches on return 1/2 for transition progress. Command 8 is agerc_label_dialog_proc@0x10002270, a modal developer picker: name 'LABEL' lists the script's labels (prefix filter from the second string) and returns the chosen label's PC, Cancel returns 0; any other name lists service entries by 3-character suffix and '?' pattern (TITLE's 'BIN','SC????.BIN' script picker). The loop runs only when the scene-entry gate is set, which Kamidori TITLE does in developer-menu case 0. Confidence stays medium: the IAGEService resolvers (+0x5c, +0x90) are not decoded.
 
 ### 0x143 `run-mounted-append-autoruns` (u00415FB0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - enqueue record zero from every mounted nonzero AAI selector in ascending selector order, then execute those packed scripts serially before resuming the caller.
 - **control (port handler):** waits never; leaves falls, calls, ends
@@ -1864,8 +1973,8 @@ record-zero failure. Natural SYSTEM4 boot proves BTANINIT2 -> `$1$AUTORUN.BIN` -
 
 
 ### 0x199 `yield-adv-coroutine` (u00414D50, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Yield/re-enter the registered ADV coroutine handler. The fifth standard chrome button (x=772) uses it to hide the text window: handler A fades the box out, and retail Himegari then waits in the engine (run-state 0x4000000) until a trigger enters handler B, which fades it back in.
 - **control (port handler):** waits never; leaves falls, jumps
@@ -1875,8 +1984,8 @@ record-zero failure. Natural SYSTEM4 boot proves BTANINIT2 -> `$1$AUTORUN.BIN` -
 The handlers are per frame (op 0x7b), but the yield is engine-wide. With no yield entered (coroutine_runstate bit 0x4000000 clear) and handler A set, the op saves run_state | 0x6000000, clears the run state, saves pc+1 with the running script as owner (+0x5f6bc) and enters handler A. Otherwise, with handler B set, it clears 0x4000000, sets 0x2000000 and enters handler B. With no yield entered and no handler A it does nothing (the port used to jump to handler B; fixed 2026-11-05). Op 0x7c resumes only in the owner's script; a handler A that reaches op 0x7c without a second op 0x199 leaves the frame in the engine's hidden-window wait (engine-re.md, "ADV hide window: the engine's hidden-window wait").
 
 ### 0x19e `save-numbered-slot` (save-numbered-slot, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot) - write the active native VM/session state to `SAVE%02d.DAT`. The file is truncated/replaced in place after any compatibility-overwrite prompt; successful serialization also flushes shared `SAVE.DAT`/`RT.DAT`.
 - **operand access:** `1` write · `2` read
@@ -1898,8 +2007,8 @@ Uses `set:SaveVersion1` and `set:SaveVersion2` to choose the numbered payload la
 This is the data-only companion to full-resume opcode 0x1a1. It selects the configured SaveVersion layout and restores serialized state with both runtime/history restore flags clear. Himegari's shipped script corpus does not call it, but it belongs to the shared SYS4 persistence ABI. Port status (2026-07-24): implemented for layout 3 through the same bank/resource/gfx decoder without activating history or frame restoration. The slot's playtime only becomes pending (2026-11-07): no frame is restored, so nothing commits it and the playtime clock keeps running.
 
 ### 0x1a0 `query-numbered-save-metadata` (query-numbered-save-metadata, argc 9)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot)(year)(month)(day)(hour)(minute)(second)(playtime_seconds) - validate a numbered `.DAT` header and return its timestamp and accumulated playtime.
 - **operand access:** `1` write · `2` read · `3` write · `4` write · `5` write · `6` write · `7` write · `8` write · `9` write
@@ -1910,8 +2019,8 @@ This is the data-only companion to full-resume opcode 0x1a1. It selects the conf
 Status 0 means valid metadata was written, 1 means the file could not be opened, and 2 means its native header was invalid or incompatible. Metadata comes from the fixed 0x124-byte S3SD/S4SD container header; no payload decode is needed. Validity means magic, game id and versions; header +0x04 is the writing AGE.EXE's engine version (ctx+0x53b74; the current Himegari exe writes "424J" 0x4a343234 into every save, the installed 2019 numbered files carry "422B" 0x42323234) and is never checked, so saves from other engine builds list and load. Port status (2026-07-24): implemented through the native directory store with fixed-header-only reads; since 2026-11-03 the port writes the profile's engine version and likewise ignores it on read (native-written slots list and load in the port, port-written slots in AGE).
 
 ### 0x1a1 `load-numbered-slot-and-resume` (load-numbered-slot-and-resume, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot) - fully load `SAVE%02d.DAT`, including saved script frames and text history, then resume through `CALLBACK_LOAD.BIN` and opcode 0xae.
 - **operand access:** `1` write · `2` read
@@ -1922,8 +2031,8 @@ Status 0 means valid metadata was written, 1 means the file could not be opened,
 The caller pre-seeds status to zero. A missing/open failure writes 1; success starts the asynchronous native stack-restoration rendezvous and does not overwrite that zero. This is the ordinary load-game path, unlike data-only opcode 0x19f. Port status (2026-07-24): layout 3 restores banks, history, surfaces/resources, and retained gfx, unwinds the obsolete managed call chain, then reconstructs saved frames through opcode 0xae.
 
 ### 0x1a2 `store-shared-profile-int` (store-shared-profile-int, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x1a2 (cell) — snapshot the selected global integer cell into AGE's shared SAVE.DAT profile table. Its native key is raw type byte `0x03` followed by eight lowercase ASCII hex digits for the lvalue's resolved global-bank index; the stored value is the cell's current raw 32-bit value. Insert-or-assign semantics replace an existing entry.
 - **operand access:** `1` read+cell
@@ -1934,8 +2043,8 @@ The caller pre-seeds status to zero. A missing/open failure writes 1; success st
 Paired reader 0x1a3 restores the same cell, returning zero when the key is absent. The table is embedded at ctx+0x5190, explicitly enumerated by shared_profile_payload_write into shared SAVE.DAT, and reconstructed by shared_profile_payload_read. It is not the retained gfx map, numbered SAVE##.DAT state, or RT.DAT ReadTextDB. Port status (2026-07-24): implemented through profile-owned SharedProfile state shared across fresh scene VMs and the native shared-payload/store lifecycle; direct globals and resolved global local-pointers are covered.
 
 ### 0x1a3 `load-shared-profile-int` (load-shared-profile-int, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x1a3 (cell) — restore the selected global integer cell from AGE's shared SAVE.DAT profile table. It resolves the same raw `0x03` plus eight-hex-digit cell-address key as 0x1a2 and overwrites the operand with the stored raw 32-bit value, or zero when the key is absent.
 - **operand access:** `1` write+cell
@@ -1946,8 +2055,8 @@ Paired reader 0x1a3 restores the same cell, returning zero when the key is absen
 This is the read half of the shared-profile integer service, not a string operation. LOADCONFIG.BIN restores configuration globals with it; GAMESTART/GAMECLEAR and array-pointer call sites restore other selected profile-wide values. Port status (2026-07-24): implemented with 0x1a2 through the shared profile service and native payload codec.
 
 ### 0x1a9 `store-shared-profile-string` (store-shared-profile-string, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (cell) - snapshot the selected global string cell into AGE's shared `SAVE.DAT` profile table under a raw `0x05` type byte plus eight lowercase ASCII hex digits for the resolved global-bank index, replacing any earlier value.
 - **operand access:** `1` read-string+string-cell
@@ -1958,8 +2067,8 @@ This is the read half of the shared-profile integer service, not a string operat
 This is the string counterpart to integer-store opcode 0x1a2. The value is profile-wide rather than numbered-slot-local and is written by the shared profile lifecycle. Port status (2026-07-24): implemented for direct global strings and resolved global string-pointers.
 
 ### 0x1aa `load-shared-profile-string` (load-shared-profile-string, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (cell) - restore the selected global string cell from AGE's shared `SAVE.DAT` profile table using the raw `0x05` plus eight-hex-digit key; a missing key yields the native empty-string default.
 - **operand access:** `1` write-string+string-cell
@@ -1970,8 +2079,8 @@ This is the string counterpart to integer-store opcode 0x1a2. The value is profi
 This is the paired reader for opcode 0x1a9 and the string counterpart to integer-load opcode 0x1a3. Port status (2026-07-24): implemented through the shared profile service and native payload codec.
 
 ### 0x1ab `delete-numbered-save` (delete-numbered-save, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot) - attempt to delete both `SAVE%02d.DAT` and its `SAVE%02d.STH` thumbnail.
 - **operand access:** `1` write · `2` read
@@ -1982,8 +2091,8 @@ This is the paired reader for opcode 0x1a9 and the string counterpart to integer
 Both deletes are attempted. Status is 0 when both succeed, 1 when only the DAT delete fails, and 2 whenever the STH delete fails (taking precedence over a DAT failure). Port status (2026-07-24): implemented against the paired native filenames.
 
 ### 0x1ac `copy-numbered-save` (copy-numbered-save, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(source_slot)(destination_slot) - copy both numbered `.DAT` state and `.STH` thumbnail, replacing destination files.
 - **operand access:** `1` write · `2` read · `3` read
@@ -1994,8 +2103,8 @@ Both deletes are attempted. Status is 0 when both succeed, 1 when only the DAT d
 Both copies are attempted with overwrite allowed. Status is 0 when both succeed, 1 when only the DAT copy fails, and 2 whenever the STH copy fails (taking precedence over a DAT failure). Port status (2026-07-24): implemented against the paired native filenames.
 
 ### 0x1ad `mark-save-resume-frame` (mark-save-resume-frame, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Mark the current script context as the highest frame serialized by numbered-save layouts 2/3. The native serializer saves frames 0 through this boundary and strips the boundary frame's return target so loading resumes it as the top frame. This opcode performs no file I/O itself.
 - **control (port handler):** waits never; leaves falls
@@ -2005,8 +2114,8 @@ Both copies are attempted with overwrite allowed. Status is 0 when both succeed,
 Port status (2026-07-24): implemented as an active ExecFrame identity marker. It survives nested calls and clears when its owning frame unwinds; the following full numbered-payload slice will consume the exposed zero-based cutoff.
 
 ### 0x1b2 `append-diagnostic-value` (u00425790, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Format operand 1 with AGE's generic operand-to-string conversion and append its exact bytes to the context diagnostic accumulator. This does not present or clear the accumulated text.
 - **operand access:** `1` read-string
@@ -2018,8 +2127,8 @@ Port status (2026-07-24): implemented as an active ExecFrame identity marker. It
 Implemented with an EngineCtx-lifetime accumulator shared across GameSession scene VMs. String operands append decoded text, integer and pointer forms append signed decimal, and float forms reproduce native `%lf`'s six fractional digits.
 
 ### 0x1b3 `append-diagnostic-newline` (u004257D0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Append the literal CRLF byte pair to the context diagnostic accumulator without presenting or clearing it.
 - **control (port handler):** waits never; leaves falls
@@ -2030,8 +2139,8 @@ Implemented with an EngineCtx-lifetime accumulator shared across GameSession sce
 Implemented as an exact `\r\n` append to the shared diagnostic accumulator, including FIELD's persistent line and SYSTEM4's native post-clear newline.
 
 ### 0x1b4 `show-and-clear-diagnostic` (u004237C0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Show the accumulated text plus native script-location context in a synchronous owner-window information message box, then erase the complete accumulator.
 - **control (port handler):** waits always; leaves falls
@@ -2042,8 +2151,8 @@ Implemented as an exact `\r\n` append to the shared diagnostic accumulator, incl
 Implemented as a synchronous host effect. Himegari's release-only null debug tables make the native suffix deterministic (`LINE=-1 COMMAND=-(436)`); FILE, dword ADDRESS, and zero-based frame DEPTH come from the live instruction. Godot marshals `OS.Alert` to the main thread and parks the VM until dismissal; the headless waits (HeadlessWaits) record the effect. The accumulator clears only after the host call returns.
 
 ### 0x1cc `get-adv-read-skip-state` (get-adv-read-skip-state, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - copy the current ADV read/click-skip service state from ctx+0x6dbd4. label_1235a ORs it with 0x1c7's Ctrl/message-skip bit: zero takes 0x21c's normal transition/yield path; nonzero resets the animation service and presents the completed endpoint through 0x20c.
 - **operand access:** `1` write
@@ -2055,8 +2164,8 @@ Implemented as a synchronous host effect. Himegari's release-only null debug tab
 Port status (2026-07-24): the VM refreshes this state from message:ReadTextSkip plus the current packed script id/T1 message index at 0x6e, 0x71, and 0x72. It is shared-profile read history, not a host-only flag.
 
 ### 0x21c `mark-frame-yield` (mark-frame-yield, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Set native run-state bit 0x400; in normal ADV playback this is the retained-presentation render/wait/resume boundary.
 - **control (port handler):** waits may; leaves falls
@@ -2068,8 +2177,8 @@ Port status (2026-07-24): the VM refreshes this state from message:ReadTextSkip 
 SC0000 label_1235a reaches this when 0x1c7/0x1cc are zero. Native run-state bit 0x400 parks the interpreter while gfx_render_frame repeatedly samples finite one-shot object channels and queued surface commands; op 0x224 follows after dirty state clears. When system:EffectSkipOnClick is enabled and animation-service flag bit 0 is clear, logical action 4 is consumed and run-state 0x400 is cleared before the engine requests the same forced completion as 0x243 and renders once. Under fast-forward the main tick forces every iteration (gfx_request_force_complete_and_reset_anim_clock, unless service-flags bit 1), so a wait entered then ends at its first poll; enabling fast-forward during a wait does not end it, because run-state 0x400 is serviced ahead of the fast-forward branch (docs/engine-re.md, "Effect waits under fast-forward"). Wait release is independent of endpoint completion: service-flags bit 1 can suppress the force worker, while op-0x242-detached channels, ambient cycles, and movie-backed presentation can continue asynchronously after interpreter resume. With ordinary flags, the request completes finite color/scale/rotation/translation channels and type-0 surface commands together. Native trace proves AE001D bind, mode-1 0x203, and 0x202 targets complete in one 5 ms batch with no render, then first compose here.
 
 ### 0x2ce `get-windowed` (u0042B616, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - 1 while the game runs in a window, 0 fullscreen: display_windowed, which the startup sets from display:ScreenMode and every switch changes.
 - **operand access:** `1` write
@@ -2128,8 +2237,8 @@ Port status (2026-07-29, skip lifecycle corrected 2026-07-29): implemented throu
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x24`; scope=Himegari SYS4422. Matching native handlers: SYS4422 op_0x24_fade_surface_out_to_white@0x41cd40 and SYS4433 @0x41adb0 start their revision's screen_transition_begin in mode 3 with the same timing conversion as 0x21/0x22/0x25. Kamidori GAMESTART.BIN@0x19dc invokes (surface 1, timing 80); Himegari's decoded corpus does not use this installed opcode.
 
 ### 0x25 `crossfade-surfaces` (u00418B40, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source_surface)(target_surface)(interval_argument) — blocking legacy full-frame mode-4 alpha transition. The native engine composites the captured target surface over the captured source while an 8-bit alpha accumulator advances from 0 to 256.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read
@@ -2141,8 +2250,8 @@ Port status (2026-07-29, skip lifecycle corrected 2026-07-29): implemented throu
 The handler uses an alpha step of 16 and timer interval=argument when argument <=64. Above 64 it uses step=1 and interval=argument/16. The main loop polls that timer and does not resume ordinary script execution until the target endpoint is presented. An already-active ADV fast-forward channel publishes the target without starting the service; with system:EffectSkipOnClick enabled, logical action 4 forces an in-progress service to the same endpoint. ROOM uses (1,2,10) for button/character entry and exit fades and (1,2,30) for the final fade before returning to TITLE. The port captures retained-frame snapshots whenever op 0x20c presents to a selected offscreen render target, then reproduces the blocking and forced-endpoint lifecycle in the interactive host.
 
 ### 0x26 `reveal-surface-wiped` (u00418C00, argc 4)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (surface)(interval ms)(divisions)(type) — blocking wipe of a captured surface over the frame: types 0 to 3 wipe from the left, right, top or bottom edge in that many steps, and type 4 is op 0x27's type 0.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read
@@ -2165,8 +2274,8 @@ Native's command name is ComEfWp. A type outside 0..4 (signed) traces 「関数�
 SYS4433 maps selector 0..4 to native pattern modes 4..8. Modes 4/5 divide the active width into equal strips and reveal each strip left-to-right/right-to-left in parallel; modes 6/7 do the equivalent across equal-height strips from top/bottom. Mode 8 is the first staggered vertical variant shared with opcode 0x28. A positive division count must evenly divide the relevant active dimension. Operand 2 arms the per-step timer; ADV fast-forward or a nonpositive division count publishes the target endpoint immediately. Kamidori's only call is SC1050@0x8cf5 `(2,40,64,3)`, mode 7. A selector outside 0..4 (signed) is traced (ComEfBl: Typeは0から1の間にしてください) and nothing starts; a division count the screen does not divide is traced by the begin worker (SetLineFade) and nothing starts; the port skips both with the trace and halts on a surface the transition would draw past 999 (2026-11-17; docs/engine-re.md, 'The 28 ops' native tests'). This is proven for SYS4433 only.
 
 ### 0x28 `reveal-surface-staggered-strips` (u00418D90, argc 4)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (surface)(interval ms)(divisions)(selector) — blocking staggered-strip reveal of a captured surface in one of four vertical/horizontal directions.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read
@@ -2193,8 +2302,8 @@ SYS4433 maps selector 0..4 to native pattern modes 8..12. The worker implements 
 - **evidence:** method=native-re; confidence=med; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x2e`; scope=Himegari SYS4422. Ghidra SYS4433 (Kamidori): dispatch slot 0x2e (ctx+0x9f7bc) resolves to op_0x2e_legacy_transition_asset_mask@0x41b8c0. It opens operand 1 through asset_open_indexed_entry_SYS4433 and calls screen_transition_begin@0x43a6d0(source, target, 8, asset data, operand 5); when the begin succeeds it sets run-state bit 8 and arms the sleep timer with operand 4, or with run-state 0x8000000 calls screen_transition_finalize@0x43a320(target, 0). The begin builds the mask object only in draw mode 0. No call in either corpus.
 
 ### 0x32 `scale-copy-surface-rect` (scale-copy-surface-rect, argc 10)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source_surface)(destination_surface)(source_x)(source_y)(source_width)(source_height)(destination_x)(destination_y)(destination_width)(destination_height) — clip and scale a source surface rectangle into an independently sized destination rectangle.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read
@@ -2205,8 +2314,8 @@ SYS4433 maps selector 0..4 to native pattern modes 8..12. The worker implements 
 Both revision handlers convert origin/extent operands into paired edge rectangles, validate the two surfaces, mark the destination dirty, and dispatch to direct copy, area-weighted shrink, interpolating enlargement, or a two-pass mixed-axis route through scratch surface 0x20, which it creates over slot 32 and releases after, so a script surface there is lost (the port does the same). Kamidori's only two calls, ALLMAP@0x4e2 and SAVE@0xbb6, downsample the full 1024x576 surface 2 into a 384x216 thumbnail on surfaces 193 and 195. The portable host implements that observed shrink contract with an area-weighted RGBA sampler; equal-sized rectangles continue through the established exact-copy path.
 
 ### 0x35 `mosaic-copy-surface-rect` (mosaic-copy-surface-rect, argc 11)
-- **observed by:** verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`
+- **observed by:** ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source_surface)(destination_surface)(source_x)(source_y)(source_width)(source_height)(destination_x)(destination_y)(destination_width)(destination_height)(dot) - native MosaicTexture: each dot x dot block of the destination rectangle takes the source pixel at the block's top-left corner, counted from the source rectangle's origin and over the destination rectangle's size; a render-target source gives opaque pixels.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read · `11` read
@@ -2217,8 +2326,8 @@ Both revision handlers convert origin/extent operands into paired edge rectangle
 The destination's record reads created first, whatever follows. A missing surface, the same surface twice, a dot of 0 or a rectangle outside its surface traces 関数：MosaicTexture エラー：... and copies nothing; the port reports the trace as a warning. The source rectangle's extent is only tested: the reads walk the destination's, so a larger destination reads past the source rectangle, and past its surface where the port halts. A negative dot indexes native's line buffer below 0 once the destination is wider than it, where the port halts too. A render-target destination is read back and written back whole, so its pixels outside the rectangle stay (docs/engine-re.md, Op 0x35, the mosaic copy).
 
 ### 0x36 `mosaic-transition-surfaces` (u00419C00, argc 3)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source_surface)(target_surface)(interval ms) — blocking mosaic transition between two captured surfaces: the source breaks up into blocks that grow by a pixel each timer period, and after 80 periods the target comes back out of blocks that shrink; 160 periods in all.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read
@@ -2229,8 +2338,8 @@ The destination's record reads created first, whatever follows. A missing surfac
 The handler sets run-state 8, arms the interval timer with operand 3 and begins legacy screen transition mode 9 with the parameter 0xa0, then polls the triggered actions and clears them. Begin copies the two surfaces to 0x24 and 0x25 through gfx_copy_surface_rect, which tests neither slot, and creates scratch 0x20 blank. Each tick adds the missed periods to its counter and caps it at 0xa0; below 0x50 it fills 0x20 from 0x24 with MosaicTexture at a dot of the counter, else from 0x25 at a dot of 0xa0 - counter + 1; it then adds 1, renders the frame, draws 0x20 over it and presents. The transition is over when the counter reaches 0xa0, where the tick creates 0x24 and 0x25 again at the screen's size. MosaicTexture gives every pixel the top-left pixel of its dot x dot block, the blocks counted from the rectangle's corner, and refuses a dot of 0 with the trace 「関数：MosaicTexture エラー：モザイクサイズの指定が不正ですsize = 0」: the counter is 0 on a tick that runs in the first period, and 0x20 is then drawn as it is, blank the first time. What a blank surface draws as is not measured, and the port shows the source unchanged for that period. Action 4 forces the counter to its cap, which shows the target at a dot of 1. With fast-forward set at dispatch the handler finishes on the target at once (screen_transition_finalize: a negative slot fills 0x20 with black). The records of 0x24 and 0x25 are created from the engine's start (engine_initialize_graphics_from_settings), so a save shows no change in them. 創刻のアテリアル has 8 sites in 6 scripts; the first site of each script passes (1, 2, 3 ms) or (1, 2, 20 ms). Neither Himegari nor Kamidori calls it.
 
 ### 0x80 `set-default-gfx-object-slot` (u0041AF00, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (slot) - select the ADV text manager's current layout (text_manager+0x4c8): the layout every layout op's slot 0 selects, and op 0x1d9's object slot 0. The name is historical: the field was first read as a graphics-object slot.
 - **operand access:** `1` read (layout 0..9, untested)
@@ -2239,8 +2348,8 @@ The handler sets run-state 8, arms the interval timer with operand 3 and begins 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x80`; scope=Himegari SYS4422. Ghidra /v2: op_0x80_select_adv_current_layout@0x41ed40 writes operand 1 to EngineCtx+0x14e08 (adv_current_layout_slot, text_manager+0x4c8). Every layout worker that takes slot 0 resolves it through that field (adv_text_layout_define, adv_text_layout_reset, adv_text_set_cursor, adv_text_build_glyph_records, adv_text_publish_layout and the rest), and only this op and adv_text_manager_initialize write it (2026-11-17 scan of both images): defining or resetting a layout does not select it. op_0x1d9_handler@0x420a30 writes layout+0x70 of its slot, or of this layout when its slot is zero. MENU-family scripts select working layouts 7/8/9 on entry and restore 1 during teardown; Kamidori CONFIG2/CONFIG4 select 7 and draw text with slot 0 into it. Reset (2026-11-13): scene_context_init_reset@0x40b3b0 calls adv_text_manager_initialize@0x456800 with ECX = the text manager at ctx+0x14940, which writes +0x4c8 (ctx+0x14e08) = 1; SYS4433 text_manager_initialize@0x458c10 (ECX = ctx+0x14938) writes +0x4cc (ctx+0x14e04, which SYS4433 op_0x80@0x41ce60 writes) = 1. Construction runs the same reset, so the slot is 1 at boot and after op 0x9.
 
 ### 0x131 `get-message-window-alpha` (get-message-window-alpha, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - read the configured `message:MesWinAlpha` value used to alpha-modulate the ADV chrome.
 - **operand access:** `1` write
@@ -2264,8 +2373,8 @@ Port status (2026-11-03): the text native (TextManager) seeds the value from SYS
 SYS4422 stores the five-dword definition at EngineCtx+0x55180+style_index*0x14. SYS4433 stores the same five fields in a seven-dword record at EngineCtx+0x5940c+style_index*0x1c and clears the two cell-spacing fields to zero; opcode 0x2da is its extended writer for all seven fields. Opcode 0x23b consumes the selected revision's record to turn an integer into retained draw objects, one atlas cell per decimal digit. SYS4422 scene reset clears only ten physical records (200 bytes, indices 0..9); the admitted index 10 begins at EngineCtx+0x55248 and aliases the return-stack table. Himegari's literal registrations use only 0..9. The port keeps the ten records: style 10 halts the run, and a larger style is traced as CGNumberの引数が不正です． and skipped (2026-11-17). The same reset first zeroes the return-stack table (+0x55248, 0xa0 bytes), so after a reset all eleven records are zero; SYS4433 likewise zeroes 0x118 bytes at +0x5940c and 0xa0 bytes at +0x59524 (scene_context_init_reset_sys4433@0x40c2b0). The port clears its ten at op 0x9 (2026-11-13).
 
 ### 0x141 `set-message-window-alpha` (set-message-window-alpha, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (value) - write the configured `message:MesWinAlpha` value read by opcode 0x131. Himegari's CONFIG menu bounds the value to 0..16; larger values make the inverse-width opacity bar shorter.
 - **operand access:** `1` read
@@ -2276,8 +2385,8 @@ SYS4422 stores the five-dword definition at EngineCtx+0x55180+style_index*0x14. 
 Port status (2026-11-03): setter of the persisted message:MesWinAlpha; see op 0x131.
 
 ### 0x1ae `write-numbered-save-thumbnail` (write-numbered-save-thumbnail, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot)(surface_slot) - encode the selected surface into the numbered save's separate `SAVE%02d.STH` thumbnail file.
 - **operand access:** `1` write · `2` read · `3` read (surface 0..999, untested)
@@ -2288,8 +2397,8 @@ Port status (2026-11-03): setter of the persisted message:MesWinAlpha; see op 0x
 Status is 0 on success, 1 when the file cannot be created/opened, and 2 when surface encoding or writing fails. Renderer backend selects a handle-based or path-based native worker. Himegari writes an ordinary bottom-up 24-bit BMP (112x84 in installed files), BGR rows with four-byte padding, under the .STH extension. Its bfSize field historically omits the 14-byte BITMAPFILEHEADER. Port status (2026-07-24): implemented with exact native BMP output and host surface capture.
 
 ### 0x1af `load-numbered-save-thumbnail` (load-numbered-save-thumbnail, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (status_out)(slot)(surface_slot) - decode the numbered save's separate `SAVE%02d.STH` thumbnail into a surface slot.
 - **operand access:** `1` write · `2` read · `3` read (surface 0..999, untested)
@@ -2300,8 +2409,8 @@ Status is 0 on success, 1 when the file cannot be created/opened, and 2 when sur
 Status is 0 on success, 1 when the file cannot be opened, and 2 when image decoding fails. The thumbnail format is owned by the renderer codec and is not embedded in the numbered `.DAT` payload. Port status (2026-07-24): implemented with 24-bit BMP decode and host surface replacement.
 
 ### 0x1f6 `clear-retained-gfx-objects` (clear-retained-gfx-objects, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear the complete retained gfx-object registry while preserving allocated surface resources. Subsequent object queries return absent until draw/geometry operations recreate records.
 - **control (port handler):** waits never; leaves falls
@@ -2311,8 +2420,8 @@ Status is 0 on success, 1 when the file cannot be opened, and 2 when image decod
 The handler clears the map embedded at retained-gfx owner+0x408, resets its count and transient dirty/force flags, but does not release the 1000 surface slots or clear the separate queued-surface-command list. Corpus call sites pair it either with 0x23d for a full transient-resource reset or with 0x20e for a backbuffer clear.
 
 ### 0x1f7 `gfx-elem-erase` (gfx-elem-erase, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x1f7 (handle)(count) — erase retained gfx objects. Handler 0x422270 calls gfx_object_erase_range@0x47d8b0 for [handle,handle+count) when count>1, else gfx_object_erase@0x47d850. This removes entries from the same object map queried by op 0x215, so erased objects stop compositing. SC0000 uses it before op 0x1fa releases the returned surface slot.
 - **operand access:** `1` read · `2` read
@@ -2321,8 +2430,8 @@ The handler clears the map embedded at retained-gfx owner+0x408, resets its coun
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1f7`; scope=Himegari SYS4422. Ghidra handler 0x422270; gfx_object_erase_range@0x47d8b0 loops gfx_object_erase@0x47d850. Both operate on owner+0x408, the retained-object map also used by gfx_object_get_or_create/draw and gfx_object_query_source_slot.
 
 ### 0x1f8 `create-texture` (create-texture, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Allocate a blank surface in a texture slot: (slot, width, height, kind). e.g. `create-texture 0xd 0x190 0x1e 0x0` = slot 13, 400x30, a managed texture. Kind 1 is a render target with an alpha channel and kind 2 a render target; anything else is a managed texture, and 3 makes the mode-1 surface class.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read
@@ -2331,8 +2440,8 @@ The handler clears the map embedded at retained-gfx owner+0x408, resets its coun
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1f8`; scope=Himegari SYS4422. SC0000 CG/UI-draw path disasm; slot/w/h roles read off the operands (400x30 text bars, etc.). Ghidra /v2 (2026-11-20): gfx_op_0x1f8_create_surface@0x4222d0 passes operand 4 to gfx_surface_create_blank@0x477370, which builds the mode-1 class for 3 and the mode-0 class otherwise; its gfx_surface_texture_create@0x465fa0 keeps the kind at +0x418 (1: D3DUSAGE_RENDERTARGET A8R8G8B8; 2: the same, X8R8G8B8 when display +0x464 is set; else a managed texture). gfx_object_blit_d3d9 copies a colour mode 2 object (ONE/ZERO) into a kind-1 target (docs/engine-re.md, 'Object blend modes'). 4.38D: gfx_surface_texture_create@0x477490, the same.
 
 ### 0x1f9 `set-texture` (set-texture, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Load a texture by universal packed SYS4INI/AAI id into a mode-0 surface slot: (resource_id, slot, colorkey). A zero high byte directly indexes the flat base catalog; a nonzero high byte selects an AAI mount and uses the low 24 bits. This is the same addressing contract as 0x249; only the native surface mode differs. The op deletes the slot's movie first. A record the resource open cannot open throws the open's box, the slot's texture and record left; one whose header is no picture's (neither a BMP of 1/4/8/24/32 bits nor AGF type 1 or 2 with 0 at +8, whatever its name) releases the slot, writes resource id -1 into its record and throws 「画像ファイル %s の読み込みに失敗しました」, both with flags 0x10007; 無視 goes on (docs/engine-re.md, "A failed picture load"). 魔導巧殻's READFIELD@0x7 on picture 0 shows 「画像ファイル SYSTEM4.BIN …」 on both targets (2026-11-26).
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read
@@ -2341,8 +2450,8 @@ The handler clears the map embedded at retained-gfx owner+0x408, resets its coun
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1f9`; scope=Himegari SYS4422. Ghidra /v2 gfx_op_0x1f9_load_surface@0x422360 fetches operand 1 and passes it unchanged to asset_open_indexed_entry@0x44f390. asset_catalog_parse_base_tables@0x44e7e0 builds one flat entry array; the opener has no scene/context input and directly indexes that array for high-byte zero. SC0010 set-texture 0x21 proves the distinction outside SC0000: raw 0x21 is SO013A.AGF, while adding SC0010's 0x11e section position lands on unrelated COL0023.OGG. The earlier 586/595 Frida correlation established that SYS4INI file_number describes grouping/order, not runtime operand rebasing.
 
 ### 0x1fa `gfx-elem-release` (gfx-elem-release, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x1fa (surface_slot) — delete the slot's movie object ctx+0x52bd4[slot] (virtual free, then null), whether or not its movie has reached the end, then release the slot's texture with retained_gfx_release_surface@0x474e40. It releases a surface slot, not a retained object handle. SC0000 feeds it the slot returned by op 0x215 after op 0x1f7 erases the associated object group.
 - **operand access:** `1` read (surface 0..999, untested)
@@ -2353,8 +2462,8 @@ The handler clears the map embedded at retained-gfx owner+0x408, resets its coun
 Port (2026-11-07): MovieSurfaceRegistry.Release drops the slot's movie binding whatever its playback state, as do create-texture, set-texture and 0x249. Kamidori's FIELD@0xbbf8 waits out its chest effect on the anim clock, releases surface 0x2a here and MES recreates it for the pickup text; the port's earlier guard kept an unfinished movie bound and showed its last frame instead of the text.
 
 ### 0x1fb `draw-texture` (draw-texture, argc 8)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Blit a texture slot to screen. Observed 8 args: (handle, slot, srcx, srcy, w, h, dstx, dsty). e.g. `draw-texture 0xcf08 0x3 0 0 0x320 0x258 0 0` = full-screen (800x600) slot 3 at (0,0).
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read
@@ -2375,38 +2484,38 @@ Port (2026-11-07): MovieSurfaceRegistry.Release drops the slot's movie binding w
 Native clears obj+0x68 and writes identity to the three matrices at obj+0x6c, +0xec and +0x16c; the axis and angle floats at obj+0x1ec..0x204 and the channel targets are left alone. The port keeps a rotation as its axis and angle: it keeps the axis and sets the angle to 0, so a later read of the current rotation gives angle 0 where native gives the angle last set. 創刻のアテリアル has 5 sites; neither Himegari nor Kamidori calls it.
 
 ### 0x1fd `gfx-set-scale-current` (u00420620, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(scale_x_percent)(scale_y_percent)(scale_z_percent) — immediately replace the retained object's current scale matrix at obj+0x6c. The handler divides each scale operand by 100.0 before calling matrix4_make_scale; SYS4422 reads them as integers, SYS4433 as floats (Kamidori's SAVE@0xcad and ALLMAP@0x5d9 pass 37.5). This is distinct from 0x21e's delayed one-shot target scale.
-- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1fd`; scope=Himegari SYS4422. Ghidra /v2: handler gfx_op_0x1fd_set_vec_scaled@0x422650 fetches operands 2..4, divides each by the 100.0 constant, and calls gfx_object_set_scale_current@0x47e6b0. The worker gets/creates the object, marks obj+0x68, and calls matrix4_make_scale on obj+0x6c. SC0000 sets AE001D handles to 210/210/100 and 240/240/100; without this setter their 800x800 alpha circles remain below the viewport. Both functions annotated and /v2 saved 2026-07-11.
 
 ### 0x1fe `set-current-rotation-axis-angle` (set-current-rotation-axis-angle, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(axis_x)(axis_y)(axis_z)(angle_degrees) — immediately replace the retained object's current axis-angle rotation matrix. This is the direct-current companion to op 0x21f's delayed one-shot rotation target.
-- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1fe`; scope=Himegari SYS4422. Ghidra /v2: op_0x1fe_set_rotation_current@0x422700 converts operands 2..5 to float and calls gfx_object_set_rotation_current@0x47e720. The worker gets/creates the handle, marks transform state at obj+0x68, stores current axis obj+0x1ec..0x1f4 and angle degrees obj+0x204, converts degrees to radians with pi/180, builds the current matrix at obj+0xec through matrix4_make_axis_angle, and sets retained-gfx redraw dirty owner+0xb558 (EngineCtx+0x51b6c). The finite-channel consumer composes this current matrix between scale and translation. Corpus: 186/187 calls use Z axis (0,0,1); the lone DEBUG call uses Y axis (0,1,0).
 
 ### 0x1ff `set-current-translation` (set-gfx-geom3-c, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x1ff (handle)(x)(y)(z) — immediately replace the retained object's current translation matrix at obj+0x16c. This is the direct-current companion to 0x220's delayed target at obj+0x1ac.
-- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1ff`; scope=Himegari SYS4422. Ghidra /v2: handler gfx_op_0x1ff_set_geom3@0x4227b0 converts operands 2..4 to float and calls gfx_object_set_translation_current@0x47e800. The worker gets/creates the object, marks obj+0x168, and calls matrix4_make_translation on obj+0x16c. SC0000 uses (0,0,0) before animating BG001A. Annotated and saved 2026-07-11.
 
 ### 0x202 `gfx-blit-color` (gfx-blit-color, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x202 (handle)(delay_ms)(duration_ms)(alpha)(color) — arm the one-shot packed-ARGB channel. Worker gfx_op_0x202_worker_set_color_anim @0x47ea00 resets shared start obj+0x34, writes delay +0x38, duration +0x4c, and target +0x64. gfx_object_apply_transform_channels @0x472f00 linearly interpolates each byte from current +0x60 on retained-gfx owner+0xb550 (EngineCtx+0x51b64), commits the target, clears timing, writes target -1, and clears the one-shot active bit when all sibling channels finish. Negative alpha/RGB independently preserve current bytes. Implemented in GfxState with synchronized current/target timeline evidence; draw-string 0x204/0x7a remains separate.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read
@@ -2415,18 +2524,18 @@ Native clears obj+0x68 and writes identity to the three matrices at obj+0x6c, +0
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x202`; scope=Himegari SYS4422. Ghidra handler 0x4228d0 packs operands 4/5 and calls worker 0x47ea00(handle,delay,duration,packed). Consumer 0x472f00: shared start +0x34; color delay/duration +0x38/+0x4c; current/target +0x60/+0x64; frame clock retained-gfx owner+0xb550 (EngineCtx+0x51b64); bytewise integer LERP; natural or owner+0xb55c (EngineCtx+0x51b70) forced completion. /v2 annotated and saved 2026-07-10. Worker 0x47ea00 get-or-creates the object but arms the one-shot only when its visible bit 0 is set; a hidden object is created unarmed (2026-11-03).
 
 ### 0x203 `gfx-draw-color` (gfx-draw-color, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
-- **summary:** 0x203 (handle)(mode)(alpha)(color) — worker stores the D3D blend selector at obj+0x30 and STATIC packed color at obj+0x60; the handler's ctx+0x53d88 write is the generic 9-dword instruction length. Negative alpha/RGB preserve current static bytes. Mode 0 is the default textured path: preserved 0xffffffff is identity (the alpha byte is not tint strength). Its consumption is order-sensitive: a post-bind write supplies opacity until the next draw-texture bind, covering both FIELD's bound idle-unit suppression and CALLBACK_SETTING's freshly rebuilt ADV backing; pre-bind alpha-zero initialization remains opaque after the later bind. Mode 1 is SRCALPHA/ONE additive glow with ARGB alpha scaling the source contribution and RGB providing multiplicative modulation. Mode 2 conditionally forces ONE/ZERO for the selected render target and is used by 0x223 transition sources; mode 3 selects a subtractive special path. Every other mode is mode 0: the blit branches on 1, 2 and 3 alone, and Verita's DRAWMAP hides a map unit with alpha 0 and a mode of 15 to 300 (DRAWMAP@0x8c1). Surfaceless mode-0 fill consumption remains distinct.
+- **summary:** 0x203 (handle)(mode)(alpha)(color) — worker stores the D3D blend selector at obj+0x30 and STATIC packed color at obj+0x60; the handler's ctx+0x53d88 write is the generic 9-dword instruction length. Negative alpha/RGB preserve current static bytes. Mode 0 is the default textured path: preserved 0xffffffff is identity (the alpha byte is not tint strength). Its consumption is order-sensitive: a post-bind write supplies opacity until the next draw-texture bind, covering both FIELD's bound idle-unit suppression and CALLBACK_SETTING's freshly rebuilt ADV backing. The port keeps a pre-bind alpha-zero write opaque after the later bind, which native's sprite draw (the colour passed unchanged under D3DXSPRITE_ALPHABLEND) does not show (docs/backlog.md, "The port's mode-0 alpha is not native's"); a restored object consumes its saved alpha (docs/engine-re.md, "Object blend modes", the restore). Mode 1 is SRCALPHA/ONE additive glow with ARGB alpha scaling the source contribution and RGB providing multiplicative modulation. Mode 2 conditionally forces ONE/ZERO for the selected render target and is used by 0x223 transition sources; mode 3 selects a subtractive special path. Every other mode is mode 0: the blit branches on 1, 2 and 3 alone, and Verita's DRAWMAP hides a map unit with alpha 0 and a mode of 15 to 300 (DRAWMAP@0x8c1). Surfaceless mode-0 fill consumption remains distinct.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x203`; scope=Himegari SYS4422. Ghidra handler 0x4229a0; negative operands read current obj+0x60, then worker 0x47e9b0 stores op2 at obj+0x30 and ARGB at +0x60. gfx_object_composite call-site 0x47f78f passes +0x30/+0x60 directly to gfx_object_blit_d3d9. Correct D3D9 constants at 0x4774c0 prove mode 1 writes SRCBLEND=5/SRCALPHA and DESTBLEND=2/ONE, not INVSRCALPHA. TITLE draws two opaque-black, no-colorkey SO022 flame sprites with mode 1; additive composition removes black and preserves the blue glow, verified in a windowed capture. Mode 2 transition setup and synchronized pixels prove 0xffffffff is identity, not solid white. SC0000 page 14 adds the mode-0 endpoint proof: after the EV052CA->EV052DA 0x223 crossfade, 0x203@0x12478 restores the base CG to mode 0 with preserved 0xffffffff; native keeps EV052DA visible while the port's tint-strength interpretation turns every texel white. FIELD's movement lifecycle clones idle handle 0x9c40+entity to temporary handle 0x9c40+0x76c, writes mode-0 alpha zero to the bound idle handle at 0x45dc/0x4699/0x5210, animates only the temporary handle, then DRAWCH rebinds the idle handle at the next tile. CALLBACK_SETTING independently erases the ADV family, binds SO001 to fresh handle 0xd2f0, reads message:MesWinAlpha, and writes (16-value)<<4 through static mode-0 0x203 before presenting. Rendering post-bind static mode-0 alpha as inert causes both the stationary FIELD ghost and the reported always-opaque post-CONFIG message window.
 
 ### 0x205 `draw-formatted-integer` (u00420A60, argc 6)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Format an integer into a fixed-width decimal field and rasterize it immediately into a numbered graphics surface using the current font/color/effect state.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read · `5` read · `6` read
@@ -2438,8 +2547,8 @@ Native clears obj+0x68 and writes identity to the three matrices at obj+0x6c, +0
 The field width includes an optional sign. Bit 0 zero-pads; bit 1 centers omitted leading cells; bit 2 left-aligns; bits 3/4 request '+' for positive/zero; bit 5 renders zero with '-'. With bit 16, output remains half-width ASCII and omitted-cell x adjustment uses half the current font cell advance; otherwise the formatter converts digits/signs to full-width CP932. Default alignment preserves the field's right edge by shifting x right for each omitted leading cell.
 
 ### 0x207 `copy-surface-rect` (copy-surface-rect, argc 8)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Copy a rectangular pixel region between mutable graphics surfaces: (source_surface, destination_surface, source_x, source_y, width, height, destination_x, destination_y).
 - **operand access:** `1` read (surface 0..999, untested) · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read
@@ -2450,8 +2559,8 @@ The field width includes an optional sign. Bit 0 zero-pads; bit 1 centers omitte
 The worker clips the paired source and destination rectangles against both surfaces while preserving their correspondence, returns successfully for an empty clipped rectangle, and marks the destination surface dirty. Himegari uses the opcode for minimap markers plus STATUS, READICON, and DRAWTIP surface composition.
 
 ### 0x208 `get-texture-size` (get-texture-size, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x208 (slot)(out_w)(out_h) — writes the loaded texture's width/height into two output globals; keystone for bytecode-computed sprite/bg geometry (SC0000 label_12649)
 - **operand access:** `1` read · `2` write · `3` write
@@ -2460,8 +2569,8 @@ The worker clips the paired source and destination rectangles against both surfa
 - **evidence:** method=inference; confidence=med; profiles=himegari; revisions=SYS4422; artifact=`Himegari decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x208`; scope=Himegari SYS4422. SC0000 label_12649: set-texture(resId,slot) then 0x208(slot)->w,h feeds w/2 horizontal-center + foot-anchor subtraction into draw-texture dst; stubbing yields 0x0 sizes / off-center draws
 
 ### 0x20b `fill-surface-rect` (fill-surface-rect, argc 7)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (surface_slot)(x)(y)(width)(height)(alpha)(rgb) - fill a clipped rectangle on a graphics surface with the supplied color and alpha.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read
@@ -2470,8 +2579,8 @@ The worker clips the paired source and destination rectangles against both surfa
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x20b`; scope=Himegari SYS4422. Ghidra /v2: op_0x20b_handler@0x422d50 converts x/y/width/height to an exclusive rectangle, clamps alpha to 255, repacks RGB to native ARGB, and calls the surface manager's rectangle-fill path at 0x4790e0. HISTORY.BIN clears each 600x30 name strip on temporary surface 0xc1 before draw-string.
 
 ### 0x20c `present-frame` (present-frame, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Draw every visible retained object over the selected target without implicitly clearing it, then present the composited backbuffer; label_1235a uses this on the read/message-skip branch to expose the completed foreground endpoint immediately.
 - **control (port handler):** waits never; leaves falls
@@ -2483,8 +2592,8 @@ The worker clips the paired source and destination rectangles against both surfa
 Native handler gfx_op_0x20c_present_frame -> gfx_render_frame @0x4820b0. This is an explicit retained-state publication boundary, not a continuously visible object-store mutation. The renderer does not clear its selected target: opcode 0x20e owns explicit black clearing, so full-frame publication preserves preceding target pixels beneath its redraw. The read/message-skip branch resets the animation service then presents; the port publishes and snaps pending 0x223 state here. Normal playback branches to 0x21c, which owns repeated render/wait/resume. Headless hosts remain non-blocking.
 
 ### 0x20d `select-render-target` (select-render-target, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Select an offscreen surface slot as Direct3D render target 0, or restore the device backbuffer when the operand is at least 1000.
 - **operand access:** `1` read
@@ -2497,8 +2606,8 @@ Native handler gfx_op_0x20c_present_frame -> gfx_render_frame @0x4820b0. This is
 For slots below 1000 the native worker obtains that surface's level-0 D3D texture surface and calls IDirect3DDevice9::SetRenderTarget(0,...). The >=1000 path obtains backbuffer 0 and records current target -1. Himegari commonly follows a freshly created blank surface selection with 0x20e before drawing into it. The test is unsigned (/v2 retained_gfx_select_render_target@0x479660: CMP 0x3e7; JA), so slot -1, which both games' retail scripts pass, selects the backbuffer too, as in the port (2026-11-17; docs/engine-re.md, 'The 28 ops' native tests').
 
 ### 0x20e `clear-render-target` (clear-render-target, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear the currently selected render target to black and reset its depth buffer to 1.0.
 - **control (port handler):** waits never; leaves falls
@@ -2508,8 +2617,8 @@ For slots below 1000 the native worker obtains that surface's level-0 D3D textur
 This is a target-pixel operation, not retained-object teardown. It invokes IDirect3DDevice9::Clear with zero rectangles, flags D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER (3), color 0, depth 1.0, and stencil 0. The port tracks 0x20d target ownership and forwards the clear to the host; its retained compositor already rebuilds the backbuffer from black.
 
 ### 0x20f `play-modal-movie-to-surface` (play-modal-movie-to-surface, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (packed_resource_id)(surface_slot)(movie_flags) - open a universal packed SYS4INI/AAI MPEG asset into an existing retained surface, start its native movie graph, and arm modal run-state bit 0x2000 so script execution remains parked until the movie completes or is skipped. Only a service movie, flags & 5 == 4, can be skipped: action 4 then seeks it to its end (movie_skip_to_end_if_service, 4.33G 0x407800, 4.24N 0x407cf0); any other plays to its end and the input latch keeps the trigger. Every game's ED, and Verita's and Arterial's OP, pass unlocked << 2 (op 0x19d), so a first showing cannot be skipped. This is the LOGO/OP/ED whole-movie path; op 0x236 uses the same resolver with non-modal lifecycle.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read
@@ -2520,8 +2629,8 @@ This is a target-pixel operation, not retained-object teardown. It invokes IDire
 Implemented through InputAndWaits.PlayModalMovieToSurface. Its operand uses the same native universal packed-id catalog contract as 0x236; the separate call exists for modal wait/cancel lifecycle, not a different resolver. ResourceMap.ResolveMovie selects through ResolvePacked and retains MPEG signature validation in ReadMovie. Godot reuses the asynchronous FFmpeg decoder/retained-surface compositor, parks only the VM thread until EOF, and treats mouse click or Accept/Cancel input as completion before wrapper cleanup releases both video and per-playback audio output. Movie playback leaves the existing mutable target at resourceId 0 with no RGB color key; MovieSurfaceRegistry supplies its live pixels. Audio-bearing movies deliver timestamped stereo float PCM through AudioStreamGenerator and use the sound-hardware position as the master clock. The native shim rewinds both demuxers to the common media origin; this preserves LOGO's 218-frame PTS-0 opening rather than skipping to the video stream's declared 600 ms start and moving picture ahead of audio. The first decoded image is latched before audio starts, later frames retain their common-timeline cadence, and the terminal image remains through the full audio graph endpoint.
 
 ### 0x214 `swap-gfx-objects` (swap-gfx-objects, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (first_handle)(second_handle) — exchange the complete retained graphics-object records at two handles. If exactly one handle exists, move its record to the missing handle; if both are absent, leave the map empty.
 - **operand access:** `1` read · `2` read
@@ -2532,8 +2641,8 @@ Implemented through InputAndWaits.PlayModalMovieToSurface. Its operand uses the 
 Both-found swaps every object field, including surface binding, geometry, color, animation channels, matrices, cyclic state, and native persistence bytes. One-found inserts a complete copy at the other key and erases the original. Equal handles are unchanged. The retained manager is marked dirty in every case. Kamidori's ten sites each run this in a two-iteration loop and immediately swap the matching two metadata-table rows, confirming presentation-object reordering rather than a surface-resource operation.
 
 ### 0x215 `query-gfx-object?` (query-gfx-object?, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x215 (out_slot)(handle) — query the retained gfx-object map. Handler gfx_op_0x215_query_source_slot@0x42a0b0 calls gfx_object_query_source_slot@0x47f280 with owner ctx+0x46614. The worker searches owner+0x408, the same map populated by geometry/draw workers, and returns obj+4: the live source-surface slot written by draw-texture, or -1 if absent. gfx_object_init_default zeroes obj+4, so a geometry/animation-created but draw-unbound object returns slot 0, not -1. SC0000 uses a successful result for query-guarded teardown: op 0x1f7 erases the object group and op 0x1fa releases this slot. Matching the zero default prevents stale transforms from surviving into the EV050EA CG at SC0000 page 58. SYS4433 differs: its handler (Kamidori 0x42af40) calls worker 0x486120 with owner ctx+0x4a884, which returns obj+4 only when flag bit 0, set by draw-texture, is set, and -1 otherwise. A draw-unbound object therefore reads -1 on Kamidori, so SC1250's layer routine label_f63f fades a CG in fresh instead of measuring surface 0 for the crossfade.
 - **operand access:** `1` write · `2` read
@@ -2542,8 +2651,8 @@ Both-found swaps every object field, including surface binding, geometry, color,
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x215`; scope=Himegari SYS4422. Ghidra: handler 0x42a0b0 passes ECX=ctx+0x46614 to 0x47f280, which searches ECX+0x408 and returns object+4. gfx_object_bind_draw@0x47e870 writes the bound slot there; gfx_object_init_default@0x472810 explicitly writes zero to dword index 1. SC0000 page-58 trace: the old -1 default skipped cleanup of transform-created handle 0xcb2a, then EV050EA inherited translation (-100,0), rotation -90, and alpha 0; the native zero default makes the guard succeed and the reused object is identity/opaque. SYS4433 (4.33G and 4.33F 0x486120, 2026-11-09): after the map lookup it tests the record's first dword bit 0 before returning +4. Kamidori sweep: SC1250 label_fcb3 erases layer 1's object 0xcb2a, 0x98aa's op 0x202 get-or-creates it unbound (0x485740 -> 0x484b40), and the CG call at 0x9b03 queried it. Returning slot 0 sent label_f63f to the crossfade branch, where op 0x208 on released surface 0 gave 0x0 and EV021AA was drawn at (-512,-576); native showed it at (0,0). With the bit-0 test, positions and shots match native through SC1250's end.
 
 ### 0x216 `query-gfx-field?` (query-gfx-field?, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(surface_slot) - return the packed resource id in the live surface record: -1 for an empty or created surface, after op 0x249's raw load, and after op 0x9 reset the records, even when the texture survives. The slot is not bounds-checked: slot -1 returns 0 and slots 1000..1999 read the page snapshot table. Legacy mnemonic query-gfx-field? is retained for compatibility.
 - **operand access:** `1` write · `2` read (surface record -1..1999, untested)
@@ -2554,48 +2663,48 @@ Both-found swaps every object field, including surface binding, geometry, color,
 Both handlers index gfx manager+0x700+slot*0x14 with no bounds check. Scripts reach slot -1 when op 0x215 reports no object: Kamidori ALLMAP@0x4fa and SAVE@0xbce query object 0xcb2a and test the result only for zero before querying its slot. Slot -1 reads manager+0x6ec, which neither image addresses (no displacement 0x6ec or ctx+0x46d00/0x4af88 operand); a Frida read of Kamidori native reads 0 there, and native saves keep G[0x320a]=0 while the port wrote -1 (2026-11-07). The page snapshot table follows the live one at manager+0x5520, so slots 1000..1999 read snapshot record slot-1000. Slots outside -1..1999 read unrelated manager memory and are not modeled (the port halts).
 
 ### 0x217 `set-gfx-geom3` (set-gfx-geom3, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x217 (handle)(a)(b)(c) — handler gfx_op_0x217_set_geom3 @0x4231b0 SETS a 3-vector (int→float a,b,c) on object `handle` via native worker FUN_0047e960; its generic instruction length is 9 dwords. In SC0000 label_12649 it writes the anchor vector G[0x6249b/c/d] INTO the object; op 0x218 reads it back. See docs/engine-re.md gfx op-contract table.
-- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x217`; scope=Himegari SYS4422. Ghidra handler 0x4231b0 (dispatch ctx[0x26c93+0x217]); FUN_0047e960(op1,(float)op2,(float)op3,(float)op4). label_12649 sites e.g. 0x00c67 handle=G[0x62457], vec=G[0x6249b/c/d].
 
 ### 0x218 `get-gfx-geom3?` (get-gfx-geom3?, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x218 (handle)(out_a)(out_b)(out_c) — handler gfx_op_0x218_query_geom3 @0x42a130 GETS a stored 3-vector from object `handle` (FUN_0047f360) into out_a/b/c; its generic instruction length is 9 dwords. In label_12649 it reads the object's anchor vector back into G[0x6249b/c/d] — a stubbed DRIVER of the render drift (stale anchor → bad centering). See docs/engine-re.md gfx op-contract table.
-- **operand access:** `1` read · `2` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443)
+- **operand access:** `1` read · `2` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x218`; scope=Himegari SYS4422. Ghidra handler 0x42a130; FUN_0047f360(obj op1) + 3x FUN_00550850→FUN_00425fb0(2/3/4). label_12649 site 0x00c8f handle=G[0x62457] → G[0x6249b/c/d].
 
 ### 0x219 `set-gfx-geom3-b` (set-gfx-geom3-b, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x219 (handle)(a)(b)(c) — handler gfx_op_0x219_set_geom3 @0x423240 SETS a 3-vector (int→float) on object `handle` via native worker FUN_0047e910 (sibling of 0x217, a different per-object vector); its generic instruction length is 9 dwords. See docs/engine-re.md gfx op-contract table.
-- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x219`; scope=Himegari SYS4422. Ghidra handler 0x423240 (was unanalyzed; function created this session; dispatch ctx[0x26c93+0x219]); FUN_0047e910(op1,(float)op2,(float)op3,(float)op4).
 
 ### 0x21a `get-gfx-geom3-b?` (get-gfx-geom3-b?, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x21a (handle)(out_a)(out_b)(out_c) — handler gfx_op_0x21a_query_geom3 @0x42a1b0 GETS a stored 3-vector from object `handle` (FUN_0047f2e0) into out_a/b/c; its generic instruction length is 9 dwords. In label_12649 it reads the object's position vector into G[0x62498/9/a] — a stubbed DRIVER of the render drift. See docs/engine-re.md gfx op-contract table.
-- **operand access:** `1` read · `2` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443)
+- **operand access:** `1` read · `2` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x21a`; scope=Himegari SYS4422. Ghidra handler 0x42a1b0; FUN_0047f2e0(obj op1) + 3x→FUN_00425fb0(2/3/4). label_12649 site 0x00c86 handle=G[0x62457] → G[0x62498/9/a].
 
 ### 0x21b `set-tick-presentation` (u004213E0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - store enabled != 0 in tick_presentation_enabled. Under draw mode 1 the outer tick advances the presentation frame timer and may render only while it is set or run-state bits 0x2400 are active; op 0x247 queries it.
 - **operand access:** `1` read
@@ -2607,8 +2716,8 @@ Both handlers index gfx manager+0x700+slot*0x14 with no bounds check. Scripts re
 Port status (2026-11-03): VirtualMachine stores tick_presentation_enabled for op 0x247. The port has no draw mode 1 tick render gate, so the value changes nothing visible.
 
 ### 0x21d `clone-gfx-object` (clone-gfx-object, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (source_handle)(destination_handle) - clone the complete retained gfx object record (0xb5 dwords / 0x2d4 bytes). SC0000 uses destination=source+1 as range A's old-frame snapshot immediately before 0x223 crossfades range B's updated source into target handle source+2.
 - **operand access:** `1` read · `2` read
@@ -2618,38 +2727,38 @@ Port status (2026-11-03): VirtualMachine stores tick_presentation_enabled for op
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x21d`; scope=Himegari SYS4422. Ghidra handler 0x423310 -> gfx_object_clone@0x47e4f0. Worker requires source in retained-gfx owner+0x408 (EngineCtx+0x46a1c), creates destination, copies exactly 0xb5 dwords from source object record, then marks owner+0xb558 (EngineCtx+0x51b6c) dirty. SC0000 site 0x128fc passes current handle and handle+1 before queueing 0x223 at 0x129e7.
 
 ### 0x21e `set-anim-transform-norm` (set-anim-transform-norm, argc 6)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(delay_ms)(duration_ms)(sx)(sy)(sz) — set the normalized SCALE-matrix channel (100=identity). Target obj+0xac is linearly sampled from current obj+0x6c by gfx_object_apply_transform_channels@0x472f00 on retained-gfx frame time owner+0xb550 (EngineCtx+0x51b64), after delay and for duration, then committed. Shares only start timestamp obj+0x34 with op 0x220; neither Z is opacity.
-- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x21e`; scope=Himegari SYS4422. Ghidra 0x47eaa0 calls matrix builder 0x48af1d for target obj+0xac. Consumer 0x472f00 uses delay obj+0x3c, duration obj+0x50, current obj+0x6c, target obj+0xac, shared start obj+0x34, and retained-gfx frame time owner+0xb550 (EngineCtx+0x51b64).
 
 ### 0x21f `set-anim-rotation-axis-angle` (set-anim-rotation-axis-angle, argc 7)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(delay_ms)(duration_ms)(axis_x)(axis_y)(axis_z)(angle_deg) — set the delayed one-shot axis-angle rotation channel. Handler converts axis/angle integers to floats; worker stores target axis obj+0x1f8 and angle obj+0x208 and builds target matrix obj+0x12c. gfx_object_apply_transform_channels samples current axis/angle linearly on shared start obj+0x34 and composes T(-anchor)*scale*rotation*translation*T(anchor).
-- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `7` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `7` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x21f`; scope=Himegari SYS4422. Ghidra handler 0x423410 -> gfx_object_set_rotation_channel@0x47eb70; consumer gfx_object_apply_transform_channels@0x472f00 uses delay +0x40, duration +0x54, current axis +0x1ec/angle +0x204, target axis +0x1f8/angle +0x208, current matrix +0xec and target +0x12c. Native SC0000 handle 0xcb8e sample at 11/390 of axis (0,0,1), 30deg matches matrix [0.9055,0.0134;-0.0134,0.9055] and translation (74.1449,47.3127).
 
 ### 0x220 `set-anim-transform-abs` (set-anim-transform-abs, argc 6)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(delay_ms)(duration_ms)(tx)(ty)(tz) — set the absolute TRANSLATION-matrix channel. Target obj+0x1ac is linearly sampled from current obj+0x16c by gfx_object_apply_transform_channels@0x472f00 on retained-gfx frame time owner+0xb550 (EngineCtx+0x51b64), after delay and for duration, then committed. Independent of op 0x21e scale; neither Z is opacity.
-- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x220`; scope=Himegari SYS4422. Ghidra 0x47ecc0 calls matrix builder 0x48afb1 for target obj+0x1ac. Consumer 0x472f00 uses delay obj+0x44, duration obj+0x58, current obj+0x16c, target obj+0x1ac, shared start obj+0x34, and retained-gfx frame time owner+0xb550 (EngineCtx+0x51b64).
 
 ### 0x222 `present-gfx-object-range` (present-gfx-object-range, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (first_handle)(count) - flush/present retained graphics objects in the selected handle range into the currently selected backbuffer or offscreen render target, then clear their pending update flags.
 - **operand access:** `1` read · `2` read
@@ -2659,8 +2768,8 @@ Port status (2026-11-03): VirtualMachine stores tick_presentation_enabled for op
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x222`; scope=Himegari SYS4422. Ghidra /v2: op_0x222_handler@0x4235e0 calls gfx_present_object_range@0x482230. The worker enters the graphics service, walks the retained-object map, processes flagged objects whose handles fall in [first,first+count), clears pending flags, and finalizes the render batch in the D3D target previously selected by op 0x20d. HISTORY.BIN uses (0,60000) for the backbuffer. SAVE.BIN instead renders [0,0x130b0) into 800x600 slot 2, then handle 0x15f90 at 14% scale into 112x84 slot 192; op 0x1ae writes slot 192 as the numbered .STH thumbnail.
 
 ### 0x223 `queue-surface-alpha-transition` (queue-surface-alpha-transition, argc 8)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (command_key)(target_slot)(range_a_start)(range_a_count)(range_b_start)(range_b_count)(delay_ms)(duration_ms) — queue a type-0 timed alpha transition command in the separate ctx+0x414 command map. This is render-target/surface presentation state, not an object affine matrix. The render frame composites the two handle ranges into target_slot and ramps alpha 0->1 after delay over duration.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read
@@ -2671,8 +2780,8 @@ Port status (2026-11-03): VirtualMachine stores tick_presentation_enabled for op
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x223`; scope=Himegari SYS4422. Ghidra handler 0x423620 -> gfx_queue_surface_alpha_transition@0x47f440. Record fields: type +0=0, start +4=0, delay +8=arg7, duration +0xc=arg8, slot +0x10=arg2, range A +0x14/+0x1c=args3/4, range B +0x18/+0x20=args5/6. gfx_render_frame@0x47fbc0 initializes start from retained-gfx owner+0xb550 (EngineCtx+0x51b64) and consumes type 0 as an alpha ramp. SC0000 executes one shared-helper site at 0x129e7.
 
 ### 0x224 `clear-gfx-command-queue` (clear-gfx-command-queue, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear the native gfx command queue rooted at ctx+0x418. Host-implicit because the port composites retained state directly.
 - **control (port handler):** waits never; leaves falls
@@ -2696,7 +2805,7 @@ The commands are the queued surface alpha, patterned surface and blur range tran
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`
 - **semantic status:** investigated
 - **summary:** (out failure)(handle)(out scale_x)(out scale_y)(out scale_z) — query a retained object's scale: decompose the matrix at its record's +0x6c and write the scale's x, y and z. Found writes failure=0 and the three values; absent, or a matrix that does not decompose, writes failure=1 and leaves the outputs untouched. Where the ABI writes integers (SYS4415, SYS4422) each value is truncated first and the integer then multiplied by 100, so a 70% scale reads 0 and 150% reads 100; where it writes floats (SYS4433, SYS4438) the float is multiplied by 100.0 and written.
-- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443)
+- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x226`; scope=Himegari SYS4422. Read 2026-11-25 in Ghidra /bg0/4.15D and /v2, the same code in both. gfx_op_0x226_query_scale_current (4.15D 0x4217d0, 4.24J 0x42a230) sets the length to 0xb words, fetches operand 2 and calls gfx_object_query_scale_current (4.15D 0x46bc90, 4.24J 0x47cc30). The worker finds the handle in the retained-object map at gfx+0x408, copies the 0xb5-dword record and decomposes its matrix at +0x6c (D3DXMatrixDecompose; 4.24J matrix4_decompose_affine@0x48d7c8), returning the scale vector. A failure traces 「関数：GetLocalMatrixS エラー：マトリックスの分割に失敗しました． Order=%d %s」. The handler then writes operand 1 = 1, or the three values through _ftol times 100 to operands 3 to 5 and operand 1 = 0. Kelebek's label u004217D0 is 4.15D's handler address. Its one site is 戦女神ZERO's DEBUGADV2.BIN@0x931; no other game's scripts use it. The value write, read in the disassembly 2026-11-25: 4.15D 0x421822 is FLD float, _ftol, IMUL EAX,0x64, for each of the three; Kamidori 4.33G's handler 0x42b0e0 is FLD float, FMUL double 100.0 (0x576cd0), then vm_operand_write_float@0x426c00. matrix4_decompose_affine@0x48d7c8 (4.24J) takes each scale as its row's length, rebuilds a row shorter than 1e-4 (DAT_0058075c) from the identity or cross products, negates the largest scale when the basis's determinant is negative, and fails (0x8876086c) unless the determinant is then 1 within 1e-4.
@@ -2708,7 +2817,7 @@ The port's handler (VirtualMachine.RetainedObjects.cs, OpQueryGfxScaleCurrent) d
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4433`
 - **semantic status:** investigated
 - **summary:** (out failure)(handle)(out axis_x)(out axis_y)(out axis_z)(out angle_degrees) — query a retained object's current axis-angle rotation. Found writes failure=0 and the current values; missing writes failure=1 and preserves all four outputs.
-- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `6` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443)
+- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `6` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari, kamidori; revisions=SYS4422, SYS4433; artifact=`Himegari SYS4422 Ghidra /v2 and Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x227`; scope=matching native handlers/workers and complete Kamidori corpus. SYS4422 op_0x227_query_rotation_current@0x42a2e0 calls gfx_object_query_rotation_current@0x47cd20; SYS4433 equivalents are @0x42b1a0 and @0x484510. Both workers clone the retained object and return current axis X/Y/Z plus current angle from +0x1ec/+0x1f0/+0x1f4/+0x204, return false when the handle is absent, and never read the target fields. Missing handlers write only operand 1=1; success writes operands 3..6 then operand 1=0. SYS4422 uses __ftol2_sse before its integer writer; SYS4433 uses vm_operand_write_float@0x426c00. Kamidori has twelve all-global-int calls, six each in SC0600.BIN@0x566d..0x57d5 and SC2060.BIN@0x107a..0x1228.
@@ -2716,11 +2825,11 @@ The port's handler (VirtualMachine.RetainedObjects.cs, OpQueryGfxScaleCurrent) d
 The current values are the stored object fields at +0x1ec/+0x1f0/+0x1f4/+0x204, independently of delayed target axis +0x1f8..+0x200 and target angle +0x208. SYS4422 explicitly truncates the four floats toward zero before its integer operand writer. SYS4433 routes them through its float-aware destination writer, which performs the equivalent conversion for Kamidori's exclusively global-integer outputs. SC0600 and SC2060 each query six parallel presentation objects before constructing their next rotation target.
 
 ### 0x228 `query-gfx-translation-current` (u00421940, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x228 query current translation (succ)(handle)(outX)(outY)(outZ): clone the retained object, decompose its current translation matrix at obj+0x16c, and return its x/y/z translation. Returns succ=0 when found; when absent, writes succ=1 and leaves outputs untouched. This is independent of both delayed target obj+0x1ac and base draw position V24. See docs/engine-re.md §SC0000 anim cluster.
-- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443)
+- **operand access:** `1` write · `2` read · `3` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `4` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445) · `5` write (SYS4415) / write (SYS4422) / write (SYS4424) / write-float (SYS4433) / write-float (SYS4438) / write-float (SYS4443) / write-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x228`; scope=Himegari SYS4422. Ghidra /v2 handler gfx_op_0x228_query_translation_current@0x42a3a0 calls gfx_object_query_translation_current@0x47cdd0. The worker copies the complete 0xb5-dword object record to stack local -0x2e0, then passes local_174, exactly +0x16c within that copy, to matrix4_decompose_affine@0x48d7c8. Thus it decomposes the current matrix obj+0x16c, not target obj+0x1ac. SYSTEM4 P102 supplies the runtime proof: SC0000@0x84e8 resets BG001A current translation to zero, 0x228@0x84fa must return zero, and 0x220@0x8521 then targets +600. The port's target query returned the preceding CG endpoint +600, producing +1200 and leaving BG001A below the viewport. Missing-object output preservation remains valid. Functions renamed, commented, and /v2 saved 2026-08-16.
@@ -2728,11 +2837,11 @@ The current values are the stored object fields at +0x1ec/+0x1f0/+0x1f4/+0x204, 
 Implemented by querying TranslationCurrent while preserving the missing-object output contract. The focused regression seeds a reused handle with current/target +600, rebinds it, applies SC0000's 0x1ff current-zero reset, verifies 0x228 returns zero, and confirms the following 0x220 target is +600 rather than +1200. An exact GPU SYSTEM4 P102 capture at wait SC0000@0x85de shows BG001A visible at its intended endpoint.
 
 ### 0x229 `set-gfx-range-transform` (set-gfx-range-transform, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (first_handle)(count)(anchor_x)(anchor_y)(anchor_z) — reset and select the retained-gfx range transform applied after each ordinary object matrix for handles in [first, first+count), then set its anchor/pivot. A zero count disables it.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x229`; scope=Himegari SYS4422. Ghidra /v2: op_0x229_set_gfx_range_transform@0x423700 first calls gfx_range_transform_reset@0x472b80, then writes operands 1/2 to retained-gfx owner+0x420/+0x424 and operands 3..5 to the embedded transform object's anchor at owner+0x440..+0x448. gfx_object_composite@0x47f650 post-multiplies the sampled owner+0xb5b4 matrix only for handles in that selected range. Corpus: 693 calls/309 scripts; 590 disable with all zeroes, 101 select from handle 1 with a script-computed count, and FIELD/LOOK supply camera anchors. This supersedes the former incorrect per-object-position interpretation; per-object direct position is 0x22f.
@@ -2742,27 +2851,27 @@ Implemented by querying TranslationCurrent while preserving the missing-object o
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`
 - **semantic status:** investigated
 - **summary:** (scale_x_percent)(scale_y_percent)(scale_z_percent) — immediately replace the selected retained-gfx range transform's current scale matrix.
-- **operand access:** `1` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x22a`; scope=Himegari SYS4422. Ghidra /v2: op_0x22a_set_gfx_range_scale_current@0x4237b0 divides all three operands by 100 and calls gfx_range_transform_set_scale_current@0x472c10, which builds owner+0x494. FIELD and LOOK each call it once after 0x229/0x22c; FIELD's zoom percent is G[0xccc09].
 
 ### 0x22c `set-gfx-range-translation-current` (set-gfx-range-translation-current, argc 3)
-- **observed by:** himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4443`
+- **observed by:** himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (translate_x)(translate_y)(translate_z) — immediately replace the selected retained-gfx range transform's current translation matrix.
-- **operand access:** `1` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `2` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x22c`; scope=Himegari SYS4422. Ghidra /v2: op_0x22c_set_gfx_range_translation_current@0x423900 passes the three integer operands as floats to gfx_range_transform_set_translation_current@0x472d00, which builds owner+0x594. FIELD computes (400-camera_x, 300-camera_y, 0), making the selected map anchor land at screen center; LOOK uses the same camera helper.
 
 ### 0x22d `set-gfx-range-scale-target` (set-gfx-range-scale-target, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (delay_ms)(duration_ms)(scale_x_percent)(scale_y_percent)(scale_z_percent) — animate the selected retained-gfx range transform's scale from its current matrix to the target.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x22d`; scope=Himegari SYS4422. Ghidra /v2: op_0x22d_set_gfx_range_scale_target@0x423990 divides operands 3..5 by 100 and calls gfx_range_transform_set_scale_target@0x472d50. The worker arms the embedded transform object's ordinary scale channel (delay obj+0x3c, duration +0x50, target matrix +0xac), which gfx_range_transform_sample_frame@0x476df0 samples before range composition. FIELD has the sole corpus call, a 300 ms camera zoom.
@@ -2772,7 +2881,7 @@ Implemented by querying TranslationCurrent while preserving the missing-object o
 - **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`
 - **semantic status:** investigated
 - **summary:** (delay_ms)(duration_ms)(axis_x)(axis_y)(axis_z)(angle_degrees) — animate the selected retained-gfx range transform's axis-angle rotation from its current matrix to the target.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `6` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari, kamidori; revisions=SYS4422, SYS4433; artifact=`Himegari SYS4422 Ghidra /v2 and Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x22e`; scope=matching native handlers/workers and complete Kamidori corpus. SYS4422 op_0x22e_set_gfx_range_rotation_target@0x423a40 calls gfx_range_transform_set_rotation_target with delay/duration and four integer-to-float axis-angle operands; SYS4433 equivalents @0x421970 and @0x479020 use the same embedded-object fields and target matrix while accepting float-aware operands 3..6. Both workers arm the ordinary one-shot rotation channel, clear its shared start timestamp, and dirty the retained range. Kamidori has one all-immediate call at SC6400.BIN@0x4c33: `(0,700,0,0,1,0)`.
@@ -2780,18 +2889,18 @@ Implemented by querying TranslationCurrent while preserving the missing-object o
 The range transform is selected by opcode 0x229 and applies only to handles in that half-open range. This channel shares the embedded transform object's one-shot start clock with range scale and translation. SYS4422 fetches the four axis-angle operands through its integer reader; SYS4433 uses its float-aware reader. Kamidori's sole SC6400 call is all-immediate `(0,700,0,0,1,0)`, so both revisions have the same observable contract there.
 
 ### 0x22f `set-gfx-range-translation-target` (u00421DD0, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (delay_ms)(duration_ms)(target_x)(target_y)(target_z) — animate the selected retained-gfx range transform's translation from its current matrix to the target. FIELD pairs this with an ordinary-object tween for the minimap viewport marker so both camera representations pan together.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x22f`; scope=Himegari SYS4422. Ghidra /v2 assembly: op_0x22f_set_gfx_range_translation_target@0x423b00 loads ECX with retained-gfx owner ctx+0x46614 before calling gfx_range_transform_set_translation_target@0x472e90. The worker writes owner+0x428's embedded object fields: active bit, shared start obj+0x34, delay obj+0x44, duration obj+0x58, and target translation matrix obj+0x1ac. It never resolves an ordinary object handle. FIELD@0xb4d8 supplies (0, pan_duration, target_x, target_y, 0) while the following 0x220 animates the minimap viewport marker over the same duration.
 
 ### 0x230 `reset-gfx-cyclic-animations` (u00421E70, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle) — get or create a retained gfx object, clear its cyclic-animation active flag, and zero all five looping-channel start/period pairs without changing current/base transforms.
 - **operand access:** `1` read
@@ -2802,8 +2911,8 @@ The range transform is selected by opcode 0x229 and applies only to handles in t
 Port status (2026-07-29): implemented as one retained-state reset covering cyclic color, scale, rotation, secondary-matrix, and source-rectangle timing. It disables the four modeled looping channels, clears the complete native raw timing block for drop-in persistence, and preserves base/current transforms, cyclic targets, and one-shot channels.
 
 ### 0x231 `animate-gfx-srcrect-loop` (u00421EA0, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(frame_period_ms)(frame_count)(column_count) — loop row-major through the spritesheet. Every sample preserves draw-texture's source-rectangle width/height; frame=floor((shared_frame_time-object_start)/frame_period)%frame_count, src offset=(frame%columns*width, frame/columns*height). All objects use the retained manager's shared current/previous millisecond timestamps but retain their own start and period. The native consumer raises redraw dirty only when the current and previous samples select different cells. Worker gfx_worker_anim_srcrect @0x47eec0; consumer gfx_object_anim_interpolate @0x473ed0.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
@@ -2812,8 +2921,8 @@ Port status (2026-07-29): implemented as one retained-state reset covering cycli
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x231`; scope=Himegari SYS4422. Native /v2 decompile: worker stores/reset start at obj+0x21c, period at +0x230, frame_count at +0x238, and columns at +0x23c. Interpolator seeds the object start from manager+0xb550, computes ((current-start)/period)%frame_count, then offsets both source-rect X bounds by rect_width*(frame%columns) and Y bounds by rect_height*(frame/columns). It repeats the cell calculation with manager+0xb554 and sets manager+0xb558 dirty only when the two cells differ. engine_main_tick_with_exception_policy shifts current to previous and samples timeGetTime once per active outer tick. SC0000 uses (100,8,4) with AE001H's eight 200x200 cells in a 4x2 800x400 sheet. FIELD configures prototype 0x9c40 with (200,4,2), then DRAWCH clones its complete zero-start record to the entity handles before the first render, phase-locking that family.
 
 ### 0x232 `animate-gfx-color-loop` (u00421EF0, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** 0x232 anim-color (handle)(period)(alpha)(color): ping-pong the temporary packed ARGB passed to the normal object blit. Handler resolves negative alpha/RGB from static color obj+0x60 and clamps alpha above 255. Blend selector obj+0x30 is unchanged: mode 0 keeps default blending (animated alpha is inert; RGB is vertex modulation), while mode 1 uses sampled ARGB alpha as the SRCALPHA scale for additive composition. Fresh static color is 0xffffffff. The C# VM resolves sentinels and consumes sampled ARGB through the unchanged mode-specific path. See docs/engine-re.md §SC0000 anim cluster.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
@@ -2822,11 +2931,11 @@ Port status (2026-07-29): implemented as one retained-state reset covering cycli
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x232`; scope=Himegari SYS4422. Ghidra /v2: gfx_op_0x232_anim_color@0x423c30 resolves sentinels then calls gfx_worker_anim_color@0x47ef50; gfx_object_anim_interpolate@0x473ed0 samples static obj+0x60 toward target obj+0x240 into a temporary packed color; gfx_object_composite@0x47f650 passes that color plus unchanged selector obj+0x30 to gfx_object_blit_d3d9@0x4774c0. Blit mode 0 leaves the default path and passes RGB as modulation; mode 1 sets SRCALPHA/ONE additive composition. gfx_object_init_default@0x472810 initializes obj+0x60=0xffffffff. SC0000 0x1a0e (handle,1200,224,-1) is therefore 0xffffffff<->0xe0ffffff with inert alpha and identity RGB in mode 0: no visible pulse. C# regressions cover exact AE001H visual invariance, negative-RGB preservation, mode-0 RGB modulation, and mode-1 additive scaling.
 
 ### 0x233 `set-scale-cycle` (set-scale-cycle, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(period_ms)(scale_x_percent)(scale_y_percent)(scale_z_percent) — configure a cyclic ping-pong scale matrix that moves identity→target over the first half-period and target→identity over the second.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x233`; scope=Himegari SYS4422. Ghidra /v2: op_0x233_set_scale_cycle@0x423cf0 divides operands 3..5 by 100 and calls gfx_object_set_scale_cycle@0x47efd0. The worker stores start=0 at obj+0x210, period at +0x224, and the target scale matrix at +0x250. gfx_object_anim_interpolate@0x473ed0 samples a triangular phase 2*min(elapsed%period,period-elapsed%period)/period, linearly blends identity to target, and multiplies the result into the separately anchored cyclic-animation product. Corpus: 31 sites in nine scripts, including eight ordinary ADV scenes.
@@ -2834,21 +2943,21 @@ Port status (2026-07-29): implemented as one retained-state reset covering cycli
 Port status (2026-07-28): implemented as an independent retained-object scale cycle. The compositor samples the exact triangular phase, keeps the channel frame-driven during waits, and composes it after one-shot translation but before the sibling cyclic rotation.
 
 ### 0x234 `anim-start` (anim-start, argc 5)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(period_ms)(axis_x)(axis_y)(axis_z) — configure cyclic rotation. Worker stores period obj+0x228, start obj+0x214=0, and float axis obj+0x244; each frame uses integer degrees floor(((now-start)%period)*360/period). gfx_object_composite right-multiplies this separately anchored transform after the one-shot scale/rotation/translation product, so cyclic rotation also rotates the translation vector.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x234`; scope=Himegari SYS4422. Ghidra handler 0x423da0 converts axis ints to floats -> worker 0x47f060. gfx_object_anim_interpolate@0x473ed0 consumes obj+0x228/+0x214/+0x244 on retained-gfx owner+0xb550 (EngineCtx+0x51b64) and matrix4_make_axis_angle@0x48b215. gfx_object_composite@0x47f650 calls one-shot transform first, cyclic animation second.
 
 ### 0x235 `set-translation-cycle` (set-translation-cycle, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(period_ms)(translate_x)(translate_y)(translate_z) — configure a cyclic ping-pong translation matrix that moves identity→target over the first half-period and target→identity over the second.
-- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443)
+- **operand access:** `1` read · `2` read · `3` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `4` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445) · `5` read (SYS4415) / read (SYS4422) / read (SYS4424) / read-float (SYS4433) / read-float (SYS4438) / read-float (SYS4443) / read-float (SYS4445)
 - **control (port handler):** waits never; leaves falls
 - **grounding:** source=investigation, confidence=high
 - **evidence:** method=native-re; confidence=high; profiles=himegari, kamidori; revisions=SYS4422, SYS4433; artifact=`Himegari SYS4422 Ghidra /v2 and Kamidori SYS4433 Ghidra /kamidori/SYS4433 (4.33F), addresses given for /kamidori/4.33G`; site=`vm-map/opcodes.toml opcode 0x235`; scope=matching handlers, retained-object producer/consumer, and complete Kamidori corpus. SYS4422 op_0x235_handler@0x423e40 -> gfx_object_set_translation_cycle@0x47f110 and SYS4433 op_0x235_set_translation_cycle@0x421d10 -> gfx_object_set_translation_cycle@0x485f80 both fetch (handle, period, x, y, z), clear lazy start obj+0x218, store period at +0x22c, and build a target translation matrix at +0x290. SYS4433 gfx_object_compose_animated_transform@0x47a400 samples 2*min(elapsed%period, period-elapsed%period)/period, blends identity to target, and post-multiplies the result after cyclic rotation. Kamidori has 28 calls across 12 scripts; operand signatures are 25 g-int/imm/imm/imm/imm, two g-int/imm/l-int/imm/imm, and one g-int/imm/imm/l-int/imm.
@@ -2856,8 +2965,8 @@ Port status (2026-07-28): implemented as an independent retained-object scale cy
 The channel is independent from one-shot translation and the cyclic scale/rotation siblings. Its target is expressed directly in retained-gfx coordinates, not percentages. Native composes it after cyclic rotation and before restoring the object anchor. The complete Kamidori catalog contains 28 calls in 12 story/presentation scripts.
 
 ### 0x236 `play-movie-to-surface` (play-movie-to-surface, argc 4)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (packed_resource_id)(surface_slot)(movie_flags)(start_delay_ms) - synchronously open a universal packed SYS4INI/AAI movie and construct its DirectShow graph, then start asynchronous frame delivery into the retained destination surface after the requested service-tick delay. The opcode itself is non-blocking: the VM advances to the next instruction. SC0000's 0x33 and BTL's 0x2axx/0x2bxx MVB ids are already absolute base-catalog indexes.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read · `4` read
@@ -2869,8 +2978,8 @@ The channel is independent from one-shot translation and the cyclic scale/rotati
 The handler requires an existing destination texture, allocates/reuses a 0x478-byte movie-to-texture object for the surface without replacing its resource identity/color key, opens operand 1 through the native universal packed-id reader, builds FilterGraph/IGraphBuilder/IMediaControl/IMediaPosition/IMediaEvent/IBasicAudio, and presents bottom-up RGB samples through the movie texture renderer. Operand 3 selects movie/sound routing policy: bits 0x10000/0x20000/0x40000/0x80000 force mute/music/SE/voice routes. Otherwise set:DependMovieSound (SYS4INI DEPENDMOVIESOUND, registered default 1) picks the route by the same numbering, with 4 the movie category and any value outside 1..4 silent (movie_sound_route_from_flags@0x405490; SYS4433 0x405200): Himegari's 1 is music and Kamidori's 2 is SFX, while Kamidori's LOGO/OP pass 0x20004 and so follow music. The movie plays at master x that category's volume and is silent while that route is off. SC0000's low value 2 is retained as native movie mode state. The port resolves the category with MovieSoundRoute (until 2026-11-07 it used the movie category for every unflagged movie). Godot maps those categories to audio buses and sends FFmpeg-decoded timestamped stereo float PCM through a per-playback AudioStreamGenerator. Both native demuxers begin at the common timeline origin; the first image is latched before audio start and later video/audio retain their source timing. This recovers valid MPEG video preroll before AVStream.start_time instead of advancing picture by roughly 600 ms. Audio-bearing completion retains the terminal frame through the full graph endpoint. Operand 4 delays the pending graph start in native service ticks. Static layer preparation after 0x236 does not terminate the retained movie; it plays on until EOF and subsequent surface cleanup stops/detaches both decoder and audio output. Whether a 0x21c effect wait also waits for it depends on operand 3 alone: (flags & 5) == 4 holds the wait for the movie object's lifetime (surface_movie_is_playing@0x405150), any other value does not. SC0000's flags 2 do not hold it; its 0x21c waits for the movie because op 0x238 sets the anim clock to the op 0x23f layer stop time. At EOF the tick loops the movie when bit 0 is set, otherwise detaches it and clears the surface unless (flags & 3) == 2. The port type-checks the selected ResolvePacked record as MPEG without adding a scene base or fallback.
 
 ### 0x238 `set-anim-clock` (set-anim-clock, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (duration) — configure the separate global finite-animation service window: native ctx+0x51b78=0 (start), +0x51b7c=duration. The generic instruction length is 3 dwords. It does not block itself: gfx_animation_service_poll seeds the start from the shared frame timestamp at its first poll and returns 1 through the duration, so the window holds the next op-0x21c wait even with no channel running (Kamidori SC0000 label_1fdd1; docs/engine-re.md, "The anim-clock window holds the effect wait"). The fast-forward force ends it. This is not the time source or cadence for cyclic object channels, which sample ctx+0x51b64/+0x51b68 with object-local starts and periods. SC0000 opening @0x123bd/@0x13858. Handler 0x4240e0; Kelebek VA 0x422390 is drift.
 - **operand access:** `1` read
@@ -2879,8 +2988,8 @@ The handler requires an existing destination texture, allocates/reuses a 0x478-b
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x238`; scope=Himegari SYS4422. Ghidra /v2: op_0x238_handler@0x4240e0 zeros retained-gfx manager+0xb564 and stores the duration at +0xb568. gfx_animation_service_poll@0x407640 seeds +0xb564 from manager+0xb550, marks redraw dirty while current<=start+duration, then clears the window. Cyclic worker gfx_object_anim_interpolate@0x473ed0 instead uses shared frame current/previous +0xb550/+0xb554 and per-channel object start/period fields.
 
 ### 0x239 `animate-gfx-srcrect-target` (u004223C0, argc 6)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(delay_ms)(duration_ms)(frame_count)(column_count)(flags) — finite one-shot row-major source-rectangle cell channel, the fifth one-shot channel (op 0x21c waits for it). Worker gfx_worker_set_srcrect_cell @0x47ed90 requires the visible bit, sets object flag bit 1, zeroes the shared start obj+0x34, and stores delay +0x48, duration +0x5c, frame count +0x238, columns +0x23c and flags +0x234. After the delay, cell = elapsed*frame_count/duration (row = cell/columns, column = cell%columns) offsets the source rect by whole cells. Flag bit 0 commits the last cell at the end, otherwise the source rect collapses to empty; flag bit 1 draws the base cell during the delay, otherwise nothing is drawn. BTL's sword-clash intro uses (0, 1000, 28, 7, 0).
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read · `6` read
@@ -2899,8 +3008,8 @@ The handler requires an existing destination texture, allocates/reuses a 0x478-b
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x23a`; scope=Himegari SYS4422. Ghidra /v2: op_0x23a_handler@0x42a440 indexes the surface table by operand 2, writes zero for a null slot, otherwise writes surface+0x42c != 0. All four corpus sites are movie completion polling loops: BTL checks active combat-movie surfaces 7+, while FIELD and USEMAGIC poll surface 42 between present-frame, frame-time sampling, and sleep(16). 4.15D (戦女神ZERO, read 2026-11-25): op_0x23a_query_movie_surface_active@0x422420 writes whether the slot's movie object at ctx+0x51350 exists. Its tick deletes a movie that reaches its stop time without looping and zeroes the slot (engine_main_tick_with_exception_policy 0x40b780..0x40b7a9), and ops 0x1f8 to 0x1fa clear it, so the answer is the port's: bound and not completed, or looping.
 
 ### 0x23b `draw-decimal-glyphs` (u00422460, argc 7)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Draw an integer as decimal glyph objects from a style registered by opcode 0x13a or SYS4433 opcode 0x2da.
 - **operand access:** `1` read · `2` read (glyph style 0..9; native lets through 10) · `3` read · `4` read · `5` read · `6` read · `7` read
@@ -2913,8 +3022,8 @@ The handler requires an existing destination texture, allocates/reuses a 0x478-b
 First erase digit_capacity objects beginning at base_handle. Then split value by signed division/modulo 10 and bind at most digit_capacity retained objects using the registered atlas. SYS4422's five-field style and SYS4433 opcode 0x13a use tightly packed cells. SYS4433 opcode 0x2da adds independent source and destination spacing: source atlas stride is digit_width+source_cell_spacing and destination stride is digit_width+destination_cell_spacing. Flags bit 0 zero-pads, bit 1 centers the used digits, and bit 2 left-aligns them; with no alignment bit the value is right-aligned in the capacity. The handler admits style index 10 even though SYS4422 native physically clears only records 0..9; see op 0x13a's adjacent-memory alias note. Indices above 10 and unregistered styles are traced as CGNumberの引数が不正です． and the op is skipped; the port halts at index 10 (2026-11-17).
 
 ### 0x23c `sample-frame-time` (sample-frame-time, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Explicitly shift the shared current retained-presentation timestamp to the previous field, then sample the native monotonic millisecond clock as the new current timestamp. The active outer engine tick normally performs the same update; this opcode does not create a distinct timer or fixed-rate animation cadence.
 - **control (port handler):** waits never; leaves falls
@@ -2922,8 +3031,8 @@ First erase digit_capacity objects beginning at base_handle. Then split value by
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x23c`; scope=Himegari SYS4422. Ghidra /v2: op_0x23c_handler@0x417580 copies EngineCtx frame_timer_current at +0x51b64 to frame_timer_previous at +0x51b68, then stores imp_winmm_timeGetTime() at +0x51b64. engine_main_tick_with_exception_policy@0x411840 performs the same shift/sample once per active outer presentation tick before dirty/movie rendering. BTL, ADDEXP, SHOWGROW, USEMAGIC, and FIELD place the explicit opcode at presentation/present-frame boundaries.
 
 ### 0x23d `release-transient-surfaces` (release-transient-surfaces, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Stop movie bindings and release transient gfx surface slots 42 through 999 inclusive, preserving system-owned slots 0 through 41.
 - **control (port handler):** waits never; leaves falls
@@ -2933,8 +3042,8 @@ First erase digit_capacity objects beginning at base_handle. Then split value by
 For each fixed slot in [42,1000), the handler stops/releases the movie-to-texture object at ctx+0x52bd4[slot], then invokes the ordinary retained-gfx surface-release worker. Protected/externally owned slots may be retained by the worker's per-slot guard. This is the resource half of the common 0x1f6/0x23d full-reset sequence.
 
 ### 0x23f `query-surface-stop-time-ms` (u00422930, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_stop_time_ms)(surface_slot) — query the DirectShow stop position retained by a loaded movie surface, convert seconds to integer milliseconds by truncating toward zero, and write -1 when the movie slot is empty. Port-only host decoder failure is modeled as an explicitly completed, zero-duration movie.
 - **operand access:** `1` write · `2` read (surface 0..999, untested)
@@ -2946,8 +3055,8 @@ For each fixed slot in [42,1000), the handler stops/releases the movie-to-textur
 The surface object's +0x414 member is IMediaPosition. Its vtable +0x28 entry is get_StopTime (after IUnknown, IDispatch, get_Duration, put_CurrentPosition, and get_CurrentPosition), returning a REFTIME double in seconds. Native multiplies by the double constant 1000.0 and calls the compiler float-to-integer helper, whose SSE2 and x87 paths both truncate toward zero. It does not inspect the getter HRESULT. For a valid graph the default stop time normally equals media duration, which explains duration-style consumers, but the exact ABI is stop position rather than get_Duration. The handler only queries state; it does not yield or alter playback. Native has no meaningful answer for a port host that cannot build a graph for a valid shipped MPEG. Port safety extension: op 0x236 normalizes missing host metadata to stop time 0 and marks decoder failure completed, while a truly empty movie slot still returns -1.
 
 ### 0x241 `play-movie-to-surface-at-position` (play-movie-to-surface-at-position, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (packed_resource_id)(surface_slot)(movie_flags)(start_delay_ms)(position_ms) - perform the same non-modal movie-to-retained-surface open as opcode 0x236, seek the graph to the requested millisecond position, then arm playback.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read
@@ -2959,8 +3068,8 @@ The surface object's +0x414 member is IMediaPosition. Its vtable +0x28 entry is 
 The seek is applied through IMediaPosition::put_CurrentPosition before movie_play_configure records the flags and start delay. CALLBACK_LOAD does not restore a separately sampled live playback cursor: the ADV setup path stores opcode 0x23f's stop time in global array 0x329e, and load passes stop_time_ms-1. The shipped use therefore reconstructs the movie layer at its terminal frame after a numbered load. Port status (2026-07-29): implemented through the existing 0x236 surface binding, routing, and completion lifecycle. FFmpeg ABI v3 seeks its independent video and audio demuxers before worker start; managed preroll selects the video frame active at the requested position (retaining the last frame at stop_time_ms-1), trims audio to the same point, and rebases both remaining timelines to playback time zero. Negative positions clamp to zero and positions at or beyond the graph stop clamp to stop_time_ms-1.
 
 ### 0x242 `set-object-animation-detached` (set-object-animation-detached, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Replace the retained object's animation-control word at obj+0x2d0. Bit 0 detaches finite one-shot channels from blocking presentation and protects them from 0x243 forced completion until they finish naturally.
 - **operand access:** `1` read · `2` read
@@ -2972,8 +3081,8 @@ The seek is applied through IMediaPosition::put_CurrentPosition before movie_pla
 The setter get-or-creates the object and writes the complete operand. During retained composition, bit 0 makes the one-shot color/scale/rotation/translation/source-rectangle group ignore the manager's force-complete request and suppresses the blocking-dirty flag while leaving the redraw-dirty flag active. When no finite channel remains, native clears bit 0 and the shared start time. SC0000's two common CG loaders explicitly write zero. Across DATA1, 302 calls write zero and the sole nonzero call is BTL.BIN's animated battle-object setup, which writes one.
 
 ### 0x243 `reset-anim-clock` (reset-anim-clock, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** When animation-service flag bit 1 is clear, request forced completion of ordinary finite one-shot object channels and reset the global animation-service elapsed/duration fields. Objects detached by 0x242 bit 0 ignore the force request.
 - **control (port handler):** waits never; leaves falls
@@ -2982,8 +3091,8 @@ The setter get-or-creates the object and writes the complete operand. During ret
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x243`; scope=Himegari SYS4422. Ghidra handler 0x4182d0: if !(ctx+0x51b80 & 2), set retained-gfx owner+0xb55c (EngineCtx+0x51b70)=1 and zero owner+0xb564/+0xb568. gfx_object_apply_transform_channels treats force value 1 as immediate completion unless obj+0x2d0 bit 0 is set. SC0000 label_1235a calls it before present-frame. 4.15D (戦女神ZERO, read 2026-11-25): op_0x243@0x417070 always forces completion and resets the clock; it has no flag word to test, and op 0x24e, the only op that sets 4.24J's, is not in 4.15D, so the port's flags stay 0 for its scripts.
 
 ### 0x244 `restart-armed-color-fades` (u00416360, argc 0)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** - every retained object whose colour fade op 0x202 armed (flags bit 1) gets its one-shot start zeroed, so the fade and the transform channels sharing that start begin again; 4.43B also zeroes the start of each model with bit 1.
 - **control (port handler):** waits never; leaves falls
@@ -3017,8 +3126,8 @@ The native handler returns without effect when the surface slot is null and igno
 Port status (2026-11-03): implemented; writes the value VirtualMachine stores for op 0x21b.
 
 ### 0x248 `set-tiled-surface-edge-length` (set-tiled-surface-edge-length, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Set the legacy mode-1 tiled-surface edge length in pixels. Native surface creation, blitting, rectangle operations, and AGF upload use it to partition one logical surface into ordinary texture tiles; SYSTEM4 initializes it to 128.
 - **operand access:** `1` read
@@ -3029,8 +3138,8 @@ Port status (2026-11-03): implemented; writes the value VirtualMachine stores fo
 Port status (2026-07-29): implemented as retained signed-dword graphics configuration. The value survives scene-context resets and does not dirty presentation or rebuild existing surfaces. The portable backend deliberately keeps mode-1 surfaces as contiguous RGBA images rather than reproducing legacy D3D texture tiling.
 
 ### 0x249 `load-raw-texture-surface` (load-raw-texture-surface, argc 3)
-- **observed by:** bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`
+- **observed by:** bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Load an AGF by universal packed SYS4INI/AAI catalog id into a retained surface slot using native surface mode 1 and the same packed-id/RGB-colorkey contract as set-texture (0x1f9). A load fails, with the same boxes, where 0x1f9's does.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read
@@ -3039,8 +3148,8 @@ Port status (2026-07-29): implemented as retained signed-dword graphics configur
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x249`; scope=Himegari SYS4422. Ghidra /v2: op_0x249_load_raw_texture_surface@0x424b20 is instruction-length 7 and is contract-identical to gfx_op_0x1f9_load_surface through release, unchanged packed operand, asset_open_indexed_entry, RGB colorkey conversion, load failure, and cleanup. Its only relevant distinction is mode-1 gfx_surface_mode1_ctor, a tiled large-image wrapper: gfx_tiled_surface_create@0x432ff0 splits logical dimensions into ordinary mode-0 child textures; gfx_tiled_surface_upload_agf@0x431a10 decodes/uploads regions; gfx_tiled_surface_blit@0x4316b0 subdivides logical source rectangles. Corpus literals include FIELD 0x32da..0x32dd -> SO005/SO007/SO008A/SO007A. The former claim that only 0x249 bypasses scene normalization was wrong because native never performs scene normalization for 0x1f9 either.
 
 ### 0x24a `get-texture-memory` (get-texture-memory, argc 3)
-- **observed by:** bg0 (SYS4415), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`
+- **observed by:** bg0 (SYS4415), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_render_targets, out_unused, out_others) - writes native's texture memory counters: the bytes of the textures its surfaces hold as render targets (kinds 1 and 2), 0, and the bytes of the rest. The port counts its surfaces the same way, leaving out the display background's texture, whose size is the Direct3D device's.
 - **operand access:** `1` write · `2` write · `3` write
@@ -3062,8 +3171,8 @@ Port status (2026-07-29): implemented as retained signed-dword graphics configur
 The RGB24 sample callback copies the bottom-up green byte verbatim. In the native 32-bit mask compositor, captured RGB remains unchanged and the output alpha byte is the high byte of `((source_argb >> 8) * mask_byte)`; this records the exact packed-integer operation, including its low-color carry, rather than approximating it as a scalar luminance crossfade. Mode 1 initializes the mask to 0 and completes at 255; all other modes initialize at 255 and complete at 0. Port status (2026-07-29): implemented through the existing retained-range software rasterizer and dynamic scratch-surface path. The decoder honors start delay and native stop/duration retiming, publishes logical top-down green masks, and holds opcode 0x21c until movie completion; click completion remains limited to type-0 transitions.
 
 ### 0x24e `set-gfx-animation-service-flags` (set-gfx-animation-service-flags, argc 1)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Replace the retained graphics animation-service flags with operand 1. BTL brackets combat presentation with values 1 and 0; GAMECLEAR uses 3 and 0.
 - **operand access:** `1` read
@@ -3074,8 +3183,8 @@ The RGB24 sample callback copies the bottom-up green byte verbatim. In the nativ
 Bit 0 disables the run-state-0x400 EffectSkipOnClick branch while finite retained presentation is active. Bit 1 independently suppresses opcode 0x243 and the shared force-complete/clock-reset request, from the click branch and from the main tick's per-iteration force under fast-forward. Bit 0x10000 makes the value one-shot: gfx_animation_service_poll@0x407640 (SYS4433 0x4079b0) clears the whole word once the anim-clock window has ended and nothing is running, and retained_gfx_objects_clear@0x47cab0 (op 0x1f6, scene reset) clears it only under that bit. BTL brackets combat presentation with 1/0 and GAMECLEAR uses 3/0, protecting those service-owned animations from ordinary ADV click completion; Kamidori's GAMESTART, MES, ALLMAP and GAMECLEAR use 0x10003/0x10001 (docs/engine-re.md, "Service-flags bit 16 is one-shot").
 
 ### 0x24f `queue-patterned-surface-transition` (queue-patterned-surface-transition, argc 10)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (command_key)(target_slot)(range_a_start)(range_a_count)(range_b_start)(range_b_count)(mode)(pattern_thickness)(delay_ms)(duration_ms) — queue a type-2 timed wipe/strip replacement of retained range A by range B.
 - **operand access:** `1` read · `2` read (surface 0..999, untested) · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read
@@ -3087,8 +3196,8 @@ Bit 0 disables the run-state-0x400 EffectSkipOnClick branch while finite retaine
 At the next retained presentation boundary, native renders both ranges to scratch surfaces 0x24/0x25, takes the command object's retained rectangle as the effect bounds, clears target_slot, and composites the two captures through mode 0..11. Modes 0..3 are left/right/top/bottom quantized wipes; 4..7 reveal equal vertical/horizontal strips in parallel; 8..11 stagger those strips. pattern_thickness is the pixel quantum used by the consumer. A positive thickness with an out-of-range mode reports an error and queues nothing. A nonpositive thickness reports an error but queues an immediate mode -1 fallback. Kamidori's ten sites are identical copies of one story-portrait helper and calculate the thickness from a nominal 64-way division of the clipped 1024x576 canvas before calling this opcode. The portable host preserves the exact command, timing, mode, and thickness; its current GPU/software presentation is a timed crossfade approximation pending native clip-mask drawing.
 
 ### 0x250 `queue-directional-blur-range-transition` (u00422F60, argc 10)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Queue a timed directional-blur post-effect over a retained-object range.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read
@@ -3100,8 +3209,8 @@ At the next retained presentation boundary, native renders both ranges to scratc
 Operands are command_handle, target_surface, range_start, range_count, start_length, start_angle_degrees, end_length, end_angle_degrees, delay_ms, and duration_ms. The command replaces the ordinary record at command_handle with native retained record type 3/mode 0. At the next foreground presentation boundary, SYS4433 linearly interpolates Length and Angle, supplies Width/Height from the target surface, renders the selected object range through its directional effect at the command handle's z position, and clears the command's active flag at completion. The complete Kamidori catalog has 34 calls in 11 scripts; all use local variables for the two endpoint pairs. Story code demonstrates ordinary degree values such as +90/-90 and can interpolate through 1800 degrees for a multi-turn effect. SYS4422 does not install dispatch slot 0x250 in the inspected Himegari executable.
 
 ### 0x251 `queue-radial-blur-range-transition` (u00422FF0, argc 12)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Queue a timed radial-blur post-effect over a retained-object range.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read · `9` read · `10` read · `11` read · `12` read
@@ -3113,8 +3222,8 @@ Operands are command_handle, target_surface, range_start, range_count, start_len
 Operands are command_handle, target_surface, range_start, range_count, start_length, start_center_x, start_center_y, end_length, end_center_x, end_center_y, delay_ms, and duration_ms. The command replaces the ordinary record at command_handle with native retained record type 3/mode 1. At the next foreground presentation boundary, SYS4433 linearly interpolates Length and CenterU/CenterV, renders the selected object range through its radial-blur effect at the command handle's z position, and clears the command's active flag at completion. AIM.BIN@0xae uses (90000,14,70010,23,100,512,204,0,512,204,100,500) for the dungeon win/loss-condition reveal. The complete Kamidori catalog has 64 calls in 28 scripts. SYS4422 does not install dispatch slot 0x251 in the inspected Himegari executable.
 
 ### 0x252 `set-present-clear` (u00423000, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (flags) — make the present workers clear the render target to black before they draw: bit 0 the frame render (op 0x20c and the engine's tick), bit 1 a range present (op 0x222).
 - **operand access:** `1` read
@@ -3137,8 +3246,8 @@ Without a flag a present draws over the pixels its target holds, and only op 0x2
 It creates no object: the worker walks the object map between the two lower bounds. 創刻のアテリアル has 1 site.
 
 ### 0x254 `gfx-set-scale-range` (u00423049, argc 5)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (first_handle)(count)(scale_x_percent)(scale_y_percent)(scale_z_percent) — op 0x1fd's current scale for every retained object that exists in the range.
 - **operand access:** `1` read · `2` read · `3` read-float · `4` read-float · `5` read-float
@@ -3149,8 +3258,8 @@ It creates no object: the worker walks the object map between the two lower boun
 Each scale operand is divided by 100.0. It creates no object. No script of 創刻のアテリアル uses it.
 
 ### 0x256 `gfx-set-translation-range` (u00423050, argc 5)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (first_handle)(count)(x)(y)(z) — op 0x1ff's current translation for every retained object that exists in the range.
 - **operand access:** `1` read · `2` read · `3` read-float · `4` read-float · `5` read-float
@@ -3161,8 +3270,8 @@ Each scale operand is divided by 100.0. It creates no object. No script of 創�
 It creates no object. 創刻のアテリアル has 2 sites. Its neighbours 0x255 (a rotation by axis and angle over a range) and 0x257 (three floats into obj+0x18..0x20 over a range) are in native's table, and no script uses them; the port has no handler for either.
 
 ### 0x258 `set-surface-persistence-flags` (set-surface-persistence-flags, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (surface_slot)(flags) - replace the native surface record's numbered-save persistence flags; bit 0 controls asset reload on restore and bit 1 controls the adjacent still-unnamed field.
 - **operand access:** `1` read (surface 0..999, untested) · `2` read
@@ -3173,8 +3282,8 @@ It creates no object. 創刻のアテリアル has 2 sites. Its neighbours 0x255
 Scripts place declaration chains immediately after opcode 0x259 clears both fields. The port models bit 0 because it is consumed by layout-3 restoration; bit 1 is retained as an identified native field but has no known runtime consumer yet.
 
 ### 0x259 `script-entry` (script-entry, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** zero-arg script/prologue entry; clears surface-record persistence fields +0x08 and +0x0c across both 1,000-record native tables before the declaration chain continues
 - **control (port handler):** waits never; leaves falls
@@ -3182,8 +3291,8 @@ Scripts place declaration chains immediately after opcode 0x259 clears both fiel
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x259`; scope=Himegari SYS4422. Ghidra /v2: op_0x259_script_entry_clear_surface_persistence_flags@0x417660 loops over both 20,000-byte surface-record tables (1,000 records x 20 bytes), writing zero to record +0x08 and +0x0c. SC0000 offset 0x0 and every observed script entry begins with this opcode; 0x258 continues the declaration chain. Port clears its modeled +0x08 reload policy; +0x0c remains opaque/unmodeled.
 
 ### 0x25a `set-display-background-color` (u00423120, argc 1)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (rgb) - select the persistent solid-color display background and recreate its full-canvas surface.
 - **operand access:** `1` read
@@ -3192,8 +3301,8 @@ Scripts place declaration chains immediately after opcode 0x259 clears both fiel
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x25a`; scope=Himegari SYS4422. Ghidra matching handlers: SYS4422 op_0x25a_set_display_background_color@0x4253a0 and SYS4433 @0x423150 store persistent background mode 1 and the operand RGB value, then call display_recreate_background_color_surface (SYS4422 0x479a90; SYS4433 0x4803d0) when the active display mode permits. That worker supplies the logical canvas width/height, RGB value, and backend mode to gfx_create_filled_canvas_surface, which creates a surface and fills its full rectangle at alpha 255. Kamidori SYSTEM4.BIN@0x1f3 sets black (0) during natural startup.
 
 ### 0x2cf `request-screen-mode` (request-screen-mode, argc 1)
-- **observed by:** koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`
+- **observed by:** koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (mode) - switch the screen mode: 1 to a window, 0 to fullscreen; other values do nothing. A switch to the current mode does nothing; otherwise the switch stores display:ScreenMode and launches CALLBACK_WINDOW.BIN.
 - **operand access:** `1` read
@@ -3204,8 +3313,8 @@ Scripts place declaration chains immediately after opcode 0x259 clears both fiel
 Port status (2026-11-13): the VM passes 0 and 1 to the shell-services native (ShellServices.RequestScreenMode); the front end's next frame switches as the menu does (ShellServices.SwitchScreenMode, which stores display:ScreenMode, shows the mode through the front end's IWindowDevice and queues CALLBACK_WINDOW.BIN). Neither shipped corpus calls the op.
 
 ### 0x2da `register-extended-numeric-glyph-style` (u004234E0, argc 8)
-- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Register a SYS4433 decimal-glyph atlas style with independent source-cell and destination-cell spacing.
 - **operand access:** `1` read (glyph style 0..9; native lets through 10) · `2` read · `3` read · `4` read · `5` read · `6` read · `7` read · `8` read
@@ -3217,8 +3326,8 @@ Port status (2026-11-13): the VM passes 0 and 1 to the shell-services native (Sh
 Operand 1 selects one of the ten style records (the handler admits 0..10; see op 0x13a). Operands 2..6 match opcode 0x13a: source surface slot, atlas x/y, and digit width/height. Operand 7 is added to digit width when stepping between source atlas cells; operand 8 is added to digit width when placing destination glyph objects. Opcode 0x23b consumes all seven fields. Invalid style indices are traced as CGNumber's argument error. The complete Kamidori catalog has 66 calls; the first reached dungeon site is DRAWCHP.BIN@0x626 with (0, 0x40, 0x39f, 0x2fe, 0x15, 0x1d, 1, 1). SYS4422 does not install dispatch slot 0x2da.
 
 ### 0x320 `create-polygon` (u0043AA20, argc 10)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(xs)(ys)(zs)(alphas)(colors)(us)(vs)(count)(flags) — make the handle's polygon object: a retained object of vertices with a colour each, drawn in handle order with the other retained objects.
 - **operand access:** `1` read · `2` address · `3` address · `4` address · `5` address · `6` address · `7` address · `8` address · `9` read · `10` read
@@ -3241,8 +3350,8 @@ The port keeps the polygon in the graphics state (GfxState.CreatePolygon) and dr
 The port stores the slot (GfxState.SetPolygonTexture). A stage outside 0 and 1, or a slot of 1,000 or more, halts the run: native writes and reads outside its tables there. 創刻のアテリアル has 42 sites.
 
 ### 0x322 `set-polygon-color` (u0043AA40, argc 4)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(blend_mode)(alpha)(rgb) — set a polygon's colour, which multiplies each vertex's own, and its blend mode. Alpha 0x100 or more is 0xff; a negative alpha or RGB keeps the current one.
 - **operand access:** `1` read · `2` read · `3` read · `4` read
@@ -3253,8 +3362,8 @@ The port stores the slot (GfxState.SetPolygonTexture). A stage outside 0 and 1, 
 The port stores the colour and the mode (GfxState.SetPolygonColor). 創刻のアテリアル has 8,633 sites.
 
 ### 0x323 `fade-polygon-color` (u0043AA50, argc 5)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (handle)(delay_ms)(duration_ms)(alpha)(rgb) — fade a polygon's colour to a target after a delay, over a duration. The target is built as set-polygon-color builds its colour. A duration below 1 does nothing.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read
@@ -3265,8 +3374,8 @@ The port stores the colour and the mode (GfxState.SetPolygonColor). 創刻のア
 The port keeps the fade in the graphics state (GfxState.FadePolygonColor) and samples it when a frame is lowered; a running fade keeps an effect wait waiting and a forced completion ends it, as the one-shot channels. 創刻のアテリアル has 9,793 sites.
 
 ### 0x324 `release-3d-effects` (u0043AA60, argc 0)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () — release the display's three 3D effect objects: the rain, the snow and the leaves.
 - **control (port handler):** waits never; leaves falls
@@ -3347,8 +3456,8 @@ The port keeps the state in the graphics native (Graphics.Scene3D.cs), and the f
 The port keeps the state in the graphics native (Graphics.Scene3D.cs), and the frame lowering draws the rain, the snow and the leaves with it where native's frame render and range present draw them, on the screen or into a render target (Graphics.Scene3DLowering.cs; docs/superpowers/specs/2026-11-20-title-leaves-design.md; docs/engine-re.md, 'The 3D scene'). Point and spot lights, a screen transition's source and a movie mask's capture keep their state and draw nothing (docs/backlog.md, 'The 3D scene's other cases are not drawn').
 
 ### 0x32b `release-all-meshes` (u0043AAD0, argc 0)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () — release all 1,000 mesh slots.
 - **control (port handler):** waits never; leaves falls
@@ -3516,8 +3625,8 @@ The port keeps both in Scene3DState (EffectBlendMode, LeafColorArgb) and lowers 
 ## input
 
 ### 0x86 `set-cursor-resource` (u0041B210, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (resource_id) - load an indexed cursor asset and install it as the active custom cursor.
 - **operand access:** `1` read
@@ -3526,8 +3635,8 @@ The port keeps both in Scene3DState (EffectBlendMode, LeafColorArgb) and lowers 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x86`; scope=Himegari SYS4422. Ghidra /v2: op_0x86_set_cursor_resource@0x41f0a0 opens operand 1 through asset_open_indexed_entry, extracts the asset payload, passes it to the cursor installer at 0x485ce0, releases the asset, and refreshes the OS cursor when the window is active. HIDEWIN.BIN selects resources 0x3318..0x331f according to the pointer's screen-edge region.
 
 ### 0x87 `clear-cursor-resource` (u00414D10, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Clear the active custom cursor and refresh the OS cursor when the game window is active.
 - **control (port handler):** waits never; leaves falls
@@ -3535,8 +3644,8 @@ The port keeps both in Scene3DState (EffectBlendMode, LeafColorArgb) and lowers 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x87`; scope=Himegari SYS4422. Ghidra /v2: op_0x87_clear_cursor_resource@0x416400 calls the cursor clear/release helper at 0x4856b0 and then the same active-window cursor refresh used by op 0x86. HIDEWIN.BIN calls it when leaving an edge region and on exit.
 
 ### 0x88 `set-message-skip` (u0041B290, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - set persistent all-message Skip state. Nonzero makes the interpreter inject ADV fast-forward input every tick; zero stops injection and clears the transient skip run-state bit.
 - **operand access:** `1` read
@@ -3547,8 +3656,8 @@ The port keeps both in Scene3DState (EffectBlendMode, LeafColorArgb) and lowers 
 ctx+0x13dc is the Skip a text wait acts on and ctx+0x550fc the toggle the menu shows: op 0x19b clears only the first, and op 0x19c and the menu's Skip toggle copy the second back. Nonzero does not set run-state 0x08000000 itself; the next polling text wait starts fast-forward from the injected action 6. So SC0000's strip Skip button still sleeps its 100 ms, and fast-forward starts when its callback returns into op 0x72. The port tracks ctx+0x13dc as the skip and auto native's MessageSkipInjected, and op 0x72's entry (VirtualMachine.EnterTextWait, run again after a hotspot callback) starts fast-forward from it (docs/engine-re.md, 'Read skip and ctx+0x13dc').
 
 ### 0x90 `register-hotspot-callbacks` (u0041BEB0, argc 7)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (x)(y)(w)(h)(on_enter_pc)(on_leave_pc)(on_activate_pc) - append an inclusive cursor rectangle and three callback PCs to the current script frame's native input registry. This opcode only registers; the ADV input service dispatches callbacks later.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read (callback target) · `6` read (callback target) · `7` read (callback target)
@@ -3602,8 +3711,8 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x92`; scope=Himegari SYS4422. Ghidra /v2: op_0x92_wait_hotspot_menu_with_poll_callback@0x41fe10 (instruction length 5) is op 0x91 plus operand 2 stored in table +0x74ac (ctx+0xc6f4). input_hotspot_wait_poll@0x408710 dispatches it after hotspot_check_owner_script and a delta-0 return push when neither a hover transition nor a click is pending; input_hotspot_reset@0x404130 sets it back to -1. Corpus: no use in either game.
 
 ### 0x93 `cancel-hotspot-wait` (u00415040, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Reset the current frame's hotspot registry/input wait and clear native run-state bit 0x00800000. Used before opening History, Menu, or HIDEWIN flows.
 - **control (port handler):** waits never; leaves falls
@@ -3611,8 +3720,8 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x93`; scope=Himegari SYS4422. Ghidra /v2: op_0x93_cancel_hotspot_wait@0x416670 clears run-state bit 0x00800000, calls input_hotspot_reset@0x404130, and clears the active flag at ctx+0xc6e4 (or sets the pending flag at +0xc6e0 when already inactive). input_hotspot_reset empties the table (record count +0x408 = 0) and clears the hit, the hovered record, the pending enter and cursor tracking, so an op 0x94 arm with no new registration arms nothing. Port: HotspotRegistry.Reset matches since 2026-11-05; it had kept the records as a template that direct-scene runs re-armed.
 
 ### 0x94 `arm-hotspot-wait` (u00415090, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Arm native hotspot input processing after the script has registered its rectangles.
 - **control (port handler):** waits never; leaves falls
@@ -3636,8 +3745,8 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x96`; scope=Himegari SYS4422. Ghidra /v2: op_0x96_cancel_choice_table_wait@0x416700 clears run-state 0x10000000, calls input_hotspot_reset on the choice table, then clears ctx+0x13bc8 when set or else sets ctx+0x13bc4 (consumed by op 0x95). Corpus: no use in either game.
 
 ### 0x97 `bind-hotspot-key` (u0041C150, argc 5)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (x)(y)(w)(h)(logical_action) - find the already-registered rectangle with identical bounds and bind a logical input action to its activation callback.
 - **operand access:** `1` read · `2` read · `3` read · `4` read · `5` read
@@ -3647,8 +3756,8 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x97`; scope=Himegari SYS4422. Ghidra /v2: op_0x97_bind_hotspot_key@0x41ff30 builds the same inclusive rect as op 0x90 and calls input_hotspot_bind_key_bit@0x403f50. That worker searches registered rects for exact equality and stores operand 5 in the record's logical-action field. adv_input_service_poll@0x411230 passes the configured live action mask to input_hotspot_poll_bound_action_callback@0x403fb0, which returns the first matching record's activation PC. All 136 SC-family scripts bind action 7 to the callback that calls MENU.BIN; SYSTEM4 maps both right mouse and X to action 7.
 
 ### 0xcc `register-mouse-callback` (mouse_callback, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (poll_interval_ms)(target_pc) - register the engine's one timed mouse callback, owned by the current script.
 - **operand access:** `1` read · `2` read (callback target)
@@ -3659,8 +3768,8 @@ op 0x90 (u0041BEB0, argc 7): `0x90 x y w h tgt_a tgt_b tgt_c`. Kelebek left it "
 The registration is engine-wide (target +0x5f684, owner mouse_callback_owner_script_id +0x5f6ac, interval timer +0x5f320), not per frame: a registration from any frame replaces the earlier one, and op 0xcd in another script raises the Depth error. Root reload clears the owner but keeps the target.
 
 ### 0xcd `dispatch-mouse-callback` (get-input-type, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Dispatch the registered mouse callback when its polling interval elapses (at once under fast-forward). A callback registered by another script raises the Depth error.
 - **control (port handler):** waits never; leaves falls, jumps
@@ -3670,8 +3779,8 @@ The registration is engine-wide (target +0x5f684, owner mouse_callback_owner_scr
 Once due, the handler restarts the timer and pushes the following pc; a -1 target pops it again. When the running script is not the registrant it throws flags 0x10007 "Depth が不正です <running> != <owner>" with that return pc still pushed. Its recorded length is 1, so 無視 resumes at the successor, whose ret then pops the stale return pc; 再試行 re-runs it, which is not due again until the interval passes.
 
 ### 0xfb `register-joy-callback` (joy_callback, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (input_index)(target_pc) - register one of 32 per-frame joy/input callback targets.
 - **operand access:** `1` read · `2` read (callback target)
@@ -3680,8 +3789,8 @@ Once due, the handler restarts the timer and pushes the following pc; a -1 targe
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xfb`; scope=Himegari SYS4422. Ghidra /v2: op_0xfb_register_joy_callback@0x421270 bounds-checks operand 1 to 0..31 and stores operand 2 in the current script frame's 33-entry callback table. Ops 0xff/0x100 poll and dispatch this table; HISTORY.BIN and HIDEWIN.BIN register indices 0..10.
 
 ### 0xfe `set-input-action-count` (u0041E360, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (count) - set the logical action scan bound; op 0x100 uses callback slot count itself when the polled mask is empty.
 - **operand access:** `1` read
@@ -3690,8 +3799,8 @@ Once due, the handler restarts the timer and pushes the following pc; a -1 targe
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xfe`; scope=Himegari SYS4422. Ghidra /v2: op_0xfe_set_input_action_count@0x421390 accepts unsigned values below 32, stores the count at EngineCtx+0x814, and throws script error 0x10005 otherwise. op_0x100_dispatch_joy_callbacks scans set mask bits only below this count; when op 0xff produces an empty mask, it instead dispatches the callback table entry at index count and resumes after op 0x100. SYSTEM4@0x1cf sets 10, enabling held logical actions 0..9 and reserving callback slot 10 for the no-input/release path before configuring joystick, mouse, and keyboard mappings.
 
 ### 0xff `poll-joy-callback-input` (u00415A10, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Poll the configured keyboard/mouse/joystick action mask and initialize the op 0x100 dispatch scan.
 - **control (port handler):** waits never; leaves falls
@@ -3699,8 +3808,8 @@ Once due, the handler restarts the timer and pushes the following pc; a -1 targe
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0xff`; scope=Himegari SYS4422. Ghidra /v2: op_0xff_poll_joy_callback_input@0x416eb0 clears the pending input mask, fills it through input_poll_action_mask@0x4608b0, resets EngineCtx+0x6da6c input_callback_scan_index, and copies input_action_count to +0x6da70. The poller combines configured keyboard, mouse-action, and joystick bits; the joystick button-slot loop uses input_action_count, while op 0x100 applies the final action scan bound. input_poll_mouse_action_bits@0x460240 maps VK_LBUTTON/VK_RBUTTON through mouse_button_action_map and adds 4; initialization leaves both slots zero, so left defaults to action 4, while SYSTEM4 op 0x10b remaps right to action 7.
 
 ### 0x100 `dispatch-joy-callbacks` (u00415A60, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Dispatch each set logical action below the configured count, or callback slot count when no action is held.
 - **control (port handler):** waits never; leaves falls, jumps
@@ -3708,8 +3817,8 @@ Once due, the handler restarts the timer and pushes the following pc; a -1 targe
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x100`; scope=Himegari SYS4422. Ghidra /v2: op_0x100_dispatch_joy_callbacks@0x416f00 scans the bitmask captured by op 0xff from EngineCtx+0x6da6c up to but excluding EngineCtx+0x814 input_action_count. Each set action resumes at op 0x100 so simultaneous bits continue dispatching. If the mask is empty, it dispatches callback table slot input_action_count and resumes after op 0x100. Callback targets come from the current frame's table populated by op 0xfb; SYSTEM4's count 10 therefore makes slot 10 the native no-input/release callback rather than an eleventh action bit.
 
 ### 0x101 `reset-message-skip-input` (u00415BF0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Reset transient message-skip/input service state after an ADV chrome action without clearing op 0x88's persistent all-message Skip flag; it ends fast-forward and suppresses a held logical action 6 from restarting it at a reveal until the key is released during one.
 - **control (port handler):** waits never; leaves falls
@@ -3766,8 +3875,8 @@ The scan goes down from the frame's limit, which op 0xff sets to the action coun
 The scene reset zeroes the mask. No script of 創刻のアテリアル uses it.
 
 ### 0x106 `get-joystick-button-count` (get-joystick-button-count, argc 1)
-- **observed by:** kamidori (SYS4433), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`
+- **observed by:** kamidori (SYS4433), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4424`, `SYS4433`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_count) — return the active joystick device's physical button capability count; zero when no device/capability is exposed.
 - **operand access:** `1` write
@@ -3778,8 +3887,8 @@ The scene reset zeroes the mask. No script of 創刻のアテリアル uses it.
 Both native handlers directly return the input manager field populated from the active joystick device capabilities. The portable VM reads the equivalent optional input-host capability and defaults to zero for headless or hosts without controller enumeration. Kamidori's sole CONFIG@0x12 call stores the result in global 0xfd49b for its controller-configuration path.
 
 ### 0x107 `map-joystick-button` (u0041E500, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (button_slot)(physical_button) - map a logical button slot to a physical joystick button; slot N emits logical action N+4.
 - **operand access:** `1` read · `2` read
@@ -3788,8 +3897,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x107`; scope=Himegari SYS4422. Ghidra /v2: op_0x107_map_joystick_button@0x421550 writes operand 2 to EngineCtx+0x89c+operand1*4 when unsigned operand1<32, otherwise it is a no-op. input_poll_joystick_action_bits@0x460380 emits axes as actions 0=up, 1=right, 2=down, 3=left and mapped button slot N as action N+4. SYSTEM4 maps slots 0..5 to physical buttons 0,3,2,1,6,7, producing actions 4..9.
 
 ### 0x108 `get-mouse-button-state` (u00415E70, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - return the current mouse-button state bitmask.
 - **operand access:** `1` write
@@ -3798,8 +3907,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x108`; scope=Himegari SYS4422. Ghidra /v2: op_0x108_get_mouse_button_state@0x428b60 fills a local through input_poll_raw_mouse_buttons@0x4602e0 and writes it to operand 1. The raw mapping is VK_LBUTTON -> 0x1 and VK_RBUTTON -> 0x2. This is distinct from op 0xff's configured logical action mask: left defaults to action 4, while SYSTEM4 maps right to action 7 with op 0x10b. HIDEWIN registers both logical actions to its close/restore callback.
 
 ### 0x109 `get-cursor-virtual` (u00415EC0, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_x)(out_y) - read the OS cursor and convert it into AGE's virtual-screen coordinates.
 - **operand access:** `1` write · `2` write
@@ -3808,8 +3917,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x109`; scope=Himegari SYS4422. Ghidra /v2: op_0x109_get_cursor_virtual@0x428bb0 calls the cursor-position helper, converts client/display coordinates through the active VirtualFullScreen transform, and writes x/y to operands 1/2. The ADV chrome callbacks preserve x and then move y by alternating -1/+1 before op 0x10a. 4.15D (戦女神ZERO, read 2026-11-25): op_0x109@0x415ec0 writes the cursor's client coordinates from input_poll_cursor_client as they are, with no border offset and no virtual full screen, which 4.15D does not have.
 
 ### 0x10a `set-cursor-virtual` (u0041E540, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (x)(y) - convert AGE virtual-screen coordinates to client/screen coordinates and move the OS cursor.
 - **operand access:** `1` read · `2` read
@@ -3818,8 +3927,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x10a`; scope=Himegari SYS4422. Ghidra /v2: op_0x10a_set_cursor_virtual@0x421590 maps virtual coordinates through the active VirtualFullScreen geometry and calls USER32 SetCursorPos. BUNKI@0x2b6 and SBUNKI@0x289 test G[0x3238], compute the default choice point, and call 0x10a when menu cursor auto-move is enabled; their disabled branches retain the physical position through 0x109. SC0000 also alternates the cursor by one vertical pixel after state-changing ADV button clicks. Windows answers SetCursorPos with a WM_MOUSEMOVE at the new point, and that message is what re-tests the hotspot hit (after op 0x7c cleared it on the hide-window path); engine_main_tick_with_exception_policy pumps messages every third iteration, before the callback's ret re-runs the wait (native-driven 2026-11-05, with the driver posting that WM_MOUSEMOVE). The port's op 0x10a moves its pointer through the same move path. 4.15D (戦女神ZERO, read 2026-11-25): op_0x10a@0x41e540 passes the two operands through ClientToScreen to SetCursorPos, with no border offset and no virtual full screen scaling.
 
 ### 0x10b `map-mouse-button` (u0041E5A0, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (button_slot)(physical_button) - map a physical mouse button to a logical button slot; polling emits the slot as logical action slot+4.
 - **operand access:** `1` read · `2` read (physical button 0..31, untested)
@@ -3828,8 +3937,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x10b`; scope=Himegari SYS4422. Ghidra /v2: op_0x10b_map_mouse_button@0x4216f0 writes operand 1 to EngineCtx+0x135c+operand2*4 when unsigned operand1<32; it does not validate the physical-button operand. input_poll_mouse_action_bits@0x460240 checks left/right physical indices 0/1, reads this map, adds 4, and sets that logical action bit. Initialization zeroes the map, so left defaults to action 4. SYSTEM4@0x218 uses (3,1), mapping right mouse to action 7.
 
 ### 0x10c `map-keyboard-scancode` (u0041E5E0, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (action)(dik_scan_code) - map a DirectInput keyboard scan code to a logical input action.
 - **operand access:** `1` read · `2` read (scan code 0..255, untested)
@@ -3838,8 +3947,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x10c`; scope=Himegari SYS4422. Ghidra /v2: op_0x10c_map_keyboard_scancode@0x421730 requires unsigned operand1<32 or throws script error 0x10005. It translates operand 2 through EngineCtx+0x1828, the DIK-to-Win32-VK table built by input_initialize_dik_to_vk_table@0x45fc60, then writes the action to EngineCtx+0x1428[VK]. input_poll_keyboard_action_bits@0x4601a0 polls 256 virtual keys and emits the configured action bits. input_manager_initialize_defaults@0x460630 starts with count 7 and maps 0=Up, 1=Right, 2=Down, 3=Left, 4=Enter, 5=Space, and 6=Backspace. SYSTEM4 raises the count to 10 and adds Z to action 4, C/LeftCtrl to 6, X to 7, PageUp to 8, and PageDown to 9 without erasing the earlier mappings.
 
 ### 0x10d `consume-mouse-wheel-delta` (u00415F10, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - return the accumulated signed mouse-wheel delta and clear it. The wheel accumulates only outside an ADV text wait: while one polls, a turn raises set:WheelKeyUp/Down's logical action instead (docs/engine-re.md, "Mouse wheel at an ADV text wait").
 - **operand access:** `1` write
@@ -3848,8 +3957,8 @@ Both native handlers directly return the input manager field populated from the 
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x10d`; scope=Himegari SYS4422. Ghidra /v2: op_0x10d_consume_mouse_wheel_delta@0x428cf0 copies ctx+0x1c34 to operand 1 and immediately clears the field. AGE's window procedure at 0x486925 handles WM_MOUSEWHEEL by sign-extending the high word of wParam and accumulating it at ctx+0x1c34; HISTORY.BIN polls this value and branches on its sign to select one scroll direction.
 
 ### 0x10e `get-key-state` (u0041E650, argc 2)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out)(scan_code) — GetAsyncKeyState of the virtual key of a DirectInput scan code, as a signed 16-bit value: negative while the key is down.
 - **operand access:** `1` write · `2` read (scan code 0..255, untested)
@@ -3860,8 +3969,8 @@ Both native handlers directly return the input manager field populated from the 
 The worker reads its DIK-to-VK table, 256 entries, at the operand as it comes, and returns 0 while the input manager is inactive. The result has bit 15 while the key is down and bit 0 when it was pressed since the last call for that key, which the call clears; the port keeps that bit for the game's own calls (InputBindings.KeyState), where Windows keeps it for every process. 創刻のアテリアル has 3 sites, all in PH03_PLR_ACTION, and each tests the result with and 0xff00, so bit 0 does not reach them.
 
 ### 0x10f `set-system-key-disable-mask` (set-system-key-disable-mask, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (mask) - replace the EngineCtx system-key disable mask that AGE's window procedure reads: bit 0 (0x1) suppresses F1's screenshot BMP, bit 9 (0x200) swallows F10's menu-bar focus. Scene reset clears it.
 - **operand access:** `1` read
@@ -3872,8 +3981,8 @@ The worker reads its DIK-to-VK table, 256 entries, at the operand as it comes, a
 Port status (2026-11-05): implemented as VirtualMachine.SystemKeyDisableMask, cleared by the scene reset. The Godot frontend's F1 screenshot honours bit 0, and the menu bar's keyboard mode ignores F10 under bit 0x200 (Main.MenuBar.cs, IgnoreF10). Neither shipped corpus calls the op.
 
 ### 0x12e `find-hit-rectangle` (find-hit-rectangle, argc 8)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (index_inout)(reference_rect)(pointer_x)(pointer_y)(rect_array)(x_offsets)(y_offsets)(count) - scan after the incoming index for the next inclusive rectangle intersection, or return -1.
 - **operand access:** `1` read+write · `2` address · `3` read · `4` read · `5` address · `6` address · `7` address · `8` read
@@ -3882,8 +3991,8 @@ Port status (2026-11-05): implemented as VirtualMachine.SystemKeyDisableMask, cl
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x12e`; scope=Himegari SYS4422. Ghidra /v2: op_0x12e_find_hit_rectangle@0x428ff0 resolves the reference rectangle and three array operands as VM pointers, decodes rectangle/offset values with anti_tamper_a, and starts at incoming_index+1. Each candidate is [left,right,top,bottom]; the worker subtracts its per-entry x/y offsets from the pointer, inclusively intersects it with the reference rectangle, and writes the matched array index or -1 to operand 1. HISTORY.BIN uses decoded local arrays for scrollbar/control regions, close region 8, and visible text rows 9..13.
 
 ### 0x142 `set-system-menu-enabled` (set-system-menu-enabled, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - replace the EngineCtx flag exposed through IAGEService to gate reentrant native AGERC system-menu actions. Scene reset defaults it to 1; CONFIG writes 0 on entry and 1 immediately before teardown and exit.
 - **operand access:** `1` read
@@ -3894,8 +4003,8 @@ Port status (2026-11-05): implemented as VirtualMachine.SystemKeyDisableMask, cl
 Port status (2026-07-29): implemented as an EngineCtx-lifetime signed-dword field on VirtualMachine. Root scene reload restores one. Since 2026-11-05 the Godot frontend's menu bar reads it through VirtualMachine.MenuState; since engine shell M2 (2026-11-09) ShellMenu.Refresh grays command ids 0x9c63/64/65/68/6c/6e/6f while it is 0, as agerc_refresh_system_menu_state does. It does not affect game input or persisted settings.
 
 ### 0x144 `edit-fullwidth-string-dialog` (edit-fullwidth-string-dialog, argc 2)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (result_inout)(initial_text) - synchronously open AGERC's modal full-width text editor. Accept writes at most eight valid CP932 double-byte characters to operand 1; cancel leaves operand 1 unchanged. Operand 2 supplies the initial edit text and is preserved.
 - **operand access:** `1` read-string+write-string · `2` read-string+write-string
@@ -3916,8 +4025,8 @@ or cancel. Accept replaces operand 1 and cancel leaves it untouched; operand 2 i
 
 
 ### 0x147 `point-in-polygon` (point-in-polygon, argc 6)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out_inside)(point_x)(point_y)(vertex_x_array)(vertex_y_array)(vertex_count) — return whether the point lies in the polygon under Win32 ALTERNATE (even-odd) fill semantics.
 - **operand access:** `1` write · `2` read · `3` read · `4` address · `5` address · `6` read
@@ -3939,8 +4048,8 @@ Both native handlers copy the parallel signed-dword coordinate arrays into POINT
 Port status (2026-07-29): implemented with opcode 0x149. The getter writes the retained dword through the VM's signed integer-cell representation so high-bit values preserve the same native 32 bits.
 
 ### 0x149 `set-system-menu-show-delay` (set-system-menu-show-delay, argc 1)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (milliseconds) - replace the unsigned dwell threshold before pointer hover at the top two client rows reveals AGERC's modeless system-menu strip. Scene reset defaults to 0; SYSTEM4 sets 1000.
 - **operand access:** `1` read
@@ -3951,8 +4060,8 @@ Port status (2026-07-29): implemented with opcode 0x149. The getter writes the r
 Port status (2026-11-06): implemented as unsigned scene-context state. The setter preserves all 32 operand bits and root scene reload restores zero. The Godot frontend reads it as the dwell before the fullscreen top-edge strip appears (Main.ScreenMode.cs).
 
 ### 0x19a `get-message-skip-enabled` (u00414E50, argc 1)
-- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - return the current all-message skip state set by op 0x88.
 - **operand access:** `1` write
@@ -3961,8 +4070,8 @@ Port status (2026-11-06): implemented as unsigned scene-context state. The sette
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x19a`; scope=Himegari SYS4422. Ghidra /v2: op_0x19a_get_message_skip@0x4271b0 writes ctx+0x550fc to operand 1. The shared ADV redraw routine uses it to select SO001's active Message-skip icon at x=728.
 
 ### 0x19b `suspend-adv-skip-service` (u00414E80, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - suspend ADV fast-forward while preserving the user's all-message Skip toggle; it also ends fast-forward that a held logical action 6 started, and the held key does not restart it at the next text wait.
 - **control (port handler):** waits never; leaves falls
@@ -3972,8 +4081,8 @@ Port status (2026-11-06): implemented as unsigned scene-context state. The sette
 It clears run-state 0x08000000 however it started. Logical action 6 sets that bit again only at a reveal tick that op 0x101 has not suppressed, or with a new key-down at a polling text wait (docs/engine-re.md, "Physical fast-forward"), so a Ctrl held through ADV setup stops there: Kamidori stops at SC2000@0xaf5 after this op at 0x85e. The port's skip-and-auto native (SkipAndAuto.PhysicalInput.cs) ends the physical channel here.
 
 ### 0x19c `resume-adv-skip-service` (u00414EC0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - enable the persistent/read ADV skip service and recompute active fast-forward from all-message Skip or the live read-skip channel only; fast-forward from a held logical action 6 ends here.
 - **control (port handler):** waits never; leaves falls
@@ -3981,8 +4090,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x19c`; scope=Himegari SYS4422. Ghidra /v2: op_0x19c_resume_adv_skip_service@0x4165a0 sets ctx+0x55100, clears the click-cancel phase, and normally activates run-state bit 0x08000000 when ctx+0x550fc persistent all-message Skip or ctx+0x6dbd4 adv_read_skip_state is nonzero. Otherwise it clears ctx+0x13dc and the run-state bit, whatever action 6 holds; it never polls input. A separate startup fast-forward guard at ctx+0x6f86c keeps the bit unchanged while active. Corpus comments call it `loadmesskip`; ADV setup, branch, and CALLBACK_LOAD paths pair it with op 0x19b.
 
 ### 0x1b6 `get-auto-message` (u00414F60, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - return whether automatic message advance is enabled.
 - **operand access:** `1` write
@@ -3991,8 +4100,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1b6`; scope=Himegari SYS4422. Ghidra /v2: op_0x1b6_get_auto_message@0x4271e0 writes `(ctx+0x55104 != 0)` to operand 1. FUN_00411230 consumes the same field to arm AutoMessageTime0/1 timers; the shared ADV redraw routine uses it for the active Auto icon.
 
 ### 0x1b7 `set-auto-message` (u0041B640, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - enable or disable automatic message advance.
 - **operand access:** `1` read
@@ -4001,8 +4110,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1b7`; scope=Himegari SYS4422. Ghidra /v2: op_0x1b7_set_auto_message@0x41f560 stores `(operand1 != 0)` at ctx+0x55104. SC0000's x=706 Auto button reads the current value through 0x1b6, toggles modulo 2, then writes it through this opcode.
 
 ### 0x1b8 `get-auto-message-time` (u0041B670, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (selector)(out) - read an Auto-message delay from engine configuration: selector 0 = post-voice AutoMessageTime0, selector 1 = unvoiced AutoMessageTime1.
 - **operand access:** `1` read · `2` write
@@ -4011,8 +4120,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1b8`; scope=Himegari SYS4422. Ghidra /v2: op_0x1b8_handler@0x427210 dispatches selector 0 to config key message:AutoMessageTime0 and selector 1 to message:AutoMessageTime1, then writes the result to operand 2. CONFIG.BIN uses it to bound the two UI settings.
 
 ### 0x1b9 `set-auto-message-time` (u0041B710, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (selector)(milliseconds) - write an Auto-message delay to engine configuration: selector 0 = post-voice AutoMessageTime0, selector 1 = unvoiced AutoMessageTime1.
 - **operand access:** `1` read · `2` read
@@ -4021,8 +4130,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1b9`; scope=Himegari SYS4422. Ghidra /v2: op_0x1b9_handler@0x41f5a0 dispatches selector 0/1 to config setters for message:AutoMessageTime0/1. CONFIG.BIN initializes them to 500/2000 ms and adjusts each in 500-ms steps within 500..9500.
 
 ### 0x1bc `reset-message-voice-state` (u00415670, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Reset per-message voice state: stop voice channel 12, clear voice_mute_next_flags (op 0x1d5), the message-Skip queued voice and the ADV Auto queued-voice flag.
 - **control (port handler):** waits never; leaves falls
@@ -4030,8 +4139,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1bc`; scope=Himegari SYS4422. Ghidra /v2: op_0x1bc_handler@0x416c20 calls sound_manager_stop_channel@0x482fa0(12) when the sound manager (ctx+0x14910) exists, then zeroes voice_mute_next_flags (ctx+0x1493c), message_skip_queued_voice_id/arg and ctx+0x6dbe4 (adv_auto_voice_pending). Opcode 0xc4 sets adv_auto_voice_pending when voice playback is queued; adv_input_service_poll consumes it to select the post-voice AutoMessageTime0 path. Corpus: the ADV line template runs it only when G[0x2e47] != 0, then zeroes G[0x2e47].
 
 ### 0x1c7 `get-message-skip` (get-message-skip, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - write 1 iff ADV message-skip run-state bit 0x08000000 is set, otherwise 0.
 - **operand access:** `1` write
@@ -4041,8 +4150,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1c7`; scope=Himegari SYS4422. Ghidra /v2: handler 0x4272b0 reads ctx+0xa0ce4 bit 0x08000000 and vm_operand_write(1, 1|0). adv_interpreter_tick@0x410fb0 first polls the configured logical-action mask; action 6 is bit 0x40 and therefore drives this transient run state from SYSTEM4's C/LeftCtrl bindings or the retained native Backspace default. Persistent op-0x88 state injects the same bit. SC0000 label_1235a ORs the result with op 0x1cc.
 
 ### 0x1ca `set-read-message-skip` (u0041B9B0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (enabled) - set the engine setting `message:ReadTextSkip`, which skips only previously read text.
 - **operand access:** `1` read
@@ -4053,8 +4162,8 @@ It clears run-state 0x08000000 however it started. Logical action 6 sets that bi
 Port status (2026-11-07): profile-lifetime engine setting state, written only, as native does; the next page's read-skip block (ops 0x6e, 0x71, 0x72) reads it. The menu bar's read-skip toggle (0x406cd0) runs the block itself.
 
 ### 0x1cb `get-read-message-skip` (u00414FD0, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) - read the engine setting `message:ReadTextSkip`.
 - **operand access:** `1` write
@@ -4065,8 +4174,8 @@ Port status (2026-11-07): profile-lifetime engine setting state, written only, a
 Port status (2026-07-24): implemented through the same profile-lifetime setting used by 0x1ca and the ADV ReadTextDB query path.
 
 ### 0x2e5 `consume-mouse-hwheel-delta` (u0042CE50, argc 1)
-- **observed by:** arterial (SYS4438), koukaku (SYS4443)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), koukaku (SYS4443), ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (out) — return the accumulated signed horizontal wheel delta and clear it.
 - **operand access:** `1` write
@@ -4076,11 +4185,47 @@ Port status (2026-07-24): implemented through the same profile-lifetime setting 
 
 The horizontal twin of op 0x10d. The window procedure adds a WM_MOUSEHWHEEL delta (positive to the right) to the accumulator unless the run state holds an ADV wait (0x90100000); there it raises the action set:HWheelKeyUp or set:HWheelKeyDown names, which are -1 (none) unless the catalog sets HWHEELKEYUP or HWHEELKEYDOWN, and the delta is dropped. 創刻のアテリアル has 16 sites and sets neither key.
 
+### 0x2f9 `read-joystick-axes` (2F9, argc 7)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (out present)(out x)(out y)(out z)(out r)(out u)(out v) - whether joystick 0 exists, and its six axes as floats, each its position over the caps' range (0 at one end, 1 at the other).
+- **operand access:** `1` write · `2` write-float · `3` write-float · `4` write-float · `5` write-float · `6` write-float · `7` write-float
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2f9`; scope=SYS4445 handler. op_0x2f9_read_joystick_axes@0x430500 records length 15 and calls input_read_joystick_axes@0x474920(joystick 0, six out floats). The reader returns 0 when the manager's +0x490 + N*0x84 (the button count op 0x106 reads) is not above 0; else it polls joyGetPosEx (dwFlags 0xff) when more than 20 ms have passed since its own last poll (0x670134), and writes each of dwXpos to dwVpos, unsigned, over max - min of the 0x4c-byte caps record at +0xcd0 + N*0x4c. The handler writes operand 1 = the return != 0, then operands 2 to 7 with vm_operand_write_float.
+
+joyGetPosEx is polled at most every 20 ms by this reader; within that it gives the last poll's positions. An axis whose caps' max is not above its min reads 0. Without a joystick native writes 0 and leaves the six floats as its stack holds them; the port writes 0. Port: VirtualMachine.OpReadJoystickAxes over InputBindings.ReadJoystickAxes, whose six axes are the front end's axes 0 to 5 over WinMM's range 0 to 65535; a joystick exists when the input host reports buttons (op 0x106's count). FIELD, FACT, CONFIRMSTICK and CONFIRMSTICK2 read it: FIELD picks an axis by a configured index, centres it on 0.5 and leaves a dead zone.
+
+### 0x2fa `set-joystick-axes-ignored` (2FA, argc 1)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (flags) - the joystick's direction flags: with bit 0 set, the axes no longer make the four direction actions (the POV still does).
+- **operand access:** `1` read
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2fa`; scope=SYS4445 handler. op_0x2fa_set_joystick_axes_ignored@0x425e40 records length 3 and writes operand 1 to ctx+0x1e7c, the input manager's +0x1a74. input_poll_joystick_action_bits@0x474450 and input_poll_joystick_action_edges@0x474660 skip the axis directions when its bit 0 is set and the POV is centred; with the POV pressed they take the directions from it either way. 4.43B's polls (0x473ed0, 0x473fe0) have neither the flag nor the POV.
+
+Port: VirtualMachine.OpSetJoystickAxesIgnored sets InputBindings.JoystickAxesFlags, which the level poll (op 0xff) reads. FIELD sets it from a configured bit while the field runs and clears it on leaving, so an analog stick read through op 0x2f9 does not also step the cursor; CONFIRMSTICK2 and FACT likewise.
+
+### 0x2fb `read-joystick-buttons` (2FB, argc 1)
+- **observed by:** ladea (SYS4445)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4445`
+- **semantic status:** investigated
+- **summary:** (out buttons) - joystick 0's held buttons (bit N for button N) from a fresh poll; 0 when polled within the last 20 ms, when input polling is off, or without a joystick.
+- **operand access:** `1` write
+- **control (port handler):** waits never; leaves falls
+- **grounding:** source=investigation, confidence=high
+- **evidence:** method=native-re; confidence=high; profiles=ladea; revisions=SYS4445; artifact=`天秤のLa DEA。 SYS4445 Ghidra /ladea/4.45D and the complete 天秤のLa DEA。 catalog`; site=`vm-map/opcodes.toml opcode 0x2fb`; scope=SYS4445 handler. op_0x2fb_read_joystick_buttons@0x4305c0 records length 3 and writes operand 1 = input_read_joystick_buttons@0x4745e0(0): 0 when the manager's +0x1a60 (input_set_polling_enabled@0x4741f0, from age_main_window_proc) is 0 or its +0x490 button count is not above 0; else, when more than 20 ms have passed since its own last poll (0x6700b8), it polls joyGetPosEx and returns dwButtons, and otherwise returns 0.
+
+The reader returns the buttons only in the call that polls, so a script polling it every frame sees 0 on some frames. Port: VirtualMachine.OpReadJoystickButtons over InputBindings.ReadJoystickButtons; the port has no polling switch, since the front end's input stops arriving when native's would be off. CONFIRMJOY and SETJOY read it to learn which button the player presses.
+
 ## marker
 
 ### 0x1a7 `comment` (comment, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** (text) - source comment compiled into the bytecode; the handler only advances past the instruction and never reads its operand.
 - **operand access:** `1` ignored
@@ -4089,8 +4234,8 @@ The horizontal twin of op 0x10d. The window procedure adds a WM_MOUSEHWHEEL delt
 - **evidence:** method=native-re; confidence=high; profiles=himegari; revisions=SYS4422; artifact=`Himegari AGE.EXE Ghidra /v2 and decoded script corpus`; site=`vm-map/opcodes.toml opcode 0x1a7`; scope=Himegari SYS4422. Static RE: SYS4422 handler 0x416630 and SYS4433 handler 0x416dd0 only store the three-dword instruction length; no operand accessor is reachable. Corpus operands are mostly inline strings (2,086 Himegari / 3,672 Kamidori), the editor annotations such as LABEL and loop-start notes; the rare variable operands are likewise ignored.
 
 ### 0x1a8 `instruction-marker-noop` (dev_ukn, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** Zero-operand structural marker. The native shared 0xaf/0x1a8 handler only records this instruction's one-dword length and returns.
 - **control (port handler):** waits never; leaves falls
@@ -4100,8 +4245,8 @@ The horizontal twin of op 0x10d. The window procedure adds a WM_MOUSEHWHEEL delt
 ## structural
 
 ### 0x1f4 `stmt-begin` (u004160D0, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - open an atomic statement block. The outermost open sets statement_block_active and restarts the presentation-timer baseline; a nested open only increments statement_block_depth. While a block is open the outer tick defers delayed SFX/voice/movie service and forced redraw, and queued script launches wait for the outermost op 0x1f5.
 - **control (port handler):** waits never; leaves falls
@@ -4113,8 +4258,8 @@ The horizontal twin of op 0x10d. The window procedure adds a WM_MOUSEHWHEEL delt
 Port status (2026-11-12): the engine tick (Ome.Engine.Natives.EngineTick, engine layering milestone 6) tracks statement_block_active and depth. While the outermost block is open the tick withholds delayed voice (0x2c0) and SFX (0x2bf) starts, and the host, like the native tick, withholds its own presentation until the close, except for explicit present-frame (0x20c) and transition parks (the run-state 0x400 equivalent). Blocks may span waits (ADDEXP, MES.BIN, SC0000's strip buttons); those scripts present explicitly. Not modelled: movie starts, the 0x2000 modal service, the unused 0xd8 timer, and native's delayed starts inside a block during a run-state 0x400 park (docs/backlog.md). See docs/engine-re.md 'Statement blocks'.
 
 ### 0x1f5 `stmt-end` (u00416120, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** investigated
 - **summary:** () - close a statement block opened by op 0x1f4. A nested close decrements statement_block_depth; the outermost close clears statement_block_active and, unless script_launch_dispatch_active is set, dispatches the next queued script launch.
 - **control (port handler):** waits never; leaves falls
@@ -4128,8 +4273,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 ## unknown
 
 ### 0x2 `exit` (exit, argc 0)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **control (port handler):** waits never; leaves ends
@@ -4368,8 +4513,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x38`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x50 `add` (add, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4377,8 +4522,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x51 `sub` (sub, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4386,8 +4531,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x52 `mul` (mul, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4395,8 +4540,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x55 `mov` (mov, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read
@@ -4404,8 +4549,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x56 `and` (and, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4413,8 +4558,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x57 `or` (or, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4422,8 +4567,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x58 `sar` (sar, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4431,8 +4576,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x59 `shl` (shl, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4440,8 +4585,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5a `eq` (eq, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4449,8 +4594,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5b `ne` (ne, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4458,8 +4603,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5c `lt` (lt, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4467,8 +4612,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5d `lte` (lte, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4476,8 +4621,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5e `gr` (gr, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4485,8 +4630,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=med
 
 ### 0x5f `gre` (gre, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4598,8 +4743,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x8a`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x8c `jmp` (jmp, argc 1)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` read (transfer target)
@@ -4623,8 +4768,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x8e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0xa0 `jcc` (jcc, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` read · `2` read (transfer target) · `3` read (transfer target)
@@ -4751,22 +4896,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xcb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
-### 0xce `u0041E0B0` (u0041E0B0, argc 3)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xce`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0xcf `u00416D40` (u00416D40, argc 0)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xcf`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
 ### 0xd1 `u00415860` (u00415860, argc 0)
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
@@ -4831,14 +4960,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0xfd`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
-### 0x12d `u0041E720` (u0041E720, argc 7)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=low
-- **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x12d`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
 ### 0x13b `u0041F440` (u0041F440, argc 7)
 - **observed by:** none in recorded corpora
 - **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
@@ -4872,8 +4993,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x13e`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x13f `check-bit` (check-bit, argc 3)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write · `2` read · `3` read
@@ -4913,8 +5034,8 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x190`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x192 `set-string` (set-string, argc 2)
-- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), verita (SYS4424)
-- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`
+- **observed by:** arterial (SYS4438), bg0 (SYS4415), himegari (SYS4422), kamidori (SYS4433), koukaku (SYS4443), ladea (SYS4445), verita (SYS4424)
+- **ABI applicability:** upstream catalog framing is available; proven revision `SYS4415`, `SYS4422`, `SYS4424`, `SYS4433`, `SYS4438`, `SYS4443`, `SYS4445`
 - **semantic status:** catalog-only
 - **summary:** —
 - **operand access:** `1` write-string · `2` read-string
@@ -5208,78 +5329,6 @@ Port status (2026-11-03): implemented with op 0x1f4. A nested close decrements t
 - **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
 - **grounding:** source=kelebek, confidence=low
 - **evidence:** method=upstream-catalog; confidence=low; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2d9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f3 `2F3` (2F3, argc 6)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f3`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f4 `2F4` (2F4, argc 3)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f4`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f5 `2F5` (2F5, argc 4)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f5`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f6 `2F6` (2F6, argc 1)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f6`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f7 `2F7` (2F7, argc 1)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f7`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f8 `2F8` (2F8, argc 2)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f8`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2f9 `2F9` (2F9, argc 7)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2f9`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2fa `2FA` (2FA, argc 1)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fa`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
-
-### 0x2fb `2FB` (2FB, argc 1)
-- **observed by:** none in recorded corpora
-- **ABI applicability:** upstream catalog framing is available; proven revision membership is not yet established
-- **semantic status:** catalog-only
-- **summary:** Broader AGE-catalog compatibility stub with no port handler: a run stops at it with a compatibility failure, and only a probe run (--probe) traces it and goes on.
-- **grounding:** source=kelebek, confidence=med
-- **evidence:** method=upstream-catalog; confidence=med; profiles=none (engine/catalog scoped); revisions=unspecified; artifact=`Kelebek1/Eushully-Decompiler age-shared.cpp`; site=`vm-map/opcodes.toml opcode 0x2fb`; scope=upstream AGE opcode catalog; engine revision applicability unspecified. ABI label/argc come from Kelebek's revision-unscoped AGE table; this record makes no per-revision semantic claim.
 
 ### 0x2fc `2FC` (2FC, argc 5)
 - **observed by:** none in recorded corpora

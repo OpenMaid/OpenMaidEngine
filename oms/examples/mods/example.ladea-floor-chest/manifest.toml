@@ -1,0 +1,17 @@
+omp = 4
+id = "example.ladea-floor-chest"
+name = "Floor chest (天秤のLa DEA。)"
+version = "1.0.0"
+description = "A data file with a dungeon floor's part: the chest in floor 65's object slot 8 gives nine 治癒の水・小 (item 201) for its own four 治癒の水・特大 (item 204), each time FIELD enters the floor."
+
+[game]
+profile = "ladea"
+target = "extended"
+
+[[requires]]
+id = "ladea-base"
+version = ">=1.0, <2"
+
+[[data]]
+kind = "ladea.tables"
+file = "chest.toml"

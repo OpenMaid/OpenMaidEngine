@@ -1,0 +1,15 @@
+oms 1
+// 天秤のLa DEA。's title builds a debug menu (デバッグメニュー) right after its Quit calls QUIT (TITLE@0x40f), which fades
+// out and ends the game (throw-exit-request, QUIT@0x79), so no run reaches it. Deleting the call makes Quit open the
+// menu instead. Its entries: 通常ＡＤＶ and ＭＡＰ会話 pick a scene by file; ＡＤＶデバッグ２ plays DEBUGADV2; 迷宮マップ１
+// （ＰＧ用）, 迷宮マップ２ and 迷宮マップ３ run INITGAME and then DEBUGFIELD, DEBUGFIELD2 or DEBUGFIELD3, which open the
+// dungeon (system_mode 3), the first two after joining characters; 街 runs INITGAME and DEBUGTOWN, which
+// joins characters and opens the town (system_mode 2); キャンセル goes back. Each entry that starts a mode leaves the
+// title through its common exit, so SYSTEM4 starts that mode. The four that start play set debug_play_active
+// (G[0xf45f4f]): the town then skips the SCJUMP chain (TOWN@0xc6), and no scene or tutorial marks itself seen.
+// Map block 999, where 迷宮マップ１ and ３ go, has no map script in MPINIT, so SETMAPDATA calls script 0, SYSTEM4,
+// and the game boots again (SETMAPDATA@0xd8; 迷宮マップ１ was run on both targets); 迷宮マップ２ opens floor 65.
+patch "TITLE.BIN" fingerprint "sha256:e3439b18975a9b0004a3ac980c8f3439c47b41f38dbc5a4d37503b62bb002c3c"
+
+replace site 0x40f {
+}

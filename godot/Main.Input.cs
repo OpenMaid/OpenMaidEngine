@@ -146,6 +146,7 @@ public partial class Main
         if (e is InputEventJoypadButton joyButton)
         {
             _waits.JoystickButton((int)joyButton.ButtonIndex, joyButton.Pressed);
+            if (UpdateDpad(joyButton.ButtonIndex, joyButton.Pressed)) _waits.JoystickPov(DpadPov());
             GetViewport().SetInputAsHandled();
             return;
         }
@@ -362,4 +363,34 @@ public partial class Main
         editor.Open(entry.Request.InitialText);
     }
 
+    // The d-pad held, as WinMM's joyGetPosEx reports a hat: its POV (JOYINFOEX.dwPOV), which AGE 4.45D's directions
+    // read (InputRules.JoystickPovDirections). Godot reports the hat as these four buttons, which still go to the
+    // bindings as buttons too.
+    private bool _dpadUp, _dpadDown, _dpadLeft, _dpadRight;
+
+    private bool UpdateDpad(JoyButton button, bool pressed)
+    {
+        switch (button)
+        {
+            case JoyButton.DpadUp: _dpadUp = pressed; return true;
+            case JoyButton.DpadDown: _dpadDown = pressed; return true;
+            case JoyButton.DpadLeft: _dpadLeft = pressed; return true;
+            case JoyButton.DpadRight: _dpadRight = pressed; return true;
+            default: return false;
+        }
+    }
+
+    // Hundredths of a degree clockwise from up, or 0xffff (JOY_POVCENTERED) when no direction is held; opposite
+    // buttons cancel.
+    private int DpadPov()
+    {
+        int vertical = (_dpadUp ? 1 : 0) - (_dpadDown ? 1 : 0);
+        int horizontal = (_dpadRight ? 1 : 0) - (_dpadLeft ? 1 : 0);
+        return (vertical, horizontal) switch
+        {
+            (1, 0) => 0, (1, 1) => 4500, (0, 1) => 9000, (-1, 1) => 13500,
+            (-1, 0) => 18000, (-1, -1) => 22500, (0, -1) => 27000, (1, -1) => 31500,
+            _ => Ome.Engine.Model.InputBindings.JoystickPovCentered,
+        };
+    }
 }

@@ -12,6 +12,21 @@ public sealed class InputBindings
     public const int DefaultActionCount = 7;
     public const double JoystickAxisThreshold = 0.5;
 
+    /// <summary>The joystick axes AGE 4.45D's op 0x2f9 reads: X, Y, Z, R, U and V (<c>JOYINFOEX</c>'s six positions).
+    /// The port's are the front end's axes 0 to 5; the directions use 0 and 1.</summary>
+    public const int JoystickAxisCount = 6;
+
+    /// <summary><c>JOY_POVCENTERED</c>: the POV is not pressed.</summary>
+    public const int JoystickPovCentered = 0xffff;
+
+    /// <summary>WinMM's axis range, 0 to 65535, which the port takes for every axis: native divides a position by its
+    /// caps' max - min.</summary>
+    public const int JoystickAxisRange = 65535;
+
+    /// <summary>Each joystick reader polls <c>joyGetPosEx</c> again only once more than this many milliseconds have
+    /// passed since its last poll.</summary>
+    public const int JoystickPollIntervalMs = 20;
+
     /// <summary>Logical action 4, the left click in both games: it advances a page, finishes a reveal, skips an effect
     /// (EffectSkipOnClick 1) and cancels a modal movie.</summary>
     public const int AdvanceAction = 4;
@@ -28,12 +43,23 @@ public sealed class InputBindings
     private readonly HashSet<int> _pressedSinceKeyState = new();
     private uint _heldMouseButtons;
     private uint _heldJoystickButtons;
-    private double _joystickX;
-    private double _joystickY;
+    private readonly double[] _joystickAxes = new double[JoystickAxisCount];
+    private int _joystickPov = JoystickPovCentered;
     private int _actionCount = DefaultActionCount;
+    // Op 0x2f9's and op 0x2fb's own polls (input_read_joystick_axes@0x474920, input_read_joystick_buttons@0x4745e0):
+    // each keeps its last poll's time, from 0 as native's module globals do, and the axes reader its last positions.
+    private long _axesPolledAtMs;
+    private readonly int[] _polledAxes = new int[JoystickAxisCount];
+    private long _buttonsPolledAtMs;
 
-    public InputBindings()
+    public InputBindings() : this(InputRules.AxesOnly)
     {
+    }
+
+    public InputBindings(InputRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        Rules = rules;
         // input_manager_initialize_defaults@0x460630: seven default actions before SYSTEM4 extends
         // the table to ten. Several physical keys may map to the same logical action.
         MapKeyboardScanCode(0, 0xc8); // Up
@@ -44,6 +70,12 @@ public sealed class InputBindings
         MapKeyboardScanCode(5, 0x39); // Space
         MapKeyboardScanCode(6, 0x0e); // Backspace
     }
+
+    public InputRules Rules { get; }
+
+    /// <summary>Op 0x2fa's value (AGE 4.45D: the input manager's <c>+0x1a74</c>). With bit 0 set the axes make no
+    /// directions; the POV still does.</summary>
+    public int JoystickAxesFlags { get; set; }
 
     public int ActionCount
     {
@@ -123,14 +155,48 @@ public sealed class InputBindings
 
     public void UpdateJoystickAxes(double x, double y)
     {
-        _joystickX = Math.Clamp(x, -1.0, 1.0);
-        _joystickY = Math.Clamp(y, -1.0, 1.0);
+        UpdateJoystickAxis(0, x);
+        UpdateJoystickAxis(1, y);
     }
 
+    /// <summary>Axis <paramref name="axis"/> (0 to 5) at <paramref name="value"/>, from -1 to 1.</summary>
     public void UpdateJoystickAxis(int axis, double value)
     {
-        if (axis == 0) _joystickX = Math.Clamp(value, -1.0, 1.0);
-        else if (axis == 1) _joystickY = Math.Clamp(value, -1.0, 1.0);
+        if ((uint)axis < JoystickAxisCount) _joystickAxes[axis] = Math.Clamp(value, -1.0, 1.0);
+    }
+
+    /// <summary>The POV as <c>joyGetPosEx</c> reports it: hundredths of a degree clockwise from up (0 to 35999), or
+    /// <see cref="JoystickPovCentered"/>.</summary>
+    public void UpdateJoystickPov(int hundredthsOfDegree)
+        => _joystickPov = hundredthsOfDegree is >= 0 and < 36000 ? hundredthsOfDegree : JoystickPovCentered;
+
+    /// <summary>
+    /// Op 0x2f9: the six axes' positions over WinMM's range (0 at one end, 1 at the other, about 0.5 at rest). Like
+    /// <c>input_read_joystick_axes@0x474920</c> it polls again only once more than
+    /// <see cref="JoystickPollIntervalMs"/> have passed since its last poll, and otherwise gives that poll's positions.
+    /// </summary>
+    public void ReadJoystickAxes(long nowMs, Span<float> values)
+    {
+        if (unchecked((uint)(nowMs - _axesPolledAtMs)) > JoystickPollIntervalMs)
+        {
+            _axesPolledAtMs = nowMs;
+            for (int axis = 0; axis < JoystickAxisCount; axis++)
+                _polledAxes[axis] = (int)Math.Round((_joystickAxes[axis] + 1.0) / 2.0 * JoystickAxisRange);
+        }
+        for (int axis = 0; axis < JoystickAxisCount && axis < values.Length; axis++)
+            values[axis] = (float)_polledAxes[axis] / JoystickAxisRange;
+    }
+
+    /// <summary>
+    /// Op 0x2fb: the held physical buttons, bit N for button N (<c>JOYINFOEX.dwButtons</c>). Like
+    /// <c>input_read_joystick_buttons@0x4745e0</c> it gives them only from a fresh poll, so 0 when it last polled
+    /// within <see cref="JoystickPollIntervalMs"/>.
+    /// </summary>
+    public uint ReadJoystickButtons(long nowMs)
+    {
+        if (unchecked((uint)(nowMs - _buttonsPolledAtMs)) <= JoystickPollIntervalMs) return 0;
+        _buttonsPolledAtMs = nowMs;
+        return _heldJoystickButtons;
     }
 
     /// <summary>The entries of native's DIK-to-VK table, which op 0x10e indexes.</summary>
@@ -166,14 +232,36 @@ public sealed class InputBindings
             if ((_heldMouseButtons & (1u << button)) != 0)
                 mask |= 1 << ((_mouseButtonSlots[button] + 4) & 31);
 
-        if (_joystickY < -JoystickAxisThreshold) mask |= 1 << 0;
-        else if (_joystickY > JoystickAxisThreshold) mask |= 1 << 2;
-        if (_joystickX > JoystickAxisThreshold) mask |= 1 << 1;
-        else if (_joystickX < -JoystickAxisThreshold) mask |= 1 << 3;
+        mask |= JoystickDirections();
 
         for (int physicalButton = 0; physicalButton < 32; physicalButton++)
             if ((_heldJoystickButtons & (1u << physicalButton)) != 0)
                 mask |= JoystickButtonActions(physicalButton);
+        return mask;
+    }
+
+    // input_poll_joystick_action_bits: up 0, right 1, down 2, left 3. Under AGE 4.45D's rule a pressed POV makes them
+    // (0x474450: up past 27000 or below 9000, right 1 to 17999, down 9001 to 26999, left past 18000) and the axes are
+    // not read; otherwise the axes do, unless op 0x2fa's bit 0 is set.
+    private int JoystickDirections()
+    {
+        if (Rules.JoystickPovDirections && _joystickPov != JoystickPovCentered)
+        {
+            uint pov = (uint)_joystickPov;
+            int directions = 0;
+            if (pov > 27000 || pov < 9000) directions |= 1 << 0;
+            if (unchecked(pov - 1) < 17999) directions |= 1 << 1;
+            if (unchecked(pov - 9001) < 17999) directions |= 1 << 2;
+            if (pov > 18000) directions |= 1 << 3;
+            return directions;
+        }
+        if ((JoystickAxesFlags & 1) != 0) return 0;
+        int mask = 0;
+        double x = _joystickAxes[0], y = _joystickAxes[1];
+        if (y < -JoystickAxisThreshold) mask |= 1 << 0;
+        else if (y > JoystickAxisThreshold) mask |= 1 << 2;
+        if (x > JoystickAxisThreshold) mask |= 1 << 1;
+        else if (x < -JoystickAxisThreshold) mask |= 1 << 3;
         return mask;
     }
 

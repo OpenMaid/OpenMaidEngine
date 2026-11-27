@@ -68,6 +68,11 @@ LOOP_INDEXED = {
     # 4.43B op_0x2f1_handler@0x42f9a0 loops twice over three operands, from index 2 and 5: the address of four cells,
     # then the x and y offsets.
     ("koukaku", 0x2F1): (2, {2: ["address"], 3: ["read"], 4: ["read"], 5: ["address"], 6: ["read"], 7: ["read"]}),
+    # 4.45D's op_0x2ef_handler@0x42fcd0 and op_0x2f1_handler@0x430140 are 4.43B's: the revision diff calls both
+    # "same" (build/revision-diff/koukaku-ladea.json).
+    ("ladea", 0x2EF): (2, {2: ["address"], 3: ["address"], 4: ["read"], 5: ["read"], 6: ["read"],
+                           7: ["address"], 8: ["address"], 9: ["read"], 10: ["read"], 11: ["read"]}),
+    ("ladea", 0x2F1): (2, {2: ["address"], 3: ["read"], 4: ["read"], 5: ["address"], 6: ["read"], 7: ["read"]}),
 }
 TYPE_NAMES = {0x0: "imm", 0x1: "float", 0x2: "string", 0x3: "g-int", 0x4: "g-float",
               0x5: "g-str", 0x6: "g-ptr", 0x8: "g-str-ptr", 0x9: "l-int", 0xa: "l-float",
@@ -224,6 +229,27 @@ _KOUKAKU_ACCESSORS = {
     0x42A1E0: Accessor("address", 1, "vm_operand_resolve_float_address"),
 }
 
+# 天秤のLa DEA。 AGE 4.45D, from --align-accessors against koukaku (every alignment unanimous, 2026-11-26) and arterial
+# (the same fifteen; the two dissents are op 0x191's float pair, as for 4.43B). The dump is the module Windows loaded at
+# 0x5a0000, taken back to its preferred base by dump_engine.py (this build is not packed and keeps its relocations).
+_LADEA_ACCESSORS = {
+    0x41B730: Accessor("read", 1, "vm_operand_fetch"),
+    0x41BAE0: Accessor("read-float", 1, "vm_operand_fetch_float"),
+    0x41ADE0: Accessor("read-string", 1, "vm_operand_read_string_buffer"),
+    0x428D50: Accessor("read-string", 2, "vm_operand_read_std_string"),
+    0x41B170: Accessor("read-string", 1, "vm_operand_format_as_string"),
+    0x429EE0: Accessor("write", 1, "vm_operand_write"),
+    0x4312C0: Accessor("write-string", 1, "vm_operand_write_string"),
+    0x42A430: Accessor("write-float", 1, "vm_operand_write_float"),
+    0x4186A0: Accessor("bind", 1, "vm_pointer_operand_bind_element"),
+    0x418570: Accessor("bind", 1, "vm_pointer_operand_write"),
+    0x4298D0: Accessor("address", 1, "vm_operand_resolve_address"),
+    0x4184C0: Accessor("string-cell", 1, "vm_operand_global_string_cell"),
+    0x418390: Accessor("ref-slot", 1, "vm_pointer_operand_slot"),
+    0x418410: Accessor("cell", 1, "vm_operand_lvalue"),
+    0x42A990: Accessor("address", 1, "vm_operand_resolve_float_address"),
+}
+
 REFERENCE_PROFILE = "himegari"
 ENGINES: dict[str, EngineFacts] = {
     "himegari": EngineFacts(0x413860, 0x9B24C, _HIMEGARI_ACCESSORS, runtime_start=0x54F3DE, version="4.24J"),
@@ -253,6 +279,10 @@ ENGINES: dict[str, EngineFacts] = {
     # handlers). The C runtime starts at the operator new thunk 0x5f2338, whose bytes and neighbours match
     # Arterial's 0x583dd8.
     "koukaku": EngineFacts(0x414F70, 0xA4BD4, _KOUKAKU_ACCESSORS, runtime_start=0x5F2338, version="4.43B"),
+    # 天秤のLa DEA。, AGE 4.45D, dumped 2026-11-26. The ctx constructor at 0x415320, with 魔導巧殻's 0x414f70's
+    # prologue, fills the opcode table at ctx+0xa4f1c (default handler 0x418810; 510 handlers, 4.43B's and 0x2f3 to
+    # 0x2fb). The C runtime starts at the operator new thunk 0x5f3058, whose bytes match 魔導巧殻's 0x5f2338.
+    "ladea": EngineFacts(0x415320, 0xA4F1C, _LADEA_ACCESSORS, runtime_start=0x5F3058, version="4.45D"),
 }
 
 

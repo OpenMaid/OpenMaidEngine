@@ -1,0 +1,33 @@
+# 天秤のLa DEA。's opening: the title, Game Start, GAMESTART's initial settings left as they are, ゲーム開始, and the
+# first pages of SC0000. It is the scenario of the game's P2 gate (docs/adding-a-game.md, step 6).
+# Native AGE passes it since 2026-11-26.
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port start
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port run tools/drive/scenarios/ladea-opening.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port stop
+# SYSTEM4 stops the three voices (op 0x2f6) and sets their levels (op 0x2f8) as it boots, and each page plays its
+# voice after stopping them. SC0000's pages draw no op 0x60 random number; the seed is set so that a draw would be the
+# same on both targets. Page 3's dash is the extended font's 0xF041 and 0xF043, which the drawers join (docs/engine-re.md,
+# "The dash join").
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+shot ladea-opening-title
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+shot ladea-opening-settings
+click start.begin
+wait-state top=SC0000@0x103e timeout=120  # page 1, the first text, on black
+settle timeout=30
+shot ladea-opening-page1
+advance 1
+expect top=SC0000@0x135a                  # page 2
+advance 1
+expect top=SC0000@0x1658                  # page 3: 古の女神 and a joined dash (0xF041, 0xF043)
+shot ladea-opening-page3
+advance 1
+expect top=SC0000@0x17cb                  # page 4
+advance 1
+expect top=SC0000@0x193e                  # page 5
+shot ladea-opening-page5

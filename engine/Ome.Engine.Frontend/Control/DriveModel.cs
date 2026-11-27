@@ -78,8 +78,9 @@ public static class DriveWaiting
          : null;
 }
 
-/// <summary>The backend-neutral game state. <see cref="Busy"/> is true while text reveals or a screen transition
-/// runs, which keeps <c>settle</c> waiting.</summary>
+/// <summary>The backend-neutral game state. <see cref="Busy"/> is true while text reveals, a screen transition runs
+/// or a finite animation does (the port's: a one-shot channel, detached ones included), which keeps <c>settle</c>
+/// waiting.</summary>
 public sealed record DriveState(IReadOnlyList<DriveFrame> Frames, string? Waiting, bool Busy = false)
 {
     public DriveFrame? Top => Frames.Count == 0 ? null : Frames[^1];
