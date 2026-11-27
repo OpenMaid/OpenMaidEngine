@@ -267,13 +267,18 @@ public partial class Main
         AdvTextLayoutPresentationBinding historyBinding =
             _vm.TextHistory.GetPresentationBinding(2);
         _text.ResetRenderedAdvTextLayout(_vm.Gfx, historyBinding);
+        // One text record over the group's seven glyphs, as op 0x1d1 builds it: History binds one object over each
+        // record (and over each character of a ruby run, which this group has none of), not one per glyph.
         var historyBatch = new AdvTextHistoryRenderBatch(
             2,
             0,
             0,
             historyLayout,
             "History",
-            immediateStyle);
+            immediateStyle)
+        {
+            Records = [new AdvTextHistoryRenderRecord(0, "History".Length, false)],
+        };
         bool historyUsedRetained =
             _text.RenderTextHistory(
                 _vm.Gfx,
@@ -292,7 +297,7 @@ public partial class Main
                         item.Handle >= historyBinding.FirstObjectHandle
                         && item.Handle - historyBinding.FirstObjectHandle
                            < historyBinding.ObjectCapacity)
-                   == historyBatch.Text.Length
+                   == historyBatch.Records.Count
                 && historySurface != null
                 && historySurface.Pixels.Where((_, index) => index % 4 == 3)
                     .Any(alpha => alpha != 0);
