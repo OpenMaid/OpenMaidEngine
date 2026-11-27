@@ -223,13 +223,6 @@ it; git history keeps the record.
   model draw is read (its world matrix's order, the `+0x8` floats, the lights and the blend), lowered into a frame item as
   the title's leaves are (`superpowers/specs/2026-11-20-title-leaves-design.md`), and FIELD's models match native's
   pixels.
-- **History's padded glyphs differ at the cell seams (AGE 4.43B).** 魔導巧殻's HISTORY sets the paddings 2, 2, 2, 2
-  (op `0x260`; the page has 2, 0, 2, 2), so neighbouring glyphs' padded rectangles overlap. In its rows, at the seams
-  between glyph cells, native's pixels are darker than the port's: by up to 30 levels on 4 pixels and less than 12 on
-  about 4,000, on a wheel up from SC0000's page 4 (`koukaku-opening.steps`, then `wheel up 1`). Positions agree, and
-  the page, whose right padding is 0, is the same pixels. The likely cause is what a grown source rectangle reads from
-  the glyph cache beside the glyph (native's cache layout is not read). Done when the cache's layout and the publisher's
-  growth into it are read and History's shot matches native's.
 - **GDI's 64-bit curve flattener.** AGE 4.43B's region tests (ops `0x2f0` to `0x2f2`) take an ellipse from
   `CreateEllipticRgnIndirect`, which flattens it with GDI's 32-bit forward-differencing flattener; the port has that
   one exactly (`engine-re.md`, "The region tests"). A quarter whose bounds reach `0x4000` in 28.4, an ellipse 2048

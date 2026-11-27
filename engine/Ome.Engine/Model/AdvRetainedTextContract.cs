@@ -102,6 +102,15 @@ public readonly record struct GlyphPublication(int CellGrowth, int ShiftX = 0, i
     public int GrowRight { get; init; }
 }
 
+/// <summary>One object History's renderer binds (text_history_render_records: 4.24J @0x4526c0 to 4.45D @0x464fa0): over
+/// glyphs [<see cref="FirstGlyph"/>, + <see cref="GlyphCount"/>) of its run, a text record's (from its first glyph's left
+/// to its last glyph's right, and from its glyphs' top to their bottom) or a ruby character's; or, with no glyphs, over
+/// <see cref="Empty"/>, an empty record's rectangle in the layout.</summary>
+public readonly record struct AdvTextRecordObject(int FirstGlyph, int GlyphCount)
+{
+    public AdvRetainedGlyphRecord? Empty { get; init; }
+}
+
 /// <summary>What a publisher does to the glyphs it binds: <see cref="Primary"/> to a record that is not ruby (chain flag
 /// 0), <see cref="Ruby"/> to a ruby character, and with <see cref="FadeMs"/> above 0 it fades each in over that many
 /// milliseconds (AGE 4.43B's timed publisher: op 0x2ee's MessageFade percent of the glyph delay).</summary>

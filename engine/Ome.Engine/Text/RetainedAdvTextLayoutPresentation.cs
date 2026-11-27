@@ -203,6 +203,94 @@ public sealed class RetainedAdvTextLayoutPresentation
         return PublishedGlyphCount;
     }
 
+    /// <summary>
+    /// History's bind (op 0x1d1; text_history_render_records, 4.24J @0x4526c0, 4.33G @0x456490, 4.38D @0x461ea0, 4.43B
+    /// @0x4646d0, 4.45D @0x464fa0): the run's glyphs from <paramref name="firstGlyph"/> are published as
+    /// <paramref name="publications"/> says, but bound one object per entry of <paramref name="objects"/>, handles counting
+    /// up from the run's first glyph's: a text record's object over all its glyphs, so neighbouring glyphs' paddings do
+    /// not overlap within it, and a ruby character's over its own cell. An object whose grown rectangle is empty is left
+    /// unbound, as native's blit draws nothing for one (gfx_object_blit_d3d9@0x4774c0). <see cref="Republish"/> and
+    /// <see cref="RepublishEach"/> bind these objects again rather than the glyphs.
+    /// </summary>
+    public int PublishRecordObjects(GfxState gfx, int firstGlyph, IReadOnlyList<AdvTextRecordObject> objects,
+                                    GlyphPublications publications, int layoutOriginX, int layoutOriginY)
+    {
+        ArgumentNullException.ThrowIfNull(gfx);
+        ArgumentNullException.ThrowIfNull(objects);
+        int end = firstGlyph;
+        foreach (AdvTextRecordObject entry in objects)
+            end = Math.Max(end, checked(firstGlyph + entry.FirstGlyph + entry.GlyphCount));
+        end = Math.Min(end, _glyphs.Count);
+        for (int index = Math.Max(PublishedGlyphCount, firstGlyph); index < end; index++)
+            Grow(index, publications with { FadeMs = 0 }, everyRecord: false);
+        PublishedGlyphCount = Math.Max(PublishedGlyphCount, end);
+        _recordRuns.Add((firstGlyph, end));
+
+        long handle = checked(Binding.FirstObjectHandle + firstGlyph);
+        long limit = checked(Binding.FirstObjectHandle + Binding.ObjectCapacity);
+        foreach (AdvTextRecordObject entry in objects)
+        {
+            if (handle >= limit) break;
+            int glyph = checked(firstGlyph + entry.FirstGlyph);
+            if (entry.GlyphCount > 0 && glyph + entry.GlyphCount > end) continue;
+            AdvRetainedGlyphPlacement? empty = entry.GlyphCount > 0 || entry.Empty is not { } rectangle
+                ? null
+                : WithPublication(new AdvRetainedGlyphPlacement(rectangle, layoutOriginX, layoutOriginY),
+                                  publications.Primary);
+            var bound = new RecordObject(handle++, glyph, entry.GlyphCount, empty);
+            _recordObjects.Add(bound);
+            BindRecordObject(gfx, bound);
+        }
+        return PublishedGlyphCount;
+    }
+
+    // History's objects (PublishRecordObjects): each over glyphs [FirstGlyph, +GlyphCount), or over Empty with none.
+    private readonly record struct RecordObject(long Handle, int FirstGlyph, int GlyphCount,
+                                                AdvRetainedGlyphPlacement? Empty);
+    private readonly List<RecordObject> _recordObjects = new();
+    // The glyph ranges [From, To) History's runs bound as records: Bind leaves those glyphs to their objects.
+    private readonly List<(int From, int To)> _recordRuns = new();
+
+    private bool BoundAsRecord(int index)
+    {
+        foreach ((int from, int to) in _recordRuns)
+            if (index >= from && index < to) return true;
+        return false;
+    }
+
+    private void BindRecordObjects(GfxState gfx)
+    {
+        foreach (RecordObject bound in _recordObjects)
+            if (bound.FirstGlyph < PublishedGlyphCount || bound.GlyphCount == 0)
+                BindRecordObject(gfx, bound);
+    }
+
+    // A text record's object spans its glyphs, each grown as its first glyph was published.
+    private void BindRecordObject(GfxState gfx, RecordObject bound)
+    {
+        AdvRetainedGlyphPlacement placement;
+        if (bound.Empty is { } empty) placement = empty;
+        else
+        {
+            AdvRetainedGlyphPlacement first = _glyphs[bound.FirstGlyph];
+            AdvRetainedGlyphPlacement last = _glyphs[bound.FirstGlyph + bound.GlyphCount - 1];
+            int top = first.Record.Top, bottom = first.Record.Bottom;
+            for (int index = bound.FirstGlyph + 1; index < bound.FirstGlyph + bound.GlyphCount; index++)
+            {
+                top = Math.Min(top, _glyphs[index].Record.Top);
+                bottom = Math.Max(bottom, _glyphs[index].Record.Bottom);
+            }
+            placement = first with
+            {
+                Record = first.Record with { Top = top, Right = last.Record.Right, Bottom = bottom },
+            };
+        }
+        (int x, int y, int width, int height) = placement.SourceRect;
+        if (width <= 0 || height <= 0) return;
+        gfx.BindDraw(bound.Handle, Binding.SourceSurfaceSlot, x, y, width, height,
+                     placement.ObjectPosition.X, placement.ObjectPosition.Y);
+    }
+
     /// <summary>AGE 4.43B's fade of a glyph its timed publisher binds (adv_text_publish_next_glyph@0x459440): the object's
     /// colour to white at alpha 0 (gfx_object_set_blend_and_color@0x49bba0, op 0x203's worker), then op 0x202's animation
     /// to opaque white over <paramref name="durationMs"/>.</summary>
@@ -231,6 +319,7 @@ public sealed class RetainedAdvTextLayoutPresentation
             if (every is { } applied) Grow(index, new GlyphPublications(applied), everyRecord: true);
             Bind(gfx, index);
         }
+        BindRecordObjects(gfx);
         return PublishedGlyphCount;
     }
 
@@ -315,6 +404,7 @@ public sealed class RetainedAdvTextLayoutPresentation
             Grow(index, publications with { FadeMs = 0 }, everyRecord: false);
             Bind(gfx, index);
         }
+        BindRecordObjects(gfx);
         return PublishedGlyphCount;
     }
 
@@ -379,9 +469,11 @@ public sealed class RetainedAdvTextLayoutPresentation
         _pendingBound = null;
     }
 
-    // Bind glyph index's object; false for an empty cell, which the port leaves unbound.
+    // Bind glyph index's object; false for an empty cell, which the port leaves unbound, and for a glyph History bound
+    // as part of a record (PublishRecordObjects).
     private bool Bind(GfxState gfx, int index)
     {
+        if (BoundAsRecord(index)) return false;
         AdvRetainedGlyphPlacement placement = _glyphs[index];
         AdvRetainedGlyphRecord cell = placement.Record;
         if (cell.Width <= 0 || cell.Height <= 0) return false;

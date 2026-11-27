@@ -1,0 +1,26 @@
+# 魔導巧殻's History: the opening to SC0000's page 4, then a wheel up opens HISTORY over the pages so far. HISTORY sets
+# the glyph paddings 2, 2, 2, 2 (op 0x260) before op 0x1d1, which binds one object per record, so neighbouring glyphs'
+# padded rectangles do not overlap (docs/engine-re.md, "History binds one object per record"). The port's shot equals
+# native's (2026-11-27).
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port start
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port run tools/drive/scenarios/koukaku-history.steps
+#   py -3.11 -X utf8 tools/drive.py --game koukaku native|port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state script=PROLOGUE timeout=60
+wait-state top=SC0000@0xe7e timeout=240  # the movie plays to its end, then the battlefield fades in
+wait-state top=SC0000@0xef2 timeout=60   # page 1, the first text
+settle timeout=30
+advance 3
+expect top=SC0000@0xf9e                  # page 4, two rows with furigana
+move adv.next
+wheel up                                 # History
+wait 1.5
+settle timeout=20
+shot koukaku-history

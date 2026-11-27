@@ -160,7 +160,8 @@ public sealed partial class TextManager
         out AdvRetainedTextRunResult result,
         IReadOnlyList<int>? recordedLineBreaks = null,
         IReadOnlyList<AdvTextRubyAnnotation>? historyRuby = null,
-        bool history = false)
+        bool history = false,
+        List<(int First, int Count)>? historyRubyGlyphs = null)
     {
         presentation = null!;
         result = default;
@@ -278,16 +279,21 @@ public sealed partial class TextManager
         else
         {
             for (int index = 0; index < rendered.Records.Count; index++) Add(rendered.Records[index], false, rowOf[index]);
+            // Each annotation's ruby characters, as indexes into the run's glyphs (none for one not drawn).
             foreach (AdvTextRubyAnnotation annotation in historyRuby ?? [])
             {
+                int start = ordered.Count;
                 int firstBase = annotation.BaseFirstGlyph;
                 int lastBase = firstBase + annotation.BaseGlyphCount - 1;
-                if (annotation.BaseGlyphCount <= 0 || lastBase >= rendered.Records.Count) continue;
-                AdvRetainedGlyphRecord left = rendered.Records[firstBase], right = rendered.Records[lastBase];
-                foreach (AdvRetainedGlyphRecord record in text.Layout.RenderRubyOver(
-                             updated, left.Left, left.Top, right.Right - left.Left, annotation.Text, run.Style,
-                             text.Policy, _textAntialias, LiveRubyRules, history: true))
-                    Add(record, true, rowOf[firstBase]);
+                if (annotation.BaseGlyphCount > 0 && lastBase < rendered.Records.Count)
+                {
+                    AdvRetainedGlyphRecord left = rendered.Records[firstBase], right = rendered.Records[lastBase];
+                    foreach (AdvRetainedGlyphRecord record in text.Layout.RenderRubyOver(
+                                 updated, left.Left, left.Top, right.Right - left.Left, annotation.Text, run.Style,
+                                 text.Policy, _textAntialias, LiveRubyRules, history: true))
+                        Add(record, true, rowOf[firstBase]);
+                }
+                historyRubyGlyphs?.Add((start, ordered.Count - start));
             }
         }
 
@@ -541,18 +547,23 @@ public sealed partial class TextManager
             || binding.ObjectCapacity <= 0)
             throw new InvalidOperationException(
                 $"History layout {batch.LayoutSlot} has no retained presentation binding.");
+        var rubyGlyphs = new List<(int First, int Count)>();
         PrepareRetainedTextRun(
             gfx, binding, run,
             out RetainedAdvTextLayoutPresentation? presentation,
             out AdvRetainedTextRunResult result,
             batch.Presented == null ? batch.RecordedLineBreaks : null,
             batch.Presented == null ? batch.Ruby : null,
-            history: true);
+            history: true,
+            historyRubyGlyphs: rubyGlyphs);
 
-        presentation.PublishThrough(
+        presentation.PublishRecordObjects(
             gfx,
-            checked(result.FirstGlyphIndex + result.GlyphCount),
-            HistoryPublication(batch.Style));
+            result.FirstGlyphIndex,
+            HistoryObjects(batch, binding, presentation, result, rubyGlyphs),
+            HistoryPublication(batch.Style),
+            batch.Layout.OriginX,
+            batch.Layout.OriginY);
         // text_history_render_records appends each row it draws to the window's live records, which the settings
         // redraw draws again; a presented group's rows are not the source's, so it appends none.
         if (batch.Presented == null)
@@ -571,6 +582,56 @@ public sealed partial class TextManager
             ["presentation"] = "retained-glyphs",
         });
         return true;
+    }
+
+    /// <summary>
+    /// The objects History's renderer binds over one group (text_history_render_records; 4.45D @0x464fa0, its bind at
+    /// 0x4661fb to 0x4664d5), handles counting up in this order: one over each text record that is not ruby, from its
+    /// first glyph's left and top to its last glyph's right and bottom, then one over each character of the ruby run
+    /// over it. An empty record, a line break's among them, gets one too, at the pen: from its x (the last glyph's right)
+    /// and the row's top to the bottom the record before it reached, the layout's height before the first. So a line
+    /// break's, whose row starts below that bottom, is empty and draws nothing. A group presented in another language
+    /// (localization spec §8) has no records to its glyphs, and each row it draws gets one object.
+    /// </summary>
+    private static List<AdvTextRecordObject> HistoryObjects(
+        AdvTextHistoryRenderBatch batch,
+        AdvTextLayoutPresentationBinding binding,
+        RetainedAdvTextLayoutPresentation presentation,
+        AdvRetainedTextRunResult result,
+        IReadOnlyList<(int First, int Count)> rubyGlyphs)
+    {
+        var objects = new List<AdvTextRecordObject>();
+        if (batch.Presented != null)
+        {
+            foreach (AdvTextRow row in result.Rows) objects.Add(new AdvTextRecordObject(row.FirstGlyph, row.GlyphCount));
+            return objects;
+        }
+        int drawnBase = result.GlyphCount - rubyGlyphs.Sum(ruby => ruby.Count);
+        int lineAdvance = checked((batch.Style.PrimaryFontSize > 0 ? batch.Style.PrimaryFontSize : 24)
+                                  + batch.Style.LineSpacing);
+        int penX = batch.Layout.CursorX, top = batch.Layout.CursorY, bottom = batch.Layout.Height;
+        foreach (AdvTextHistoryRenderRecord record in batch.Records)
+        {
+            if (record.LineBreak) (penX, top) = (binding.ResetCursorX, checked(top + lineAdvance));
+            if (record.GlyphCount == 0)
+                objects.Add(new AdvTextRecordObject(record.FirstGlyph, 0)
+                {
+                    Empty = new AdvRetainedGlyphRecord(0, penX, top, penX, bottom),
+                });
+            else if (record.FirstGlyph + record.GlyphCount <= drawnBase)
+            {
+                objects.Add(new AdvTextRecordObject(record.FirstGlyph, record.GlyphCount));
+                int first = result.FirstGlyphIndex + record.FirstGlyph;
+                AdvRetainedGlyphRecord last = presentation.Glyphs[first + record.GlyphCount - 1].Record;
+                (penX, top, bottom) = (last.Right, presentation.Glyphs[first].Record.Top, last.Bottom);
+            }
+            if (record.Ruby >= 0 && record.Ruby < rubyGlyphs.Count)
+            {
+                (int start, int count) = rubyGlyphs[record.Ruby];
+                for (int glyph = start; glyph < start + count; glyph++) objects.Add(new AdvTextRecordObject(glyph, 1));
+            }
+        }
+        return objects;
     }
 
     /// <summary>

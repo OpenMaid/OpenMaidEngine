@@ -1,8 +1,9 @@
 # 天秤のLa DEA。: message:UseAntiFont switched while History shows pages. History's renderer (text_history_render_records,
 # 4.45D @0x464fa0) appends what it draws to the window's live records as the text builders do, so the settings
 # redraw (adv_text_redraw_live_records@0x466a20) draws History's text again too (docs/engine-re.md, "The settings
-# redraw"). The companion of ladea-antifont-redraw.steps, which switches on a page. The port's aliased History
-# equals native's (2026-11-27); its antialiased History differs slightly, before the switch as after it.
+# redraw"). The companion of ladea-antifont-redraw.steps, which switches on a page. HISTORY sets the glyph paddings
+# 2, 2, 2, 2, and op 0x1d1 binds one object per record ("History binds one object per record"). Every shot of the
+# port's equals native's (2026-11-27).
 # Run on a fresh sandbox, on both targets, and compare the shots:
 #   py -3.11 -X utf8 tools/drive.py --game ladea native|port start
 #   py -3.11 -X utf8 tools/drive.py --game ladea native|port run tools/drive/scenarios/ladea-antifont-history.steps

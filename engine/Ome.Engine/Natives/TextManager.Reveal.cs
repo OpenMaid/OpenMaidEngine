@@ -181,10 +181,11 @@ public sealed partial class TextManager
                                     RubyPublication);
 
     /// <summary>What text_history_render_records (op 0x1d1; 4.33G @0x456490, 4.38D @0x461ea0, 4.43B @0x4646d0) does to
-    /// each History row: it binds the row's top plus the primary size, plus the effect's vertical offset in an effect
-    /// mode and again in mode 3 on 4.33G and 4.38D, which is one offset more than the port's cell in mode 3; 4.43B adds it
-    /// once, which is the cell, or with op 0x261's paddings on the four paddings. It makes the move, and raises a ruby
-    /// row as the timed publisher does. 4.24J's renderer binds the cells as they are.</summary>
+    /// each History record's object (one per record, <see cref="HistoryObjects"/>): it binds the record's top plus the
+    /// primary size, plus the effect's vertical offset in an effect mode and again in mode 3 on 4.33G and 4.38D, which
+    /// is one offset more than the port's cell in mode 3; 4.43B adds it once, which is the cell, or with op 0x261's
+    /// paddings on the four paddings. It makes the move, and raises a ruby character as the timed publisher does.
+    /// 4.24J's renderer binds the records as they are.</summary>
     private GlyphPublications HistoryPublication(AdvTextStyle style)
     {
         (int shiftX, int shiftY) = AliasedEffectShiftOf(style);

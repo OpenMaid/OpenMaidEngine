@@ -167,6 +167,11 @@ public sealed record AdvTextHistoryRenderBatch(
     /// <summary>The group's ruby runs (op 0x1d1 only), each over the text record drawn before it.</summary>
     public IReadOnlyList<AdvTextRubyAnnotation> Ruby { get; init; } = [];
 
+    /// <summary>The group's text records that are not ruby, in order (op 0x1d1 only): History's renderer binds one object
+    /// over each, an empty one and a line break's among them, and one over each character of a ruby run after the
+    /// record it is over.</summary>
+    public IReadOnlyList<AdvTextHistoryRenderRecord> Records { get; init; } = [];
+
     /// <summary>The group presented again (localization spec §8): drawn instead of <see cref="Text"/>, wrapped in the
     /// target layout at its break opportunities, with no ruby. Null draws the records as they are.</summary>
     public Localization.PresentedText? Presented { get; init; }
@@ -175,6 +180,11 @@ public sealed record AdvTextHistoryRenderBatch(
 /// <summary>A ruby drawn over glyphs <see cref="BaseFirstGlyph"/>..+<see cref="BaseGlyphCount"/> of a History
 /// batch's text (text_history_render_records@0x4526c0: consecutive flag-4 records over the preceding record).</summary>
 public readonly record struct AdvTextRubyAnnotation(int BaseFirstGlyph, int BaseGlyphCount, string Text);
+
+/// <summary>A text record of a History batch that is not ruby: glyphs [<see cref="FirstGlyph"/>, +
+/// <see cref="GlyphCount"/>) of the batch's text, none for an empty record; whether it is a line break, which starts the
+/// next row; and the ruby run over it, an index into <see cref="AdvTextHistoryRenderBatch.Ruby"/>, or -1.</summary>
+public readonly record struct AdvTextHistoryRenderRecord(int FirstGlyph, int GlyphCount, bool LineBreak, int Ruby = -1);
 
 /// <summary>One retained record that op 0x82 draws again: <see cref="Text"/> from the cell at <see cref="Rect"/>'s
 /// top-left, in <see cref="Style"/>. A ruby record is one ruby character, drawn plain with the ruby font. A line-break
@@ -819,12 +829,16 @@ public sealed class AdvTextHistory
         var text = new System.Text.StringBuilder();
         var lineBreaks = new List<int>();
         var ruby = new List<AdvTextRubyAnnotation>();
+        var records = new List<AdvTextHistoryRenderRecord>();
         var pendingRuby = new System.Text.StringBuilder();
         int glyphs = 0, baseFirst = -1, baseCount = 0;
         void FlushRuby()
         {
             if (pendingRuby.Length > 0 && baseFirst >= 0)
+            {
                 ruby.Add(new AdvTextRubyAnnotation(baseFirst, baseCount, pendingRuby.ToString()));
+                records[^1] = records[^1] with { Ruby = ruby.Count - 1 };
+            }
             pendingRuby.Clear();
         }
         foreach (var record in EnumerateGroup(firstRecordIndex))
@@ -838,9 +852,11 @@ public sealed class AdvTextHistory
                 continue;
             }
             FlushRuby();
-            if (record.Flags.HasFlag(AdvTextHistoryRecordFlags.LineBreak)) lineBreaks.Add(glyphs);
+            bool lineBreak = record.Flags.HasFlag(AdvTextHistoryRecordFlags.LineBreak);
+            if (lineBreak) lineBreaks.Add(glyphs);
             int count = 0;
             foreach (System.Text.Rune _ in record.Text.EnumerateRunes()) count++;
+            records.Add(new AdvTextHistoryRenderRecord(glyphs, count, lineBreak));
             text.Append(record.Text);
             baseFirst = glyphs;
             baseCount = count;
@@ -856,6 +872,7 @@ public sealed class AdvTextHistory
         {
             RecordedLineBreaks = lineBreaks,
             Ruby = ruby,
+            Records = records,
         };
         return true;
     }

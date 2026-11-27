@@ -1014,10 +1014,11 @@ are kept but not drawn ("The models").
 - **History.** A wheel up on page 4 opens it (`HISTORY`): four rows. Two differences, both fixed. Its ruby was two
   pixels low: History's renderer raises a ruby's ink by the top padding (`0x464f9c`) under the same test as the page's
   drawer (`0x4630a1` to `0x4630c1`), and the port's History did not. Its first row's icon was missing: HISTORY draws it
-  into the wait indicator's handle ("ADV text publication and wait-indicator service", below). What remains: HISTORY
-  sets the paddings 2, 2, 2, 2 where the page has 2, 0, 2, 2, and at the seams between glyph cells, where neighbouring
-  padded rectangles overlap, native's pixels are darker, by up to 30 levels on 4 pixels and less than 12 on about
-  4,000 (`backlog.md`).
+  into the wait indicator's handle ("ADV text publication and wait-indicator service", below). A third was found
+  later. HISTORY sets the paddings 2, 2, 2, 2 where the page has 2, 0, 2, 2. At the seams between glyph cells, where
+  neighbouring padded rectangles overlapped, native's pixels were darker, by up to 30 levels on 4 pixels and less
+  than 12 on about 4,000. The cause was the port's one object per glyph where native binds one per record ("History
+  binds one object per record", below). Since 2026-11-27 the shot equals native's (`koukaku-history.steps`).
 
 **Checked against native AGE (M3, 2026-11-26).** The title's debug menu, which `example.koukaku-debug-menu` opens from
 Quit (`modding/games/koukaku.md`, "The debug menu"), is alike on both targets but for the title's falling leaves. Its
@@ -1457,7 +1458,7 @@ below):
 | `adv_text_publish_next_glyph`, the timed reveal | `0x4509f0` | `0x4541b0` | for a record with chain flag 0, in an effect mode: `bottom += offset y`. In mode 3 with `+0x548` zero it also moves the object up and left by the offsets. For a chained record (a ruby character) in mode 3 it moves the cell and the object up by `offset y` unless `+0x355e8` is set. |
 | `adv_text_publish_layout`, op `0x20a` | `0x4503b0` | `0x453990` | the same, with two differences. In mode 3 it adds `offset y` to the bottom a second time. It tests the chain flag of the record at the reveal index, not of the record it binds, so it treats every record alike. It also binds the records up to the reveal index inclusive, one more than the timed publisher has shown. |
 | `text_redraw_retained_group`, op `0x82` | `0x4553c0` | `0x460cd0` | as the layout publisher, but it tests each record's own ruby bit (`+0x28` bit 2), so a ruby record is bound as it is. |
-| `text_history_render_records`, op `0x1d1` | `0x456490` | `0x461ea0` | one object per History row: for a row that is not ruby, `bottom = top + primary size`, then `offset y` in an effect mode and again in mode 3, and the move. Against the record's bottom, which has one `offset y` in an effect mode, that is one more row in mode 3. |
+| `text_history_render_records`, op `0x1d1` | `0x456490` | `0x461ea0` | one object per History record ("History binds one object per record" below): for a record that is not ruby, `bottom = top + primary size`, then `offset y` in an effect mode and again in mode 3, and the move. Against the record's bottom, which has one `offset y` in an effect mode, that is one more row in mode 3. |
 
 With the aspect mode off (`+0x313d0 == 0`) both add the offsets to the right and the bottom once more for an
 unchained record; neither game runs that way. 4.24J's publishers (`0x451220`, `0x450c80`) bind the record's
@@ -1581,8 +1582,8 @@ A page mid-reveal stays mid-reveal: only the published characters are bound.
 **Checked against native (2026-11-27).** 天秤のLa DEA。, on page 3 of SC0000 and in History
 (`tools/drive/scenarios/ladea-antifont-redraw.steps`, `ladea-antifont-history.steps`). `option smooth-text off` turns
 the text on screen aliased at once, and `on` puts back exactly the pixels from before. The port's text window equals
-native's in every shot of the page, and its History equals native's aliased. Its antialiased History differs from
-native's slightly, before the switch as after it; that difference is older than the redraw.
+native's in every shot of the page, and its History in every shot since History binds one object per record
+(below).
 
 **In the port.** `TextRules.LiveTextRedraw` (`None`, `WindowStyle`, `RecordStyle`), `LiveTextRedrawFirstLayout` and
 `LiveTextRedrawClearsEmptyLayouts` give each build's rule. Each History layout keeps its live records
@@ -1591,6 +1592,49 @@ native's slightly, before the switch as after it; that difference is older than 
 screen-mode handling (`ShellServices.ScreenModeSwitchRedrawsText`) call `RedrawLiveText`. Text presented in another
 language (localization spec §8) is drawn again as op `0x82` draws it. `LiveTextRedrawTests` covers the rules, both
 style rules, the bind condition, the empty window and the screen-mode key.
+
+### History binds one object per record (2026-11-27)
+
+Every build's History renderer, op `0x1d1`'s `text_history_render_records` (4.24J `0x4526c0`, 4.33G `0x456490`, 4.38D
+`0x461ea0`, 4.43B `0x4646d0`, 4.45D `0x464fa0`), binds one object over each History record, not one per glyph. It
+draws a record that is not ruby (4.24J the whole string at once, the later builds character by character), then
+binds one object over it. The rectangle runs from the pen at the record's start to the pen after it, and from the row's
+top to its bottom. A ruby run gets one object per character, after the record it is over. Handles count up from the
+window's first (`+0x68`), or with the op's flag `0x40` from its published count (`+0x84`). 天秤のLa DEA。's HISTORY
+passes `0x40` after a `show-text` of the speaker's name.
+
+4.45D's rectangle (`0x4661fb` to `0x4664d5`; 4.43B's at `0x465bb0` is the same code):
+
+- The bottom is the top plus the primary size, plus the effect's y offset in an effect mode with `UseAntiFont` on. The
+  character loop sets it, so an empty record keeps the bottom of the record before it (the window's height, `+0x18`,
+  before the first).
+- With the paddings on (op `0x261` bit 0) each side grows by its padding (op `0x260`), and the object moves back by the
+  left and top ones.
+- Without them, in an effect mode, the right grows by the x offset and the bottom by the y offset once or twice; in
+  mode 3 with `UseAntiFont` 0 the object moves back by the offsets ("The glyph publisher grows a cell" above).
+
+An empty record is bound too, a line break's among them. A line break's object runs from its row's top to the bottom
+of the row above, so it is empty unless the line spacing is less than the top and bottom paddings together, and
+native's blit draws nothing for an empty rectangle.
+
+The port bound one object per glyph until 2026-11-27. With no paddings the glyphs' cells tile a record, so the pixels
+were the same. With paddings, each glyph's object overlapped its neighbours' by the left and right paddings, and those
+columns were drawn twice. 魔導巧殻's and La DEA's HISTORY set the paddings 2, 2, 2, 2. On La DEA's antialiased History
+1,192 pixels differed, all within two columns of a cell seam, and 魔導巧殻's differed at the seams too.
+
+**In the port.** `AdvTextHistoryRenderBatch.Records` gives each record's glyphs, and `TextManager.HistoryObjects`
+makes the objects in native's order, an empty record's at the pen: the last glyph's right, where native has the pen
+after the advance. `RetainedAdvTextLayoutPresentation.PublishRecordObjects` binds them and keeps them, so a layout
+coming back from a suspension binds the same objects. A group presented in another language (localization spec §8)
+has no records to its glyphs, so each row it draws gets one object. `HistoryRecordObjectsTests` covers 4.24J, 4.43B and
+4.45D, the paddings, the line break's object and the rebind.
+
+**Checked against native (2026-11-27).** La DEA's three History shots (`ladea-antifont-history.steps`: antialiased,
+aliased after a switch, antialiased again) and 魔導巧殻's (`koukaku-history.steps`) now equal native's. Without paddings
+nothing changed. The History shots of Himegari's scenarios (`himegari-wheel-history.steps`, `-antifont-off`,
+`-furigana`), Kamidori's (`kamidori-antifont-off.steps`, `-furigana`, `-history-after-load`) and 創刻のアテリアル's
+(`arterial-antifont-off.steps`) differ from native's as they did before. Most are equal; the rest differ only in an
+animation's phase (Himegari's wisp, Kamidori's wait indicator), or in 7 and 12 pixels by one level in Kamidori's.
 
 ### Polygon objects: winding, depth, texture size and the render targets (2026-11-20)
 
