@@ -113,6 +113,14 @@ public class ExtendedGlyphTests
         Assert.Equal(Extended, EngineBuilds.Age438D.Rules.Text.ExtendedGlyphFace);
     }
 
+    [Fact]
+    public void FourFortyFiveDTakesTheDashStripFromTheGlyphsBlackBox()
+    {
+        Assert.Equal(DashStripRows.Cell, EngineBuilds.Age438D.Rules.Text.DashStrip);
+        Assert.Equal(DashStripRows.Cell, EngineBuilds.Age443B.Rules.Text.DashStrip);
+        Assert.Equal(DashStripRows.BlackBox, EngineBuilds.Age445D.Rules.Text.DashStrip);
+    }
+
     // ---- the join ----
 
     private static RgbaImage Surface(int width, int height) => new(width, height, new byte[width * height * 4]);
@@ -183,6 +191,58 @@ public class ExtendedGlyphTests
                                fontSize: 8, effectOffsetX: 0, effectOffsetY: 0);
 
         Assert.Equal("##########...#..........", Row(surface, 4));
+    }
+
+    [Fact]
+    public void TheBlackBoxStripIsTheGlyphsInkRowsWidenedByTheEffectOffsetInAnEffectMode()
+    {
+        // A dash whose black box is 3 rows, its top 5 above the baseline at 12: rows 7 to 9. The cell rule would take
+        // rows 2 to 11 for a size of 8 and a (1, 1) effect.
+        foreach ((bool effect, int[] rows) in new[] { (false, new[] { 7, 8, 9 }), (true, new[] { 6, 7, 8, 9, 10 }) })
+        {
+            RgbaImage surface = Surface(40, 20);
+            Fill(surface, 20, 0, 30, 20, 200);
+
+            ExtendedDashJoin.ApplyBlackBox(surface, ExtendedDashJoin.LeftOnly, drawX: 20, baselineY: 12, originY: 5,
+                                           blackBoxHeight: 3, effectMode: effect, nextPenX: 32, blackBoxWidth: 10,
+                                           effectOffsetX: 1, effectOffsetY: 1);
+
+            // Column 14, the copy's first, has ink in exactly the strip's rows.
+            Assert.Equal(rows, Enumerable.Range(0, 20).Where(y => surface.Pixels[(y * surface.Width + 14) * 4 + 3] != 0));
+        }
+    }
+
+    [Fact]
+    public void ADashAfterAKanjiKeepsTheKanjisInkAboveAndBelowItOnlyUnderTheBlackBoxRule()
+    {
+        // A kanji's cell is 8 wide with ink in all 10 rows; the dash after it is 8 wide with ink in rows 4 and 5 only. The
+        // strip, the dash's first 6 columns, is copied to end at the dash's x + 1: over the kanji's last 5 columns. 4.43B
+        // copies the cell's rows, so the strip's blank rows clear the kanji's ink there; 4.45D copies the dash's own rows.
+        static GlyphMask Glyph(GlyphRasterRequest request) => request.Cp932Code == ExtendedDashJoin.LeftOnly
+            ? new(8, 2, 8, 0, 5, 8, 0, 8, 10, Enumerable.Repeat((byte)16, 16).ToArray(), ascent: 9)
+            : new(8, 10, 8, 0, 9, 8, 0, 8, 10, Enumerable.Repeat((byte)16, 80).ToArray(), ascent: 9);
+        AdvTextStyle style = AdvTextStyle.Default with { PrimaryFontSize = 10, RenderMode = 0 };
+        var options = new GlyphTextLayoutOptions(0, 0, 0, 40, 16, false, style);
+        GlyphRasterRequest[] glyphs =
+        [
+            new("face", 10, -5, 0, 0x6f22, 0x8abf, GlyphRasterPolicy.NativeCp932Gray4),
+            new("face", 10, -5, 0, 0xe003, ExtendedDashJoin.LeftOnly, GlyphRasterPolicy.NativeCp932Gray4),
+        ];
+
+        RgbaImage cell = Surface(40, 16), blackBox = Surface(40, 16);
+        new RetainedGlyphLayoutEngine(new RecordingRasterizer(Glyph), joinsExtendedDashes: true)
+            .Render(cell, options, glyphs);
+        new RetainedGlyphLayoutEngine(new RecordingRasterizer(Glyph), joinsExtendedDashes: true,
+                                      dashStrip: DashStripRows.BlackBox).Render(blackBox, options, glyphs);
+
+        // The dash's rows join under both rules.
+        Assert.Equal("################", Row(cell, 4)[..16]);
+        Assert.Equal(Row(cell, 4), Row(blackBox, 4));
+        // Above it, the cell rule clears the kanji's columns 3 to 7; the black box rule leaves them.
+        Assert.Equal("###.............", Row(cell, 0)[..16]);
+        Assert.Equal("########........", Row(blackBox, 0)[..16]);
+        Assert.Equal("###.............", Row(cell, 9)[..16]);
+        Assert.Equal("########........", Row(blackBox, 9)[..16]);
     }
 
     [Fact]

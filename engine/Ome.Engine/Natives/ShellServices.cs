@@ -195,6 +195,11 @@ public sealed partial class ShellServices
         return taken ?? (IReadOnlyList<ShellMenuRequest>)[];
     }
 
+    /// <summary>Whether a screen-mode switch draws the windows' live text again: display_toggle_screen_mode_and_menu_bar
+    /// does so while display:VirtualFullScreenType is 2 (4.33G @0x4130f0 to 4.45D @0x413ac0; the build's
+    /// <c>TextRules.LiveTextRedraw</c> says whether it redraws at all).</summary>
+    public bool ScreenModeSwitchRedrawsText => _settings?.LoadInt("display", "VirtualFullScreenType", 0) == 2;
+
     /// <summary>Engine thread: whether a screen-mode switch was taken since the last call. Native's switch sets the
     /// Direct3D device up again (display_toggle_screen_mode_and_menu_bar calls gfx_setup_3d_transforms_and_lights@0x486260),
     /// which hands the 3D effects the camera's view (Graphics.SetUpDeviceTransforms).</summary>

@@ -165,8 +165,8 @@ item[201].name = "[MOD] 治癒の水・小"
 - **A floor's objects** are named through the floor: `dungeon_floor.65.object.8.action_args.1` is the count floor
   65's chest in slot 8 gives (floors 1 to 86; a floor's slots run from 1 to its `floor_object_count` − 1). FLINIT
   writes the floor in play and clears nothing, and FIELD walks it on every map-block entry, so the part is in the
-  slots while its floor is the one entered. A load on a floor runs no walk, so the part comes back at the next entry
-  ([the data tables](../../ladea-data-tables.md), "FLINIT").
+  slots while its floor is the one entered. A load runs FIELD's opening again, the walk with it, so the part is back
+  after a load as well ([the data tables](../../ladea-data-tables.md), "FLINIT").
 - **A town place's spots** are named through the place: `place.5.spot.1.x` is place 5's first spot (places 1 to 20).
   SETORNDATA clears the spots and builds them from the ORINIT chain each time TOWN shows a place, once for each opened
   place while TOWN builds its list of places, and on a load in a scene over the town. The part is applied after each.
@@ -193,7 +193,7 @@ layer's work:
 |---|---|---|
 | `ladea.boot.data_layered` | `INIT2.BIN` | after the base tables and both appends' (op `0x143` runs `$1$AUTORUN`, then `$2$AUTORUN`) |
 | `ladea.boot.data_ready` | `INIT2.BIN` | INIT2's exit, after its own work on the tables |
-| `ladea.floor.after_object_loaders` | `FIELD.BIN` | after the FLINIT chain, on each map-block entry |
+| `ladea.floor.after_object_loaders` | `FIELD.BIN` | after the FLINIT chain, on each map-block entry and each load on a floor |
 | `ladea.town.after_spot_loaders` | `SETORNDATA.BIN` | after the ORINIT chain, for the place being built |
 | `ladea.experience.before_add` | `ADDEXP.BIN` | one character's experience, before it is added and the levels are worked out |
 
@@ -221,9 +221,13 @@ Its helper changes the game through its own script, as the game's own gifts do, 
 
 Every event has been raised in a run of the port: the boot events, the helper and the data file's boot and town parts
 by `ModLuaLinkTests`, and the boot events, sixteen awards and the floor event through the debug menu (below) by the
-[ladea-debug-field](../../../tools/drive/scenarios/port/ladea-debug-field.steps) scenario, and the town event, once
-for each of the 20 places, by the [ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps)
-scenario. No award from a battle has been raised in a played game yet.
+[ladea-debug-field](../../../tools/drive/scenarios/port/ladea-debug-field.steps) scenario, which also saves on the
+floor and loads the save, the town event, once for each of the 20 places, by the
+[ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps) scenario, and a battle's awards by the
+[ladea-battle-award](../../../tools/drive/scenarios/port/ladea-battle-award.steps) scenario: 索敵 on the debug floor
+starts a battle, AUTO戦闘 wins it, and RESULT gives 620 to each of the five in battle and 210 to each in reserve. The
+event comes only for a character below the cap, so the reserve's リザイラ, at 250, has none. Native AGE shows the same
+result screen, pixel for pixel. FIELD's walking award (condition 40) has not been raised in a run.
 
 ## The debug menu
 
@@ -246,8 +250,13 @@ that opens the same menu on native AGE.
 - Run on both targets: the menu and 迷宮マップ２, alike (the same floor, party and levels; only the developers'
   counters at the right edge differ), and 迷宮マップ１. In the port, the
   [ladea-debug-field](../../../tools/drive/scenarios/port/ladea-debug-field.steps) scenario plays 迷宮マップ２ with
-  the floor part and the event log, and the [ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps)
-  scenario plays 街 with the event log.
+  the floor part and the event log, the [ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps)
+  scenario plays 街 with the event log, and the
+  [ladea-battle-award](../../../tools/drive/scenarios/port/ladea-battle-award.steps) scenario a battle on the
+  debug floor.
+- A load on the debug floor opens a run of tutorials, 30 pages after 迷宮マップ２, for what the debug entry
+  unlocked (`FIELD@0xc30`): `debug_play_active`, which keeps TUTORIAL quiet (`TUTORIAL@0x7`), is not saved, so the
+  load clears it. Next (1020 633) and Close (1020 661) step through them; both targets show the same pages.
 - Map block 999 has no map script in MPINIT, so SETMAPDATA calls script 0, which is SYSTEM4, and the game boots again
   inside FIELD (`SETMAPDATA@0xd8`). 迷宮マップ１ does so on both targets; 迷宮マップ３ goes to the same block.
 - The four entries that start play set `debug_play_active`: the town then skips the SCJUMP chain (`TOWN@0xc6`), and no
@@ -269,4 +278,4 @@ that opens the same menu on native AGE.
 | [example.ladea-speaker-name](../../../oms/examples/mods/example.ladea-speaker-name/) | a data file that renames シュリ's name form 1 at `ladea.data.layered`; the [ladea-speaker-name](../../../tools/drive/scenarios/port/ladea-speaker-name.steps) scenario plays a new game to her first line under it |
 | [example.ladea-event-log](../../../oms/examples/mods/example.ladea-event-log/) | a Lua mod that logs every event of `ladea-base` with its fields, and gives one 治癒の水・小 at each `ladea.data.ready` through `give_item` |
 | [example.ladea-floor-chest](../../../oms/examples/mods/example.ladea-floor-chest/) | a data file with a floor's part: floor 65's chest in slot 8 gives nine 治癒の水・小 for its own four 治癒の水・特大, at `ladea.floor.loaded` |
-| [example.ladea-debug-menu](../../../oms/examples/mods/example.ladea-debug-menu/) | a script mod that opens the title's debug menu from Quit; the [ladea-debug-field](../../../tools/drive/scenarios/port/ladea-debug-field.steps) scenario plays 迷宮マップ２ with the two mods above, and the [ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps) scenario 街 with the event log |
+| [example.ladea-debug-menu](../../../oms/examples/mods/example.ladea-debug-menu/) | a script mod that opens the title's debug menu from Quit; the [ladea-debug-field](../../../tools/drive/scenarios/port/ladea-debug-field.steps) scenario plays 迷宮マップ２ with the two mods above, the [ladea-debug-town](../../../tools/drive/scenarios/port/ladea-debug-town.steps) scenario 街 with the event log, and the [ladea-battle-award](../../../tools/drive/scenarios/port/ladea-battle-award.steps) scenario a battle there with the event log |

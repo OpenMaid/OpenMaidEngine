@@ -191,21 +191,6 @@ it; git history keeps the record.
   with variant 1, so natively it loops until another voice pauses it. The port plays it once and starts it again 300 ms
   after it ends (`engine-re.md`, "The three voices"). A 天秤のLa DEA。 run that holds on an SP page past the voice's end
   would show both.
-- **The retained text is not redrawn on a screen-mode or font change (AGE 4.43B and 4.45D).** Switching the screen
-  mode (`display_toggle_screen_mode_and_menu_bar`) or UseAntiFont (`text_set_use_anti_font`) makes 4.43B and 4.45D
-  redraw every window's retained text (`0x466100`, `0x466a20`: the window's style applied, each layout record drawn,
-  the style restored). 4.43B also applies each record's own style before drawing it; 4.45D draws them all in the
-  window's (`engine-re.md`, "魔導巧殻 against 天秤のLa DEA。, triaged"). The port redraws nothing then
-  (`TextManager.SetTextAntialias`, which follows 4.24J's setter), so text already on screen keeps the old glyphs
-  until it is drawn again. Done when a build's rule says whether the change redraws, the port redraws as native does
-  with 4.45D's style rule, and a native run that switches UseAntiFont on a page with text compares on both targets.
-- **4.45D's dash strip.** After drawing a `0xF042` or `0xF043`, 4.45D's five join sites take the copied strip's rows
-  from the glyph's black box (from the baseline less `gmptGlyphOrigin.y`, `gmBlackBoxY` rows; the drawer at
-  `0x46edd0` widens it by the effect offset), where the port, as 4.38D and 4.43B do, takes the cell's
-  (`ExtendedDashJoin`). No text of 天秤のLa DEA。 can show it: every joined dash in its strings follows a dash, and
-  SC0000's page 3 is identical on both targets (`engine-re.md`, the triage's dash row). A mod's text could (a
-  `0xF043` after a glyph with ink above or below the dash). Done when the five sites are read, the strip is a
-  `TextRules` rule set in `Age445D`, and a synthetic test draws a `0xF043` after a kanji under both rules.
 - **The port's mode-0 alpha is not native's (every build; older than 天秤のLa DEA。's branch).** Native draws a mode-0
   object by its colour's alpha whenever `+0x60` was written: its sprite blends with the colour unchanged and the bind
   leaves `+0x60` alone (`engine-re.md`, "Object blend modes", the restore). The port draws a textured mode-0 object
@@ -780,7 +765,9 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     on, as native does. `tools/drive/scenarios/ladea-opening.steps` passes on both targets at the same positions,
     and its five shots match native but for the page-wait icon's frame; the port's `settle` now waits for detached
     animations (page 3's pictures). The two rows step 4 left to read: the dash strip changes no pixel of the game's
-    text, and `0x466a20` does restyle, but only in a redraw the port lacks for 4.43B too (both are items above).
+    text (its rule is ported since 2026-11-27, `TextRules.DashStrip`), and `0x466a20` does restyle, in the settings
+    redraw, which the port has since 2026-11-27 for every build that does it (`TextRules.LiveTextRedraw`;
+    `engine-re.md`, "The settings redraw").
   - **Step 7 is done (2026-11-26): it stands at P3.** Every opcode has a handler (`catalog-scan`: `unsupported=0`):
     `0x12d`, the joystick ops `0x2f9` to `0x2fb` with the POV's directions (`InputRules`), and the timed catch-up
     callback `0xce`/`0xcf`. Its shell is 4.43B's but for dialog 2's year, and its ｵｰﾄﾒｯｾｰｼﾞ page leaves the voice
@@ -805,9 +792,7 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     and the entity declarations (16 kinds; 13 of the export's 1,282 pictures are explicit). The layout tool gained La
     DEA's 34 leaders. What M2 leaves open:
     - **The data document's "What is not decoded":** arrays with no reader or no writer, fields read but not
-      understood, the rule scripts RTN000 to RTN307, and whether an object works after a load before the next map-block
-      entry (a native run that saves beside a chest and opens it after the load would settle it). Each is done when
-      that document and the registry say it.
+      understood, and the rule scripts RTN000 to RTN307. Each is done when that document and the registry say it.
     - **The layout tool's limits, older than the branch:** `init_layout.py` gives one capacity to all of a leader's
       arrays, so AFINIT has no leader and ILINIT's level names come out one record low; it has no mode for a table
       loaded on demand by a selector (COINIT, FLINIT, DUINIT, ORINIT, ENINIT, ESINIT, BTANINIT) or written as boards of
@@ -826,18 +811,15 @@ From the user's design pass on the built site (2026-11-22). The export's design 
     gives `give_item`. `ModLuaLinkTests` binds every event on the install, runs INIT2 with the boot events, SETORNDATA
     with a place part, and the helper. In the port, `example.ladea-speaker-name` renames シュリ's name plate
     (`tools/drive/scenarios/port/ladea-speaker-name.steps`), and through the title's debug menu 迷宮マップ２ raises
-    sixteen awards and the floor event with a floor part (`ladea-debug-field.steps`), and 街 the town event for each
-    of the 20 places (`ladea-debug-town.steps`); the menu and 迷宮マップ２ run alike on native AGE. On the way the ADV
+    sixteen awards and the floor event with a floor part, again after a save on the floor and its load
+    (`ladea-debug-field.steps`), 街 the town event for each of the 20 places (`ladea-debug-town.steps`), and a battle
+    started by 索敵 on that floor RESULT's fourteen awards (`ladea-battle-award.steps`); the menu, 迷宮マップ２, the
+    chest after a load and the battle's result screen run alike on native AGE. On the way the ADV
     module took in `set_goddess_gauge_conditions` (SC0000's `label_2876d`, five scenes; lift coverage 59.5%), and the
     two AFINIT tables traded names, so that `item_kind` and `item_class` mean what ITINIT's `item_kinds` and
     `item_classes` hold. What M3 leaves open:
     - **Loaders without an event:** ENINIT's encounter entries, ESINIT's formation slots and BTANINIT's effects. Done
       when a mod needs one and it is added, or never.
-    - **A floor's part after a load:** a load on a floor runs no FLINIT walk, so `ladea.floor.loaded` does not come
-      until the next entry (the open question above). Done when that is read and the base mod raises the event after
-      such a load, or the guide says why it need not.
-    - **A battle's award** (RESULT) and FIELD's walking award were not raised in a played game; the debug entry's
-      ADDEXP calls were. Done when a run raises one.
   - **Next, by the plan:** the sweep (P4, step 8).
 
   The onboarding target, P3 and M3 (`adding-a-game.md`), was reached on 2026-11-26. The item stays for the open points

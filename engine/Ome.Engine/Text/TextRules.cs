@@ -47,9 +47,49 @@ namespace Ome.Engine.Text;
 /// text_history_render_records@0x4646d0, each one add); 4.33G's and 4.38D's add it a second time in mode 3, so their
 /// History rows are one row taller than the record there (docs/engine-re.md, "The glyph publisher grows a cell" and
 /// "Arterial against 魔導巧殻, triaged").</param>
+/// <param name="DashStrip">Which rows the join of the dashes 0xF042 and 0xF043 copies, in a build that joins them
+/// (<see cref="ExtendedGlyphFace"/>): the cell's (4.38D, 4.43B) or the glyph's black box (4.45D's two drawers;
+/// <see cref="DashStripRows"/>, docs/engine-re.md, "The dash join").</param>
+/// <param name="LiveTextRedraw">What a change of <c>message:UseAntiFont</c> does to the text already in the windows, and
+/// a screen-mode switch while <c>display:VirtualFullScreenType</c> is 2: nothing (4.15D, 4.24J, 4.24N), or each
+/// window's live records drawn again, in its style (4.33G, 4.45D) or in each record's own (4.38D, 4.43B;
+/// <see cref="Text.LiveTextRedraw"/>, docs/engine-re.md, "The settings redraw").</param>
+/// <param name="LiveTextRedrawFirstLayout">The first window that redraw draws: 1 in 4.33G (its loop at 0x4596f0 starts
+/// there), 0 after it.</param>
+/// <param name="LiveTextRedrawClearsEmptyLayouts">Whether that redraw clears a window that has no live records too:
+/// 4.38D's loop (0x463630) and 4.45D's (0x466a20) clear each defined window's surface before they look at its records;
+/// 4.33G's (0x4596f0) skips a window without any.</param>
 public sealed record TextRules(GlyphCoverageAlpha GlyphCoverage, RubyRule Ruby, bool FuriganaArmsGlyphTimer,
                                bool HistoryLookupTestsSign, LineEndRule LineEnd, string? ExtendedGlyphFace,
                                AspectCalibration AspectCalibration, bool PublisherGrowsGlyphCells,
                                bool PublisherMovesAliasedEffectGlyphs = false,
                                bool SubstringKeepsDoubleByteCharacters = false,
-                               bool LayoutPublishersGrowOnce = false);
+                               bool LayoutPublishersGrowOnce = false,
+                               DashStripRows DashStrip = DashStripRows.Cell,
+                               LiveTextRedraw LiveTextRedraw = LiveTextRedraw.None,
+                               int LiveTextRedrawFirstLayout = 0,
+                               bool LiveTextRedrawClearsEmptyLayouts = false);
+
+/// <summary>
+/// What a build draws again when <c>message:UseAntiFont</c> changes (text_set_use_anti_font) and when the screen mode
+/// switches while <c>display:VirtualFullScreenType</c> is 2 (display_toggle_screen_mode_and_menu_bar): each window's
+/// live records, those drawn there since its last op 0x71, at their rectangles into its cleared surface, in the new
+/// setting (docs/engine-re.md, "The settings redraw").
+/// </summary>
+public enum LiveTextRedraw
+{
+    /// <summary>Nothing is drawn again: the text keeps the glyphs it was drawn with (4.24J's
+    /// text_set_antialias_enabled@0x4137e0; 4.15D's @0x411ff0 and 4.24N's @0x414100 likewise).</summary>
+    None,
+
+    /// <summary>Every record in the window's style, which is the last record's: the appender
+    /// (adv_text_append_segment_record) copies a record's style into the window (its <c>+0xa8</c> to <c>+0xc4</c>,
+    /// a ruby record's size and weight into <c>+0xc8</c> and <c>+0xcc</c>). 4.33G's records carry no style
+    /// (<c>0x4596f0</c>); 4.45D's do, and its redraw (<c>0x466a20</c>) does not read it.</summary>
+    WindowStyle,
+
+    /// <summary>Each record in its own style, on top of the window's: face, size, colors, weight, render mode and
+    /// effect offsets from the record's <c>+0x4c</c> to <c>+0x68</c> (4.38D <c>0x463630</c>, 4.43B
+    /// <c>0x466100</c>).</summary>
+    RecordStyle,
+}

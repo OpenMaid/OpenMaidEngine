@@ -553,6 +553,10 @@ public sealed partial class TextManager
             gfx,
             checked(result.FirstGlyphIndex + result.GlyphCount),
             HistoryPublication(batch.Style));
+        // text_history_render_records appends each row it draws to the window's live records, which the settings
+        // redraw draws again; a presented group's rows are not the source's, so it appends none.
+        if (batch.Presented == null)
+            History.AppendLiveRows(batch.LayoutSlot, batch.Text, batch.Style, result.Rows, result.Ruby);
         _scene.RetainedHistoryLayouts.Add(batch.LayoutSlot);
         _graphics.RequestPresentation();
         _timeline?.Event("history-render", new()
@@ -719,6 +723,203 @@ public sealed partial class TextManager
                 WrapHorizontally: false, style, plan.BreaksBefore, text.Realization),
             plan.Glyphs);
         return drawn.Records.Select(record => (record, false)).ToArray();
+    }
+
+    /// <summary>
+    /// The settings redraw (adv_text_redraw_live_records: 4.33G @0x4596f0, 4.38D @0x463630, 4.43B @0x466100, 4.45D
+    /// @0x466a20; <see cref="LiveTextRedraw"/>), which text_set_use_anti_font runs as message:UseAntiFont changes and
+    /// display_toggle_screen_mode_and_menu_bar after a switch while display:VirtualFullScreenType is 2: each layout from
+    /// the build's first that has a surface is drawn again from its live records
+    /// (<see cref="AdvTextHistory.GetLiveRecords"/>, <see cref="RedrawLiveLayout"/>); 4.33G's skips one with none.
+    /// </summary>
+    private void RedrawLiveText()
+    {
+        if (_liveTextRedraw == LiveTextRedraw.None || _sourceText == null) return;
+        GfxState gfx = _graphics.State;
+        bool redrawn = false;
+        for (int slot = _liveTextRedrawFirstLayout; slot < AdvTextHistory.LayoutCount; slot++)
+            redrawn |= RedrawLiveLayout(gfx, slot);
+        if (redrawn) _graphics.RequestPresentation();
+    }
+
+    /// <summary>
+    /// One layout of the settings redraw: its surface cleared and its live records drawn again at their rectangles in the
+    /// current setting (<see cref="LiveRedrawRecords"/>), and, while its first object shows its surface, its objects
+    /// erased and bound again. Native counts the records' characters against the layout's published glyphs (window
+    /// record <c>+0x84</c>, else <c>+0x88</c>): a record whose first character is published is bound to the pen after
+    /// its last published one (<see cref="LiveRedrawPublication"/>), a ruby record per character, so a page mid-reveal
+    /// stays so. Nothing is written back, and the glyph list, the reveal and the cursors stay. A group History presents
+    /// in the selected language (localization spec §8) is drawn as op 0x82 draws one, and its published glyphs are bound
+    /// again.
+    /// </summary>
+    private bool RedrawLiveLayout(GfxState gfx, int slot)
+    {
+        // Native takes each window whose surface (0x14 on) exists: the loop reads the graphics native's surface table
+        // (gfx+0xa5c8, so +0xa618 for window 0), not the window's records.
+        if (!_graphics.TryGetSurfaceSize(checked(slot + 0x14), out var dimensions)
+            || dimensions.W <= 0 || dimensions.H <= 0)
+            return false;
+        IReadOnlyList<AdvTextLiveRecord> live = History.GetLiveRecords(slot);
+        if (live.Count == 0 && !_liveTextRedrawClearsEmptyLayouts) return false;
+        // A layout History has no state for has nothing to bind: its binding is not created for the asking.
+        AdvTextLayoutPresentationBinding binding = History.HasLayout(slot)
+            ? History.GetLayoutObjectBinding(slot)
+            : new AdvTextLayoutPresentationBinding(slot, checked(slot + 0x14), -1, 0, -1, 0, 0);
+
+        IReadOnlyList<AdvTextRedrawRecord> records = LiveRedrawRecords(live);
+        var updated = new RgbaImage(dimensions.W, dimensions.H, new byte[checked(dimensions.W * dimensions.H * 4)]);
+        _scene.RetainedTextLayouts.TryGetValue(slot, out RetainedAdvTextLayoutPresentation? presentation);
+        // gfx_object_query_bound_source_slot: native binds nothing unless the first object shows the layout's surface.
+        int published = presentation != null && binding.FirstObjectHandle >= 0 && binding.ObjectCapacity > 0
+                        && gfx.QuerySlot(binding.FirstObjectHandle, unboundReadsAbsent: true) == binding.SourceSurfaceSlot
+            ? presentation.PublishedGlyphCount
+            : 0;
+
+        int bound = 0;
+        if (LivePresentation(live, records) is { } presented && _presentedText is { } presentedText)
+        {
+            AdvTextRedrawBatch batch = new(slot, live[0].HistoryIndex, 0, History.GetLayoutObjectSnapshot(slot), records)
+            {
+                Presented = presented,
+            };
+            RedrawPresented(updated, binding, batch, presented, presentedText.Value);
+            _graphics.PublishSurfacePixels(binding.SourceSurfaceSlot, updated);
+            gfx.CreateSurface(binding.SourceSurfaceSlot);
+            if (published > 0 && presentation != null)
+            {
+                gfx.EraseRange(binding.FirstObjectHandle, binding.ObjectCapacity);
+                if (LayoutPublication is { } publication) presentation.RepublishEach(gfx, publication);
+                else presentation.Republish(gfx);
+                bound = presentation.PublishedGlyphCount;
+            }
+        }
+        else
+        {
+            TextPipeline text = ActiveText;
+            var shown = new List<(AdvRetainedGlyphRecord Record, GlyphPublication Publication)>();
+            int drawn = 0;
+            var pen = new List<int>(1);
+            foreach (AdvTextRedrawRecord record in records)
+            {
+                pen.Clear();
+                IReadOnlyList<(AdvRetainedGlyphRecord Cell, bool IsRuby)> cells = text.Layout.RenderRedraw(
+                    updated, [record], text.Policy, _textAntialias, LiveRubyRules, text.Realization, pen);
+                int characters = 0;
+                foreach (System.Text.Rune _ in record.Text.EnumerateRunes()) characters++;
+                AdvTextHistoryRect rect = record.Rect;
+                if (record.IsRuby)
+                {
+                    // One object per character, each over its own cell.
+                    for (int index = 0; index < characters; index++, drawn++)
+                    {
+                        if (drawn >= published) continue;
+                        int right = index + 1 < cells.Count ? cells[index + 1].Cell.Left : pen[0];
+                        int left = index < cells.Count ? cells[index].Cell.Left : rect.Left;
+                        shown.Add((new AdvRetainedGlyphRecord(1, left, rect.Top, right, rect.Bottom), RubyPublication));
+                    }
+                    continue;
+                }
+                if (drawn < published)
+                {
+                    int count = Math.Min(characters, published - drawn);
+                    int right = count >= characters ? pen[0] : count < cells.Count ? cells[count].Cell.Left : pen[0];
+                    shown.Add((new AdvRetainedGlyphRecord(0, rect.Left, rect.Top, right, rect.Bottom),
+                               LiveRedrawPublication(record.Style)));
+                }
+                drawn += characters;
+            }
+            _graphics.PublishSurfacePixels(binding.SourceSurfaceSlot, updated);
+            gfx.CreateSurface(binding.SourceSurfaceSlot);
+            if (published > 0)
+            {
+                gfx.EraseRange(binding.FirstObjectHandle, binding.ObjectCapacity);
+                bound = (int)Math.Min(shown.Count, binding.ObjectCapacity);
+                AdvTextLayoutSnapshot layout = History.GetLayoutObjectSnapshot(slot);
+                for (int index = 0; index < bound; index++)
+                    RetainedAdvTextLayoutPresentation.BindRecord(
+                        gfx, checked(binding.FirstObjectHandle + index), binding.SourceSurfaceSlot, shown[index].Record,
+                        layout.OriginX, layout.OriginY, shown[index].Publication);
+            }
+        }
+        _timeline?.Event("text-live-redraw", new()
+        {
+            ["layout"] = slot,
+            ["records"] = records.Count,
+            ["published"] = published,
+            ["bound"] = bound,
+            ["antialias"] = _textAntialias,
+        });
+        return true;
+    }
+
+    /// <summary>
+    /// The text records the settings redraw draws, walked as op 0x82 walks a group: a navigation-filtered record ends
+    /// the walk, so does the next group's start, and metadata and voice records draw nothing. A text record draws in the
+    /// window's style, which is the last text record's that is not ruby (<see cref="LiveTextRedraw.WindowStyle"/>), or in
+    /// its own (<see cref="LiveTextRedraw.RecordStyle"/>). A ruby record draws in the ruby font at its own size in mode
+    /// 0, with the colors of the window, or of the text record before it: 4.38D's redraw sets the ruby font once, from
+    /// the window.
+    /// </summary>
+    private IReadOnlyList<AdvTextRedrawRecord> LiveRedrawRecords(IReadOnlyList<AdvTextLiveRecord> live)
+    {
+        AdvTextStyle? window = null;
+        foreach (AdvTextLiveRecord entry in live)
+            if (entry.Record.Kind == AdvTextHistoryRecordKind.Text
+                && !entry.Record.Flags.HasFlag(AdvTextHistoryRecordFlags.Ruby))
+                window = entry.Record.Style;
+
+        var records = new List<AdvTextRedrawRecord>();
+        AdvTextStyle? before = window;
+        for (int index = 0; index < live.Count; index++)
+        {
+            AdvTextHistoryRecord record = live[index].Record;
+            if (record.Flags.HasFlag(AdvTextHistoryRecordFlags.NavigationFiltered)) break;
+            if (record.Kind == AdvTextHistoryRecordKind.Text)
+            {
+                bool ruby = record.Flags.HasFlag(AdvTextHistoryRecordFlags.Ruby);
+                AdvTextStyle style;
+                if (!ruby)
+                {
+                    style = _liveTextRedraw == LiveTextRedraw.WindowStyle ? window ?? record.Style : record.Style;
+                    before = style;
+                }
+                else
+                    style = (before ?? record.Style) with
+                    {
+                        PrimaryFontSize = record.Style.PrimaryFontSize,
+                        RenderMode = 0,
+                    };
+                records.Add(new AdvTextRedrawRecord(record.Text, record.Rect, style, ruby));
+            }
+            if (index + 1 < live.Count && live[index + 1].Record.Flags.HasFlag(AdvTextHistoryRecordFlags.GroupStart))
+                break;
+        }
+        return records;
+    }
+
+    /// <summary>The layout's live text presented in the selected language (localization spec §8), from History's
+    /// lookups of the group its first live record starts (<see cref="PresentHistoryGroup"/>); null when nothing is
+    /// presented, or History did not record the records.</summary>
+    private Ome.Engine.Localization.PresentedText? LivePresentation(
+        IReadOnlyList<AdvTextLiveRecord> live, IReadOnlyList<AdvTextRedrawRecord> records)
+    {
+        if (_presenter == null || !records.Any(record => !record.IsRuby && record.Text.Length > 0)) return null;
+        int first = live[0].HistoryIndex;
+        if ((uint)first >= (uint)History.Records.Count || History.Records[first].Text != live[0].Record.Text)
+            return null;
+        return PresentHistoryGroup(first, 0);
+    }
+
+    /// <summary>The settings redraw's bind of a record that is not ruby (4.45D adv_text_redraw_live_records@0x466a20 at
+    /// 0x467e4e; 4.38D's @0x463630 alike): the rectangle grown in an effect mode by the effect's x offset at the right
+    /// and twice its y offset under it, or by op 0x260's paddings while op 0x261's bit 0 is set, and moved back by the
+    /// offsets in mode 3 while message:UseAntiFont is 0.</summary>
+    private GlyphPublication LiveRedrawPublication(AdvTextStyle style)
+    {
+        (int shiftX, int shiftY) = AliasedEffectShiftOf(style);
+        if (PaddingsOn) return PaddedPublication(shiftX, shiftY);
+        if (style.RenderMode == 0) return new GlyphPublication(0, shiftX, shiftY);
+        return new GlyphPublication(checked(style.EffectOffsetY * 2), shiftX, shiftY) { GrowRight = style.EffectOffsetX };
     }
 
     /// <summary>HISTORY.BIN's recording re-enable at exit (op 0x1bb 1) ends its presentation: every layout op 0x1d1

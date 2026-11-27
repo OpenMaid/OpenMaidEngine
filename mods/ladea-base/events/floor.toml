@@ -11,9 +11,9 @@ action arguments, and floor_object_count the slot count. Nothing has read them y
 changes what FIELD sets up next: FIELD copies a slot's starting kind into the saved floor_object_kinds unless the \
 slot is used and present, and OBJACT reads the action and its arguments when the player touches the object (a \
 treasure's item and count, money, a lock's key, a gathering point's items). FLINIT clears no slot, and FIELD sets up \
-only the slots below the count. FIELD raises this on every map-block entry, but not after a load: the slots lie \
-above the saved prefix, so a load on a map leaves them empty until the next entry, for the game's own data as for a \
-handler's. The data files of ladea.tables write their parts for the floor here."""
+only the slots below the count. FIELD raises this on every map-block entry and after each load on a map: the slots \
+lie above the saved prefix, and a load runs FIELD's opening again, the walk with it. The data files of \
+ladea.tables write their parts for the floor here."""
 
 [[event.field]]
 name = "floor"

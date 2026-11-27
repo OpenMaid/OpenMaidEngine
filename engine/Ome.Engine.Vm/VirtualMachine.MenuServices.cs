@@ -70,7 +70,9 @@ public sealed partial class VirtualMachine : IVmMenuServices
             }
             _shell.RequestSettingCallback();
         }
-        if (_shell.TakeDeviceSetup()) _graphics.SetUpDeviceTransforms();
+        if (!_shell.TakeDeviceSetup()) return;
+        _graphics.SetUpDeviceTransforms();
+        if (_shell.ScreenModeSwitchRedrawsText) _text.RedrawLiveTextAfterScreenModeSwitch();
     }
 
     /// <summary>adv_toggle_auto_mode (SkipAndAuto.ToggleAutoMessageFromMenu). Enabling Auto with the skip service

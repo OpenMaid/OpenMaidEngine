@@ -80,6 +80,11 @@ public sealed class EngineBuildTests
             ExtendedGlyphFace = "AGE Extend",
             AspectCalibration = AspectCalibration.BlackBoxRatio,
             SubstringKeepsDoubleByteCharacters = true,
+            // Its settings redraw draws each record in its own style, from window 0, and clears an empty window
+            // (LiveTextRedrawTests).
+            LiveTextRedraw = LiveTextRedraw.RecordStyle,
+            LiveTextRedrawFirstLayout = 0,
+            LiveTextRedrawClearsEmptyLayouts = true,
         }, child.Text);
         Assert.False(EngineBuilds.Age424J.Rules.Text.SubstringKeepsDoubleByteCharacters);
         // Its sprite draw turns off the alpha test the sprite's Begin turns on.

@@ -29,8 +29,12 @@ public sealed class GlyphRoom
     private readonly IGlyphMaskRasterizer _rasterizer;
     private readonly GlyphMask? _aspectReference;
 
-    internal GlyphRoom(IGlyphMaskRasterizer rasterizer, GlyphMask? aspectReference)
-        => (_rasterizer, _aspectReference) = (rasterizer, aspectReference);
+    internal GlyphRoom(IGlyphMaskRasterizer rasterizer, GlyphMask? aspectReference,
+                       DashStripRows dashStrip = DashStripRows.Cell)
+        => (_rasterizer, _aspectReference, DashStrip) = (rasterizer, aspectReference, dashStrip);
+
+    /// <summary>Which rows a dash join copies when this room paces one (the engine's build's rule).</summary>
+    public DashStripRows DashStrip { get; }
 
     public (int Advance, int Width) Of(GlyphRasterRequest request)
         => RetainedGlyphLayoutEngine.Measure(request, _aspectReference == null ? _rasterizer.Rasterize(request) : null,
@@ -60,19 +64,23 @@ public sealed class RetainedGlyphLayoutEngine
     private readonly GlyphCoverageAlpha _coverageAlpha;
     private readonly LineEndCharacters _lineEnd;
     private readonly bool _joinsExtendedDashes;
+    private readonly DashStripRows _dashStrip;
 
     /// <param name="lineEnd">The characters a wrapping run keeps on the line they overflow (the build's
     /// <c>TextRules.LineEnd</c>); 、 。 and 」 when not given.</param>
     /// <param name="joinsExtendedDashes">Whether a 0xF042 or 0xF043 dash is joined to its neighbours after it is
     /// drawn (<see cref="ExtendedDashJoin"/>): the builds that draw the user-defined area with their own face.</param>
+    /// <param name="dashStrip">Which rows that join copies (the build's <c>TextRules.DashStrip</c>).</param>
     public RetainedGlyphLayoutEngine(
         IGlyphMaskRasterizer rasterizer, GlyphCoverageAlpha coverageAlpha = GlyphCoverageAlpha.Sixteenths,
-        LineEndCharacters? lineEnd = null, bool joinsExtendedDashes = false)
+        LineEndCharacters? lineEnd = null, bool joinsExtendedDashes = false,
+        DashStripRows dashStrip = DashStripRows.Cell)
     {
         _rasterizer = rasterizer ?? throw new ArgumentNullException(nameof(rasterizer));
         _coverageAlpha = coverageAlpha;
         _lineEnd = lineEnd ?? LineEndCharacters.FixedThree;
         _joinsExtendedDashes = joinsExtendedDashes;
+        _dashStrip = dashStrip;
     }
 
     /// <summary>
@@ -232,7 +240,8 @@ public sealed class RetainedGlyphLayoutEngine
                     AgeGlyphMaskCompositor.CellTopToBaseline(mask, request.PixelHeight), options.Style, _coverageAlpha);
                 if (_joinsExtendedDashes)
                     ExtendedDashJoin.AfterGlyph(destination, request, mask, glyphX, glyphY,
-                                                checked(cursorX + shiftX + advanceX), options.Style);
+                                                AgeGlyphMaskCompositor.CellTopToBaseline(mask, request.PixelHeight),
+                                                checked(cursorX + shiftX + advanceX), options.Style, _dashStrip);
             }
             records.Add(new AdvRetainedGlyphRecord(0, cursorX, cursorY, right, bottom));
             cursorX = checked(cursorX + advanceX);
@@ -337,7 +346,9 @@ public sealed class RetainedGlyphLayoutEngine
 
     // A ruby's dashes join as the base text's do, with the pen moving by the primary text's room.
     private GlyphRoom? DashJoin(RgbaImage? destination, AdvTextStyle style, GlyphRasterPolicy policy, bool antialias)
-        => _joinsExtendedDashes && destination != null ? Room(style, policy, antialias) : null;
+        => _joinsExtendedDashes && destination != null
+            ? new GlyphRoom(_rasterizer, AspectReference(style, policy, antialias), _dashStrip)
+            : null;
 
     /// <summary>
     /// Draw op 0x82's records into <paramref name="destination"/> (text_redraw_retained_group@0x451530; SYS4433

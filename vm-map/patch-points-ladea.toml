@@ -56,8 +56,9 @@ $1$FLINIT and $2$FLINIT branch on the floor and write floor_object's starting ki
 count. Nothing has read them yet: FIELD then applies the puzzles' reset rules (FIELD@0x422 to 0x492) and sets up \
 each slot below the count (FIELD@0x545 to 0x5de), copying its starting kind into the saved floor_object_kinds unless \
 the slot is used and present. FIELD reaches here on every map-block entry; when the scene dispatch of a new floor \
-starts a scene first (FIELD@0x35d), FIELD leaves and reaches here when it runs again after the scene. INIT2 does not \
-walk the chain after a load (docs/ladea-data-tables.md, FLINIT)."""
+starts a scene first (FIELD@0x35d), FIELD leaves and reaches here when it runs again after the scene. A load runs \
+FIELD's opening again, to its continue-save-load-stack-restore, so FIELD reaches here after each load on a map too \
+(docs/ladea-data-tables.md, FLINIT)."""
 
 [[point.at]]                    # the install the guide lists (games/ladea, two appends)
 fingerprint = "sha256:bd40a0c8f33911409c573039ecadf36a4b293de93487d3a18f2fc8b171589d5e"

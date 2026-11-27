@@ -124,6 +124,11 @@ public static class EngineBuilds
                 // ...and in effect mode 3 with message:UseAntiFont 0 (text_set_use_anti_font@0x413de0) move the object
                 // back by the effect offsets.
                 PublisherMovesAliasedEffectGlyphs = true,
+                // text_set_use_anti_font and display_toggle_screen_mode_and_menu_bar@0x4130f0 (while
+                // display:VirtualFullScreenType is 2) draw windows 1 to 9 again in each window's style
+                // (adv_text_redraw_live_records@0x4596f0).
+                LiveTextRedraw = LiveTextRedraw.WindowStyle,
+                LiveTextRedrawFirstLayout = 1,
             },
             // Worker 0x486120 tests the record's bound bit before it returns the slot.
             Gfx = Age424J.Rules.Gfx with { UnboundObjectReadsAbsent = true, GuardsFrameSurface = true },
@@ -163,6 +168,11 @@ public static class EngineBuilds
                 AspectCalibration = AspectCalibration.BlackBoxRatio,
                 // op_0x2c7_byte_substring@0x42fe10 is SBSubstr; 4.33G's op 0x2c7 (@0x42d220) is std::string's substr.
                 SubstringKeepsDoubleByteCharacters = true,
+                // Its records carry their style, and adv_text_redraw_live_records@0x463630 draws each in its own, from
+                // window 0, clearing a window with no records too.
+                LiveTextRedraw = LiveTextRedraw.RecordStyle,
+                LiveTextRedrawFirstLayout = 0,
+                LiveTextRedrawClearsEmptyLayouts = true,
             },
             // engine_settings_save@0x47d1d0 writes four more keys; a SYS4REG.INI native 4.38D wrote has them in
             // these places.
@@ -230,6 +240,17 @@ public static class EngineBuilds
         AbiId = "SYS4445",
         Rules = Age443B.Rules with
         {
+            // text_draw_glyph_string_plain@0x46c4b0 (the join at 0x46ca70) and text_draw_glyph_string_effect@0x46e360
+            // (0x46ede8) take the dash strip's rows from the glyph's black box, the effect drawer's widened by the
+            // effect's vertical offset; 4.43B's take the cell's (docs/engine-re.md, "The dash join").
+            //
+            // adv_text_redraw_live_records@0x466a20 draws every record in the window's style, as 4.33G's does; 4.43B's
+            // (0x466100) applies each record's own (docs/engine-re.md, "The settings redraw").
+            Text = Age443B.Rules.Text with
+            {
+                DashStrip = DashStripRows.BlackBox,
+                LiveTextRedraw = LiveTextRedraw.WindowStyle,
+            },
             // 4.43B's record size and float sections with its own stamp: native's 4.45D save decodes so, and the
             // port's saves load on native and native's on the port (docs/engine-re.md, "魔導巧殻 against 天秤のLa DEA。,
             // triaged", step 7).

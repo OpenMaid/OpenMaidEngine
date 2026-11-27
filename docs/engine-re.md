@@ -583,6 +583,22 @@ source likewise, and copies nothing when what is left is empty; it writes the cl
 second copy starts from them. 創刻のアテリアル's first page begins with two dashes: the first is `0xF041`, which is
 not joined, and the second is `0xF043` (`tools/frida/capture_gdi_fonts.py`).
 
+**4.45D's strip (read 2026-11-27).** 4.45D's two horizontal drawers keep the columns and the second copy, and take
+the strip's rows from the glyph's black box: from the baseline, the y the glyph is blitted at, less
+`gmptGlyphOrigin.y`, `gmBlackBoxY` rows (`text_draw_glyph_string_plain@0x46c4b0`, the join at `0x46ca70`). The effect
+drawer widens them by `ey` above and below (`text_draw_glyph_string_effect@0x46e360`, the join at `0x46ede8`; its
+baseline `[ebp+0x10]` is its y plus the ascent, `0x46e430`). Native draws effect modes 1 to 3 with the effect drawer
+and mode 0 with the plain one (`text_draw_string_primary_or_ruby@0x454850`). The rows differ from the cell's only
+outside the dash's ink, so the rule shows only where the glyph before the dash has ink above or below the dash: the
+cell's blank rows clear that ink, and the black box's leave it. No text of 天秤のLa DEA。 has such a pair: every joined
+dash in its strings follows a dash. The port takes the rule from `TextRules.DashStrip` (`DashStripRows.BlackBox` in
+`Age445D`, `Cell` before it) wherever it joins; `ExtendedGlyphTests` draws a kanji and a `0xF043` under both.
+
+Both 4.43B and 4.45D also join dashes in two vertical drawers, and the port has neither, as it has no vertical text.
+4.45D's `text_draw_glyph_string_vertical@0x46b5c0` records where the ink of a `0xF041` or `0xF042` ends. After the next
+`0xF042` or `0xF043` it fills the gap from there. `text_draw_glyph_string_vertical_effect@0x4706c0` does the same for
+`0xF151` to `0xF153`. 4.43B's are `0x46b070` and `0x4701b0`.
+
 **A ruby's user-defined characters (read 2026-11-20).** `adv_text_draw_ruby_over_row@0x460760` draws each ruby
 character through `text_draw_string_primary_or_ruby@0x4525c0` (or `0x469aa0` while `+0x548`, `message:UseAntiFont`,
 is set), and both reach
@@ -1030,8 +1046,8 @@ channels 12 to 14, where 4.43B has one, on channel 12. The context grew by `0x34
 | History's voice: a record (72 bytes) fills `+0x20` with its voice index and `+0x1c` with the voice's pan (`ctx+0x4e8c[N]`), which 4.43B leaves 0; `text_history_find_pair` (`0x455110`=`0x455c20`) matches the voice index too and returns `+0x1c` | `text_history_append_voice_pair` (`0x45c400`=`0x45ce80`), `0x1d4` (voice 0), the new `0x2f3`, and History's replay above | real, ported with the three voices (`AdvTextHistoryRecord.VoiceIndex` and `VoicePan`). The record's layout is unchanged, so History's save form is too: a voice record's pan and voice index are its dwords 7 and 8, which a 4.43B save holds 0 in. `ctx+0x4e8c` is the voice's pan, which no instruction writes, so 0 (native read it so on 2026-11-26) |
 | The sound manager's 15 channels: every bound of 13 becomes 15 (and of 12, 14), and the per-channel arrays moved (`+0x5a4` to `+0x618`, `+0x570` to `+0x5a0`, the critical sections `+0x5d8` to `+0x654`) | `sound_manager_start_channel` (`0x4a3a80`=`0x4a4590`), `sound_channel_pause` (`0x4a3b20`=`0x4a4630`), `0x4a3c70`=`0x4a4780`, `sound_buffer_destroy` (`0x4a3d60`=`0x4a48b0`), `sound_decode_channel` (`0x4a3f40`=`0x4a4a90`, the manager 64 bytes larger), `0x4a4270`=`0x4a4dc0`, `0x4a4ac0`=`0x4a56e0`; ops `0x1be`, `0xb6`, `0xbb` | real only through the voices: no op of 4.45D reaches channel 13 or 14 but through a voice index, and the port's channels are indexed by number, so the bound is the voices' |
 | The joystick's POV: with `JOYCAPS_POV4DIR` (the caps' `+0x34` bit `0x20`) a pressed POV makes the four directions and the axes are not read; without it the POV counts as centred. Bit 0 of the input manager's `+0x1a74` (op `0x2fa`) drops the axes | `0xff` through `input_poll_joystick_action_bits` (`0x473ed0`=`0x474450`) and `input_poll_joystick_action_edges` (`0x473fe0`=`0x474660`, which 13 opcodes reach) | real: the port's joystick (`InputBindings`) gains the POV's directions and the flag. Step 7: SETJOY and the configuration screens |
-| The dash join's strip: after a `0xF042` or `0xF043`, every drawer takes the strip's rows from the glyph's black box (from the baseline less `gmptGlyphOrigin.y`, `gmBlackBoxY` rows; the drawer at `0x46edd0` also widens it by the effect offset), where 4.43B takes the cell's (`size × scale + 2 × ey` rows from the string's top). 4.45D has five join sites to 4.43B's three | `text_draw_glyph_string_plain` (`0x46bf50`=`0x46c4b0`, the join at `0x46c510`=`0x46ca70`; the report's `+0x355e4`, the text scale, is the term 4.45D drops) and the drawers at `0x46bc6a` and `0x46edd0` | real, without an effect on the game's own text, so not ported (`backlog.md`, "4.45D's dash strip"). The strip's rows differ only outside the dash's ink, and the copy lands on the glyph before the dash: every `0xF043` and `0xF042` in 天秤のLa DEA。's strings follows a dash (412 after `0xF041`, 5 after `0xF042`), whose cell has no ink outside its rows. SC0000's page 3 (古の女神 and `0xF041` `0xF043`) is identical on native and the port under 4.43B's strip (step 6) |
-| The redraw of every window's retained text (read at step 6): both builds apply the window's style (its record's `+0xa8` to `+0xcc`: flags, size, weight, effect offset, face, the ruby's size and weight), draw each layout record, and restore the style. 4.43B's `0x466100` also applies each record's own style (the record list `+0xd0`, 116-byte records: `+0x4c` to `+0x60`, the size and the effect offset) before drawing it; 4.45D's `0x466a20` draws every record in the window's style. The step 4 reading, that `0x466a20` has no restyle, was wrong | its only callers, in both builds: `display_toggle_screen_mode_and_menu_bar` (`0x4136f0`=`0x413ac0`) and `text_set_use_anti_font` (`0x414ed0`=`0x415280`). No op reaches it | not modelled: the port redraws no retained text when the screen mode or UseAntiFont changes, in any build (`backlog.md`, "The retained text is not redrawn on a screen-mode or font change"). 4.45D's change goes with that redraw |
+| The dash join's strip: after a `0xF042` or `0xF043`, the two horizontal drawers take the strip's rows from the glyph's black box (from the baseline less `gmptGlyphOrigin.y`, `gmBlackBoxY` rows; the effect drawer also widens them by the effect offset above and below), where 4.43B takes the cell's (`size × scale + 2 × ey` rows from the string's top). Both builds join in four drawers, two of them vertical ("The dash join") | `text_draw_glyph_string_plain` (`0x46bf50`=`0x46c4b0`, the join at `0x46c510`=`0x46ca70`; the report's `+0x355e4`, the text scale, is the term 4.45D drops), `text_draw_glyph_string_effect` (`0x46ede8` in 4.45D), and the vertical drawers (`0x46bc6a` in `text_draw_glyph_string_vertical@0x46b5c0`) | real, without an effect on the game's own text; ported 2026-11-27 (`TextRules.DashStrip`, `DashStripRows.BlackBox`), the vertical drawers not, as the port has no vertical text. The strip's rows differ only outside the dash's ink, and the copy lands on the glyph before the dash: every `0xF043` and `0xF042` in 天秤のLa DEA。's strings follows a dash (412 after `0xF041`, 5 after `0xF042`), whose cell has no ink outside its rows. SC0000's page 3 (古の女神 and `0xF041` `0xF043`) is identical on native and the port under 4.43B's strip (step 6) |
+| The redraw of every window's retained text (read at step 6): both builds apply the window's style (its record's `+0xa8` to `+0xcc`: flags, size, weight, effect offset, face, the ruby's size and weight), draw each layout record, and restore the style. 4.43B's `0x466100` also applies each record's own style (the record list `+0xd0`, 116-byte records: `+0x4c` to `+0x60`, the size and the effect offset) before drawing it; 4.45D's `0x466a20` draws every record in the window's style. The step 4 reading, that `0x466a20` has no restyle, was wrong | its only callers, in both builds: `display_toggle_screen_mode_and_menu_bar` (`0x4136f0`=`0x413ac0`) and `text_set_use_anti_font` (`0x414ed0`=`0x415280`). No op reaches it | real (2026-11-27): each build's rule is `TextRules.LiveTextRedraw`, 4.43B's `RecordStyle` and 4.45D's `WindowStyle`, and the port draws each window's live records again as native does ("The settings redraw") |
 | The auto mode's time: op `0x72` counts a page's characters from the layout's 24-byte records inline (`(end - begin) / 24 - 1`), where 4.43B calls `adv_layout_character_count` | op `0x72` | noise: 4.43B's `adv_layout_character_count@0x407970` gives the same `(end - begin) / 24 - 1` (read at step 7) |
 | The context grew by `0x348` bytes before the save data | the numbered load ops `0xab`, `0x190`, `0x19f`, `0x1a1` (constants 840 lower) through `save_data_deserialize_and_begin_restore` (`0x40ffe0`=`0x4102b0`, the same code); `script_frame_load_resource` (`0x40ebf0`=`0x40eec0`, the frame's fields in another order) | noise for the opcodes. The save format is 4.43B's with 4.45D's stamp (step 7, below) |
 | The save folder | `0x40ba70`=`0x40bd20` under the save ops | not modelled: the port keeps saves in its profile's folder |
@@ -1482,7 +1498,8 @@ modelled (below).
 **AntiFont off in 4.33G and 4.38D (read 2026-11-20).** `+0x548` has two writers in each build,
 `text_set_use_anti_font` (`0x413de0`, `0x414d80`): the startup settings reader, which applies `message:UseAntiFont`
 only when `set:EnableAntiFont` is nonzero, as 4.24J does, and 設定's toggle, which writes the key first. On a change
-it rebuilds the fonts and empties both glyph caches, as 4.24J's `text_set_antialias_enabled` does. With it 0 the
+it rebuilds the fonts and empties both glyph caches, as 4.24J's `text_set_antialias_enabled` does, and then draws the
+windows' text again, which 4.24J's does not ("The settings redraw" below). With it 0 the
 builders draw through `text_draw_string_primary_or_ruby`, which starts a mode 1–3 string at the effect offsets ("AntiFont
 off" below has 4.24J's), and all four binders in the table move the object of a record that is not ruby back by the
 offsets, each over the text scale (`+0x355e0`, `+0x355e4`, 1 in the port), in effect mode 3. Op `0x82`'s redraw draws
@@ -1498,6 +1515,82 @@ also has CONFIG's 初期設定 redraw the page through op `0x82`; both games run
 History (`kamidori-furigana.steps`) still does. Before the change, 創刻のアテリアル's two pages differed in 4,136 and
 5,998 pixels and its History in 11,982, each put right by a shift of (−1, −1). With the move but no growth, Kamidori's
 History lacked 22 outline pixels, one row under some glyphs.
+
+### The settings redraw (2026-11-27)
+
+From 4.33G, AGE draws the text already in its windows again in two cases. The first is when `message:UseAntiFont`
+changes. `text_set_use_anti_font` rebuilds the fonts, empties both glyph caches and then calls
+`adv_text_redraw_live_records`. The second is a screen-mode switch while `display:VirtualFullScreenType` is 2: there
+`display_toggle_screen_mode_and_menu_bar` calls it after the switch, before it writes `display:ScreenMode`. The key
+defaults to 0, and no game's `SYS4INI.BIN` sets it.
+
+4.24J's setter (`text_set_antialias_enabled@0x4137e0`) draws nothing again ("AntiFont off: `message:UseAntiFont` 0"
+below; a native capture after OK shows page 1 unchanged). So do 4.15D's (`0x411ff0`) and 4.24N's (`0x414100`).
+
+| Build | Setter | Switch | Redraw |
+|---|---|---|---|
+| 4.33G | `0x413de0` | `0x4130f0` | `0x4596f0` |
+| 4.38D | `0x414d80` | `0x4135a0` | `0x463630` |
+| 4.43B | `0x414ed0` | `0x4136f0` | `0x466100` |
+| 4.45D | `0x415280` | `0x413ac0` | `0x466a20` |
+
+**What it draws.** Each window keeps a list of what it drew since its last op `0x71`: its window record's vector at
+`+0xd0` to `+0xd4`. These are 48-byte records in 4.33G and 116-byte ones from 4.38D on.
+`adv_text_append_segment_record` (4.45D `0x45c870`) pushes onto it for the text builders, the ruby drawer, and History's
+renderer (`text_history_render_records`, `0x464fa0`), so History's text is in it too. Op `0x82`'s redraw is not among
+its callers. The appender also copies a record's style into the window: size `+0xb8`, weight `+0xbc`, mode `+0xb4`,
+colors `+0xa8` and `+0xac`, effect offsets `+0xc0` and `+0xc4`, and the face `+0x8c`. A ruby record's size and weight go
+to `+0xc8` and `+0xcc` instead. So "the window's style" is that of the last record it drew. `adv_text_layout_reset`
+(op `0x71`) empties the list and zeroes the published counts `+0x84` and `+0x88`.
+
+**Which windows.** 4.38D's to 4.45D's loops take windows 0 to 9 whose surface `0x14 + i` exists (the graphics
+native's surface table, `gfx+0xa5c8`). 4.33G's starts at window 1 and skips a window with no records. A vertical
+window (`+0x70` set) goes to another drawer, which the port does not have.
+
+**Per window:**
+
+1. The window's style is applied.
+2. Binding is allowed only while the window's first object (`+0x68`) shows its surface
+   (`gfx_object_query_bound_source_slot`). The published count is `+0x84`, else `+0x88`.
+3. The surface is recreated at the layout's size (`+0x14`, `+0x18`, times the text scale) if it differs, and cleared.
+   The object range `[+0x68, +0x6c)` is erased if binding is allowed and the count is above 0. 4.38D's to 4.45D's do
+   this before they look at the records, so a window with none is cleared too.
+4. The records are walked from the first, as op `0x82` walks a group:
+   - flag bit 1 ends the walk;
+   - metadata (`0x20000000`) and voice (`0x40000000`) records draw nothing;
+   - the next record's group start (`+0x10` bit 0) ends the walk.
+5. A text record draws each character from the record's top-left. Then, if its first character is among the published
+   ones, it is bound once (4.45D at `0x467e4e`):
+   - The source rectangle runs from the record's left and top to the pen after its last published character and the
+     record's bottom.
+   - In an effect mode without paddings it grows by the effect's x offset at the right and twice its y offset under it.
+   - With paddings (op `0x261` bit 0) it grows by op `0x260`'s four values, and the destination moves back by the
+     left and top ones.
+   - In mode 3 with `message:UseAntiFont` 0 the destination moves back by the offsets, as the publishers move it.
+   - A ruby record draws in the ruby font in mode 0 and is bound per character.
+6. Nothing is written back, and the style is restored at the end.
+
+A page mid-reveal stays mid-reveal: only the published characters are bound.
+
+**Style, by build.** 4.33G's records carry no style, and every record draws in the window's. 4.38D (`0x463630`) and
+4.43B (`0x466100`) apply each record's own style on top of the window's: its `+0x50`, `+0x54`, `+0x58` (the mode),
+`+0x5c` (the size), `+0x4c` (the color), `+0x60` (the weight), `+0x64` and `+0x68` (the effect offsets) and its face.
+4.45D's (`0x466a20`) reads none of the record's style and draws every record in the window's, as 4.33G's does. So in
+4.45D, text drawn in two colors on one page comes back in the last one's.
+
+**Checked against native (2026-11-27).** 天秤のLa DEA。, on page 3 of SC0000 and in History
+(`tools/drive/scenarios/ladea-antifont-redraw.steps`, `ladea-antifont-history.steps`). `option smooth-text off` turns
+the text on screen aliased at once, and `on` puts back exactly the pixels from before. The port's text window equals
+native's in every shot of the page, and its History equals native's aliased. Its antialiased History differs from
+native's slightly, before the switch as after it; that difference is older than the redraw.
+
+**In the port.** `TextRules.LiveTextRedraw` (`None`, `WindowStyle`, `RecordStyle`), `LiveTextRedrawFirstLayout` and
+`LiveTextRedrawClearsEmptyLayouts` give each build's rule. Each History layout keeps its live records
+(`AdvTextHistory.GetLiveRecords`), whether or not History records them. Op `0x1d1` appends its rows there
+(`AppendLiveRows`), op `0x71` and op `0x9` empty them. `TextManager.SetTextAntialias` and the engine thread's
+screen-mode handling (`ShellServices.ScreenModeSwitchRedrawsText`) call `RedrawLiveText`. Text presented in another
+language (localization spec §8) is drawn again as op `0x82` draws it. `LiveTextRedrawTests` covers the rules, both
+style rules, the bind condition, the empty window and the screen-mode key.
 
 ### Polygon objects: winding, depth, texture size and the render targets (2026-11-20)
 
@@ -6926,7 +7019,8 @@ Text manager `+0x544` (`text_antialias_enabled`) picks the glyph format.
 - **The 設定 dialog.** The ﾒｯｾｰｼﾞ page's 文字の縁をなめらかにする (check 1000) is applied on OK through IAGEService `+0x68`.
   That service writes the key, then calls the setter.
 - **On a change.** The setter rebuilds the font resources, which do not depend on the flag, and empties both glyph caches.
-  It does not redraw: a native capture after OK shows page 1 unchanged.
+  It does not redraw: a native capture after OK shows page 1 unchanged. From 4.33G the setter draws the windows' text
+  again ("The settings redraw").
 
 With the flag clear:
 

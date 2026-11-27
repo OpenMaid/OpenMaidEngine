@@ -47,7 +47,11 @@ public class Age445DVoiceTests
     public void FourFortyFiveDIsFourFortyThreeBPlusItsChanges()
     {
         EngineRules parent = EngineBuilds.Age443B.Rules, child = EngineBuilds.Age445D.Rules;
-        Assert.Equal(parent.Text, child.Text);
+        Assert.Equal(parent.Text with
+        {
+            DashStrip = Ome.Engine.Text.DashStripRows.BlackBox,
+            LiveTextRedraw = Ome.Engine.Text.LiveTextRedraw.WindowStyle,
+        }, child.Text);
         Assert.Equal(parent.Gfx, child.Gfx);
         Assert.Equal(parent.Audio with { Voices = 3, BackgroundVoices = true }, child.Audio);
         Assert.Equal(parent.Settings.BoundKeys, child.Settings.BoundKeys);

@@ -3,7 +3,9 @@
 # slot 8 at ladea.floor.loaded, and example.ladea-event-log lists every event of ladea-base, and gives one 治癒の水・小
 # at ladea.data.ready through the base mod's helper. The debug menu's 迷宮マップ２ (DEBUGFIELD2) runs INITGAME, joins
 # the 15 party characters, gives each 10,000,000 experience through ADDEXP (character 62 twice), gives items, and opens
-# the dungeon on floor 65, at map block 657.
+# the dungeon on floor 65, at map block 657. Then a save on the floor and its load: a load runs FIELD's opening again
+# to its continue-save-load-stack-restore, the FLINIT walk with it, so the floor event and the chest's part come back
+# (docs/ladea-data-tables.md, FLINIT). The load opens the debug party's tutorials, which the checks do not need closed.
 # Run on a fresh sandbox:
 #   py -3.11 -X utf8 tools/drive.py --game ladea port start --mod oms/examples/mods/example.ladea-debug-menu --mod oms/examples/mods/example.ladea-floor-chest --mod oms/examples/mods/example.ladea-event-log
 #   py -3.11 -X utf8 tools/drive.py --game ladea port run tools/drive/scenarios/port/ladea-debug-field.steps
@@ -26,3 +28,29 @@ lua mod=example.ladea-event-log local n = 0 for _, line in ipairs(seen) do if li
 lua mod=example.ladea-event-log assert(seen[#seen] == "ladea.floor.loaded floor=65", seen[#seen]) return seen[#seen]
 lua local g = maid.vm.g assert(maid.names.g.current_floor_id == 65 and g[0xca2981 + 24] == 201 and g[0xca2981 + 25] == 9, g[0xca2981 + 24] .. " " .. g[0xca2981 + 25]) return g[0xca2981 + 24] .. " " .. g[0xca2981 + 25]
 shot ladea-debug-field
+rclick 900 600                          # 環境設定
+wait-state script=CONFIG timeout=20
+wait 1.5
+click menu.save
+wait-state script=SAVE timeout=20
+wait 1.5
+click slot.0
+wait-state script=SBUNKI timeout=20     # セーブしますか？
+wait 1.5
+click confirm.yes
+wait-state script=SAVE timeout=20
+wait 1.5
+lua local g = maid.vm.g g[0xca2981 + 24] = 0 g[0xca2981 + 25] = 0 return "slot 8 cleared"
+click menu.load
+wait-state script=SAVE timeout=20
+wait 1.5
+click slot.0
+wait-state script=SBUNKI timeout=20     # ロードしますか？
+wait 1.5
+click confirm.yes
+wait-state script=FIELD timeout=60
+wait 3
+settle timeout=30
+lua mod=example.ladea-event-log assert(seen[#seen] == "ladea.floor.loaded floor=65", seen[#seen]) assert(seen[#seen - 1]:find("^ladea%.data%.ready"), seen[#seen - 1]) return seen[#seen - 1] .. "; " .. seen[#seen]
+lua local g = maid.vm.g assert(g[0xca2981 + 24] == 201 and g[0xca2981 + 25] == 9 and g[0xca2981 + 27] == 223, g[0xca2981 + 24] .. " " .. g[0xca2981 + 25]) return g[0xca2981 + 24] .. " " .. g[0xca2981 + 25]
+shot ladea-debug-field-loaded

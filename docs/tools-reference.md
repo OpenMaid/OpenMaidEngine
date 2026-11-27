@@ -1503,6 +1503,10 @@ identical `SYS4REG.INI` files (2026-11-26).
 `ladea-save-load.steps` is the save round trip for 天秤のLa DEA。, through CONFIG, the option screen its pages' right
 click opens, and its データセーブ and データロード tabs, and `ladea-options.steps` sets ten options of its 設定 at the
 title. Both pass on both targets, and the second leaves identical `SYS4REG.INI` files (2026-11-26).
+`ladea-antifont-redraw.steps` and `ladea-antifont-history.steps` switch `message:UseAntiFont` off and on again,
+on SC0000's page 3 and with History open. 4.45D draws the text already shown again each time (`engine-re.md`, "The
+settings redraw"). The port's page shots equal native's in the text window, and its aliased History equals native's
+(2026-11-27).
 `koukaku-prologue-line.steps` plays a new game to SC0000's first page with
 `oms/examples/mods/example.koukaku-prologue-line`, whose line it is; native AGE runs the patch exported into its own
 scratch copy, as the file's header shows. Both targets reach the same offsets, and their shots are the same pixels

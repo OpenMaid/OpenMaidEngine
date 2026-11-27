@@ -1771,7 +1771,10 @@ FIELD enters a block in this order:
 
 After a load on a map, INIT2 rebuilds the map in play from the saved cells (`INIT2@0x2c5`..`0x2f6`). It sets the
 camera, then runs SETMAPDATA, SETMAPTEX, SETFLOORTEX and DRAWCH. It does not run the FLINIT chain, and CALLBACK_LOAD
-does not run it either ("What is not decoded", the dungeon).
+does not run it either; FIELD's own opening does. A load zeroes every bank past the saved prefix and then runs each
+saved frame's script again from its entry to `continue-save-load-stack-restore` (op `0xae`; `ScriptMemory.cs`,
+`ReadSaveRecords`), and FIELD's runs from its entry to `FIELD@0x9ee`, past the FLINIT walk (`FIELD@0x37c`..`0x3b1`).
+So the floor's slots are written again after each load (FLINIT, below).
 
 ### MPINIT, the floors (one floor's name, dungeon and atlas place)
 
@@ -1999,7 +2002,11 @@ previous floor's higher slots, and no map script places them.
 **The scope.** The registry's scope `dungeon_floor`, 1 to 86, holds the table `floor_object` (100 records, slot s).
 FLINIT's branch for the floor in play fills it on each entry, like 戦女神ZERO's RMINIT for its `dungeon` scope. The
 base mod's `ladea.floor.loaded` comes after the walk (`FIELD@0x3b4`), so a data file's floor part is in the slots
-when FIELD sets them up. A load on a map runs no walk, and so no event: the part comes back at the next entry.
+when FIELD sets them up. A load on a map runs FIELD's opening again, the walk with it (the map in play, above), so the
+slots, the event and the part come back after each load too. Run on both targets on 2026-11-27: saved on floor 65 at
+the debug menu's 迷宮マップ２, the save loaded, slot 9's chest gives its two 血廉の息吹 (`223`, 2) on native AGE as in
+the port; in the port a load from the title raises `ladea.floor.loaded floor=65` again, with the data file's part in
+slot 8.
 
 ### DUINIT (the fixed battles)
 
@@ -2129,7 +2136,7 @@ The game copies into these cells below the prefix:
 
 Nothing of MPINIT, ATINIT, OBINIT, OBINIT2, LAINIT, PZINIT or FLINIT is saved. A save keeps the floor objects' kinds
 and flags, the visits, the hidden parts, the puzzles' places and the place. After a load INIT2 rebuilds the map in play
-from the block's map script.
+from the block's map script, and FIELD's opening, which the load runs again, walks the FLINIT chain.
 
 ## The town: buildings, places, quests, the inn and the unlock board
 
@@ -2510,9 +2517,6 @@ These records are kept in the shared profile, which outlives a save:
 
 **The dungeon.**
 
-- Whether an object works after a load before the next map-block entry: INIT2 rebuilds the field after a load
-  (`INIT2@0x2c5`..`0x2f6`) but does not walk the FLINIT chain, and FLINIT's cells lie above the prefix. A native run
-  that saves beside a chest and opens it after the load would settle it, on both targets alike.
 - `G[0x4dd62]` (a map-entry state of 0 to 2), the six saved `[1000][5]` arrays from `G[0xb0e52]`, the third list of
   the map in play `G[0xc2b3b9]`, a puzzle block's flag `G[0xc9e845]`, and the facing values.
 - MPINIT's unwritten `G[0xc9f015]`, `G[0xca615e]` and `G[0xc9f9d9]` … `G[0xca1918]`, the unread `G[0xca7cb6]` and

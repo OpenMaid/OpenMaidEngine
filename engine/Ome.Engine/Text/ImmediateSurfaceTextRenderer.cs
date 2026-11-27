@@ -26,19 +26,23 @@ public sealed class ImmediateSurfaceTextRenderer
     private readonly GlyphRasterPolicy _policy;
     private readonly GlyphCoverageAlpha _coverageAlpha;
     private readonly bool _joinsExtendedDashes;
+    private readonly DashStripRows _dashStrip;
 
     /// <param name="joinsExtendedDashes">Whether a 0xF042 or 0xF043 dash is joined to its neighbours after it is
     /// drawn (<see cref="ExtendedDashJoin"/>): the builds that draw the user-defined area with their own face.</param>
+    /// <param name="dashStrip">Which rows that join copies (the build's <c>TextRules.DashStrip</c>).</param>
     public ImmediateSurfaceTextRenderer(
         IGlyphMaskRasterizer rasterizer,
         GlyphRasterPolicy policy = GlyphRasterPolicy.NativeCp932Gray4,
         GlyphCoverageAlpha coverageAlpha = GlyphCoverageAlpha.Sixteenths,
-        bool joinsExtendedDashes = false)
+        bool joinsExtendedDashes = false,
+        DashStripRows dashStrip = DashStripRows.Cell)
     {
         _rasterizer = rasterizer ?? throw new ArgumentNullException(nameof(rasterizer));
         _policy = policy;
         _coverageAlpha = coverageAlpha;
         _joinsExtendedDashes = joinsExtendedDashes;
+        _dashStrip = dashStrip;
     }
 
     /// <param name="antialias">message:UseAntiFont (text manager +0x544). draw_string_to_surface@0x450150 calls the
@@ -100,7 +104,8 @@ public sealed class ImmediateSurfaceTextRenderer
                     AgeGlyphMaskCompositor.CellTopToBaseline(mask, request.PixelHeight), style, _coverageAlpha);
                 if (_joinsExtendedDashes)
                     ExtendedDashJoin.AfterGlyph(destination, request, mask, cursorX, cursorY,
-                                                checked(cursorX + mask.CellAdvanceX), style);
+                                                AgeGlyphMaskCompositor.CellTopToBaseline(mask, request.PixelHeight),
+                                                checked(cursorX + mask.CellAdvanceX), style, _dashStrip);
             }
             if (!PresentedTextPlacement.IsSpace(request.UnicodeScalar) && request.UnicodeScalar >= 0x20)
             {
@@ -180,7 +185,8 @@ public sealed class ImmediateSurfaceTextRenderer
             {
                 AgeGlyphMaskCompositor.DrawGlyph(destination, mask, cursorX, y, baseline, style, _coverageAlpha);
                 if (_joinsExtendedDashes)
-                    ExtendedDashJoin.AfterGlyph(destination, request, mask, cursorX, y, next, style);
+                    ExtendedDashJoin.AfterGlyph(destination, request, mask, cursorX, y, baseline, next, style,
+                                                _dashStrip);
             }
             inkLeft ??= cursorX;
             inkRight = checked(cursorX + mask.CellWidth);

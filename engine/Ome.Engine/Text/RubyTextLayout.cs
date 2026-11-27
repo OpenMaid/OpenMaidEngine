@@ -209,7 +209,9 @@ public static class RubyTextLayout
                 // The style keeps the primary size and the effect offset the join reads.
                 if (dashJoin != null && ExtendedDashJoin.Applies(requests[index].Cp932Code))
                     ExtendedDashJoin.AfterGlyph(destination, requests[index], mask, x, inkY,
-                                                checked(x + dashJoin.Of(requests[index]).Advance), style);
+                                                AgeGlyphMaskCompositor.CellTopToBaseline(mask, requests[index].PixelHeight),
+                                                checked(x + dashJoin.Of(requests[index]).Advance), style,
+                                                dashJoin.DashStrip);
             }
             int chain = rules.ChainEveryRubyRecord || index > 0 ? 1 : 0;
             records.Add(new AdvRetainedGlyphRecord(chain, x, y, right, checked(y + mask.CellHeight)));

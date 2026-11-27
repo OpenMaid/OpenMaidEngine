@@ -1,0 +1,35 @@
+# 天秤のLa DEA。: message:UseAntiFont switched on a page with text. AGE 4.45D's text_set_use_anti_font@0x415280 draws
+# every window's retained text again as it changes the setting (0x466a20), so the page already on screen changes at
+# once: aliased after `option smooth-text off`, antialiased again after `on` (docs/engine-re.md, "The settings
+# redraw"). Page 3 holds 古の女神 and the joined dash (0xF041, 0xF043). The port's text window equals native's in
+# every shot (2026-11-27).
+# Run on a fresh sandbox, on both targets, and compare the shots:
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port start
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port run tools/drive/scenarios/ladea-antifont-redraw.steps
+#   py -3.11 -X utf8 tools/drive.py --game ladea native|port stop
+
+rand-seed 13
+wait-state script=TITLE timeout=120
+settle timeout=20
+click title.start
+wait-state script=GAMESTART timeout=60
+settle timeout=20
+click start.begin
+wait-state top=SC0000@0x103e timeout=120  # page 1
+settle timeout=30
+advance 2
+expect top=SC0000@0x1658                  # page 3
+shot ladea-antifont-page3                 # antialiased
+option smooth-text off                    # clears message:UseAntiFont, then OK
+wait 1
+settle timeout=20
+expect top=SC0000@0x1658
+shot ladea-antifont-off-page3             # the same page, drawn again aliased
+option smooth-text on
+wait 1
+settle timeout=20
+expect top=SC0000@0x1658
+shot ladea-antifont-on-page3              # and antialiased again
+advance 1
+expect top=SC0000@0x17cb                  # page 4
+shot ladea-antifont-page4

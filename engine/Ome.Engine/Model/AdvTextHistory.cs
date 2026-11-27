@@ -132,6 +132,11 @@ public sealed record AdvTextHistoryRecord(
 /// <summary>Rectangle edges (not width/height) of one recorded text row.</summary>
 public readonly record struct AdvTextHistoryRect(int Left, int Top, int Right, int Bottom);
 
+/// <summary>One of a layout's live records (its window record's list at <c>+0xd0</c>, which
+/// adv_text_append_segment_record fills and adv_text_layout_reset empties): <see cref="Record"/> as History has it, and
+/// its index in <see cref="AdvTextHistory.Records"/>, or -1 when History was not recording.</summary>
+public readonly record struct AdvTextLiveRecord(AdvTextHistoryRecord Record, int HistoryIndex);
+
 /// <summary>AGE's logical 8-byte history index entry.</summary>
 public readonly record struct AdvTextHistoryEntry(int LayoutSlot, int FirstRecordIndex);
 
@@ -236,6 +241,8 @@ public sealed class AdvTextHistory
         public long TextObjectRangeFirst = -1;
         public long TextObjectRangeCount;
         public AdvTextLineImages LineImages = AdvTextLineImages.None;
+        // What the layout drew since its last reset, whether History recorded it or not (LiveRecords).
+        public readonly List<AdvTextLiveRecord> LiveRecords = new();
     }
 
     /// <summary>Native's ADV text layouts, slots 0 to 9 (text_manager+0x414, adv_text_layouts_allocate@0x44f6d0; 4.33G
@@ -247,6 +254,8 @@ public sealed class AdvTextHistory
     private readonly List<AdvTextHistoryRecord> _records = new();
     private readonly List<AdvTextHistoryEntry> _entries = new();
     private readonly Dictionary<int, LayoutState> _layouts = new();
+    // AppendLiveRows: the records go to the layout's live list only.
+    private bool _appendingLiveOnly;
     private readonly HashSet<int> _pendingGroupStarts = new();
     private int _navigationAnchorIndex = -1;
     private readonly Dictionary<int, AdvTextLookupSpan> _lookupSpans = new();
@@ -282,6 +291,8 @@ public sealed class AdvTextHistory
         AppendBoundary(slot);
     }
 
+    /// <summary>Op 0x71 (adv_text_layout_reset): the cursor back to the reset cursor, a group boundary, and the layout's
+    /// live records gone (native erases its window record's list, <c>+0xd0</c> to <c>+0xd4</c>).</summary>
     public void ResetLayout(int requestedSlot)
     {
         int slot = ResolveLayout(requestedSlot);
@@ -289,7 +300,27 @@ public sealed class AdvTextHistory
         layout.CursorX = layout.ResetCursorX;
         layout.CursorY = layout.ResetCursorY;
         layout.DrawCursorApart = false;
+        layout.LiveRecords.Clear();
         AppendBoundary(slot);
+    }
+
+    /// <summary>
+    /// What layout object <paramref name="slot"/> drew since its last op 0x71, oldest first: its window record's list
+    /// (<c>+0xd0</c>, 116-byte records from 4.38D on), which the text builders, the ruby drawer and History's renderer
+    /// append to (adv_text_append_segment_record, 4.45D @0x45c870) and which the settings redraw draws again
+    /// (adv_text_redraw_live_records). Kept whether or not History records; the records are History's.
+    /// </summary>
+    public IReadOnlyList<AdvTextLiveRecord> GetLiveRecords(int slot)
+        => _layouts.TryGetValue(slot, out LayoutState? layout) ? layout.LiveRecords : [];
+
+    /// <summary>Whether layout object <paramref name="slot"/> has state here (a definition, a binding, a record), without
+    /// creating it as the layout queries do.</summary>
+    public bool HasLayout(int slot) => _layouts.ContainsKey(slot);
+
+    /// <summary>Every layout's live records gone, as op 0x9 starts the scene's layouts over.</summary>
+    public void ClearLiveRecords()
+    {
+        foreach (LayoutState layout in _layouts.Values) layout.LiveRecords.Clear();
     }
 
     public void SetResetCursor(int requestedSlot, int x, int y)
@@ -544,8 +575,32 @@ public sealed class AdvTextHistory
                            AdvTextHistoryRecordFlags flags = AdvTextHistoryRecordFlags.None,
                            IReadOnlyList<AdvTextRow>? rows = null,
                            IReadOnlyList<AdvRubyGlyph>? ruby = null)
+        => AppendTextAt(ResolveLayout(requestedSlot), sourceOffset, text, style, flags, rows, ruby);
+
+    /// <summary>
+    /// What History's renderer (op 0x1d1) drew into layout object <paramref name="slot"/>, as its live records only:
+    /// text_history_render_records appends each row it draws to the target window's list as the text builders do
+    /// (adv_text_append_segment_record, 4.45D @0x45c870, called from @0x464fa0), and History records nothing.
+    /// </summary>
+    public void AppendLiveRows(int slot, string text, AdvTextStyle style, IReadOnlyList<AdvTextRow> rows,
+                               IReadOnlyList<AdvRubyGlyph>? ruby)
     {
-        int slot = ResolveLayout(requestedSlot);
+        if (rows.Count == 0) return;
+        _appendingLiveOnly = true;
+        try
+        {
+            AppendTextAt(slot, -1, text, style, AdvTextHistoryRecordFlags.None, rows, ruby);
+        }
+        finally
+        {
+            _appendingLiveOnly = false;
+        }
+    }
+
+    private void AppendTextAt(int slot, int sourceOffset, string text, AdvTextStyle style,
+                              AdvTextHistoryRecordFlags flags, IReadOnlyList<AdvTextRow>? rows,
+                              IReadOnlyList<AdvRubyGlyph>? ruby)
+    {
         if (rows is not { Count: > 0 })
         {
             var layout = GetOrCreateLayout(slot);
@@ -901,18 +956,22 @@ public sealed class AdvTextHistory
                               AdvTextStyle style, string text, long value, long auxValue, int sourceOffset,
                               AdvTextHistoryRect rect = default, int voiceIndex = 0, int voicePan = 0)
     {
-        if (RecordingSuppressed) return;
-        if (_pendingGroupStarts.Remove(slot)) flags |= AdvTextHistoryRecordFlags.GroupStart;
+        bool records = !RecordingSuppressed && !_appendingLiveOnly;
+        if (records && _pendingGroupStarts.Remove(slot)) flags |= AdvTextHistoryRecordFlags.GroupStart;
 
         var layout = GetOrCreateLayout(slot);
         var snapshot = new AdvTextLayoutSnapshot(slot, layout.Width, layout.Height,
             layout.OriginX, layout.OriginY, layout.CursorX, layout.CursorY,
             layout.Right, layout.Bottom);
-        _records.Add(new AdvTextHistoryRecord(kind, flags, snapshot, style, text, value, auxValue, sourceOffset)
+        var record = new AdvTextHistoryRecord(kind, flags, snapshot, style, text, value, auxValue, sourceOffset)
         {
             Rect = rect,
             VoiceIndex = voiceIndex,
             VoicePan = voicePan,
-        });
+        };
+        // The layout's own list fills whether History records or not.
+        layout.LiveRecords.Add(new AdvTextLiveRecord(record, records ? _records.Count : -1));
+        if (!records) return;
+        _records.Add(record);
     }
 }

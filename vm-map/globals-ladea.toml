@@ -516,7 +516,7 @@ address = "0xf45f4f"
 name = "debug_play_active"
 category = "ui-toggle"
 type = "int"
-usage = "1 once TITLE's debug entries start play directly: DEBUGFIELD, DEBUGFIELD2, DEBUGFIELD3 and DEBUGTOWN set it (DEBUGTOWN@0x0). TOWN then skips the SCJUMP chain (TOWN@0xc6), TUTORIAL shows nothing (TUTORIAL@0x7), no seen flag is set, and CHECKSS skips its trigger-chance roll (CHECKSS@0x1c0). Not saved."
+usage = "1 once TITLE's debug entries start play directly: DEBUGFIELD, DEBUGFIELD2, DEBUGFIELD3 and DEBUGTOWN set it (DEBUGTOWN@0x0). TOWN then skips the SCJUMP chain (TOWN@0xc6), TUTORIAL shows nothing (TUTORIAL@0x7), no seen flag is set, and CHECKSS skips its trigger-chance roll (CHECKSS@0x1c0). Not saved: a load clears it, so after a load on a debug entry's floor FIELD's TUTORIAL (FIELD@0xc30) shows every field tutorial the entry's unlocks call for, 30 pages after 迷宮マップ２ on both targets (run 2026-11-27)."
 source = "investigation"
 confidence = "med"
 

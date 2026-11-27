@@ -123,8 +123,10 @@ ran the same scenarios on native AGE.
   `ladea.data.ready` through the base mod's `give_item`, and keeps the list for the driver's `lua` step;
   `example.ladea-floor-chest` is a data file whose floor part makes floor 65's chest in slot 8 give nine 治癒の水・小.
   `tools/drive/scenarios/port/ladea-debug-field.steps` runs the three: 迷宮マップ２ (an experience award for each
-  party character, then floor 65 with the changed chest). `tools/drive/scenarios/port/ladea-debug-town.steps` runs
-  the debug menu and the event log: 街, and the town event for each of the 20 places.
+  party character, then floor 65 with the changed chest, and the same after a save and its load).
+  `tools/drive/scenarios/port/ladea-debug-town.steps` runs the debug menu and the event log: 街, and the town event
+  for each of the 20 places. `tools/drive/scenarios/port/ladea-battle-award.steps` runs the same two: 索敵 on floor
+  65 starts a battle, AUTO戦闘 wins it, and RESULT raises an award for each party character below the cap.
 
 - `example.double-exp-lua` (Lua scripting gate 4) is the Lua version of the Himegari guide's experience patch: a
   handler on `himegari.experience.after_calculation` doubles `L[0x1]`. `ModLuaLinkTests` links it and runs

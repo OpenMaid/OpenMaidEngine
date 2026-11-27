@@ -64,6 +64,9 @@ public sealed partial class TextManager : ISurfaceListener
     private readonly bool _publisherGrowsGlyphCells;   // the build's TextRules.PublisherGrowsGlyphCells
     private readonly bool _publisherMovesAliasedEffectGlyphs;   // the build's TextRules.PublisherMovesAliasedEffectGlyphs
     private readonly bool _layoutPublishersGrowOnce;   // the build's TextRules.LayoutPublishersGrowOnce
+    private readonly LiveTextRedraw _liveTextRedraw;   // the build's TextRules.LiveTextRedraw
+    private readonly int _liveTextRedrawFirstLayout;   // the build's TextRules.LiveTextRedrawFirstLayout
+    private readonly bool _liveTextRedrawClearsEmptyLayouts;   // the build's TextRules.LiveTextRedrawClearsEmptyLayouts
     private readonly bool _blankExtentMode;
     private Func<bool> _inputWaiting = static () => false;
     private ITextListener[] _listeners = [];
@@ -72,15 +75,18 @@ public sealed partial class TextManager : ISurfaceListener
     /// measured with that rasterizer: each pipeline draws the widths it measured.</summary>
     private sealed class TextPipeline(GlyphRasterizerBackendInfo info, CachedGlyphMaskRasterizer cache,
                                       GlyphCoverageAlpha coverageAlpha, LineEndCharacters lineEnd,
-                                      bool joinsExtendedDashes, Func<AspectFontRealization?> realization)
+                                      bool joinsExtendedDashes, DashStripRows dashStrip,
+                                      Func<AspectFontRealization?> realization)
     {
         private Lazy<AspectFontRealization?> _realization = new(realization);
 
         public GlyphRasterizerBackendInfo Info { get; } = info;
         public GlyphRasterPolicy Policy => Info.Policy;
         public CachedGlyphMaskRasterizer Cache { get; } = cache;
-        public ImmediateSurfaceTextRenderer Pixels { get; } = new(cache, info.Policy, coverageAlpha, joinsExtendedDashes);
-        public RetainedGlyphLayoutEngine Layout { get; } = new(cache, coverageAlpha, lineEnd, joinsExtendedDashes);
+        public ImmediateSurfaceTextRenderer Pixels { get; } =
+            new(cache, info.Policy, coverageAlpha, joinsExtendedDashes, dashStrip);
+        public RetainedGlyphLayoutEngine Layout { get; } =
+            new(cache, coverageAlpha, lineEnd, joinsExtendedDashes, dashStrip);
 
         /// <summary>The aspect-mode font list (<see cref="AspectFontRealization"/>), or null when the rasterizer does
         /// not measure (<see cref="IFontMetricsProbe"/>): its glyphs then draw at <c>-height / 2</c>.</summary>
@@ -194,15 +200,26 @@ public sealed partial class TextManager : ISurfaceListener
     /// <param name="publisherMovesAliasedEffectGlyphs">The engine build's
     /// <c>TextRules.PublisherMovesAliasedEffectGlyphs</c>.</param>
     /// <param name="layoutPublishersGrowOnce">The engine build's <c>TextRules.LayoutPublishersGrowOnce</c>.</param>
+    /// <param name="dashStrip">The engine build's <c>TextRules.DashStrip</c>: which rows the dash join copies.</param>
+    /// <param name="liveTextRedraw">The engine build's <c>TextRules.LiveTextRedraw</c>: what a UseAntiFont change draws
+    /// again.</param>
+    /// <param name="liveTextRedrawFirstLayout">The engine build's <c>TextRules.LiveTextRedrawFirstLayout</c>.</param>
+    /// <param name="liveTextRedrawClearsEmptyLayouts">The engine build's
+    /// <c>TextRules.LiveTextRedrawClearsEmptyLayouts</c>.</param>
     public TextManager(Graphics graphics, SkipAndAuto skip, FrameClock clock, TextDevices? devices,
                        RubyLayoutRules ruby, bool blankExtentMode = false, Sys4RegIniStore? settings = null,
                        PageLocatorState? locator = null, TimelineLog? timeline = null, AdvTextHistory? history = null,
                        LineEndCharacters? lineEnd = null, string? extendedGlyphFace = null,
                        AspectCalibration aspectCalibration = AspectCalibration.BlackBoxOverCellIncrement,
                        bool publisherGrowsGlyphCells = false, bool publisherMovesAliasedEffectGlyphs = false,
-                       bool layoutPublishersGrowOnce = false)
+                       bool layoutPublishersGrowOnce = false, DashStripRows dashStrip = DashStripRows.Cell,
+                       LiveTextRedraw liveTextRedraw = LiveTextRedraw.None, int liveTextRedrawFirstLayout = 0,
+                       bool liveTextRedrawClearsEmptyLayouts = false)
     {
         lineEnd ??= LineEndCharacters.FixedThree;
+        _liveTextRedraw = liveTextRedraw;
+        _liveTextRedrawFirstLayout = Math.Clamp(liveTextRedrawFirstLayout, 0, AdvTextHistory.LayoutCount);
+        _liveTextRedrawClearsEmptyLayouts = liveTextRedrawClearsEmptyLayouts;
         _aspectCalibration = aspectCalibration;
         _publisherGrowsGlyphCells = publisherGrowsGlyphCells;
         _publisherMovesAliasedEffectGlyphs = publisherMovesAliasedEffectGlyphs;
@@ -232,7 +249,7 @@ public sealed partial class TextManager : ISurfaceListener
                                                                   capacity: devices.GameplayCacheCapacity);
             IFontMetricsProbe? metrics = devices.FontMetrics;
             TextPipeline source = new(backend, _surfaceTextMaskCache, devices.CoverageAlpha, lineEnd,
-                                      extendedGlyphFace != null, () => Realization(metrics));
+                                      extendedGlyphFace != null, dashStrip, () => Realization(metrics));
             _sourceText = source;
             _presentedText = new Lazy<TextPipeline>(() =>
             {
@@ -248,7 +265,7 @@ public sealed partial class TextManager : ISurfaceListener
                 // A presented rasterizer that measures calibrates its own aspect-mode fonts (localization spec §7.4).
                 return new TextPipeline(info,
                                         new CachedGlyphMaskRasterizer(Faces(rasterizer), devices.PresentedCacheCapacity),
-                                        devices.CoverageAlpha, lineEnd, extendedGlyphFace != null,
+                                        devices.CoverageAlpha, lineEnd, extendedGlyphFace != null, dashStrip,
                                         () => Realization(rasterizer as IFontMetricsProbe));
             }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
@@ -474,16 +491,23 @@ public sealed partial class TextManager : ISurfaceListener
     public bool TextAntialias => _textAntialias;
 
     /// <summary>
-    /// text_set_antialias_enabled@0x4137e0, which IAGEService +0x68 calls after writing message:UseAntiFont: later
-    /// text rasterizes in the new format. AGE also empties its glyph caches; text already drawn is not redrawn.
-    /// The port's glyph requests carry the flag, so its cache keeps the two formats apart instead.
+    /// text_set_use_anti_font (4.24J's text_set_antialias_enabled@0x4137e0), which IAGEService +0x68 calls after
+    /// writing message:UseAntiFont: later text rasterizes in the new format. AGE also empties its glyph caches; the
+    /// port's glyph requests carry the flag, so its cache keeps the two formats apart instead. From 4.33G the change
+    /// draws every window's live text again in the new format (<see cref="LiveTextRedraw"/>); 4.24J's leaves the text
+    /// already drawn as it is.
     /// </summary>
     public void SetTextAntialias(bool enabled)
     {
         if (_textAntialias == enabled) return;
         _textAntialias = enabled;
         _timeline?.Event("text-antialias", new() { ["enabled"] = enabled });
+        RedrawLiveText();
     }
+
+    /// <summary>Engine thread: display_toggle_screen_mode_and_menu_bar's redraw, which from 4.33G draws the windows'
+    /// live text again after a switch while display:VirtualFullScreenType is 2, as a UseAntiFont change does.</summary>
+    public void RedrawLiveTextAfterScreenModeSwitch() => RedrawLiveText();
 
     // ---- op 0x9 ----
 
@@ -495,6 +519,7 @@ public sealed partial class TextManager : ISurfaceListener
     public void ResetScene()
     {
         _scene = new();
+        History.ClearLiveRecords();
         History.SetRecordingEnabled(true);
         History.SelectCurrentLayout(AdvTextHistory.InitialCurrentLayoutSlot);
     }

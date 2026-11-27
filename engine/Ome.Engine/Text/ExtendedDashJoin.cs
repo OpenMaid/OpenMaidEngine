@@ -21,7 +21,9 @@ namespace Ome.Engine.Text;
 /// The worker clips the destination rectangle to the surface and moves the source by as much, then the source
 /// likewise, and copies nothing when what is left is empty. It changes the caller's rectangles, and the second copy
 /// starts from the first copy's clipped source, as here. A build that draws the user-defined area with its own face
-/// (<see cref="TextRules.ExtendedGlyphFace"/>) joins; the others have no such code.
+/// (<see cref="TextRules.ExtendedGlyphFace"/>) joins; the others have no such code. Which rows the strip takes is the
+/// build's <see cref="TextRules.DashStrip"/>: 4.38D's and 4.43B's are the cell's, as above; 4.45D's are the glyph's
+/// black box (<see cref="DashStripRows.BlackBox"/>).
 /// </summary>
 public static class ExtendedDashJoin
 {
@@ -39,20 +41,27 @@ public static class ExtendedDashJoin
     }
 
     /// <summary>Join <paramref name="request"/>'s glyph, just drawn into <paramref name="surface"/> at
-    /// (<paramref name="drawX"/>, <paramref name="top"/>) in <paramref name="style"/>, when it is one of the two
-    /// dashes.</summary>
+    /// (<paramref name="drawX"/>, <paramref name="top"/>) in <paramref name="style"/> with its baseline
+    /// <paramref name="topToBaseline"/> below <paramref name="top"/>, when it is one of the two dashes; the strip's rows
+    /// follow <paramref name="rows"/>.</summary>
     public static void AfterGlyph(RgbaImage surface, GlyphRasterRequest request, GlyphMask mask, int drawX, int top,
-                                  int nextPenX, AdvTextStyle style)
+                                  int topToBaseline, int nextPenX, AdvTextStyle style, DashStripRows rows)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(mask);
         if (request.Cp932Code is not { } code || !Applies(code)) return;
-        Apply(surface, code, drawX, top, nextPenX, mask.Width,
-              style.PrimaryFontSize > 0 ? style.PrimaryFontSize : request.PixelHeight,
-              style.EffectOffsetX, style.EffectOffsetY);
+        if (rows == DashStripRows.BlackBox)
+            ApplyBlackBox(surface, code, drawX, checked(top + topToBaseline), mask.OriginY, mask.Height,
+                          effectMode: style.RenderMode != 0, nextPenX, mask.Width, style.EffectOffsetX,
+                          style.EffectOffsetY);
+        else
+            Apply(surface, code, drawX, top, nextPenX, mask.Width,
+                  style.PrimaryFontSize > 0 ? style.PrimaryFontSize : request.PixelHeight,
+                  style.EffectOffsetX, style.EffectOffsetY);
     }
 
-    /// <summary>Join the dash just drawn into <paramref name="surface"/>.</summary>
+    /// <summary>Join the dash just drawn into <paramref name="surface"/>, with the strip's rows the cell's
+    /// (<see cref="DashStripRows.Cell"/>).</summary>
     /// <param name="drawX">The x the glyph was drawn at, before its own origin.</param>
     /// <param name="top">The string's y: the top of the glyph's cell.</param>
     /// <param name="nextPenX">The pen after the glyph's advance.</param>
@@ -60,6 +69,32 @@ public static class ExtendedDashJoin
     /// <param name="fontSize">The primary font size (text manager +0x313d4).</param>
     public static void Apply(RgbaImage surface, ushort code, int drawX, int top, int nextPenX, int blackBoxWidth,
                              int fontSize, int effectOffsetX, int effectOffsetY)
+        => Join(surface, code, drawX, top, unchecked(top + fontSize + effectOffsetY * 2), nextPenX, blackBoxWidth,
+                effectOffsetX);
+
+    /// <summary>Join the dash just drawn into <paramref name="surface"/>, with the strip's rows the glyph's black box
+    /// (<see cref="DashStripRows.BlackBox"/>): from the baseline less <c>gmptGlyphOrigin.y</c>, <c>gmBlackBoxY</c>
+    /// rows, and in an effect mode also <paramref name="effectOffsetY"/> rows above and below.</summary>
+    /// <param name="baselineY">The glyph's baseline: the string's y plus the ascent it was drawn with.</param>
+    /// <param name="originY">The glyph's <c>gmptGlyphOrigin.y</c>, upward from the baseline.</param>
+    /// <param name="blackBoxHeight">The glyph's <c>gmBlackBoxY</c>.</param>
+    /// <param name="effectMode">Whether the text effect is on (render mode 1 to 3): native draws the string with
+    /// text_draw_glyph_string_effect then, and with text_draw_glyph_string_plain in mode 0
+    /// (text_draw_string_primary_or_ruby@0x454850).</param>
+    public static void ApplyBlackBox(RgbaImage surface, ushort code, int drawX, int baselineY, int originY,
+                                     int blackBoxHeight, bool effectMode, int nextPenX, int blackBoxWidth,
+                                     int effectOffsetX, int effectOffsetY)
+    {
+        unchecked
+        {
+            int grow = effectMode ? effectOffsetY : 0;
+            int top = baselineY - originY - grow;
+            Join(surface, code, drawX, top, top + blackBoxHeight + grow * 2, nextPenX, blackBoxWidth, effectOffsetX);
+        }
+    }
+
+    private static void Join(RgbaImage surface, ushort code, int drawX, int top, int bottom, int nextPenX,
+                             int blackBoxWidth, int effectOffsetX)
     {
         ArgumentNullException.ThrowIfNull(surface);
         if (!Applies(code)) return;
@@ -70,7 +105,7 @@ public static class ExtendedDashJoin
                 Left = drawX + effectOffsetX,
                 Top = top,
                 Right = drawX + blackBoxWidth - 2,
-                Bottom = top + fontSize + effectOffsetY * 2,
+                Bottom = bottom,
             };
             var destination = new Rect
             {
@@ -123,4 +158,19 @@ public static class ExtendedDashJoin
             clipped.Bottom = surface.Height;
         }
     }
+}
+
+/// <summary>Which rows of the text surface the dash join copies (<see cref="ExtendedDashJoin"/>; docs/engine-re.md, "The
+/// dash join").</summary>
+public enum DashStripRows
+{
+    /// <summary>The cell's: from the string's top, the primary font size plus twice the effect's vertical offset
+    /// (4.38D's text_draw_glyph_string_plain@0x4692f0 and text_draw_glyph_string_effect@0x46b1d0, and 4.43B's).</summary>
+    Cell,
+
+    /// <summary>The glyph's black box: from the baseline less <c>gmptGlyphOrigin.y</c>, <c>gmBlackBoxY</c> rows,
+    /// widened by the effect's vertical offset above and below when the effect is on (4.45D's
+    /// text_draw_glyph_string_plain@0x46c4b0, the join at 0x46ca70, and text_draw_glyph_string_effect@0x46e360, the
+    /// join at 0x46ede8).</summary>
+    BlackBox,
 }
