@@ -1230,3 +1230,34 @@ authors.
     picture's where, and a where of no field, of no numbers or empty is refused) and the exporter's
     `AnOwnedTableJoinsByItsOwnersRecordAndAPictureMayBeAStripsFrameOrAnotherKinds` (a picture whose where the item
     meets, and one it does not). The export still writes 528 pictures: 26 frames in place of the 26 strips.
+- **天秤のLa DEA。's character looks and profile forms** (2026-11-27, on La DEA's first look at the site). The user:
+  "is there any sort of image we can use for the characters table? Feels weird since its party, enemy and story
+  character to not have some sort of images for them compared to other games", then "Let's do the full COINIT and
+  Let's also include pictures for other 'forms' in the character profile (for profiles where they exist)".
+  - **A chain loader.** La DEA keeps a character's pictures in no boot table: a screen sets the character and the
+    costume, then walks a hook chain, COINIT and its appends' fragments, which write one record, the look
+    (`docs/ladea-data-tables.md`, COINIT's section). A loader may now give `chain`, a global list of script ids, in
+    place of `script` and `read_at`. Each run copies the boot session, seeds it, and runs every nonzero slot's script
+    in turn, each to its end, then reads its tables. A halt is reported as `SCRIPT: halt`. The lint refuses a chain
+    beside a script or a point, and a chain that is not a list global of the registry.
+  - **A loaded table's pictures.** A loaded table may give `pictures`, written as a kind's field pictures are (a field,
+    or `{ field, key, frame, frames, blend, where }`), each a field of the table's own record. The key entity takes
+    each picture under its name from the first run that gives one. A name that resolves to no picture file is
+    reported, and none may be one of the key kind's own pictures. A loaded table that publishes no field and no text
+    writes no rows, so the look adds pictures to a character's page and no table.
+  - **La DEA's declarations.** The registry's `character_look` table names the look's status picture, its three CB
+    pictures and its 14 battle pictures. Each character gets one run, in costume 0: 411 runs, no halts. A character
+    has its `face` (icons.2, written on every look), its `status` picture (a party character's CSS picture, an
+    enemy's the large picture of its stone) and its `battle` picture, battle_pictures.6. That is one picture for a
+    look that writes only battle pictures 5 and 6. It is a 2 × 2 grid of idle frames for the 22 looks that write the
+    whole set of unit states, the party's, so `where = { "battle_pictures.0" = [0] }` leaves those out. A profile
+    publishes all its forms, `form_1` to `form_9` (VIC…, 102 pictures of 47 profiles), where it had only its first
+    as `portrait`. A character borrows its profile's `form_1` as `profile`. The character kind now writes 801
+    pictures: 281 faces, 99 status pictures, 282 battle pictures and 47 profile forms, some shared by an enemy's
+    forms. The 637 new files were looked at one by one, and 31 joined the explicit list, now 44: naked profile forms,
+    and battle and status pictures showing a nipple or a bare bottom (the list's comment in
+    `vm-map/entities-ladea.toml`).
+  - **Checked** by `tools/test_entities_build.py` (`test_chain_loader_and_loaded_pictures`: a chain with a script, a
+    chain that is no list, a loaded picture of a row of cells, of a field the refs do not mark, or named as the kind's
+    own) and the exporter's `AChainLoaderRunsEachSlotsScriptInTurnAndItsTablesGiveTheirPicturesToTheKey` and
+    `AChainLoaderNamesNoScriptAndItsChainAndPicturesAreChecked`.

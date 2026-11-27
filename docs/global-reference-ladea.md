@@ -173,6 +173,18 @@ CIINIT profiles of the 人物 book (INFOCH) and CFINIT's forms, both keyed by ch
 | form_gallery_pictures | character_form_gallery_pictures | `0x10abce` | `int[1000][250]` | pictures |
 | form_backdrops | character_form_backdrops | `0x147c5e` | `int[1000][10]` | pictures |
 
+### character_look[1]
+
+Built by: `character_look`.
+
+A character's look in one costume, which the screens load when they draw one: the caller sets character_look_arg_character and character_look_arg_costume and walks coinit_chain_script_ids (COINIT, then $1$COINIT and $2$COINIT, which add looks and costumes for a few characters). COINIT clears the block (COINIT@0x0-0x3c) and writes the character's pictures and sounds: its status picture, three icons the last of which is the face every list draws, the battle pictures, one for each unit state, the field, jump and carry pictures and the battle voice clips. A party character's status picture is its CSS picture, and its idle battle picture (6) a 2 x 2 grid of frames; an enemy's status picture is its stone's large picture (MS…B), where it has a stone, and its battle pictures 5 and 6 are one picture of it. No data file edits it: it is rebuilt on every call, and the looks are COINIT's code, which an OMS patch changes.
+
+| field | global | address | type | refers to |
+|---|---|---|---|---|
+| status_picture | character_look_status_picture | `0xbdc660` | `int` | pictures |
+| icons | character_look_icons | `0xbdc661` | `int[3]` | pictures |
+| battle_pictures | character_look_battle_pictures | `0xbdc667` | `int[14]` | pictures |
+
 ### glossary[1000]
 
 Built by: `boot`.

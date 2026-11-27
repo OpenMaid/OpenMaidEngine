@@ -120,6 +120,15 @@ return {
                 voice_setting = { global = "character_voice_settings", kind = "integer" },
             },
         },
+        character_look = {
+            records = 1,
+            built_by = "character_look",
+            fields = {
+                battle_pictures = { global = "character_look_battle_pictures", kind = "integer", width = 14 },
+                icons = { global = "character_look_icons", kind = "integer", width = 3 },
+                status_picture = { global = "character_look_status_picture", kind = "integer" },
+            },
+        },
         condition = {
             records = 60,
             built_by = "boot",

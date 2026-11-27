@@ -22,12 +22,14 @@
 #   of which the document does not name. The stones are a kind of their own because IMINIT, DPINIT and ITINIT share
 #   ids but no table names the other's records as its own, so a kind cannot join them into the item.
 # - The voice settings (CVINIT), the battle routines (RTINIT), the battle animations and effects (BTANINIT2, BTANINIT),
-#   a costume's look (COINIT, on demand), the field actions, the formations (AFINIT writes only placeholder lines and
-#   no script reads them), the object kinds and atlas markers (OBINIT, OBINIT2), the lands (LAINIT), the block puzzles
-#   (PZINIT), the floor's objects (FLINIT, on demand) and the atlas (ATINIT): machinery.
+#   the field actions, the formations (AFINIT writes only placeholder lines and no script reads them), the object kinds
+#   and atlas markers (OBINIT, OBINIT2), the lands (LAINIT), the block puzzles (PZINIT), the floor's objects (FLINIT, on
+#   demand) and the atlas (ATINIT): machinery.
 # - The special encounters (ELINIT): an entry has no name, and its scene or battle is a script's. The encounter sets
 #   and formations (ENINIT, ESINIT) and the fixed battles (DUINIT) are written on demand. The shops' offers (SHINIT)
 #   are written on demand too, and are guarded by story flags.
+# - A character's look (COINIT, on demand) is not a kind: the character loader below reads its pictures into the
+#   character, and the rest of it (field and walking pictures, battle voices, animation rows) is machinery.
 # - The town's buildings and places (BLINIT) are the town map's drawing, and its spots (ORINIT) are written on demand
 #   for the place in play. The unlock board (FMINIT) is the placement of the unlocks, which are a kind.
 # - The scenes (SCINIT), the event CG parts (EVINIT), the CG gallery (CGINIT), the scene replays (SPINIT), the music
@@ -47,18 +49,34 @@ excluded_builders = ["CGINIT", "SPINIT"]
 # special skills', profiles', glossary's, quests' and unlocks' lines), read here as text fields. TUMES plays the
 # tutorials, which are not a kind; GSMES and MES are not data.
 # The pictures the site shows blurred until a click: nudity, by catalog name. Found by looking at every picture the
-# declarations publish (2026-11-26, 1282 pictures: 1119 item icons IT…, 116 stones' large pictures MS…B and 47
-# profile portraits VIC…), and listed where a nipple or a bare bottom shows: the profiles of 琉璃王イルン and 魔神
-# ムールムール (VIC061AA, VIC064AA), and the stones of イルン (MS1202B), フレイムナーガ (MS1407B), ハルピュア (MS1413B),
-# サッキュバス (MS1431B), スキューネイル (MS1437B), ノオース (MS1443B, between her bandages), 精カリシ性ジョ (MS1445B),
-# 水獣人ネレナ (MS1450B), 憑魅霊 (MS1613B), 身籠るモノ (MS1614B) and 偽魂艶蛇レプス (the second append's $2$MS1459B).
-# The item icons are drawings of things, and a stone's icon shows only its bearer's face. Revealing but covered art
-# (the profiles VIC005AA, VIC023AA, VIC039BA, VIC041AA, VIC047AA, VIC050AA, VIC051AA, VIC053AA and VIC060AA, the
-# stones MS1430B, MS1440B, $2$MS1456B and $2$MS1457B) and the featureless bodies of the puppets and spirits (MS1424B,
-# MS1453B, $2$MS1460B and $2$MS1463B) are not on the list.
+# declarations publish: on 2026-11-26 1282 pictures (1119 item icons IT…, 116 stones' large pictures MS…B and 47
+# profile portraits VIC…), and on 2026-11-27 the 637 the characters' looks and the profiles' other forms added (281
+# faces CB…AC, 282 battle pictures CPB…AA, 19 status pictures CSS… and 55 profile forms VIC…). Listed where a nipple
+# or a bare bottom shows, or the figure is naked:
+# - profiles: 琉璃王イルン (VIC061AA, VIC061BA) and 魔神ムールムール (VIC064AA), and the naked forms of シュリ (VIC003DA),
+#   サリア (VIC004CA, VIC004CB), ロカ (VIC005CA), リンシャ (VIC008DA), アリシア (VIC011BA, VIC011BB), カウラ (VIC023CA,
+#   VIC023DA), ニウ (VIC026BA), ラクチェ (VIC027BA), レヴィア (VIC031CA), カチュア (VIC036CA), ラティナ (VIC039FA),
+#   ウェンディス (VIC041BA), ルー (VIC046CA), メティサーナ (VIC051CA), リリエム (VIC053BA) and ヴァレフォル (VIC066DA);
+# - status pictures: イルン (CSS061AAA) and ムールムール (CSS064AAA);
+# - battle pictures: イルン (CPB412AA), 悪魔大公ムールムール (CPB416AA), 邪神官ヘルトマイト (CPB461AA), エーテルラティナ
+#   (CPB471AA), フレイムナーガ (CPB538AA), ハルピュア (CPB556AA), サッキュバス (CPB692AA), 身籠るモノ (CPB827AA) and
+#   斬排の狩娘 (CPB881AA, bare breasts in too few pixels to tell);
+# - stones: イルン (MS1202B), フレイムナーガ (MS1407B), ハルピュア (MS1413B), サッキュバス (MS1431B), スキューネイル
+#   (MS1437B), ノオース (MS1443B, between her bandages), 精カリシ性ジョ (MS1445B), 水獣人ネレナ (MS1450B), 憑魅霊
+#   (MS1613B), 身籠るモノ (MS1614B) and 偽魂艶蛇レプス (the second append's $2$MS1459B).
+# The item icons are drawings of things, and a stone's icon and a face show only a face. Revealing but covered art
+# (the profiles VIC005AA, VIC023AA, VIC031BA, VIC039BA, VIC039EA, VIC041AA, VIC047AA, VIC050AA, VIC051AA, VIC053AA,
+# VIC060AA to VIC060DA, VIC066CA and VIC066EA, the stones MS1430B, MS1440B, $2$MS1456B and $2$MS1457B, the battle
+# pictures CPB411AA, CPB537AA, CPB547AA, CPB622AA and CPB676AA) and the featureless bodies of the puppets and spirits
+# (MS1424B, MS1453B, $2$MS1460B, $2$MS1463B, CPB607AA, CPB637AA, CPB791AA and CPB810AA) are not on the list.
 explicit_pictures = [
-    "VIC061AA", "VIC064AA", "MS1202B", "MS1407B", "MS1413B", "MS1431B", "MS1437B", "MS1443B", "MS1445B", "MS1450B",
-    "MS1459B", "MS1613B", "MS1614B",
+    "VIC061AA", "VIC061BA", "VIC064AA", "VIC003DA", "VIC004CA", "VIC004CB", "VIC005CA", "VIC008DA", "VIC011BA",
+    "VIC011BB", "VIC023CA", "VIC023DA", "VIC026BA", "VIC027BA", "VIC031CA", "VIC036CA", "VIC039FA", "VIC041BA",
+    "VIC046CA", "VIC051CA", "VIC053BA", "VIC066DA",
+    "CSS061AAA", "CSS064AAA",
+    "CPB412AA", "CPB416AA", "CPB461AA", "CPB471AA", "CPB538AA", "CPB556AA", "CPB692AA", "CPB827AA", "CPB881AA",
+    "MS1202B", "MS1407B", "MS1413B", "MS1431B", "MS1437B", "MS1443B", "MS1445B", "MS1450B", "MS1459B", "MS1613B",
+    "MS1614B",
 ]
 
 [[kind]]
@@ -167,6 +185,29 @@ initial_shield = "Starting shield of"
 initial_armor = "Starting armour of"
 items = { heading = "Given on joining or dropped by", details = ["item_counts"] }
 habitats = "Lives here"
+
+# A character's pictures: its profile's first form, by the profile that names it (the 人物 book's 47), and its face,
+# status picture and battle picture, which COINIT loads (the loader below).
+[kind.pictures]
+profile = { from = "character_profile", by = "line_characters.0", picture = "form_1" }
+
+# A character's look (export plan §5): the screens set the character and the costume and walk the COINIT chain, COINIT
+# and its appends' fragments (docs/ladea-data-tables.md, "COINIT (a character's look in one costume)"); a run for each
+# character, in costume 0, its first look. No scope: no data file edits a look (the registry's character_look table).
+# The table publishes pictures alone, so the character's page has no rows of it: the face every list draws (icons.2,
+# which COINIT writes on every look), the status picture (a party character's CSS picture, an enemy's the large picture
+# of its stone), and the battle picture, battle_pictures.6. That is one picture for a look that writes only battle
+# pictures 5 and 6, and a grid of four idle frames for the 22 looks that write the whole set of unit states
+# (battle_pictures.0 written: the party's, ids 1 to 73, 232 and 233, on 2026-11-27), which so show none.
+[[loader]]
+keys = "character"
+chain = "coinit_chain_script_ids"
+seed = { character_look_arg_character = "key", character_look_arg_costume = 0 }
+
+[loader.tables.look]
+table = "character_look"
+exists = "icons.2"
+pictures = { face = "icons.2", status = "status_picture", battle = { field = "battle_pictures.6", where = { "battle_pictures.0" = [0] } } }
 
 [[kind]]
 id = "item"
@@ -522,12 +563,14 @@ chapter = "Chapter"
 [[kind]]
 id = "character_profile"
 table = "profile"
-about = "The profiles of the 人物 book: each one's race, lines, forms and picture."
+about = "The profiles of the 人物 book: each one's race, lines, and forms with their pictures."
 exists = "name"
 title = "name"
 text = ["race", "lines", "form_names"]
 fields = ["line_characters.0"]
-pictures = { portrait = "form_pictures.1" }
+# Each form's picture, form n being the book's n-th (form_names lists them in that order): up to nine, six at most in
+# the game as shipped.
+pictures = { form_1 = "form_pictures.1", form_2 = "form_pictures.2", form_3 = "form_pictures.3", form_4 = "form_pictures.4", form_5 = "form_pictures.5", form_6 = "form_pictures.6", form_7 = "form_pictures.7", form_8 = "form_pictures.8", form_9 = "form_pictures.9" }
 
 [kind.labels]
 race = "Race"
@@ -537,7 +580,7 @@ form_names = "Forms"
 
 [kind.notes]
 "line_characters.0" = "The book opens the profile once this character has spoken."
-form_names = "The forms the book shows; the picture here is the first."
+form_names = "The forms the book shows, in order: Form 1 is the first's picture."
 
 [kind.referenced_as]
 "line_characters.0" = "Character profile"

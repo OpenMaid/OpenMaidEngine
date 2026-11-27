@@ -72,10 +72,12 @@ SHEET_OPTIONAL_KEYS = {"field", "key", "last"}
 # A picture sheet's catalog record, with its extension (SO009.AGF); an append's own picture is named with its pack's
 # prefix ($1$SO016A.AGF, Himegari's append icons).
 SHEET = re.compile(r"(\$[0-9]+\$)?[A-Z0-9_]+\.[A-Z0-9]+")
-LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables"}
+LOADER_KEYS = {"scope", "keys", "key_range", "steps", "skip", "script", "seed", "read_at", "builders", "tables",
+               "chain"}
 # A picture another kind's entity has (export plan §5): `from` the kind, `by` its reference field, `picture` its name.
 BORROWED_KEYS = {"from", "by", "picture"}
-LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts", "where", "joins"}
+LOADED_TABLE_KEYS = {"table", "exists", "fields", "text", "literals", "notes", "labels", "parts", "where", "joins",
+                     "pictures"}
 PART_KEYS = {"name", "field", "global", "same_as", "note"}
 # One integer list: a part's global, which the row's field indexes.
 LIST_TYPE = re.compile(r"int\[(\d+)\]")
@@ -284,6 +286,55 @@ def check_borrowed_pictures(game: Game, kinds: list, source: str, errors: list[s
                 errors.append(f"{where}: picture {ref.get('picture')!r} is not one of kind {other.get('id')}'s pictures")
             elif isinstance(target_picture, dict) and "from" in target_picture:
                 errors.append(f"{where}: picture {ref.get('picture')!r} of kind {other.get('id')} is borrowed itself")
+
+
+def check_field_picture(name: str, ref, one, refs: dict, where: str, errors: list[str]) -> None:
+    """A picture a field of the record holds, of a kind or of a loaded table: the field's name, or a table. `one(ref,
+    label, want)` resolves a field of the record, which must be one cell; `refs` is the table's [table.refs].
+
+    The table, { field, key, frame, blend }: the colour the game loads the picture with as its key, drawn as nothing
+    (export plan §5: Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB; the picture's first frame, its top left corner as
+    wide and as high as two fields of the record give (a map object's sheet, DRAWOBJ); the first of a strip's `frames`
+    frames side by side, its width ÷ frames and its full height (a Verita title's battle strip, six frames of 120 x 120
+    or of 320 x 300); and a field of the record holding the mode op 0x203 draws the picture with, whose 1, the additive
+    glow, the export shows as it looks over black (a healing feather); and `where`, the values fields of the record must
+    hold for it to have the picture, as a loaded table's rows (a 戦女神ZERO party unit's battle sprite is a strip of six
+    frames, an enemy's one picture, by the unit's kind). Any may be left out, not all. The caller checks the name."""
+    if isinstance(ref, dict):
+        unknown_keys(ref, {"field", "key", "frame", "frames", "blend", "where"}, f"{where}: picture {name}", errors)
+        if not {"key", "frame", "frames", "blend", "where"} & set(ref):
+            errors.append(f"{where}: picture {name}: a table names a key, a frame, frames, a blend or a where; a "
+                          f"field alone is written as its name")
+        rules = ref.get("where", {})
+        if not isinstance(rules, dict) or ("where" in ref and not rules):
+            errors.append(f"{where}: picture {name}: where must be a table of field = the values it may hold")
+            rules = {}
+        for wref, values in rules.items():
+            one(wref, f"picture {name}'s where", "integer")
+            if not isinstance(values, list) or not values or not all(
+                    isinstance(v, int) and not isinstance(v, bool) for v in values):
+                errors.append(f"{where}: picture {name}: where {wref} must list the whole numbers the record's "
+                              f"{wref} may hold")
+        if "frames" in ref and (not is_size(ref["frames"]) or "frame" in ref):
+            errors.append(f"{where}: picture {name}: frames must be a whole number above 0, the strip's frames "
+                          f"side by side, and a picture has frame or frames, not both")
+        if "blend" in ref:
+            one(ref["blend"], f"picture {name}'s blend", "integer")
+        key = ref.get("key")
+        if "key" in ref and (not isinstance(key, int) or isinstance(key, bool) or not 0 <= key <= 0xFFFFFF):
+            errors.append(f"{where}: picture {name}: key must be a colour 0xRRGGBB")
+        frame = ref.get("frame")
+        if "frame" in ref:
+            if not (isinstance(frame, list) and len(frame) == 2 and all(isinstance(f, str) for f in frame)):
+                errors.append(f"{where}: picture {name}: frame must be [width, height], two fields of the record")
+            else:
+                for size in frame:
+                    one(size, f"picture {name}'s frame", "integer")
+        ref = ref.get("field")
+    field = one(ref, f"picture {name}", "integer")
+    if field is not None and refs.get(str(ref).partition(".")[0]) != globals_build.REF_PICTURE:
+        errors.append(f"{where}: picture {name} reads {ref}, which the registry's [table.refs] does not mark as "
+                      f"{globals_build.REF_PICTURE}")
 
 
 def unknown_keys(entry: dict, allowed: set[str], where: str, errors: list[str]) -> None:
@@ -496,6 +547,8 @@ def lint(game: Game, data: dict, source: str) -> list[str]:
                                f"{source}: kind {kind.get('id')!r}", errors)
             check_referenced_as(game, kind, loaded_by_kind.get(kind.get("id"), {}), shown_tables,
                                 f"{source}: kind {kind.get('id')!r}", errors)
+            check_loaded_pictures(kind, loaded_by_kind.get(kind.get("id"), {}), f"{source}: kind {kind.get('id')!r}",
+                                  errors)
     for relation in data.get("script_relation", []):
         lint_relation(game, relation, source, ids, relation_ids, errors)
     return errors
@@ -679,50 +732,7 @@ def lint_kind(game: Game, kind: dict, source: str, text_scripts: set[str], ids: 
             # { from, by, picture }: another kind's picture (check_borrowed_pictures, once every kind is read).
             unknown_keys(ref, BORROWED_KEYS, f"{where}: picture {name}", errors)
             continue
-        if isinstance(ref, dict):
-            # { field, key, frame, blend }: the colour the game loads the picture with as its key, drawn as nothing
-            # (export plan §5: Himegari's map sprites, DRAWCH@0x9c), 0xRRGGBB; the picture's first frame, its top left
-            # corner as wide and as high as two fields of the record give (a map object's sheet, DRAWOBJ); the first
-            # of a strip's `frames` frames side by side, its width ÷ frames and its full height (a Verita title's
-            # battle strip, six frames of 120 x 120 or of 320 x 300); and a field
-            # of the record holding the mode op 0x203 draws the picture with, whose 1, the additive glow, the export
-            # shows as it looks over black (a healing feather); and `where`, the values fields of the record must hold
-            # for it to have the picture, as a loaded table's rows (a 戦女神ZERO party unit's battle sprite is a strip
-            # of six frames, an enemy's one picture, by the unit's kind). Any may be left out, not all.
-            unknown_keys(ref, {"field", "key", "frame", "frames", "blend", "where"}, f"{where}: picture {name}", errors)
-            if not {"key", "frame", "frames", "blend", "where"} & set(ref):
-                errors.append(f"{where}: picture {name}: a table names a key, a frame, frames, a blend or a where; a "
-                              f"field alone is written as its name")
-            rules = ref.get("where", {})
-            if not isinstance(rules, dict) or ("where" in ref and not rules):
-                errors.append(f"{where}: picture {name}: where must be a table of field = the values it may hold")
-                rules = {}
-            for wref, values in rules.items():
-                one(wref, f"picture {name}'s where", "integer")
-                if not isinstance(values, list) or not values or not all(
-                        isinstance(v, int) and not isinstance(v, bool) for v in values):
-                    errors.append(f"{where}: picture {name}: where {wref} must list the whole numbers the record's "
-                                  f"{wref} may hold")
-            if "frames" in ref and (not is_size(ref["frames"]) or "frame" in ref):
-                errors.append(f"{where}: picture {name}: frames must be a whole number above 0, the strip's frames "
-                              f"side by side, and a picture has frame or frames, not both")
-            if "blend" in ref:
-                one(ref["blend"], f"picture {name}'s blend", "integer")
-            key = ref.get("key")
-            if "key" in ref and (not isinstance(key, int) or isinstance(key, bool) or not 0 <= key <= 0xFFFFFF):
-                errors.append(f"{where}: picture {name}: key must be a colour 0xRRGGBB")
-            frame = ref.get("frame")
-            if "frame" in ref:
-                if not (isinstance(frame, list) and len(frame) == 2 and all(isinstance(f, str) for f in frame)):
-                    errors.append(f"{where}: picture {name}: frame must be [width, height], two fields of the record")
-                else:
-                    for size in frame:
-                        one(size, f"picture {name}'s frame", "integer")
-            ref = ref.get("field")
-        field = one(ref, f"picture {name}", "integer")
-        if field is not None and refs.get(str(ref).partition(".")[0]) != globals_build.REF_PICTURE:
-            errors.append(f"{where}: picture {name} reads {ref}, which the registry's [table.refs] does not mark as "
-                          f"{globals_build.REF_PICTURE}")
+        check_field_picture(name, ref, one, refs, where, errors)
 
     names = set(table.get("fields") or {})
     descriptions = kind.get("description", [])
@@ -1178,16 +1188,18 @@ def check_heading(heading, where: str, errors: list[str]) -> None:
 
 
 def loader_name(loader: dict) -> str:
-    """How messages name a loader: by its scope, or by its script when it has none."""
+    """How messages name a loader: by its scope, or by its script or its chain when it has none."""
     scope = loader.get("scope")
-    return repr(scope) if scope is not None else f"of {loader.get('script')!r}"
+    if scope is not None:
+        return repr(scope)
+    return f"of chain {loader['chain']!r}" if "chain" in loader else f"of {loader.get('script')!r}"
 
 
 def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind_tables: dict, errors: list[str],
                 loaded_by_kind: dict[str, dict] | None = None) -> None:
     """A loader (game data export plan §4.2): its key kind, the scope whose tables it reads (or none, when each table
     names its registry table: one that no data file edits), the range of keys it runs for, how many steps it runs
-    each key, its script, seeds and point."""
+    each key, its script, seeds and point, or the hook chain it walks in place of a script and a point."""
     where = f"{source}: loader {loader_name(loader)}"
     unknown_keys(loader, LOADER_KEYS, where, errors)
     scope = None
@@ -1214,10 +1226,22 @@ def lint_loader(game: Game, loader: dict, source: str, ids: dict[str, str], kind
     tables = lint_loaded_tables(game, loader.get("tables", {}), scope, "scope" in loader, key_table, where, errors)
     if loaded_by_kind is not None and isinstance(keys, str):
         loaded_by_kind.setdefault(keys, {}).update(tables)
-    check_scripts([loader.get("script")] if isinstance(loader.get("script"), str) else loader.get("script"),
-                  f"{where}: script", errors, patterns=False)
-    if loader.get("read_at") not in game.points:
-        errors.append(f"{where}: reads at {loader.get('read_at')!r}, which is no patch point of the game")
+    if "chain" in loader:
+        # A hook chain (export plan §5): each run calls every script its slots name, in turn, each to its end, as the
+        # game's callers walk it (天秤のLa DEA。's COINIT and its appends' fragments).
+        if "script" in loader or "read_at" in loader:
+            errors.append(f"{where}: a loader with a chain names no script and no point: each run walks the chain")
+        chain = loader["chain"]
+        global_ = game.globals.get(chain) if isinstance(chain, str) else None
+        if global_ is None:
+            errors.append(f"{where}: chain {chain!r} is not a global of the registry")
+        elif LIST_TYPE.fullmatch(str(global_.get("type") or "")) is None:
+            errors.append(f"{where}: chain {chain} is {global_.get('type')}, not a list of script ids")
+    else:
+        check_scripts([loader.get("script")] if isinstance(loader.get("script"), str) else loader.get("script"),
+                      f"{where}: script", errors, patterns=False)
+        if loader.get("read_at") not in game.points:
+            errors.append(f"{where}: reads at {loader.get('read_at')!r}, which is no patch point of the game")
     check_seed(game, loader.get("seed"), where, errors, key_range=key_range, steps=steps, indexed=True)
     seeds = loader.get("seed") if isinstance(loader.get("seed"), list) else []
     if steps is None and any(STEP in (entry.get("index") or []) for entry in seeds if isinstance(entry, dict)):
@@ -1373,10 +1397,50 @@ def lint_loaded_tables(game: Game, tables, scope: dict | None, scoped: bool, key
             check_note(note, f"{twhere}: note {key}", errors)
         check_labels(entry.get("labels", {}), set(shown), twhere, errors)
         check_parts(game, table, short, entry, shown, twhere, part_names, errors)
+        check_loaded_table_pictures(game, base_table, entry.get("pictures", {}), twhere, errors)
     for name, owner in part_names.items():
         if name in tables:
             errors.append(f"{where}: table {owner!r}'s part {name!r} has the name of one of the loader's tables")
     return found
+
+
+def check_loaded_table_pictures(game: Game, table: dict, pictures, where: str, errors: list[str]) -> None:
+    """A loaded table's pictures (game data export plan §5): `name = field` or a field picture's table, as a kind has
+    them, each a field of the table's own record. The key entity takes each under its name from the first run and record
+    to give one (a 天秤のLa DEA。 character's face, which COINIT loads). A table that publishes pictures alone writes no
+    rows."""
+    if not isinstance(pictures, dict):
+        errors.append(f"{where}: pictures must be a table of name = field")
+        return
+
+    def one(ref, label: str, want: str | None) -> Field | None:
+        field = resolve_field(game, table, ref, f"{where}: {label}", errors)
+        if field is None:
+            return None
+        if not field.single:
+            errors.append(f"{where}: {label} {ref} is a row of cells; name one column of it")
+        if want and field.kind != want:
+            errors.append(f"{where}: {label} {ref} must be a {want} field")
+        return field
+
+    for name, ref in pictures.items():
+        if not IDENTIFIER.fullmatch(name):
+            errors.append(f"{where}: picture name {name!r} must be a lowercase identifier")
+        if isinstance(ref, dict) and ({"sheet", "from"} & set(ref)):
+            errors.append(f"{where}: picture {name}: a loaded table's picture is a field of its record, not a sheet's "
+                          f"cell or another kind's picture")
+            continue
+        check_field_picture(name, ref, one, refs_of(table), where, errors)
+
+
+def check_loaded_pictures(kind: dict, loaded: dict, where: str, errors: list[str]) -> None:
+    """The key entity takes its loaded tables' pictures under their names, so none is one of the kind's own, which the
+    entity has before any loader runs."""
+    own = set(kind.get("pictures") or {}) if isinstance(kind.get("pictures"), dict) else set()
+    for short, (_, entry) in loaded.items():
+        pictures = entry.get("pictures") if isinstance(entry, dict) else None
+        for name in sorted(own & set(pictures if isinstance(pictures, dict) else {})):
+            errors.append(f"{where}: picture {name} of loaded table {short!r} is a picture of the kind too")
 
 
 def check_parts(game: Game, table: dict, short: str, entry: dict, shown: list[str], where: str,
@@ -1475,7 +1539,7 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
         return {"table": table, "exists": entry["exists"], "fields": entry.get("fields", []),
                 "text": entry.get("text", []), "literals": entry.get("literals", []), "notes": entry.get("notes", {}),
                 "labels": entry.get("labels", {}), "parts": entry.get("parts", []), "where": entry.get("where", {}),
-                "joins": entry.get("joins", {})}
+                "joins": entry.get("joins", {}), "pictures": entry.get("pictures", {})}
 
     document = {
         "note": "DO NOT EDIT -- generated by tools/entities_build.py --build",
@@ -1510,8 +1574,8 @@ def render(profile_id: str, data: dict, source_bytes: bytes, source: str, scopes
                                    for ref, runs in k.get("text_blocks", {}).items()}}
                   for k in data.get("kind", [])],
         "loaders": [{"scope": l.get("scope"), "keys": l["keys"], "key_range": l.get("key_range"),
-                     "steps": l.get("steps", 1), "skip": l.get("skip", {}), "script": l["script"],
-                     "seed": seed_entries(l.get("seed")), "read_at": l["read_at"],
+                     "steps": l.get("steps", 1), "skip": l.get("skip", {}), "script": l.get("script"),
+                     "chain": l.get("chain"), "seed": seed_entries(l.get("seed")), "read_at": l.get("read_at"),
                      "builders": l.get("builders", []),
                      "tables": {short: loaded(l, short, entry) for short, entry in (l.get("tables") or {}).items()}}
                     for l in data.get("loader", [])],

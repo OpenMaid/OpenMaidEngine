@@ -31,9 +31,10 @@ OBINIT, OBINIT2, LAINIT, PZINIT, ATINIT, EEINIT, ELINIT, CGINIT, SPINIT, MUINIT,
 VIINIT, TUINIT, BTANINIT2. Op `0x143` then runs each mounted append catalog's AUTORUN (`INIT2@0x23d`): `$1$AUTORUN`
 and `$2$AUTORUN`, which call their own `$1$<TABLE>.BIN` and `$2$<TABLE>.BIN` for all 34 tables, in the same order and
 at the same offsets (`@0x0`..`0x63`). The install has two appends, so a table's runtime image is the **base, then
-`$1$`, then `$2$`**, later writes winning. Of the 68 fragments, 28 are empty stubs: 16 of `$1$`'s (COINIT, AFINIT,
-ILINIT, BLINIT, QUINIT, NUINIT, OBINIT, LAINIT, PZINIT, EEINIT, ELINIT, MUINIT, CVINIT, CIINIT, TUINIT, BTANINIT2)
-and 12 of `$2$`'s (COINIT, AFINIT, SSINIT, ILINIT, NUINIT, LAINIT, PZINIT, ATINIT, EEINIT, ELINIT, MUINIT, VIINIT).
+`$1$`, then `$2$`**, later writes winning. Of the 68 fragments, 28 write nothing at boot. 26 are empty stubs, 15
+of `$1$`'s (AFINIT, ILINIT, BLINIT, QUINIT, NUINIT, OBINIT, LAINIT, PZINIT, EEINIT, ELINIT, MUINIT, CVINIT, CIINIT,
+TUINIT, BTANINIT2) and 11 of `$2$`'s (AFINIT, SSINIT, ILINIT, NUINIT, LAINIT, PZINIT, ATINIT, EEINIT, ELINIT, MUINIT,
+VIINIT); the two COINIT fragments write only for the characters they name, and boot names none (COINIT's section).
 The others write 5,928 cells (`$1$`) and 11,503 (`$2$`). All but FMINIT's only write cells the layers before them
 left unwritten: they add records, or fields to records the base made. `$1$FMINIT` rewrites 2 of the base's cells and
 `$2$FMINIT` 9 (the boot image, compared cell by cell; FMINIT's section). No fragment is behind a test.
@@ -50,7 +51,7 @@ COINIT is in both lists: INIT2 runs it, and its chain lets a screen run it again
 pictures (`SO011`, `so004`, `so040`). Native AGE reads a loose file before the archive, and the data tooling reads the
 install the same way (`tools/paths.py`'s `scripts()`), so every count below includes them. Fifteen tables have a loose
 copy, AFINIT, CHINIT, CIINIT, DUINIT, ESINIT, FAINIT, FTINIT, IMINIT, ITINIT, MPINIT, ORINIT, QUINIT, RTINIT, SPINIT
-and VIINIT, and two fragments, `$1$COINIT` (an empty stub, as the archive's is) and `$1$ITINIT`; so do the drivers
+and VIINIT, and two fragments, `$1$COINIT` and `$1$ITINIT`; so do the drivers
 INIT2 and SCJUMP. The install's title shows `Version 2.00.0011`; where the loose files come from is not established
 here.
 

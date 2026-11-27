@@ -157,7 +157,8 @@ item[201].name = "[MOD] 治癒の水・小"
   so a load would bring the saved value back over the edit. Change them from Lua.
 - **Tables a file does not edit:** the ones the game fills for one battle or one walk when it starts it, BTANINIT's
   effects, ESINIT's formation slots and ENINIT's encounter entries. The kind has no event at those loaders; a fragment
-  or a Lua hook at the loader's script reaches them.
+  or a Lua hook at the loader's script reaches them. Nor does it edit a character's look, `character_look`, which
+  COINIT writes again each time a screen draws a character: an OMS patch of COINIT changes a look.
 - **The shape.** `ladea-base` ships the kind's shape, `shapes/tables.schema.json` ([data files](../data-files.md),
   "Shapes"), so the link, `omp check` and `omp build` refuse a table, field or column the reference does not name, a
   saved field, an id or a column out of range and a value of the wrong kind, with the file's line. `omp lua-stubs

@@ -399,14 +399,15 @@ public sealed record DescriptionDeclaration(
 /// skipped, <see cref="Script"/> run from the booted session <see cref="Steps"/> times, each with the seeds, to the
 /// <see cref="ReadAt"/> point; then its published tables read (export plan §4.2): the tables of <see cref="Scope"/>, or,
 /// for a loader with none, registry tables that no data file edits (export plan §5). Run k's records are numbered k
-/// times the table's records plus the record.</summary>
+/// times the table's records plus the record. A loader with a <see cref="Chain"/> has no script and no point: each run
+/// walks the hook chain as the game does, every script its slots name in turn, each to its end (export plan §5).</summary>
 public sealed record LoaderDeclaration(
     string? Scope,
     string Keys,
     IReadOnlyList<(string Field, long Value)> Skip,
-    string Script,
+    string? Script,
     IReadOnlyList<SeedCell> Seed,
-    string ReadAt,
+    string? ReadAt,
     IReadOnlyList<string> Builders,
     IReadOnlyList<LoadedTableDeclaration> Tables)
 {
@@ -416,8 +417,13 @@ public sealed record LoaderDeclaration(
     /// <summary>The runs for each key, from step 0.</summary>
     public int Steps { get; init; } = 1;
 
-    /// <summary>How messages and the report name it: by its scope, or by its script when it has none.</summary>
-    public string Name => Scope ?? Script;
+    /// <summary>The hook chain each run walks in place of a script (export plan §5): a list of the registry whose slots
+    /// hold script ids, 0 for none, as the session holds it after the seeds (天秤のLa DEA。's COINIT and its appends'
+    /// fragments, <c>coinit_chain_script_ids</c>).</summary>
+    public string? Chain { get; init; }
+
+    /// <summary>How messages and the report name it: by its scope, or by its script or its chain when it has none.</summary>
+    public string Name => Scope ?? Script ?? Chain ?? "";
 
     internal static LoaderDeclaration Parse(JsonElement loader)
         => new(
@@ -428,13 +434,13 @@ public sealed record LoaderDeclaration(
             loader.TryGetProperty("skip", out JsonElement skip)
                 ? skip.EnumerateObject().Select(pair => (pair.Name, pair.Value.GetInt64())).ToList()
                 : [],
-            loader.GetProperty("script").GetString()!,
+            OptionalString(loader, "script"),
             loader.TryGetProperty("seed", out JsonElement seed)
                 ? seed.ValueKind == JsonValueKind.Object
                     ? seed.EnumerateObject().Select(pair => new SeedCell(pair.Name, [], SeedValue.Parse(pair.Value))).ToList()
                     : seed.EnumerateArray().Select(SeedCell.Parse).ToList()
                 : [],
-            loader.GetProperty("read_at").GetString()!,
+            OptionalString(loader, "read_at"),
             ExportDeclarations.Strings(loader, "builders"),
             loader.TryGetProperty("tables", out JsonElement tables)
                 ? tables.EnumerateObject().Select(pair => LoadedTableDeclaration.Parse(pair.Name, pair.Value)).ToList()
@@ -446,7 +452,13 @@ public sealed record LoaderDeclaration(
             Steps = loader.TryGetProperty("steps", out JsonElement steps) && steps.ValueKind == JsonValueKind.Number
                 ? steps.GetInt32()
                 : 1,
+            Chain = OptionalString(loader, "chain"),
         };
+
+    private static string? OptionalString(JsonElement parent, string name)
+        => parent.TryGetProperty(name, out JsonElement value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 }
 
 /// <summary>A cell a loader's seed writes before each run (export plan §5): a named integer global, at an index of a
@@ -490,6 +502,12 @@ public sealed record LoadedTableDeclaration(string Name, string Table, string Ex
     public IReadOnlyList<(string Name, string Label)> Labels { get; init; } = [];
     public IReadOnlyList<PartDeclaration> Parts { get; init; } = [];
 
+    /// <summary>The pictures a run's record gives its key entity (export plan §5), each a field of the table as a kind's
+    /// field picture is, under its name on the key entity; where two runs or two records give one name, the first
+    /// keeps it. A 天秤のLa DEA。 character's face and status picture, which COINIT loads for one character at a time.
+    /// </summary>
+    public IReadOnlyList<FieldPictureDeclaration> Pictures { get; init; } = [];
+
     /// <summary>The values a record's field must hold for the record to be a row (export plan §5), by field: a stage's
     /// map objects of type 32 or 33, its dig sites.</summary>
     public IReadOnlyList<(string Field, IReadOnlyList<long> Values)> Where { get; init; } = [];
@@ -516,6 +534,9 @@ public sealed record LoadedTableDeclaration(string Name, string Table, string Ex
                     (IReadOnlyList<long>)pair.Value.EnumerateArray().Select(value => value.GetInt64()).ToList())).ToList()
                 : [],
             Joins = ExportDeclarations.Pairs(table, "joins"),
+            Pictures = table.TryGetProperty("pictures", out JsonElement pictures)
+                ? pictures.EnumerateObject().Select(pair => FieldPictureDeclaration.Parse(pair.Name, pair.Value)).ToList()
+                : [],
             Parts = table.TryGetProperty("parts", out JsonElement parts)
                 ? parts.EnumerateArray().Select(part => new PartDeclaration(
                     part.GetProperty("name").GetString()!, part.GetProperty("field").GetString()!,

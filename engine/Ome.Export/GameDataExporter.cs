@@ -47,7 +47,7 @@ public static class GameDataExporter
             kinds.Add(ReadKind(inputs, boot, kind, rule, explicitPictures, languages, report));
         }
         foreach (LoaderDeclaration loader in declarations.Loaders)
-            Load(inputs, boot, loader, kinds, rule, languages, report);
+            Load(inputs, boot, loader, kinds, rule, explicitPictures, languages, report);
         foreach (ExportKind kind in kinds) NameValues(inputs, boot, kind, rule, languages, report);
         LinkReferences(kinds, report);
         BorrowPictures(kinds);
@@ -270,29 +270,13 @@ public static class GameDataExporter
         var textArrays = new HashSet<string>(textFields.Select(field => field.Field), StringComparer.Ordinal);
         // A frame's size is two fields of the record, and its blend a third (export plan §5): a map object's sheet, its
         // first frame, and the mode DRAWOBJ draws it with.
-        var pictures = kind.Pictures.Select(picture => (picture.Name, Field: registry.Resolve(table, picture.Field), picture.Key,
-                                                        Frame: picture.Frame is { } frame
-                                                            ? (registry.Resolve(table, frame.Width), registry.Resolve(table, frame.Height))
-                                                            : ((FieldLayout Width, FieldLayout Height)?)null,
-                                                        picture.Frames,
-                                                        Blend: picture.Blend is { } blend ? registry.Resolve(table, blend) : null,
-                                                        Where: picture.Where.Select(rule => (Field: registry.Resolve(table, rule.Field), rule.Values)).ToList()))
-            .ToList();
+        IReadOnlyList<FieldPicture> pictures = FieldPictures(registry, table, kind.Pictures, kind.Id);
         // A sheet without a field is numbered by the record's own id.
         var sheets = kind.Sheets
             .Select(sheet => (Sheet: sheet, Field: sheet.Field is null ? null : registry.Resolve(table, sheet.Field))).ToList();
         IReadOnlyList<FieldLayout> sheetFields = [.. sheets.Select(pair => pair.Field).OfType<FieldLayout>()];
-        IReadOnlyList<(string Name, FieldLayout Field)> pictureParts =
-        [
-            .. pictures.Where(picture => picture.Frame is not null)
-                .SelectMany(picture => new[] { (picture.Name, picture.Frame!.Value.Width), (picture.Name, picture.Frame!.Value.Height) }),
-            .. pictures.Where(picture => picture.Blend is not null).Select(picture => (picture.Name, picture.Blend!)),
-            .. pictures.SelectMany(picture => picture.Where.Select(rule => (picture.Name, rule.Field))),
-        ];
-        IReadOnlyList<FieldLayout> frameFields = [.. pictureParts.Select(part => part.Field)];
-        foreach ((string name, FieldLayout field) in pictures.Select(picture => (picture.Name, picture.Field))
-                     .Concat(sheets.Where(pair => pair.Field is not null).Select(pair => (pair.Sheet.Name, pair.Field!)))
-                     .Concat(pictureParts))
+        IReadOnlyList<FieldLayout> frameFields = [.. pictures.SelectMany(picture => picture.Parts).Select(part => part.Field)];
+        foreach ((string name, FieldLayout field) in sheets.Where(pair => pair.Field is not null).Select(pair => (pair.Sheet.Name, pair.Field!)))
             if (field.Elements != 1 || field.IsString)
                 throw new ExportFailure($"{kind.Id}'s picture {name} ({field.Name}) is not one integer cell of a record");
 
@@ -375,43 +359,11 @@ public static class GameDataExporter
                         if (language.String(text, store.Origin) is { } translated)
                             entity.Texts.Add(new ExportText(field.Name, element, translated, language.Tag));
                 }
-            foreach ((string name, FieldLayout field, int? key, (FieldLayout Width, FieldLayout Height)? frame,
-                      int? frames, FieldLayout? blend, List<(FieldLayout Field, IReadOnlyList<long> Values)> where) in pictures)
+            foreach (FieldPicture field in pictures)
             {
-                var (cell, refused) = At(field, 0);
-                if (refused || cell.Number == 0 || inputs.Pictures == null) continue;
-                // A record has the picture only where each field of its where holds one of the values; a withheld one
-                // leaves it out.
-                if (where.Any(rule => At(rule.Field, 0) is var (value, withheld) && (withheld || !rule.Values.Contains(value.Number))))
-                    continue;
-                // Op 0x203's mode 1, the additive glow, as the record's blend gives it; a withheld blend leaves the
-                // picture out.
-                (ExportCell Cell, bool Refused)? mode = blend is null ? null : At(blend, 0);
-                if (mode is { Refused: true }) continue;
-                bool additive = mode?.Cell.Number == 1;
-                ExportPicture? picture;
-                if (frame is { } sizes)
-                {
-                    // The first frame of the record's sheet, as wide and as high as its fields give; a size a builder
-                    // did not write, or of 0, is no frame.
-                    var (width, widthRefused) = At(sizes.Width, 0);
-                    var (height, heightRefused) = At(sizes.Height, 0);
-                    if (widthRefused || heightRefused) continue;
-                    picture = width.Number is > 0 and <= int.MaxValue && height.Number is > 0 and <= int.MaxValue
-                        ? inputs.Pictures.Frame(cell.Number, ((int)width.Number, (int)height.Number), key, additive)
-                        : null;
-                }
-                // The first of a strip's frames side by side (a Verita title's chibi): its width ÷ frames, its height.
-                else if (frames is { } count)
-                    picture = (key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number))
-                        is { } strip
-                        ? inputs.Pictures.Frame(cell.Number, (strip.Width / count, strip.Height), key, additive)
-                        : null;
-                else if (additive) picture = inputs.Pictures.Frame(cell.Number, null, key, additive);
-                else picture = key is { } colour ? inputs.Pictures.ResolveKeyed(cell.Number, colour) : inputs.Pictures.Resolve(cell.Number);
-                if (additive && picture is not null) picture = picture with { Additive = true };
-                if (picture is not null) entity.Pictures.Add((name, explicitPictures.Mark(picture)));
-                else report.UnresolvedPictures.Add((kind.Id, record, name, cell.Number));
+                if (PictureOf(inputs, field, At) is not { } found) continue;
+                if (found.Picture is { } picture) entity.Pictures.Add((field.Name, explicitPictures.Mark(picture)));
+                else report.UnresolvedPictures.Add((kind.Id, record, field.Name, found.Number));
             }
             // A cell of a sheet (plan §5): a number below the sheet's first, or above its last, is no picture.
             foreach ((SheetPictureDeclaration sheet, FieldLayout? field) in sheets)
@@ -542,27 +494,106 @@ public static class GameDataExporter
         return rule.Allows(store.Origin.Script) ? null : $"a string stored at {store.Origin}, which is in no builder";
     }
 
+    // ------------------------------------------------------------------------------------------------ pictures (§6.5)
+
+    /// <summary>The field pictures of a kind or a loaded table, their fields resolved in <paramref name="table"/>; each
+    /// field it reads must be one integer cell of a record. A frame's size is two fields of the record, and its blend a
+    /// third (export plan §5): a map object's sheet, its first frame, and the mode DRAWOBJ draws it with.</summary>
+    private static IReadOnlyList<FieldPicture> FieldPictures(RegistryView registry, TableLayout table,
+                                                             IReadOnlyList<FieldPictureDeclaration> declared, string where)
+    {
+        var pictures = declared.Select(picture => new FieldPicture(
+            picture.Name, registry.Resolve(table, picture.Field), picture.Key,
+            picture.Frame is { } frame ? (registry.Resolve(table, frame.Width), registry.Resolve(table, frame.Height)) : null,
+            picture.Frames, picture.Blend is { } blend ? registry.Resolve(table, blend) : null,
+            [.. picture.Where.Select(rule => (registry.Resolve(table, rule.Field), rule.Values))])).ToList();
+        foreach ((string name, FieldLayout field) in pictures.Select(picture => (picture.Name, picture.Field))
+                     .Concat(pictures.SelectMany(picture => picture.Parts)))
+            if (field.Elements != 1 || field.IsString)
+                throw new ExportFailure($"{where}'s picture {name} ({field.Name}) is not one integer cell of a record");
+        return pictures;
+    }
+
+    /// <summary>A record's field picture: null where it has none (a field of 0 or withheld, a where it does not meet, a
+    /// withheld size or blend, or no picture source), else the packed id with its picture, which is null where the
+    /// catalog has none.</summary>
+    private static (ExportPicture? Picture, long Number)? PictureOf(ExportInputs inputs, FieldPicture picture,
+                                                                   Func<FieldLayout, int, (ExportCell Cell, bool Refused)> at)
+    {
+        var (cell, refused) = at(picture.Field, 0);
+        if (refused || cell.Number == 0 || inputs.Pictures is not { } source) return null;
+        // A record has the picture only where each field of its where holds one of the values; a withheld one leaves
+        // it out.
+        if (picture.Where.Any(rule => at(rule.Field, 0) is var (value, withheld) && (withheld || !rule.Values.Contains(value.Number))))
+            return null;
+        // Op 0x203's mode 1, the additive glow, as the record's blend gives it; a withheld blend leaves the picture out.
+        (ExportCell Cell, bool Refused)? mode = picture.Blend is { } blend ? at(blend, 0) : null;
+        if (mode is { Refused: true }) return null;
+        bool additive = mode?.Cell.Number == 1;
+        int? key = picture.Key;
+        ExportPicture? found;
+        if (picture.Frame is { } sizes)
+        {
+            // The first frame of the record's sheet, as wide and as high as its fields give; a size a builder did not
+            // write, or of 0, is no frame.
+            var (width, widthRefused) = at(sizes.Width, 0);
+            var (height, heightRefused) = at(sizes.Height, 0);
+            if (widthRefused || heightRefused) return null;
+            found = width.Number is > 0 and <= int.MaxValue && height.Number is > 0 and <= int.MaxValue
+                ? source.Frame(cell.Number, ((int)width.Number, (int)height.Number), key, additive)
+                : null;
+        }
+        // The first of a strip's frames side by side (a Verita title's chibi): its width ÷ frames, its height.
+        else if (picture.Frames is { } count)
+            found = (key is { } colour ? source.ResolveKeyed(cell.Number, colour) : source.Resolve(cell.Number)) is { } strip
+                ? source.Frame(cell.Number, (strip.Width / count, strip.Height), key, additive)
+                : null;
+        else if (additive) found = source.Frame(cell.Number, null, key, additive);
+        else found = key is { } colour ? source.ResolveKeyed(cell.Number, colour) : source.Resolve(cell.Number);
+        if (additive && found is not null) found = found with { Additive = true };
+        return (found, cell.Number);
+    }
+
     // ------------------------------------------------------------------------------------------------- loaders (§6.3)
 
     /// <summary>Runs <paramref name="loader"/> for each entity of its key kind in its key range (export plan §4.2, §5):
     /// from a copy of the booted session, once for each step, with its seeds, to its point; then reads its published
     /// tables' records that exist, each shown cell checked as a kind's are (§5.5), with the loader's own builders beside
     /// the export's. Run k's records are numbered k times the table's records plus the record. A published text is
-    /// translated at its origin, as a kind's (plan §4.6), and a literal gives a record's text from a script.</summary>
+    /// translated at its origin, as a kind's (plan §4.6), and a literal gives a record's text from a script. A loader
+    /// with a chain walks it in place of running a script to a point (plan §5).</summary>
     private static void Load(ExportInputs inputs, GameSession boot, LoaderDeclaration loader, IReadOnlyList<ExportKind> kinds,
-                             BuilderRule exportRule, IReadOnlyList<Translation> languages, ExportReport report)
+                             BuilderRule exportRule, ExplicitPictures explicitPictures, IReadOnlyList<Translation> languages,
+                             ExportReport report)
     {
         string where = $"loader {loader.Name}";
         ExportKind keys = kinds.FirstOrDefault(kind => kind.Declaration.Id == loader.Keys)
                           ?? throw new ExportFailure($"{where}: its keys {loader.Keys} is no kind");
-        if (inputs.StopOf is null) throw new ExportFailure($"{where} reads at {loader.ReadAt}, and no patch point is resolved");
-        RunStop stop = inputs.StopOf(loader.ReadAt);
-        Script script = inputs.ScriptByName(loader.Script)
-                        ?? throw new ExportFailure($"{where} runs {loader.Script}, which the install lacks");
-        if (ScriptNames.Normalized(script.Name) != stop.Script)
-            throw new ExportFailure($"{where} reads at {loader.ReadAt}, which lies in {stop.Script}, not in {loader.Script}");
-        if (loader.Steps < 1) throw new ExportFailure($"{where} runs {loader.Steps} steps");
         RegistryView registry = inputs.Registry;
+        RunStop? stop = null;
+        Script? script = null;
+        ArrayLayout? chain = null;
+        if (loader.Chain is { } chainName)
+        {
+            if (loader.Script != null || loader.ReadAt != null)
+                throw new ExportFailure($"{where} walks the chain {chainName}, and a loader with a chain names no script and "
+                                        + "no point");
+            chain = registry.IntegerArray(chainName);
+            if (chain.Dimensions.Count != 1)
+                throw new ExportFailure($"{where} walks {chainName}, which is no list of script ids");
+        }
+        else
+        {
+            if (loader.Script is null || loader.ReadAt is null)
+                throw new ExportFailure($"{where} names neither a script and its point nor a chain");
+            if (inputs.StopOf is null) throw new ExportFailure($"{where} reads at {loader.ReadAt}, and no patch point is resolved");
+            stop = inputs.StopOf(loader.ReadAt);
+            script = inputs.ScriptByName(loader.Script)
+                     ?? throw new ExportFailure($"{where} runs {loader.Script}, which the install lacks");
+            if (ScriptNames.Normalized(script.Name) != stop.Script)
+                throw new ExportFailure($"{where} reads at {loader.ReadAt}, which lies in {stop.Script}, not in {loader.Script}");
+        }
+        if (loader.Steps < 1) throw new ExportFailure($"{where} runs {loader.Steps} steps");
         BuilderRule rule = exportRule.With(loader.Builders);
         var skips = loader.Skip.Select(skip => (Field: registry.Resolve(keys.Table, skip.Field), skip.Value)).ToList();
         var seeds = loader.Seed.Select(seed => (Seed: seed, Array: registry.IntegerArray(seed.Global))).ToList();
@@ -615,7 +646,13 @@ public static class GameDataExporter
                 Joins = joins,
                 JoinedFields = [.. joins.SelectMany(pair => registry.FieldsOf(pair.Value.Table).Select(
                     field => field with { Name = $"{pair.Key}.{field.Name}", Joined = pair.Key }))],
+                Pictures = FieldPictures(registry, table, declared.Pictures, $"{where}: table {declared.Name}"),
             };
+            if (keys.Declaration.Pictures.Select(picture => picture.Name).Concat(keys.Declaration.Sheets.Select(sheet => sheet.Name))
+                    .Concat(keys.Declaration.BorrowedPictures.Select(picture => picture.Name))
+                    .FirstOrDefault(name => loaded.Pictures.Any(picture => picture.Name == name)) is { } clash)
+                throw new ExportFailure($"{where}: table {declared.Name}'s picture {clash} is a picture of kind "
+                                        + $"{keys.Declaration.Id} too");
             if (loaded.Where.Any(rule => rule.Field.Elements != 1 || rule.Field.IsString))
                 throw new ExportFailure($"{where}: table {declared.Name}'s where reads a field that is not one integer "
                                         + "cell of a record");
@@ -644,16 +681,23 @@ public static class GameDataExporter
                 {
                     ProfileId = inputs.GameId, RecordsWrites = true, StopAt = stop,
                 };
-                SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
-                                                  build: inputs.Build);
-                report.LoaderRuns++;
-                if (result.Halt != stop.HaltReason)
+                // Null when the run reached its point, or walked its chain to the end; else how it halted.
+                string? halt;
+                if (chain is not null) halt = WalkChain(inputs, run, chain, options, where);
+                else
                 {
-                    report.LoaderHalts.Add((loader.Name, keys.Declaration.Id, entity.Id, result.Halt ?? ""));
+                    SceneResult result = run.RunScene(script!, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
+                                                      build: inputs.Build);
+                    halt = result.Halt == stop!.HaltReason ? null : result.Halt ?? "";
+                }
+                report.LoaderRuns++;
+                if (halt != null)
+                {
+                    report.LoaderHalts.Add((loader.Name, keys.Declaration.Id, entity.Id, halt));
                     continue;
                 }
                 foreach (ExportLoadedTable table in tables)
-                    ReadLoadedTable(run, table, step, keys, entity, rule, languages, report);
+                    ReadLoadedTable(inputs, run, table, step, keys, entity, rule, explicitPictures, languages, report);
                 // A literal stands for a record's text whatever the run left there (plan §5).
                 foreach ((ExportLoadedTable table, LiteralDeclaration literal, List<ExportText> texts) in literals)
                 {
@@ -666,11 +710,36 @@ public static class GameDataExporter
         }
     }
 
+    /// <summary>A loader's run of a hook chain (export plan §5), as the game's callers walk it (天秤のLa DEA。's
+    /// DRAWSTATUS@0x59–0x7f): every slot of <paramref name="chain"/> in turn, each that holds a script id calling that
+    /// script, which runs to its end before the next begins, on the one session. Null when every script ended; else the
+    /// first's halt, after its name. A chain that holds no script is a mistake of the declarations.</summary>
+    private static string? WalkChain(ExportInputs inputs, GameSession run, ArrayLayout chain, VmOptions options, string where)
+    {
+        bool any = false;
+        for (int slot = 0; slot < chain.Dimensions[0]; slot++)
+        {
+            long id = run.Globals.GetValueOrDefault(chain.Address + slot);
+            if (id == 0) continue;
+            any = true;
+            Script script = inputs.Scripts.GetById(id)
+                            ?? throw new ExportFailure($"{where}: slot {slot} of {chain.Name} holds script {id}, which the "
+                                                       + "install lacks");
+            SceneResult result = run.RunScene(script, inputs.Table, new HeadlessWaits(), options, inputs.Scripts,
+                                              build: inputs.Build);
+            if (result.Halt != "exit") return $"{ScriptNames.Normalized(script.Name)}: {result.Halt ?? "no halt"}";
+        }
+        if (!any) throw new ExportFailure($"{where}: its chain {chain.Name} holds no script after the boot and the seeds");
+        return null;
+    }
+
     /// <summary>One run's records of <paramref name="table"/> that exist, under the key entity: its fields' values, its
     /// text in each language, its cells for the modder data, and its snippet rows when a data file reaches it (a scope's
-    /// table).</summary>
-    private static void ReadLoadedTable(GameSession run, ExportLoadedTable table, int step, ExportKind keys,
-                                        ExportEntity entity, BuilderRule rule, IReadOnlyList<Translation> languages,
+    /// table); and its pictures, which the key entity takes where it has none of the name yet. A table that publishes
+    /// no field and no text writes no row.</summary>
+    private static void ReadLoadedTable(ExportInputs inputs, GameSession run, ExportLoadedTable table, int step,
+                                        ExportKind keys, ExportEntity entity, BuilderRule rule,
+                                        ExplicitPictures explicitPictures, IReadOnlyList<Translation> languages,
                                         ExportReport report)
     {
         string name = table.Declaration.Name;
@@ -729,6 +798,16 @@ public static class GameDataExporter
                                                     row * field.Elements + element, cell.Bank, cell.Address, reason));
                 return (cell, reason != null || rule.Derives(cell.Writer));
             }
+
+            // Its pictures are the key entity's (plan §5): the first run and record to give one keeps its name.
+            foreach (FieldPicture field in table.Pictures)
+            {
+                if (entity.Pictures.Any(pair => pair.Name == field.Name) || PictureOf(inputs, field, OwnAt) is not { } found)
+                    continue;
+                if (found.Picture is { } picture) entity.Pictures.Add((field.Name, explicitPictures.Mark(picture)));
+                else report.UnresolvedPictures.Add((keys.Declaration.Id, entity.Id, field.Name, found.Number));
+            }
+            if (!table.HasRows) continue;
 
             var values = new List<(string Field, long?[] Values)>();
             var keyed = new Dictionary<string, long?[]>(StringComparer.Ordinal);

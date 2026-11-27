@@ -190,8 +190,28 @@ public sealed record ExportLoadedTable(LoadedTableDeclaration Declaration, strin
     /// <summary>Every field of the tables it joins, each named <c>table.field</c>.</summary>
     public IReadOnlyList<FieldLayout> JoinedFields { get; init; } = [];
 
+    /// <summary>The pictures a run's record gives its key entity (export plan §5), each by a field of the table.</summary>
+    public IReadOnlyList<FieldPicture> Pictures { get; init; } = [];
+
+    /// <summary>Whether a row of it shows anything: a table that publishes only pictures gives its key entity those and
+    /// writes no rows.</summary>
+    public bool HasRows => Published.Count > 0 || Text.Count > 0;
+
     /// <summary>The registry table a field is of: a joined table's, or its own.</summary>
     public TableLayout TableOf(FieldLayout field) => field.Joined is { } joined ? Joins[joined].Table : Table;
+}
+
+/// <summary>A field picture (spec §5.4, export plan §5) with its fields resolved: the field holding the packed id, the
+/// key colour, the two fields that size a sheet's first frame, a strip's frame count, the field holding op 0x203's
+/// mode, and the values fields of the record must hold for it to have the picture.</summary>
+public sealed record FieldPicture(string Name, FieldLayout Field, int? Key, (FieldLayout Width, FieldLayout Height)? Frame,
+                                  int? Frames, FieldLayout? Blend, IReadOnlyList<(FieldLayout Field, IReadOnlyList<long> Values)> Where)
+{
+    /// <summary>Every field it reads beside its own, by the picture's name: a frame's sizes, its blend and its where.</summary>
+    public IEnumerable<(string Name, FieldLayout Field)> Parts
+        => (Frame is { } frame ? new[] { (Name, frame.Width), (Name, frame.Height) } : [])
+            .Concat(Blend is { } blend ? [(Name, blend)] : Array.Empty<(string, FieldLayout)>())
+            .Concat(Where.Select(rule => (Name, rule.Field)));
 }
 
 /// <summary>One kind's entities, with the layouts the writer needs: every field of the table, the published ones,

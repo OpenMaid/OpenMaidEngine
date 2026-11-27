@@ -2105,6 +2105,22 @@ form_backdrops = "picture"
 line_characters = "character"
 
 [[table]]
+name = "character_look"
+records = 1
+built_by = "character_look"
+usage = "A character's look in one costume, which the screens load when they draw one: the caller sets character_look_arg_character and character_look_arg_costume and walks coinit_chain_script_ids (COINIT, then $1$COINIT and $2$COINIT, which add looks and costumes for a few characters). COINIT clears the block (COINIT@0x0-0x3c) and writes the character's pictures and sounds: its status picture, three icons the last of which is the face every list draws, the battle pictures, one for each unit state, the field, jump and carry pictures and the battle voice clips. A party character's status picture is its CSS picture, and its idle battle picture (6) a 2 x 2 grid of frames; an enemy's status picture is its stone's large picture (MS…B), where it has a stone, and its battle pictures 5 and 6 are one picture of it. No data file edits it: it is rebuilt on every call, and the looks are COINIT's code, which an OMS patch changes."
+
+[table.fields]
+status_picture = "character_look_status_picture"
+icons = "character_look_icons"
+battle_pictures = "character_look_battle_pictures"
+
+[table.refs]
+status_picture = "picture"
+icons = "picture"
+battle_pictures = "picture"
+
+[[table]]
 name = "glossary"
 records = 1000
 built_by = "boot"

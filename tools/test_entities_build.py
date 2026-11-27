@@ -240,7 +240,8 @@ def test_good_declarations():
     check(data.get("loaders", [{}])[0].get("tables") == {"foe": {"table": "foe", "exists": "hero",
                                                                "fields": ["hero", "levels"], "text": [],
                                                                "literals": [], "notes": {}, "labels": {},
-                                                               "parts": [], "where": {}, "joins": {}}},
+                                                               "parts": [], "where": {}, "joins": {},
+                                                               "pictures": {}}},
           "a loader's published table names its registry table beside its short name")
     check(data.get("loaders", [{}])[0].get("seed") == [{"global": "current_hero_id", "index": [], "value": "key"}],
           "a loader's seed table is written as the list of cells it seeds")
@@ -729,6 +730,76 @@ labels = { "hero.class" = "Chief's class" }
 '''
 
 
+# A hero's look (export plan §5), which a hook chain's scripts build for one hero at a time: two pictures and a state.
+LOOKS = "".join([g("0x500", "look_chain_script_ids", "int[4]"), g("0x504", "look_faces", "int[2]"),
+                 g("0x506", "look_state", "int")]) + '''
+[[table]]
+name = "look"
+records = 1
+built_by = "look"
+[table.fields]
+faces = "look_faces"
+state = "look_state"
+[table.refs]
+faces = "picture"
+'''
+
+LOOK_LOADER = '''
+[[loader]]
+keys = "hero"
+chain = "look_chain_script_ids"
+seed = { current_hero_id = "key" }
+builders = ["LOOKINIT"]
+
+[loader.tables.look]
+table = "look"
+exists = "faces.1"
+pictures = { look_face = "faces.1", look_card = { field = "faces.0", where = { state = [0] } } }
+'''
+
+
+def test_chain_loader_and_loaded_pictures():
+    """A loader may walk a hook chain in place of running a script to a point, and a loaded table may give its key
+    entity pictures, written as a kind's field pictures are; the JSON keeps both."""
+    global REGISTRY
+    saved = REGISTRY
+    looks = GOOD + LOOK_LOADER
+    try:
+        REGISTRY = saved + LOOKS
+        code, output, written = run(looks, write=True)
+        check(code == 0, f"a chain loader and a loaded table's pictures lint clean ({output.strip()[-400:]})")
+        loader = (json.loads(written or "{}").get("loaders") or [{}])[-1]
+        check(loader.get("chain") == "look_chain_script_ids" and loader.get("script") is None
+              and loader.get("read_at") is None, "the JSON keeps a loader's chain, with no script and no point")
+        pictures = loader.get("tables", {}).get("look", {}).get("pictures", {})
+        check(pictures.get("look_face") == "faces.1" and pictures.get("look_card", {}).get("where") == {"state": [0]},
+              "the JSON keeps a loaded table's pictures")
+
+        def flags(text: str, needle: str, message: str) -> None:
+            code, output, _ = run(text)
+            check(code != 0 and needle in output, f"{message} ({output.strip()[-300:]})")
+
+        chain = 'chain = "look_chain_script_ids"'
+        flags(looks.replace(chain, chain + '\nscript = "FIELD"'),
+              "a loader with a chain names no script and no point", "a chain loader runs no script of its own")
+        flags(looks.replace(chain, 'chain = "look_state"'),
+              "chain look_state is int, not a list of script ids", "a chain is a list")
+        flags(looks.replace(chain, 'chain = "look_chains"'),
+              "chain 'look_chains' is not a global of the registry", "a chain is a global")
+        flags(looks.replace('look_face = "faces.1"', 'look_face = "state"'),
+              "picture look_face reads state, which the registry's [table.refs] does not mark as picture",
+              "a loaded table's picture reads a picture field")
+        flags(looks.replace('look_face = "faces.1"', 'look_face = "faces"'),
+              "picture look_face faces is a row of cells", "a loaded table's picture is one cell")
+        flags(looks.replace('look_face = "faces.1"', 'face = "faces.1"'),
+              "picture face of loaded table 'look' is a picture of the kind too",
+              "a loaded table's picture has a name of its own")
+        flags(looks.replace('where = { state = [0] }', 'sheet = "SO001.AGF"'),
+              "a loaded table's picture is a field of its record", "a loaded table's picture is no sheet's cell")
+    finally:
+        REGISTRY = saved
+
+
 def test_keyed_picture():
     """A picture may name the colour the game draws transparent, { field, key }; the JSON keeps it."""
     keyed = GOOD.replace('other = "art.1" }', 'other = { field = "art.1", key = 0x00ff00 } }', 1)
@@ -1181,6 +1252,7 @@ def main():
     test_owned_joins_and_borrowed_pictures()
     test_titles()
     test_loaded_where_and_joins()
+    test_chain_loader_and_loaded_pictures()
     test_keyed_picture()
     test_framed_picture()
     test_categories()

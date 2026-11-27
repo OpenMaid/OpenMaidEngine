@@ -678,6 +678,7 @@ table battle_animation
 table battle_effect
 table cg_gallery_entry
 table character
+table character_look
 table condition
 table element
 table encounter_entry
@@ -788,6 +789,9 @@ field character.stat_growth
 field character.support_action
 field character.temperament
 field character.voice_setting
+field character_look.battle_pictures
+field character_look.icons
+field character_look.status_picture
 field condition.affinity_columns
 field condition.attack_count_modifiers
 field condition.boss_proof

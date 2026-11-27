@@ -22,6 +22,10 @@
     "character": {
       "$ref": "#/definitions/records.character"
     },
+    "character_look": {
+      "description": "character_look is built by character_look, which ladea.tables does not edit",
+      "type": "null"
+    },
     "condition": {
       "$ref": "#/definitions/records.condition"
     },

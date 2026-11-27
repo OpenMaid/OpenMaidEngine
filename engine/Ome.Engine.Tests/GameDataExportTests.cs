@@ -45,6 +45,8 @@ public class GameDataExportTests
     // An item's bond (export plan §5): a table whose record r is item r's (records_of), three records, so item 3 has
     // none. Its partners are two skills, each a pair of elements (row × 1 + slot); its tiers two numbers a record.
     private const int BondPartners = 5500, BondTiers = 5520;
+    // An item's look and the hook chain whose scripts build it (export plan §5): three slots.
+    private const int LookFace = 5600, LookStatus = 5601, LookChain = 5610;
 
     private static RegistryView Registry(bool formats = false, RefKey? skillKey = null, bool bitNames = false,
                                          string? bondsOf = null, bool itemsOwned = false) => new(
@@ -72,6 +74,9 @@ public class GameDataExportTests
             // A block the game keeps one of (export plan §5): a scalar string, a scalar and a list as its one record.
             new TableLayout("bonus", 1, [("title", "bonus_title"), ("level", "bonus_level"), ("stats", "bonus_stats")],
                             new Dictionary<string, string>()),
+            // An item's look (export plan §5), which a hook chain's scripts build for one item at a time: two pictures.
+            new TableLayout("look", 1, [("face", "look_face"), ("status", "look_status")],
+                            new Dictionary<string, string> { ["face"] = "picture", ["status"] = "picture" }),
         ],
         [
             Array("item_names", GlobalBank.String, ItemNames, 4),
@@ -119,6 +124,9 @@ public class GameDataExportTests
             new ArrayLayout("bond_partners", GlobalBank.Integer, BondPartners, [3, 4],
                             new Dictionary<int, string> { [0] = "first_row", [1] = "first_slot", [2] = "second_row" }),
             new ArrayLayout("bond_tiers", GlobalBank.Integer, BondTiers, [3, 2], new Dictionary<int, string>()),
+            new ArrayLayout("look_face", GlobalBank.Integer, LookFace, [], new Dictionary<int, string>()),
+            new ArrayLayout("look_status", GlobalBank.Integer, LookStatus, [], new Dictionary<int, string>()),
+            Array("look_chain", GlobalBank.Integer, LookChain, 3),
         ]);
 
     private static ArrayLayout Array(string name, GlobalBank bank, int address, int records)
@@ -1287,10 +1295,11 @@ public class GameDataExportTests
     // ------------------------------------------------------------------------------------------------- loaders (§6.3)
 
     private static ExportInputs WithDeclarations(ExportInputs game, string declarations, Func<string, RunStop>? stopOf = null,
-                                                 Ome.Mods.Data.DataShape? shape = null, ScriptIndex? index = null)
+                                                 Ome.Mods.Data.DataShape? shape = null, ScriptIndex? index = null,
+                                                 IScriptProvider? scripts = null)
         => new()
         {
-            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = game.Scripts,
+            GameId = game.GameId, Table = game.Table, Build = game.Build, Scripts = scripts ?? game.Scripts,
             ScriptByName = game.ScriptByName, BootStop = game.BootStop, StopOf = stopOf ?? game.StopOf,
             Declarations = ExportDeclarations.Parse(declarations), Registry = game.Registry, Pictures = game.Pictures,
             BuildInfo = game.BuildInfo, Shape = shape ?? game.Shape, ScriptIndex = index ?? game.ScriptIndex,
@@ -1811,6 +1820,85 @@ public class GameDataExportTests
             "\"literals\": [{\"record\": 0, \"field\": \"title\", \"script\": \"AIM\", \"offset\": 1}]",
             StringComparison.Ordinal)));
         Assert.Contains("AIM@0x1 starts no instruction", failure.Message, StringComparison.Ordinal);
+    }
+
+    // A loader that walks a hook chain (export plan §5), for every item: slot 0 holds LOOK and slot 2 its append's
+    // fragment, slot 1 none. LOOK gives item k the face 76 + k and the status 77; the fragment, which runs after it, the
+    // status 79. Of those only 77 and 79 are pictures. Its two tables publish pictures alone: the first a face and a
+    // status, the second its status as a face and as a spare.
+    private const string Chained = """
+        "loaders": [{"scope": null, "keys": "item", "skip": {}, "chain": "look_chain",
+                     "seed": [{"global": "current_item_id", "index": [], "value": "key"},
+                              {"global": "look_chain", "index": [0], "value": 30},
+                              {"global": "look_chain", "index": [2], "value": 31}],
+                     "builders": ["LOOK"],
+                     "tables": {"look": {"table": "look", "exists": "face", "fields": [],
+                                         "pictures": {"face": "face", "status": "status"}},
+                                "again": {"table": "look", "exists": "face", "fields": [],
+                                          "pictures": {"face": "status", "spare": "status"}}}}]
+        """;
+
+    /// <summary>The game's scripts and a few more by id.</summary>
+    private sealed class MoreScripts(IScriptProvider scripts, IReadOnlyDictionary<long, Script> more) : IScriptProvider
+    {
+        public Script? GetById(long id) => more.GetValueOrDefault(id) ?? scripts.GetById(id);
+    }
+
+    private static ExportInputs Chain(string loader = Chained)
+    {
+        ExportInputs game = Game();
+        var looks = new Dictionary<long, Script>
+        {
+            [30] = Asm("LOOK.BIN", [(OpSub, [G(LookFace), G(CurrentItem), I(-76)]), (OpMov, [G(LookStatus), I(77)]),
+                                    (OpExit, [])]),
+            [31] = Asm("$1$LOOK.BIN", [(OpMov, [G(LookStatus), I(79)]), (OpExit, [])]),
+        };
+        return WithDeclarations(game, WithLoader(loader), scripts: new MoreScripts(game.Scripts, looks));
+    }
+
+    private static string? Picture(ExportEntity entity, string name)
+        => entity.Pictures.SingleOrDefault(pair => pair.Name == name).Picture?.Name;
+
+    [Fact]
+    public void AChainLoaderRunsEachSlotsScriptInTurnAndItsTablesGiveTheirPicturesToTheKey()
+    {
+        ExportResult result = GameDataExporter.Run(Chain());
+        Assert.Equal(3, result.Report.LoaderRuns);                                     // one walk an item
+        Assert.Empty(result.Report.LoaderHalts);
+        Assert.Empty(result.Report.Refusals);
+        ExportEntity sword = Entity(result, "item", 1);
+        Assert.Equal("ICON077", Picture(sword, "face"));                              // the first table's
+        Assert.Equal("ICON079", Picture(sword, "status"));                            // the fragment's, after LOOK's
+        Assert.Equal("ICON079", Picture(sword, "spare"));
+        Assert.Equal(4, sword.Pictures.Count);                                         // its icon, face, status, spare
+        Assert.Empty(sword.Loaded);                                                    // pictures alone write no row
+        Assert.Contains(sword.Cells, cell => cell.Field == "look.status" && cell.Raw == "79" && cell.Writer == "$1$LOOK.BIN");
+        // Item 2's face, 78, is no picture: it is reported, and the second table's face is the first found.
+        Assert.Contains(("item", 2, "face", 78L), result.Report.UnresolvedPictures);
+        Assert.Equal("ICON079", Picture(Entity(result, "item", 2), "face"));
+        Assert.Equal("ICON079", Picture(Entity(result, "item", 3), "face"));
+        ExportLoadedTable look = result.Kinds.Single(kind => kind.Declaration.Id == "item").Loaded.First();
+        Assert.Equal(["face", "status"], look.Pictures.Select(picture => picture.Name));
+    }
+
+    [Fact]
+    public void AChainLoaderNamesNoScriptAndItsChainAndPicturesAreChecked()
+    {
+        string Fails(string loader)
+            => Assert.Throws<ExportFailure>(() => GameDataExporter.Run(Chain(loader))).Message;
+        Assert.Contains("a loader with a chain names no script and no point",
+                        Fails(Chained.Replace("\"chain\":", "\"script\": \"LOOT\", \"chain\":", StringComparison.Ordinal)),
+                        StringComparison.Ordinal);
+        Assert.Contains("its chain look_chain holds no script after the boot and the seeds",
+                        Fails(Chained.Replace("\"value\": 30", "\"value\": 0", StringComparison.Ordinal)
+                                     .Replace("\"value\": 31", "\"value\": 0", StringComparison.Ordinal)),
+                        StringComparison.Ordinal);
+        Assert.Contains("slot 2 of look_chain holds script 32, which the install lacks",
+                        Fails(Chained.Replace("\"value\": 31", "\"value\": 32", StringComparison.Ordinal)),
+                        StringComparison.Ordinal);
+        Assert.Contains("table look's picture icon is a picture of kind item too",
+                        Fails(Chained.Replace("{\"face\": \"face\",", "{\"icon\": \"face\",", StringComparison.Ordinal)),
+                        StringComparison.Ordinal);
     }
 
     [Fact]
