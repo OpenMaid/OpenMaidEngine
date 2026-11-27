@@ -1212,7 +1212,16 @@ at the engine thread, whose stacks hold `InputAndWaits.RunEngine`, and set aside
 and `RequestSynchronizedPresentation`. Sample a JIT-optimized run (`drive.py port start --optimize`): the Debug build
 the Godot editor binary loads runs VM work two to three times as slow. `--trace-histogram` says which script lines
 ran how often; the sample says what the port spent on them. Found this way: op `0x12f`'s cost per equipment list in
-天秤のLa DEA。 (`engine-re.md`, "Indexed two-key sort") and the trace sink's per-step lock (`backlog.md`).
+天秤のLa DEA。 (`engine-re.md`, "Indexed two-key sort") and the trace sink's per-step locks and allocations, removed
+on 2026-11-27.
+
+The sample shows where time goes, not how much CPU it is. It stops threads to read their stacks, which favours calls
+such as a lock: it put 0.96 of the engine thread's 1.04 running seconds in the trace sink's lock, where removing the
+lock saved about a third of the thread's CPU over the same opens. To compare CPU, count a thread's cycles with Win32's
+`QueryThreadCycleTime` before and after a fixed stretch of driving. A thread's `TotalProcessorTime`, which
+PowerShell's `Get-Process` gives, is charged in 15.6 ms ticks, so it misreads a thread that runs a millisecond a frame.
+For a cost per VM step, a headless loop of a few ops with and without the sink, timed by `Stopwatch`, isolates it.
+
 
 **Godot debug scene launcher:** press **F4** while the natural boot is showing TITLE. TITLE's visible menu is
 a live 1 ms sleep/input-poll loop rather than an ADV `wait-for-input`; the launcher identifies that exact

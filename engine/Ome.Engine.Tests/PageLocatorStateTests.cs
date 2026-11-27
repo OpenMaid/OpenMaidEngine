@@ -62,6 +62,51 @@ public class PageLocatorStateTests
         }
     }
 
+    [Fact]
+    public void StepNamesEachScriptItWasGivenAndStartsAPageAtTheFirstStepAfterAWait()
+    {
+        // Step normalizes a script's name only when it is given another string than the last one, so a new script, or
+        // the same name in a new string, must still name the position.
+        using var locator = new PageLocatorState("SC0000", null);
+        locator.Step("SC0000.BIN", 0x10);
+        locator.Step("sub.bin", 0x20);
+        locator.WaitReached(1);
+        Assert.StartsWith("SC0000 P001 · wait SUB@0x20", locator.CurrentDisplay);
+
+        locator.Step(new string("SC0000.BIN".AsSpan()), 0x30);
+        locator.Step("SC0000.BIN", 0x34);
+        locator.WaitReached(2);
+        Assert.StartsWith("SC0000 P002 · wait SC0000@0x34", locator.CurrentDisplay);
+    }
+
+    [Fact]
+    public void APageStartsAtTheFirstStepAfterTheWaitBeforeIt()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "page-locator-" + Guid.NewGuid().ToString("N"));
+        string map = Path.Combine(directory, PageLocatorState.MapFileName("SC0000"));
+        try
+        {
+            using (var locator = PageLocatorState.Open("SC0000", map, out _))
+            {
+                locator.Step("SC0000.BIN", 0x10);
+                locator.Step("SC0000.BIN", 0x14);
+                locator.WaitReached(1);
+                locator.Step("SUB.BIN", 0x40);
+                locator.Step("SC0000.BIN", 0x18);
+                locator.WaitReached(2);
+            }
+            string[] lines = File.ReadAllLines(map);
+            Assert.Equal(2, lines.Length);
+            Assert.Contains("\"page_start_script\":\"SC0000\",\"page_start_offset\":\"0x10\"", lines[0]);
+            Assert.Contains("\"page_start_script\":\"SUB\",\"page_start_offset\":\"0x40\"", lines[1]);
+            Assert.Contains("\"wait_script\":\"SC0000\",\"wait_offset\":\"0x18\"", lines[1]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     // ------------------------------------------------------------------- the page's text (localization spec §18.1)
 
     /// <summary>A run on layout 1 whose rows start at <paramref name="top"/> and end at <paramref name="lastTop"/>,

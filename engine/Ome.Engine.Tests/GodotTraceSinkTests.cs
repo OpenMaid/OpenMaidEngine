@@ -31,6 +31,49 @@ public class GodotTraceSinkTests
     }
 
     [Fact]
+    public void AReaderOnAnotherThreadSeesWholeStepsInOrder()
+    {
+        // The engine thread records steps with no lock; the front end's diagnostics read them while it runs. Each step
+        // a reader gets must be one step's fields (offset, opcode and depth are equal here), and a snapshot's steps
+        // must follow each other with none missing.
+        using var locator = new PageLocatorState("SYSTEM4", null);
+        var sink = new GodotTraceSink(locator);
+        sink.Emit(TraceEvent.FrameEnter("SYSTEM4.BIN", 0, FrameCause.TopScene));
+        var instructions = Enumerable.Range(0, 1024)
+            .Select(index => new Instruction(index, index, Array.Empty<Operand>())).ToArray();
+        const int steps = 5_000_000;
+        var writer = new Thread(() =>
+        {
+            for (int index = 0; index < steps; index++)
+                sink.Emit(TraceEvent.Step(index, instructions[index & 1023], index & 1023));
+        });
+        writer.Start();
+        do
+        {
+            IReadOnlyList<GodotTraceStepSnapshot> recent = sink.Snapshot().RecentSteps;
+            Assert.True(recent.Count <= 128);
+            for (int index = 0; index < recent.Count; index++)
+            {
+                Assert.Equal("SYSTEM4.BIN", recent[index].Script);
+                Assert.Equal(recent[index].Offset, recent[index].Opcode);
+                Assert.Equal(recent[index].Offset, recent[index].Depth);
+                if (index > 0) Assert.Equal((recent[index - 1].Offset + 1) & 1023, recent[index].Offset);
+            }
+            if (sink.LatestStep is { } latest)
+            {
+                Assert.Equal(latest.Offset, latest.Opcode);
+                Assert.Equal(latest.Offset, latest.Depth);
+            }
+        } while (writer.IsAlive);
+        writer.Join();
+
+        GodotTraceSnapshot last = sink.Snapshot();
+        Assert.Equal(128, last.RecentSteps.Count);
+        Assert.Equal((steps - 1) & 1023, last.CurrentOffset);
+        Assert.Equal((steps - 1) & 1023, sink.LatestStep!.Value.Offset);
+    }
+
+    [Fact]
     public void HaltSnapshotRetainsDeepestStackBeforeFramesUnwind()
     {
         using var locator = new PageLocatorState("SYSTEM4", null);

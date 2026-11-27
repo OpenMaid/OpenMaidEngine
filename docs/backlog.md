@@ -230,18 +230,6 @@ it; git history keeps the record.
   RVA `0x140f20`), which the port does not have: it runs the 32-bit steps in 64 bits and marks the region
   `Approximate`. No script of 魔導巧殻 is known to make one; a search radius of 1024 or more would. Done when
   `GdiCurveFlattener` has the 64-bit flattener and matches gdi32 on ellipses past 2048 pixels.
-## Performance
-
-- **The trace sink takes a lock on every VM step.** For each step, `GodotTraceSink.Emit`
-  (`engine/Ome.Engine.Frontend/GodotTraceSink.cs`) takes `_snapshotLock`, allocates a `GodotTraceStepSnapshot` and
-  queues it, for the page locator, the stall diagnostics (`Main.cs`, on the front end) and the perf log's coordinates.
-  A `dotnet-trace` sample of 天秤のLa DEA。's 編成 menu (2026-11-27, the driven port JIT
-  optimized, five equipment lists opened in 12 s) found the engine thread running for 1.04 s. It spent 0.96 s of
-  that in `Monitor.Enter_Slowpath` under `Emit`; the scripts themselves took the other 0.08 s. How to take the
-  sample is in `tools-reference.md`, "Sampling the port's .NET stacks". Done when a step costs the sink no lock and no
-  allocation, the stall diagnostics and the perf log still read the latest step and the recent steps, and the same
-  sample shows `Emit` as a small share of the engine thread's time.
-
 ## Robustness
 
 Gaps the 2026-11-10 codebase review found and the fixes that followed it left open. None affects retail scripts.

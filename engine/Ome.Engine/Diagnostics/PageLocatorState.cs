@@ -49,8 +49,11 @@ public readonly record struct PageTextGeometry(
 }
 
 /// <summary>
-/// Thread-safe bridge between the VM trace, the ADV host's page waits, and the Godot UI.
+/// Bridge between the VM trace, the ADV host's page waits, and the Godot UI.
 /// A page number is run-relative; the script + wait offset is its canonical locator.
+/// The trace and the waits are the engine thread's: only it calls <see cref="Step"/>, <see cref="CallStack"/>,
+/// <see cref="Text"/> and <see cref="WaitReached"/>. The UI reads <see cref="CurrentDisplay"/>, which a lock guards, as
+/// it guards the map's writer against <see cref="Dispose"/>.
 /// </summary>
 /// <remarks>
 /// Each page record also holds the page's text (localization spec §14, §18.1): <c>dialogue</c>, the source text of its
@@ -65,6 +68,7 @@ public sealed class PageLocatorState : System.IDisposable
     private readonly object _lock = new();
     private readonly string _rootScene;
     private readonly StreamWriter? _writer;
+    private string? _stepScript;   // the script name Step was last given, as given: its normalized form is _script
     private string _script = "<startup>";
     private int _offset = -1;
     private string[] _callStack = System.Array.Empty<string>();
@@ -131,17 +135,22 @@ public sealed class PageLocatorState : System.IDisposable
     /// <summary>Whether the locator writes a map, so a host measures runs for it only then.</summary>
     public bool WritesMap => _writer != null;
 
+    /// <summary>The instruction the VM is about to run. It runs for every instruction, so it takes no lock and
+    /// normalizes a script's name only when the script changes. The position it keeps is the engine thread's: only that
+    /// thread calls this, <see cref="Text"/> and <see cref="WaitReached"/>, and the front end reads only
+    /// <see cref="CurrentDisplay"/>.</summary>
     public void Step(string script, int offset)
     {
-        lock (_lock)
+        if (!ReferenceEquals(script, _stepScript))
         {
+            _stepScript = script;
             _script = NormalizeScript(script);
-            _offset = offset;
-            if (_pageStartOffset == null)
-            {
-                _pageStartScript = _script;
-                _pageStartOffset = offset;
-            }
+        }
+        _offset = offset;
+        if (_pageStartOffset == null)
+        {
+            _pageStartScript = _script;
+            _pageStartOffset = offset;
         }
     }
 
