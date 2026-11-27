@@ -47,6 +47,67 @@ public class IndexedSortOpsTests
     }
 
     [Fact]
+    public void SortIndicesByKeySum_MatchesNativeInsertionSort()
+    {
+        // Native's handler (op_0x12f_sort_indices_by_key_sum): an insertion sort that shifts an index only past a
+        // strictly greater signed 32-bit key sum. The port sorts by (sum, index) instead; over many ties, both
+        // extremes and sums that overflow, the two orders must be the same.
+        const int count = 3000;
+        var random = new Random(12);
+        long[] primary = new long[count], secondary = new long[count];
+        long[] extremes = { int.MinValue, int.MaxValue, -1, 0, 1 };
+        for (int i = 0; i < count; i++)
+        {
+            primary[i] = random.Next(8) == 0 ? extremes[random.Next(extremes.Length)] : random.Next(-6, 7);
+            secondary[i] = random.Next(8) == 0 ? extremes[random.Next(extremes.Length)] : random.Next(-3, 4) << 24;
+        }
+
+        var expected = new int[count];
+        for (int source = 1; source < count; source++)
+        {
+            int key = unchecked((int)primary[source] + (int)secondary[source]);
+            int position = source;
+            while (position > 0)
+            {
+                int previous = expected[position - 1];
+                if (key >= unchecked((int)primary[previous] + (int)secondary[previous])) break;
+                expected[position] = previous;
+                position--;
+            }
+            expected[position] = source;
+        }
+
+        var table = OpcodeTableJson.Load(Paths.OpcodesJson);
+        int move = table.ByLabel("mov")!.Value;
+        var ops = new List<(int, Operand[])>
+        {
+            (0x12f, new[]
+            {
+                new Operand(LocalInt, 0),
+                new Operand(GlobalInt, 0x1000),
+                new Operand(GlobalInt, 0x2000),
+                new Operand(Immediate, count),
+            }),
+        };
+        for (int i = 0; i < count; i++)
+            ops.Add((move, new[] { new Operand(GlobalInt, 0x4000 + i), new Operand(LocalInt, i) }));
+        ops.Add((0x2, Array.Empty<Operand>()));
+        var vm = new VirtualMachine(
+            ScriptAssembler.Assemble(table, "INDEX_SORT_NATIVE", ops, Array.Empty<string>()),
+            table, new RecordingWaits(), new VmOptions(MaxSteps: 10_000));
+        for (int i = 0; i < count; i++)
+        {
+            vm.SeedGlobal(0x1000 + i, primary[i]);
+            vm.SeedGlobal(0x2000 + i, secondary[i]);
+        }
+
+        vm.Run();
+
+        Assert.Equal(expected.Select(index => (long)index).ToArray(),
+            Enumerable.Range(0, count).Select(i => vm.Globals[0x4000 + i]).ToArray());
+    }
+
+    [Fact]
     public void SortIndicesByKeySum_WritesInitialIndexWhenCountIsZero()
     {
         var table = OpcodeTableJson.Load(Paths.OpcodesJson);

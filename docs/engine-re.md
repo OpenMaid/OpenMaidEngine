@@ -9303,6 +9303,20 @@ Focused tests cover stability, overflow, and zero count. A real-script regressio
 SYSTEM4-to-SC0000 state into CHMENU and stops after `0x1db8`, proving selected slot 2 survives the first
 release roster sort without a fallback. No startup seed or menu-specific roster injection is involved.
 
+**The port sorts by (sum, index) since 2026-11-27.** 天秤のLa DEA。's handler
+(`op_0x12f_sort_indices_by_key_sum@0x42dfa0` in 4.45D) is the same sort. It reads each key raw from the array and
+decodes it from the protected form as it compares; it writes the output's cells raw and encodes them in its last
+pass. Its SETITLIST sorts all 20,000 item slots (`count` `0x4e20`) on each equipment list 編成 opens. Native's
+insertion sort costs it a few instructions a comparison. The port's copy read every key through its cell access,
+which took about 0.53 s per open (JIT optimized) where native shows the list in 0.15 to 0.3 s. The order
+is the stable order by sum, so the port reads the count and the keys once, sorts the indices by (sum, index), and
+writes the permutation. That is under a millisecond per open, and `IndexedSortOpsTests` checks it against
+native's insertion sort over many ties and overflowing sums. The two differ only where the count or a key shares
+cells with the output, and native reads garbage there too: native fetches the count again on every pass and reads
+the keys as it goes, but writes the output raw. Native leaves `out_indices[0]` raw when `count` is zero or less, so
+a later read undoes the bank's rotate and XOR on it and gets a value made of the per-session cookie; the port
+writes 0.
+
 ### Numeric glyph styles/draws and half-byte string length — `0x13a` / `0x23b` / `0x1a6` (2026-07-21)
 
 The missing values in the first working `DEBUGMAP` field HUD are not missing globals or a failed texture

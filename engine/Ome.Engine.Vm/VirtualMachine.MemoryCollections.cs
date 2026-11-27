@@ -136,29 +136,23 @@ public sealed partial class VirtualMachine
         var a = ins.Args;
         VmAddress output = BaseAddr(a[0]);
 
-        // Native writes element zero even when count is zero or negative, then builds the
-        // permutation in place with insertion sort. Read the count for each outer iteration:
-        // the handler fetches operand 4 repeatedly rather than caching it.
-        WriteIntCell(output, 0);
-        for (int sourceIndex = 1; sourceIndex < unchecked((int)Read(a[3])); sourceIndex++)
+        // Native seeds element zero, even for a count of zero or less, then insertion-sorts the indices 0..count-1
+        // into the output by the signed 32-bit sum key_a[index] + key_b[index], shifting an index only past a
+        // strictly greater sum: a stable order. Sorting by (sum, index) gives the same order without the insertion
+        // sort's count² reads, which cost the port half a second where 天秤のLa DEA。's SETITLIST sorts its 20,000 item
+        // slots on each equipment list it opens. Native fetches the count again on every pass and reads the keys as
+        // it goes, but the op writes only the output's cells, and native writes those raw and encodes them in a last
+        // pass, so a count or key sharing them reads garbage there; the port reads the count and keys once.
+        int count = unchecked((int)Read(a[3]));
+        var order = new long[System.Math.Max(count, 1)];
+        for (int index = 0; index < count; index++)
         {
-            int position = sourceIndex;
-            while (position > 0)
-            {
-                int previousIndex = unchecked((int)ReadIntCell(output.Offset(position - 1)));
-                int previousKey = unchecked(
-                    unchecked((int)ReadAddressedCell(a[1], previousIndex))
-                    + unchecked((int)ReadAddressedCell(a[2], previousIndex)));
-                int sourceKey = unchecked(
-                    unchecked((int)ReadAddressedCell(a[1], sourceIndex))
-                    + unchecked((int)ReadAddressedCell(a[2], sourceIndex)));
-                if (sourceKey >= previousKey) break;
-
-                WriteIntCell(output.Offset(position), previousIndex);
-                position--;
-            }
-            WriteIntCell(output.Offset(position), sourceIndex);
+            int key = unchecked((int)ReadAddressedCell(a[1], index) + (int)ReadAddressedCell(a[2], index));
+            order[index] = ((long)key << 32) | (uint)index;
         }
+        System.Array.Sort(order);
+        for (int position = 0; position < order.Length; position++)
+            WriteIntCell(output.Offset(position), unchecked((int)order[position]));
         return StepResult.Next;
     }
 

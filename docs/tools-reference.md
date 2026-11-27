@@ -1203,6 +1203,17 @@ before Godot starts; normal shutdown flushes it and prints the captured frame/re
 performance effort's temporary `run-godot.cmd` opt-in was removed after GPU acceptance, so ordinary batch-file
 runs no longer write a log. Selftests also remain unprofiled.
 
+**Sampling the port's .NET stacks:** Godot hosts .NET's runtime, so `dotnet-trace` (a .NET global tool) samples a
+running port's managed stacks without a flag. `dotnet-trace ps` lists the Godot process (the driver prints its pid);
+`dotnet-trace collect -p <pid> --profile dotnet-sampled-thread-time --format Speedscope --duration 00:00:00:12 -o
+<file>.nettrace` records while you drive the case, and writes a Speedscope JSON beside the trace that a short script
+can total by frame. On Windows that profile samples thread time, waits included (`cpu-sampling` is Linux-only): look
+at the engine thread, whose stacks hold `InputAndWaits.RunEngine`, and set aside its time in `InputAndWaits.Sleep`
+and `RequestSynchronizedPresentation`. Sample a JIT-optimized run (`drive.py port start --optimize`): the Debug build
+the Godot editor binary loads runs VM work two to three times as slow. `--trace-histogram` says which script lines
+ran how often; the sample says what the port spent on them. Found this way: op `0x12f`'s cost per equipment list in
+天秤のLa DEA。 (`engine-re.md`, "Indexed two-key sort") and the trace sink's per-step lock (`backlog.md`).
+
 **Godot debug scene launcher:** press **F4** while the natural boot is showing TITLE. TITLE's visible menu is
 a live 1 ms sleep/input-poll loop rather than an ADV `wait-for-input`; the launcher identifies that exact
 active child frame and returns it cooperatively at the next completed opcode boundary. The overlay enumerates
